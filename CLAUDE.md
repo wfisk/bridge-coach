@@ -44,7 +44,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         bridge-coach.ini (retenir, seance_active) and named in the window title (titre_fenetre). Fichier, Nouveau…: closes the open session (plain title; the
                         remembered one changes only once a new file exists), then a page (a hidden tab, like Aide): "Créer une séance vide" (edited in the Donnes tab with the deal editor, editeur_donne),
                         then the theme drawing (a − / + count per kind of hand, 36 at most); either new file opens in the Donnes tab. Tabs: Donnes (opens on it) views the open
-                        .bc.json with a sidebar (ui.left_drawer, light grey, full height, Donnes tab only: Séance, Joueurs, Alertes, one entry per deal: hands, double-dummy, par, each table's auction (encheres_html),
+                        .bc.json with a sidebar (ui.left_drawer, light warm grey GRIS_BARRE like Claude's sidebar, the chosen entry a rounded darker pill, full height, Donnes tab only: Séance (alerts at its foot), Joueurs, a divider, one entry per deal (every tab has two entries then a divider, so Donne 1 stays in place): hands, double-dummy, par, each table's auction (encheres_html),
                         table results; vue_seance, page_donne…), view only so far; Analyse: sidebar Analyse standard (status, date, "Lancer
                         l'analyse": rapport.py, analysis and PDFs; the run block stays visible while it runs), Analyse expert
                         (status, date, and the steps to get it from Claude on the web: preparer_pour_claude copies the session,
@@ -55,9 +55,21 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: the session's PDFs and the bilan as links with
                         file name and date (lien_pdf); Réglages. Jouer (between Donnes and Analyse; Contrôle was removed): the player
                         bids one seat, the engine the three others (vue_jouer, boite_encheres; logic in jouer.py), then the
-                        contract against Expert and Standard. The sidebar entry (vue["entree"]) is shared by Donnes, Jouer and
+                        contract against Expert and Standard. Layout: the table on the left (no table drawn and no name plates: the board case in the centre, bidding
+                        cards and trick cards around it, the hands outside, a line for the table edge above your hand; the thinking player's name blinks on the case; hands as overlapping
+                        cards drawn in CSS, CSS_CARTES, suits ♠ ♥ ♣ ♦ with a gap; dummy laid out as at the table: one column per suit, highest card on top, trumps on the left (mort_etale); the
+                        trick in the centre as cards; bids as bidding cards stacked in front of each player (yours and partner's left to right, the
+                        side players' top to bottom), each label on the edge left visible,
+                        bidding-box colours: SA grey, ♠ blue, ♥ red, ♦ orange, ♣ green, Passe green, X red, XX blue), the player always at the bottom
+                        (the table and the board case turn with the seat; a hand on a side is one row per suit), the board case (etui: upright,
+                        taller than wide, neutral grey; each seat's name on red if vulnerable, green if not, written to be read from
+                        its own seat (sides turned, the top one upside down), the dealer written « Donneur ») in the centre, a right
+                        sidebar (fixed, full height, LARGEUR_PANNEAU, the same grey with a thin left border) with the deal number,
+                        the seat played (no choice for now; an « Options » entry heads the deal list, a placeholder), the auction, then the bidding box drawn as a red box (bid cards standing behind in the
+                        order ♣ ♦ ♥ ♠ SA, only the bids still possible, four levels, « … les autres enchères »; Passe, X, XX tabs in
+                        front) or the play buttons. The sidebar entry (vue["entree"]) is shared by Donnes, Jouer and
                         Analyse: a deal chosen in one stays chosen in the others;
-                        window 1000×800,
+                        window 1200×850,
                         with Aide at the top. Rapports picks the .bws created last, runs rapport.py as a separate process
                         (never inside the server) and reads its lines ("Donne 3 sur 24", "Rapport prêt : …")
                         for the progress bar; Cancel stops the whole process group; French messages only,

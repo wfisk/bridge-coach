@@ -6,7 +6,7 @@ joueur (arret) : il dit alors ce que le système lui ferait dire (l'indice). À 
 à ceux de l'Expert et du Standard, jugés au double mort. Les essais vont dans <séance>-jeu.json, à côté de la séance :
 les analyses ne changent jamais.
 """
-import datetime, json, os, re
+import datetime, json, os, random, re
 from encheres import encherir
 from bws_extract import score, vul_of, imp
 
@@ -71,13 +71,36 @@ def contrat(seq, donneur):
 
 
 def siege_par_defaut(d, analyses):
-    """Le déclarant de la séquence recommandée (l'Expert d'abord, sinon le Standard) ; Sud s'il n'y en a pas."""
+    """Le déclarant de la séquence recommandée (l'Expert d'abord, sinon le Standard), sinon celui des enchères du
+    moteur ; Sud si la donne se passe."""
     for a in analyses:
         enc = ((a or {}).get("donnes") or {}).get(str(d["n"]), {}).get("enc")
         if enc:
             c, decl = contrat(sequence(enc, d["donneur"]), d["donneur"])
             if decl: return decl
-    return "S"
+    try:
+        return contrat(encherir(d)["encheres"], d["donneur"])[1] or "S"
+    except Exception:
+        return "S"
+
+
+PLACES = [("declarant", "Toujours le déclarant"), ("camp", "Toujours le camp du déclarant (déclarant ou mort)"),
+          ("defense", "Toujours en défense"), ("donneur", "Toujours le donneur"),
+          ("N", "Toujours Nord"), ("S", "Toujours Sud"), ("E", "Toujours Est"), ("O", "Toujours Ouest"),
+          ("hasard", "Au hasard")]
+
+
+def siege_choisi(mode, d, analyses, rnd=random):
+    """La place du joueur pour une donne, selon l'option choisie. Le déclarant est celui de la séquence recommandée
+    (siege_par_defaut) ; « camp » tire le déclarant ou son partenaire, « defense » l'un des deux adversaires."""
+    if mode in ROT: return mode
+    if mode == "donneur": return d["donneur"]
+    if mode == "hasard": return rnd.choice(ROT)
+    decl = siege_par_defaut(d, analyses)
+    if mode == "camp": return rnd.choice([decl, PART[decl]])
+    if mode == "defense":
+        i = ROT.index(decl); return rnd.choice([ROT[(i + 1) % 4], ROT[(i + 3) % 4]])
+    return decl
 
 
 def avancer(d, seq, siege):

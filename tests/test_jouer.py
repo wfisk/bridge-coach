@@ -25,4 +25,14 @@ c, decl = jouer.contrat(seq, d["donneur"])
 r = jouer.comparer(d, seq, "S", (None, None))
 assert r["lignes"][0]["nom"] == "Vous" and r["lignes"][0]["texte"] == f"{c} {decl}"
 assert jouer.grille(["passe", "1♦"], "O", True) == [["passe", "1♦", "?", ""]]
+# la place du joueur selon l'option : le déclarant de référence vient du moteur sans analyse
+import random
+decl = jouer.siege_par_defaut(d, (None, None))
+assert decl == jouer.contrat(encheres.encherir(d)["encheres"], d["donneur"])[1]
+r = random.Random(1)
+assert jouer.siege_choisi("E", d, (None, None), r) == "E" and jouer.siege_choisi("donneur", d, (None, None), r) == "O"
+assert jouer.siege_choisi("declarant", d, (None, None), r) == decl
+assert all(jouer.siege_choisi("camp", d, (None, None), r) in (decl, jouer.PART[decl]) for _ in range(10))
+assert all(jouer.camp(jouer.siege_choisi("defense", d, (None, None), r)) != jouer.camp(decl) for _ in range(10))
+assert {jouer.siege_choisi("hasard", d, (None, None), r) for _ in range(40)} == set("NESO")
 print("ok")

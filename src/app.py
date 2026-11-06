@@ -115,6 +115,8 @@ CSS_CARTES = """
 .carte.terne { opacity: .45; }
 .colonne-mort .carte { margin-right: 0; }
 .colonne-mort > * + * { margin-top: -42px; }
+.mort-table .carte { width: 42px; height: 60px; font-size: 17px; }
+.mort-table .colonne-mort > * + * { margin-top: -42px; }   /* le mort sur la table : un peu plus serré, la table reste carrée */
 .carte.vide { width: 22px; border: none; background: none; margin-right: 0; padding: 3px 0; }
 .eventail .groupe { margin-right: 26px; }
 .eventail .groupe:last-child { margin-right: 16px; }
@@ -138,8 +140,8 @@ CSS_CARTES = """
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
-.carton:not(.recent)::after { content: ""; position: absolute; inset: -1px; border-radius: 5px;
-  background: rgba(255, 255, 255, .4); }   /* les enchères d'avant, voilées : la dernière ressort */
+.carton:not(.derniere)::after { content: ""; position: absolute; inset: -1px; border-radius: 5px;
+  background: rgba(255, 255, 255, .4); }   /* la dernière enchère de chacun en clair, les précédentes voilées */
 .pile { display: flex; align-items: center; justify-content: center; min-height: 42px; min-width: 70px; }
 .pile.vers-bas { flex-direction: column; } .pile.vers-bas .carton + .carton { margin-top: -18px; }
 .pile.vers-haut { flex-direction: column-reverse; } .pile.vers-haut .carton { align-items: flex-end; }
@@ -406,7 +408,13 @@ def mains_grille(d):
         ui.label(""); ui.html(main_html(d, "S"), sanitize=False); ui.label("")
 
 
-def page_dm_par(d):
+def par_html(d):
+    p = d.get("par")
+    return "" if not p else (f"<b>Par</b> : {rouge(p['contrat'])}{'X' if p.get('contre') else ''} "
+                             f"{SIEGE.get(p['declarant'], p['declarant'])} {p.get('resultat', '')}, {p['score_ns']:+d} pour Nord-Sud")
+
+
+def page_dm_par(d, par=True):
     """Le double mort et le par d'une donne complète."""
     if d.get("dm"):
         ui.label("Double mort : levées par déclarant").classes("text-base font-bold mt-2")
@@ -415,17 +423,15 @@ def page_dm_par(d):
                         "".join(f"<td style='padding:2px 10px;text-align:center'>{d['dm'][x][s]}</td>" for s in "NSEO") + "</tr>"
                         for x in ("SA", "♠", "♥", "♦", "♣"))
         ui.html(sanitize=False, content=f"<table style='font-size:15px;border-collapse:collapse'><tr><th></th>{tete}</tr>{corps}</table>")
-    p = d.get("par")
-    if p:
-        ui.html(sanitize=False, content=f"<div style='font-size:15px'><b>Par</b> : {rouge(p['contrat'])}{'X' if p.get('contre') else ''} "
-                f"{SIEGE.get(p['declarant'], p['declarant'])} {p.get('resultat', '')}, {p['score_ns']:+d} pour Nord-Sud</div>")
+    if par and d.get("par"):
+        ui.html(sanitize=False, content=f"<div style='font-size:15px'>{par_html(d)}</div>")
 
 
 def page_donne(d):
-    ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
-    ui.label(f"Donneur {SIEGE[d['donneur']]} · vulnérabilité : {d['vul']}" + (f" · thème : {d['theme']}" if d.get("theme") else "")).classes("text-base text-gray-600")
+    """Une donne dans l'onglet Donnes : les mains, le double mort, les tables ; le nom, le donneur, la vulnérabilité
+    et le par sont dans la barre de droite."""
     mains_grille(d)
-    page_dm_par(d)
+    page_dm_par(d, par=False)
     if d.get("tables"):
         ui.label("Aux tables").classes("text-base font-bold mt-2")
         rows = [{"k": str(i), "table": str(x.get("table", "")), "ns": x.get("nom_ns") or x.get("paire_ns", ""),
@@ -628,9 +634,7 @@ def page_analyse(d, a, repli, version):
     """L'analyse d'une donne : enchères recommandées, entame et défense, plan de jeu, commentaire, cartes vues."""
     from build_pdf import txt                              # sièges en toutes lettres, cœurs et carreaux en rouge
     texte = lambda x: ui.html(f"<div style='font-size:15px;line-height:1.5'>{txt(x)}</div>", sanitize=False)
-    ui.label(f"Donne {d['n']} · analyse {'de l’expert' if version == 'Expert' else 'standard'}").classes("text-lg font-bold")
-    ui.label(f"Donneur {SIEGE[d['donneur']]} · vulnérabilité : {d['vul']}").classes("text-base text-gray-600")
-    mains_grille(d)
+    mains_grille(d)                                        # le nom de la donne et la version sont dans la barre de droite
     ui.label("Enchères recommandées").classes("text-base font-bold mt-2")
     ui.html(grille_html(a["enc"]), sanitize=False)
     if a.get("notes"): texte(a["notes"])
@@ -698,10 +702,10 @@ def page():
                 if ok and (d.get("a_completer") or vue.get("edition") == d["n"]):
                     editeur_donne(c, d)                    # une donne à compléter s'ouvre déjà en modification
                 else:
-                    if ok:
-                        with ui.row().classes("w-full justify-end"):
-                            ui.button("Modifier la donne", icon="edit", on_click=lambda n=d["n"]: modifier(c, n)).props("outline")
-                    page_donne(d)
+                    with ui.column().classes("w-full gap-3").style(f"padding-right:{LARGEUR_PANNEAU}px"):
+                        page_donne(d)
+                    with panneau_droit(d):
+                        if ok: ui.button("Modifier la donne", icon="edit", on_click=lambda n=d["n"]: modifier(c, n)).props("outline").classes("w-full")
 
     @ui.refreshable
     def vue_analyse():
@@ -724,13 +728,38 @@ def page():
             ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
             ui.label("Pas encore d'analyse : « Analyse standard », puis « Lancer l'analyse ».").classes("text-base text-gray-600"); return
         if vue.get("version") not in versions: vue["version"] = "Expert" if "Expert" in versions else versions[0]
-        if len(versions) > 1:                               # Standard | Expert, centrés, deux moitiés égales
-            with ui.row().classes("w-full justify-center"):
-                ui.toggle(versions, value=vue["version"], on_change=lambda ev: (vue.update(version=ev.value), vue_analyse.refresh())) \
-                    .props("no-caps spread toggle-color=primary").classes("w-64")
         a = (exp if vue["version"] == "Expert" else std)["donnes"][n]
         repli = (std or {}).get("donnes", {}).get(n, {})   # l'expert reprend du programme ce qu'il n'écrit pas (cartes vues…)
-        page_analyse(d, a, repli, vue["version"])
+        with ui.column().classes("w-full gap-3").style(f"padding-right:{LARGEUR_PANNEAU}px"):
+            page_analyse(d, a, repli, vue["version"])
+        with panneau_droit(d, par=False):
+            if len(versions) > 1:                           # Standard | Expert, deux moitiés égales
+                ui.toggle(versions, value=vue["version"], on_change=lambda ev: (vue.update(version=ev.value), vue_analyse.refresh())) \
+                    .props("no-caps spread toggle-color=primary").classes("w-full")
+            else:
+                ui.label(f"Analyse {vue['version'].lower()}").classes("text-base font-bold")
+            c_, decl = jouer.contrat(jouer.sequence(a["enc"], d["donneur"]), d["donneur"])
+            lignes = [f"<b>Contrat recommandé</b> : {rouge(c_) if decl else 'passe générale'}" + (f" {SIEGE[decl]}" if decl else "")]
+            e_ = a.get("entame")
+            if isinstance(e_, dict) and e_.get("carte"):
+                lignes.append(f"<b>Entame</b> : {rouge(e_['carte'])} ({SIEGE.get(e_.get('joueur'), e_.get('joueur', ''))})")
+            if d.get("par"): lignes.append(par_html(d))
+            ui.html("<div style='font-size:15px;line-height:1.6'>" + "<br/>".join(lignes) + "</div>", sanitize=False)
+
+    def panneau_droit(d=None, par=True):
+        """La barre de droite d'une donne, la même dans Donnes, Jouer et Analyse : même largeur, même gris, le nom de la
+        donne en haut ; avec d, l'étui (donneur, vulnérabilité), le thème et le par. Renvoie la colonne, à remplir."""
+        col = ui.column().classes("gap-3 p-4 overflow-y-auto").style(
+            f"position:fixed;top:{HAUTEUR_BARRE}px;right:0;bottom:0;width:{LARGEUR_PANNEAU}px;background:{GRIS_BARRE};"
+            "border-left:1px solid #dcdcd8;z-index:1;overflow-x:hidden")
+        if d is not None:
+            with col:
+                ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
+                with ui.row().classes("w-full justify-center"):
+                    ui.html(etui(d, ("N", "O", "E", "S"), petit=True), sanitize=False)
+                if d.get("theme"): ui.label(f"Thème : {d['theme']}").classes("text-sm text-gray-600")
+                if par and d.get("par"): ui.html(f"<div style='font-size:15px'>{par_html(d)}</div>", sanitize=False)
+        return col
 
     jeu = {"cle": None}                                   # la donne en cours dans l'onglet Jouer
 
@@ -854,13 +883,13 @@ def page():
             return f"<div class='carte{' r' if c in '♥♦' else ''}' style='margin:0 auto'>{r}<br/>{c}</div>"
         haut, gauche, droite, bas = places
         return (f"<div style='display:grid;grid-template-columns:auto auto auto;gap:8px;align-items:center;justify-items:center'>"
-                f"<div></div>{case(haut)}<div></div>{case(gauche)}{etui(p.d, places)}{case(droite)}<div></div>{case(bas)}<div></div></div>")
+                f"<div></div>{case(haut)}<div></div>{case(gauche)}{etui(p.d, places, petit=True)}{case(droite)}<div></div>{case(bas)}<div></div></div>")
 
     def etui(d, places, petit=False):
         """L'étui de la donne au centre, comme un vrai étui : Nord et Sud toujours sur les petits côtés (debout quand
         Nord-Sud sont en haut et en bas, couché sinon), leurs bandes sur toute la largeur, Est et Ouest entre elles ;
         chaque nom se lit depuis sa place ; fond rouge si son camp est vulnérable, vert sinon ; le donneur écrit
-        « Donneur » en jaune ; le joueur qui réfléchit clignote."""
+        « DONNEUR » en capitales ; le joueur qui réfléchit clignote."""
         v = d["vul"]; vul = lambda x: v == "Tous" or v == ("N-S" if x in "NS" else "E-O")
         l, L, h, f = (84, 149, 22, 12) if petit else ETUI      # l × L : l'étui (9:16), h : épaisseur des bandes
         haut, gauche, droite, bas = places
@@ -871,7 +900,7 @@ def page():
         else:                                                 # Nord et Sud à gauche et à droite, Est-Ouest entre eux
             place = {gauche: "1 / 1 / 4 / 2", droite: "1 / 3 / 4 / 4", haut: "1 / 2 / 2 / 3", bas: "3 / 2 / 4 / 3"}
         def bande(x):
-            nom = "<span style='color:#ffd54a'>Donneur</span>" if x == d["donneur"] else SIEGE[x]   # le donneur en jaune
+            nom = "DONNEUR" if x == d["donneur"] else SIEGE[x]  # le donneur en capitales
             fond = "#c0141c" if vul(x) else "#2e7d32"
             if x in (haut, bas):
                 forme = "width:100%;height:100%;" + ("transform:rotate(180deg);" if x == haut else "")
@@ -893,14 +922,15 @@ def page():
         devant = {x: [] for x in "NESO"}
         for k, b in enumerate(vues): devant[siege_de(d, k)].append(b)
         dernier = siege_de(d, len(vues) - 1) if vues else None
-        def carton(b, recent, k):
+        def carton(b, recent, k, derniere=False):
             cls = {"passe": " passe", "contre": " contre", "surcontre": " surcontre"}.get(b) or " " + COUL_BOITE.get(b[1:], "sa")
+            cls += " derniere" * derniere
             texte = {"passe": "Passe", "contre": "X", "surcontre": "XX"}.get(b, b)
             return f"<div class='carton{cls}{' recent' if recent else ''}' style='z-index:{k + 1}'>{texte}</div>"
         def pile(x, sens):
             """Les cartons d'un joueur empilés, le dernier dessus : on voit encore le haut des précédents."""
             bs = devant[x]
-            cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k) for k, b in enumerate(bs))
+            cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1) for k, b in enumerate(bs))
             cale = "justify-self:start;justify-content:flex-start" if sens == "vers-droite" else \
                 f"align-self:start;margin-top:{ETUI[2] + 10 if places[0] in 'NS' else 0}px"   # à gauche ; sur les côtés, à hauteur du nom
             return f"<div class='pile {sens}' style='{cale}'>{cartons}</div>"
@@ -923,7 +953,7 @@ def page():
         (à la droite du mort), puis les couleurs en alternant noir et rouge."""
         autres = [c for c in ORDRE_MAIN if c != atout]
         ordre = ([atout] if atout in ORDRE_MAIN else []) + autres
-        with ui.row().classes("no-wrap items-start gap-3"):
+        with ui.row().classes("no-wrap items-start gap-3 mort-table"):
             for coul in ordre:
                 with ui.column().classes("gap-0 colonne-mort"):
                     if not cartes.get(coul):
@@ -965,14 +995,15 @@ def page():
                     if "haut" not in sur_table: contenu(haut, "haut")
                 with ui.column().classes("items-start"): contenu(gauche, "gauche")
                 with ui.column().classes("items-center gap-4 w-full").style(
-                        "background:#f3efe7;border:1px solid #e3dccf;border-radius:28px;padding:20px 16px 36px"):   # la table
+                        "background:#f3efe7;border:1px solid #e3dccf;border-radius:28px;padding:12px 16px;"
+                        "aspect-ratio:1 / 1;justify-content:center"):   # la table, carrée comme une vraie
                     if "haut" in sur_table: contenu(haut, "haut")
                     if centre: centre()
                     if "bas" in sur_table: contenu(bas, "bas")
                 with ui.column().classes("items-end"): contenu(droite, "droite")
                 with ui.column().classes("items-center w-full").style(
-                        "grid-column: 1 / 4" + ("" if "bas" in sur_table else ";margin-top:-28px;position:relative;z-index:2")):
-                    if "bas" not in sur_table: contenu(bas, "bas")             # votre main, tenue au-dessus du bord
+                        "grid-column: 1 / 4" + ("" if "bas" in sur_table else ";margin-top:12px")):
+                    if "bas" not in sur_table: contenu(bas, "bas")             # votre main, un peu en retrait de la table
 
     def mains_fr(d, x):
         return dict(zip(carte.COULEURS, ("" if m == "-" else m for m in d["mains"][x].split())))
@@ -1034,9 +1065,7 @@ def page():
                                      a_vous=x == s and not fini and not attente)
                         else: dos(ou, 13)
                     table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False))
-            with ui.column().classes("gap-3 p-4 overflow-y-auto").style(                   # la barre de droite : l'essentiel
-                    f"position:fixed;top:{HAUTEUR_BARRE}px;right:0;bottom:0;width:{LARGEUR_PANNEAU}px;background:{GRIS_BARRE};"
-                    "border-left:1px solid #dcdcd8;z-index:1;overflow-x:hidden"):
+            with panneau_droit():                                                         # la barre de droite : l'essentiel
                 ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
                 ui.label(f"Vous jouez {SIEGE[s]}").classes("text-sm text-gray-600")
                 with ui.element("div").classes("w-full rounded-xl border border-gray-200 bg-white p-2"):

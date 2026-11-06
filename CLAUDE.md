@@ -57,7 +57,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (never inside the server) and reads its lines ("Donne 3 sur 24", "Rapport prêt : …")
                         for the progress bar; Cancel stops the whole process group; French messages only,
                         the Python trace goes to rapports/derniere-erreur.txt. Window through pywebview,
-                        browser if it is missing (--navigateur). Mac only so far; Windows not tested
+                        browser if it is missing (--navigateur); always host 127.0.0.1 (NiceGUI would open 0.0.0.0 in browser
+                        mode). requirements.txt pins exact tested versions (wheels checked for Windows/Mac, Python 3.9–3.13).
+                        Mac only so far; Windows not tested
       rapport.py        imports a source (.bws, FFB PDF, simulated .json) into the Bridge Coach file
                         seances/AAAA-MM/<name>.bc.json (format, version, source, session, joueurs, donnes…;
                         entete, ecrire_bc), keeps a copy of the original beside it, builds the PDFs into

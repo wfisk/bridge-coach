@@ -1226,7 +1226,8 @@ def principal():
             fenetre = False
     opts = dict(native=True, window_size=(1000, 800)) if fenetre else dict(show="--sans-ouvrir" not in sys.argv)
     app.on_shutdown(lambda: (annuler(T), annuler(D), annuler(I)))
-    ui.run(title=TITRE, port=PORT, reload=False, show_welcome_message=False, favicon="♠", language="fr", **opts)
+    # 127.0.0.1 : seul cet ordinateur joint l'application ; sans fenêtre, NiceGUI ouvrirait sinon le port à tout le réseau
+    ui.run(title=TITRE, host="127.0.0.1", port=PORT, reload=False, show_welcome_message=False, favicon="♠", language="fr", **opts)
 
 
 if __name__ == "__main__":

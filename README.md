@@ -166,6 +166,24 @@ Bridge Coach ne s'inscrit pas dans le système : on le désinstalle en suppriman
 3. Les réglages : `~/Library/Application Support/Bridge Coach`.
 4. Facultatif, vos fichiers : `~/Documents/bridge-coach-files`, avec la même prudence.
 
+## Sécurité
+
+- **Téléchargez Bridge Coach seulement sur sa page GitHub,** https://github.com/wfisk/bridge-coach : jamais une
+  pièce jointe d'e-mail ni un autre site. Le code y est public : chacun peut lire ce qu'il fait.
+- **Vos données restent sur votre ordinateur.** Bridge Coach n'envoie rien sur Internet. L'application est une
+  petite page web servie par l'ordinateur lui-même (adresse 127.0.0.1) : un autre appareil du réseau, même au
+  club, ne peut pas l'ouvrir. Les fichiers ne partent que si vous les envoyez vous-même à Claude pour l'analyse
+  experte.
+- **L'installation, elle, télécharge :** Python (python.org ou Microsoft, par `winget`) et les bibliothèques de
+  `requirements.txt` depuis PyPI, le site officiel des bibliothèques Python. Leurs versions sont fixées : tout le
+  monde reçoit celles qui ont été essayées, et une version nouvelle, abîmée ou piratée, n'arrive pas toute seule.
+- **Les avertissements de Windows sont normaux :** « Windows a protégé votre ordinateur » (SmartScreen) vient de ce
+  que le programme n'est pas signé par un certificat payant ; **Informations complémentaires**, puis **Exécuter
+  quand même**. L'antivirus peut beaucoup travailler pendant la première analyse. Sur Mac, la première ouverture
+  demande l'accès au dossier Documents : OK.
+- **Pour le responsable du dépôt :** la double authentification du compte GitHub protège tous ceux qui
+  téléchargent le programme.
+
 ## L'application
 
 ```

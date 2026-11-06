@@ -55,15 +55,15 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: the session's PDFs and the bilan as links with
                         file name and date (lien_pdf); Réglages. Jouer (between Donnes and Analyse; Contrôle was removed): the player
                         bids one seat, the engine the three others (vue_jouer, boite_encheres; logic in jouer.py), then the
-                        contract against Expert and Standard. Layout: the table on the left (no table drawn and no name plates: the board case in the centre, bidding
-                        cards and trick cards around it, the hands outside, a line for the table edge above your hand; the thinking player's name blinks on the case; hands as overlapping
+                        contract against Expert and Standard. Layout: the table on the left, a large light-green rounded box (no name plates: the board case in the centre, bidding
+                        cards, trick cards and dummy on it, the players' hands outside; the thinking player's name blinks on the case; hands as overlapping
                         cards drawn in CSS, CSS_CARTES, suits ♠ ♥ ♣ ♦ with a gap; dummy laid out as at the table: one column per suit, highest card on top, trumps on the left (mort_etale); the
                         trick in the centre as cards; bids as bidding cards stacked in front of each player (yours and partner's left to right, the
                         side players' top to bottom), each label on the edge left visible,
                         bidding-box colours: SA grey, ♠ blue, ♥ red, ♦ orange, ♣ green, Passe green, X red, XX blue), the player always at the bottom
                         (the table and the board case turn with the seat; a hand on a side is one row per suit), the board case (etui: upright,
                         taller than wide, neutral grey; each seat's name on red if vulnerable, green if not, written to be read from
-                        its own seat (sides turned, the top one upside down), the dealer written « Donneur ») in the centre, a right
+                        its own seat (sides turned, the top one upside down), the dealer marked by a round « D » badge) in the centre; hidden hands as card backs (dos), the cards and the case sized so the layout fills the space, centred vertically while bidding and playing; side bids start level with the seat's name; the auction grid in the sidebar underlines each seat red or green (grille_html vul), « Le sens des enchères » and « Plis joués » sit in the sidebar, Indice on the front of the bidding box, a right
                         sidebar (fixed, full height, LARGEUR_PANNEAU, the same grey with a thin left border) with the deal number,
                         the seat played (no choice for now; an « Options » entry heads the deal list, a placeholder), the auction, then the bidding box drawn as a red box (bid cards standing behind in the
                         order ♣ ♦ ♥ ♠ SA, only the bids still possible, four levels, « … les autres enchères »; Passe, X, XX tabs in

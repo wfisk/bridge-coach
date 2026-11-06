@@ -107,29 +107,34 @@ CSS_CARTES = """
 .entree-barre { width: 100%; justify-content: flex-start; border-radius: 8px; padding: 4px 12px; font-weight: 400;
   color: #2b2b2b; min-height: 32px; }
 .entree-barre.choisie { background: #e4e3df; font-weight: 600; }
-.carte { width: 40px; height: 58px; margin-right: -16px; padding: 3px 5px; background: #fff; border: 1px solid #b9c0c7;
-  border-radius: 6px; font-size: 17px; line-height: 1.05; font-weight: 600; color: #1b1b1b; }
+.carte { width: 46px; height: 66px; margin-right: -18px; padding: 3px 5px; background: #fff; border: 1px solid #b9c0c7;
+  border-radius: 6px; font-size: 18px; line-height: 1.05; font-weight: 600; color: #1b1b1b; }
 .carte.r { color: #c0141c; }
 .carte.jouable { cursor: pointer; border-color: #1f6b45; }
 .carte.jouable:hover { transform: translateY(-6px); }
 .carte.terne { opacity: .45; }
 .colonne-mort .carte { margin-right: 0; }
-.colonne-mort > * + * { margin-top: -36px; }
+.colonne-mort > * + * { margin-top: -42px; }
 .carte.vide { width: 22px; border: none; background: none; margin-right: 0; padding: 3px 0; }
 .eventail .groupe { margin-right: 26px; }
 .eventail .groupe:last-child { margin-right: 16px; }
-.groupe.colonne .carte { width: 30px; height: 40px; margin-right: -14px; padding: 2px 4px; font-size: 14px; }
+.groupe.colonne .carte { width: 34px; height: 46px; margin-right: -15px; padding: 2px 4px; font-size: 15px; }
+.dos { width: 46px; height: 66px; border-radius: 6px; border: 2px solid #fff; outline: 1px solid #9aa5b1;
+  background: repeating-linear-gradient(45deg, #2f5d8c 0 4px, #3d6fa3 4px 8px); }
+.dos-ligne .dos + .dos { margin-left: -32px; }
+.dos-colonne .dos { width: 66px; height: 46px; } .dos-colonne .dos + .dos { margin-top: -34px; }
+.onglet.indice { background: #fff; color: #1f6b45; display: flex; align-items: center; gap: 2px; }
 .sa { color: #2b2b2b; background: #eceff1; } .pique { color: #1f3fa0; background: #e3eaf8; }
 .coeur { color: #c0141c; background: #fbe4e4; } .carreau { color: #c86a00; background: #fff0d6; }
 .trefle { color: #1d7a35; background: #e1f2e5; }
-.carton { position: relative; width: 50px; height: 34px; padding: 3px 6px; border: 1px solid #8e99a4; border-radius: 5px;
+.carton { position: relative; width: 54px; height: 36px; padding: 3px 6px; border: 1px solid #8e99a4; border-radius: 5px;
   font-size: 15px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.25); display: flex; align-items: flex-start;
   justify-content: flex-start; line-height: 1.1; }
 .carton.passe { background: #2e7d32; border-color: #1f5e24; color: #fff; font-size: 12px; }
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
-.pile { display: flex; align-items: center; justify-content: center; min-height: 34px; min-width: 56px; }
+.pile { display: flex; align-items: center; justify-content: center; min-height: 36px; min-width: 60px; }
 .pile.vers-bas { flex-direction: column; } .pile.vers-bas .carton + .carton { margin-top: -14px; }
 .pile.vers-haut { flex-direction: column-reverse; } .pile.vers-haut .carton { align-items: flex-end; }
 .pile.vers-haut .carton + .carton { margin-bottom: -14px; }
@@ -144,7 +149,7 @@ CSS_CARTES = """
 .tirette.vide { visibility: hidden; }
 .tirette.autres { width: auto; color: #555; background: #fff; font-weight: 500; font-size: 13px; }
 .compartiment { margin-top: 8px; background: #a93226; border-radius: 6px; padding: 6px 6px 4px; justify-content: center; }
-.onglet { min-width: 54px; padding: 4px 10px; border-radius: 6px 6px 2px 2px; font-size: 14px; font-weight: 700; color: #fff;
+.onglet { min-width: 44px; padding: 4px 8px; border-radius: 6px 6px 2px 2px; font-size: 14px; font-weight: 700; color: #fff;
   text-align: center; cursor: pointer; }
 .onglet.passe { background: #2e7d32; } .onglet.contre { background: #e53935; } .onglet.surcontre { background: #1565c0; }
 .onglet.eteint { opacity: .35; cursor: default; }
@@ -602,9 +607,12 @@ def importer_expert(c, chemin):
             f"l'expert couvre maintenant {len(fusion['donnes'])} donnes sur {len(nums)}.")
 
 
-def grille_html(enc):
-    """Une grille d'enchères Ouest Nord Est Sud (lignes du -standard.json ou du -expert.json)."""
-    tete = "".join(f"<th style='padding:2px 10px;text-align:center'>{SIEGE[s]}</th>" for s in "ONES")
+def grille_html(enc, vul=None):
+    """Une grille d'enchères Ouest Nord Est Sud (lignes du -standard.json ou du -expert.json). vul : la vulnérabilité de
+    la donne ; chaque place est alors soulignée d'un trait épais, rouge si vulnérable, vert sinon."""
+    trait = lambda s: "" if vul is None else \
+        f";border-bottom:4px solid {'#c0141c' if vul == 'Tous' or vul == ('N-S' if s in 'NS' else 'E-O') else '#2e7d32'}"
+    tete = "".join(f"<th style='padding:2px 10px;text-align:center{trait(s)}'>{SIEGE[s]}</th>" for s in "ONES")
     corps = "".join("<tr>" + "".join(f"<td style='padding:1px 10px;text-align:center'>{rouge(c)}</td>" for c in r) + "</tr>" for r in enc)
     return f"<table style='border-collapse:collapse;font-size:15px'><tr>{tete}</tr>{corps}</table>"
 
@@ -780,6 +788,9 @@ def page():
                 for b, nom in (("passe", "Passe"), ("contre", "X"), ("surcontre", "XX")):
                     el = ui.html(f"<div class='onglet {b}{'' if b in ok else ' eteint'}'>{nom}</div>", sanitize=False)
                     if b in ok: el.on("click", lambda b=b: jeu_annonce(d, b))
+                ui.html("<div class='onglet indice' title='Ce que dirait le système'><span class='material-icons' "
+                        "style='font-size:16px'>lightbulb</span>Indice</div>", sanitize=False) \
+                    .on("click", lambda: (jeu.update(voir_indice=True), vue_jouer.refresh()))
 
     # ---------------------------------------------------------------- le jeu de la carte
     def carte_demarrer(d):
@@ -831,7 +842,7 @@ def page():
         pli = jeu["pli_vu"][0] if jeu["pli_vu"] else p.pos.pli
         posees = {s: (c, r.translate(carte.FR)) for s, c, r in pli}
         def case(s):                                   # la carte posée, comme dans les mains
-            if s not in posees: return "<div style='width:40px;height:58px'></div>"
+            if s not in posees: return "<div style='width:46px;height:66px'></div>"
             c, r = posees[s]
             return f"<div class='carte{' r' if c in '♥♦' else ''}' style='margin:0 auto'>{r}<br/>{c}</div>"
         haut, gauche, droite, bas = places
@@ -843,10 +854,12 @@ def page():
         travers ; fond rouge si son camp est vulnérable, vert sinon ; le donneur s'appelle « Donneur » ; le joueur qui
         réfléchit clignote."""
         v = d["vul"]; vul = lambda x: v == "Tous" or v == ("N-S" if x in "NS" else "E-O")
-        w, L, h, f = (64, 120, 22, 12) if petit else (74, 140, 28, 14)   # un étui : nettement plus long que large   # w : largeur, L : hauteur (plus haut que large), h : épaisseur
+        w, L, h, f = (64, 120, 22, 12) if petit else ETUI   # un étui : nettement plus long que large   # w : largeur, L : hauteur (plus haut que large), h : épaisseur
         haut = places[0]                                      # chaque étiquette se lit depuis sa place : celle d'en face à l'envers
         def case(x, cote=None):
-            nom = "Donneur" if x == d["donneur"] else SIEGE[x]
+            nom = SIEGE[x] + ("<span title='Donneur' style='display:inline-flex;align-items:center;justify-content:center;width:17px;"
+                              "height:17px;margin:4px;border-radius:50%;background:#fff;color:#333;font-size:11px'>D</span>"
+                              if x == d["donneur"] else "")
             fond = "#c0141c" if vul(x) else "#2e7d32"
             taille = f"width:{h}px;height:{L}px;writing-mode:vertical-rl;" + ("transform:rotate(180deg);" if cote == "gauche" else "") \
                 if cote else f"width:{w}px;height:{h}px;" + ("transform:rotate(180deg);" if x == haut else "")
@@ -858,6 +871,8 @@ def page():
                 f"border-radius:8px;background:#5d6d7e;align-items:center;justify-items:center;box-shadow:0 2px 4px rgba(0,0,0,.25)'>"
                 f"<div></div>{case(haut)}<div></div>{case(gauche, 'gauche')}<div></div>{case(droite, 'droite')}"
                 f"<div></div>{case(bas)}<div></div></div>")
+
+    ETUI = (84, 160, 30, 14)                             # largeur, hauteur, épaisseur des bandes, taille du texte
 
     def tapis_encheres(d, places):
         """Les enchères posées devant chaque joueur, comme les cartons d'une boîte à enchères ; la dernière ressort."""
@@ -873,7 +888,8 @@ def page():
             """Les cartons d'un joueur empilés, le dernier dessus : on voit encore le haut des précédents."""
             bs = devant[x]
             cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k) for k, b in enumerate(bs))
-            cale = "justify-self:start;justify-content:flex-start" if sens == "vers-droite" else "align-self:start"   # à gauche, en haut
+            cale = "justify-self:start;justify-content:flex-start" if sens == "vers-droite" else \
+                f"align-self:start;margin-top:{ETUI[2] + 10}px"   # à gauche ; sur les côtés, à hauteur du nom
             return f"<div class='pile {sens}' style='{cale}'>{cartons}</div>"
         haut, gauche, droite, bas = places
         return (f"<div style='display:grid;grid-template-columns:auto auto auto;gap:8px;align-items:center;justify-items:center'>"
@@ -913,19 +929,32 @@ def page():
                 with ui.row().classes("no-wrap gap-0 groupe" + (" colonne" if colonnes else "")):
                     for r in rangs: carte_el(coul, r, jouables, sur_clic)
 
-    def table(d, places, contenu, centre=None):
-        """La table : haut, gauche, droite, bas autour du centre. contenu(siège, position) dessine une place."""
+    def dos(ou, n):
+        """Une main cachée : n dos de cartes, en ligne en haut, en colonne sur les côtés."""
+        sens = "dos-ligne" if ou in ("haut", "bas") else "dos-colonne"
+        ui.html(f"<div class='{sens}' style='display:flex;flex-direction:{'row' if sens == 'dos-ligne' else 'column'}'>"
+                + "<div class='dos'></div>" * n + "</div>", sanitize=False)
+
+    def table(d, places, contenu, centre=None, centrer=False, sur_table=()):
+        """La table, une grande surface vert clair : l'étui, les cartons, le pli et le mort posé dessus ; les mains des
+        joueurs autour. contenu(siège, position) dessine une place ; sur_table : les positions posées sur la table (le mort)."""
         haut, gauche, droite, bas = places
-        with ui.element("div").classes("w-full py-2 overflow-x-auto"):   # pas de table dessinée : les mains autour de l'étui
-            with ui.grid(columns="max-content minmax(0,1fr) max-content").classes("w-full items-center gap-3"):
-                with ui.column().classes("items-center w-full").style("grid-column: 1 / 4"): contenu(haut, "haut")   # toute la largeur
+        with ui.element("div").classes("w-full py-2 overflow-x-auto").style(
+                f"min-height:calc(100vh - {HAUTEUR_BARRE + 48}px);display:flex;flex-direction:column;justify-content:center"
+                if centrer else ""):
+            with ui.grid(columns="max-content minmax(0,1fr) max-content").classes("w-full items-center gap-4") \
+                    .style("max-width:760px;margin:0 auto"):
+                with ui.column().classes("items-center w-full").style("grid-column: 1 / 4"):
+                    if "haut" not in sur_table: contenu(haut, "haut")
                 with ui.column().classes("items-start"): contenu(gauche, "gauche")
-                with ui.column().classes("items-center"):
+                with ui.column().classes("items-center gap-4 w-full").style(
+                        "background:#e3f0e5;border:1px solid #c9dfcd;border-radius:28px;padding:20px 16px"):   # la table
+                    if "haut" in sur_table: contenu(haut, "haut")
                     if centre: centre()
+                    if "bas" in sur_table: contenu(bas, "bas")
                 with ui.column().classes("items-end"): contenu(droite, "droite")
-                ui.element("div").style("grid-column: 1 / 4; height: 0; border-top: 1px solid #e5e7eb; "
-                                         "margin: 4px 0").classes("w-full")       # le bord de la table, devant vous
-                with ui.column().classes("items-center w-full").style("grid-column: 1 / 4"): contenu(bas, "bas")
+                with ui.column().classes("items-center w-full").style("grid-column: 1 / 4"):
+                    if "bas" not in sur_table: contenu(bas, "bas")
 
     def mains_fr(d, x):
         return dict(zip(carte.COULEURS, ("" if m == "-" else m for m in d["mains"][x].split())))
@@ -945,7 +974,10 @@ def page():
                         clic = lambda y: carte_jouer((y[0], y[1].translate(carte.EN)))
                         if x == p.mort(): mort_etale(cartes, jouables, clic, p.den)
                         else: eventail(cartes, jouables, clic, colonnes=ou in ("gauche", "droite"))
-        table(d, places, contenu, lambda: ui.html(pli_html(p, places), sanitize=False))
+            elif not p.fini():
+                dos(ou, sum(len(v) for v in p.pos.reste[x].values()))
+        table(d, places, contenu, lambda: ui.html(pli_html(p, places), sanitize=False), centrer=not p.fini(),
+              sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == p.mort() and not p.fini()])
 
     @ui.refreshable
     def vue_jouer():
@@ -981,15 +1013,22 @@ def page():
                     def contenu(x, ou):
                         if x == s or montrer:
                             eventail(mains_fr(d, x), colonnes=ou in ("gauche", "droite"))
-                    table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False))
+                        else: dos(ou, 13)
+                    table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False), centrer=not montrer)
             with ui.column().classes("gap-3 p-4 overflow-y-auto").style(                   # la barre de droite : l'essentiel
                     f"position:fixed;top:{HAUTEUR_BARRE}px;right:0;bottom:0;width:{LARGEUR_PANNEAU}px;background:{GRIS_BARRE};"
-                    "border-left:1px solid #dcdcd8;z-index:1"):
+                    "border-left:1px solid #dcdcd8;z-index:1;overflow-x:hidden"):
                 ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
                 ui.label(f"Vous jouez {SIEGE[s]}").classes("text-sm text-gray-600")
                 with ui.element("div").classes("w-full rounded-xl border border-gray-200 bg-white p-2"):
                     vues = jeu["seq"] if p else jeu["seq"][:jeu["affiche"]]
-                    ui.html(grille_html(jouer.grille(vues, d["donneur"], not fini and not attente and not p)), sanitize=False)
+                    ui.html(grille_html(jouer.grille(vues, d["donneur"], not fini and not attente and not p), d["vul"])
+                            .replace("border-collapse:collapse", "border-collapse:separate;border-spacing:4px 0"), sanitize=False)
+                autres = [(x, b, t_) for x, b, t_ in jeu["ex"][:jeu["affiche"]] if x != s and t_]
+                if autres:
+                    with ui.expansion("Le sens des enchères", icon="help_outline").props("dense").classes("w-full text-sm"):
+                        for x, b, t_ in autres:
+                            ui.html(f"<div style='font-size:14px'><b>{SIEGE[x]} {rouge(b)}</b> : {rouge(t_)}</div>", sanitize=False)
                 if p:
                     vous, defense = p.levees()
                     ui.label(f"{p.contrat} par {SIEGE[p.decl]}").classes("text-base font-bold")
@@ -999,9 +1038,13 @@ def page():
                             ui.button("Indice", icon="lightbulb", on_click=lambda: carte_indice()).props("outline dense no-caps")
                             ui.button("Réclamer", icon="done_all", on_click=lambda: carte_reclamer()).props("outline dense no-caps")
                         if jeu["msg"]: ui.label(jeu["msg"]).classes("text-sm")
+                    if p.plis:
+                        with ui.expansion(f"Plis joués ({len(p.plis)})", icon="list").props("dense").classes("w-full text-sm"):
+                            for k, (pli, g) in enumerate(p.plis, 1):
+                                ui.html(f"<div style='font-size:14px'>Pli {k} : " + " · ".join(f"{SIEGE[x][0]} {rouge(carte.carte_fr(cc, r))}" for x, cc, r in pli)
+                                        + f" — {SIEGE[g]}</div>", sanitize=False)
                 elif not fini and not attente:
                     boite_encheres(d)
-                    ui.button("Indice", icon="lightbulb", on_click=lambda: (jeu.update(voir_indice=True), vue_jouer.refresh())).props("outline dense no-caps")
                     if jeu["voir_indice"]:
                         ui.html(f"<div style='font-size:15px'>Le système dirait <b>{rouge(jeu['indice']['enchere'])}</b> : "
                                 f"{rouge(jeu['indice']['texte'])}</div>", sanitize=False)
@@ -1011,19 +1054,9 @@ def page():
                 elif fini and c_ != "passe" and jouer.camp(decl) != jouer.camp(s):
                     ui.label("Votre camp défend : le jeu en défense viendra plus tard.").classes("text-sm text-gray-600")
 
-        autres = [(x, b, t_) for x, b, t_ in jeu["ex"][:jeu["affiche"]] if x != s and t_]
-        if autres:
-            with ui.expansion("Ce que disent les enchères du programme", icon="help_outline").classes("w-full max-w-3xl mt-2"):
-                for x, b, t_ in autres:
-                    ui.html(f"<div style='font-size:15px'><b>{SIEGE[x]} {rouge(b)}</b> : {rouge(t_)}</div>", sanitize=False)
         if fini and not jeu["garde"]:
             jouer.enregistrer(base_seance(c), d["n"], s, jeu["seq"], d["donneur"]); jeu["garde"] = True; barre_seance.refresh()
         if p:
-            if p.plis:
-                with ui.expansion(f"Plis joués ({len(p.plis)})", icon="list").classes("w-full max-w-3xl"):
-                    for k, (pli, g) in enumerate(p.plis, 1):
-                        ui.html(f"<div style='font-size:15px'>Pli {k} : " + " · ".join(f"{SIEGE[x]} {rouge(carte.carte_fr(cc, r))}" for x, cc, r in pli)
-                                + f" — gagné par {SIEGE[g]}</div>", sanitize=False)
             if p.fini():
                 g, ecart, dm = p.resultat()
                 texte = "fait tout juste" if ecart == 0 else f"fait avec {ecart} de mieux" if ecart > 0 else f"chute de {-ecart}"

@@ -19,7 +19,7 @@ recommandés face à ce qui a été joué aux tables.
 
 Il faut Python 3.9 ou plus récent (`python3 --version` pour vérifier).
 
-1. Téléchargez le programme, par exemple dans vos Documents. Le dépôt est privé : il faut y avoir accès.
+1. Téléchargez le programme, par exemple dans vos Documents. Le dépôt est public : aucun compte GitHub n'est nécessaire.
 
    ```
    cd ~/Documents
@@ -140,7 +140,7 @@ Une mise à jour ne remplace que le dossier du programme. Vos tournois, rapports
    `installer.sh` garde `.venv`, ajoute les bibliothèques nouvelles s'il y en a et vérifie que les règles se lisent.
 3. Ouvrez Bridge Coach. Si le dossier du programme a changé de place, relancez `./raccourci-mac.sh`.
 
-Le dépôt est privé : il faut y avoir accès pour télécharger une nouvelle version.
+Le dépôt est public : n'importe qui peut télécharger une nouvelle version, sans compte GitHub.
 
 ## Désinstaller
 

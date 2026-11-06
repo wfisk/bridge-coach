@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aide de Bridge Coach</title>
+<style>
+  body { font: 16px/1.55 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #222; background: #fff; max-width: 42em; margin: 0 auto; padding: 24px 20px 60px; }
+  h1, h2 { color: #1f6b45; line-height: 1.25; }
+  h1, h2, h3 { font-size: 1em; }
+  h2 { margin-top: 1.8em; }
+  h3 { color: #1f6b45; margin-top: 1.4em; }
+  li { margin-bottom: .4em; }
+  code { background: #e6efe9; padding: .1em .35em; border-radius: 4px; font-size: .92em; word-break: break-all; }
+  .note { background: #e6efe9; border-left: 4px solid #1f6b45; padding: .7em 1em; margin: 1em 0; }
+  dt { font-weight: 600; margin-top: .7em; }
+  dd { margin: 0; }
+</style>
+</head>
+<body>
+<h1>Aide de Bridge Coach</h1>
+<p>Bridge Coach lit le fichier d'un tournoi joué avec Bridgemate et en tire des rapports au format PDF.</p>
+<p>L'onglet <b>Donnes</b> montre la séance ouverte : à gauche, la liste de ce qu'elle contient (la séance, les joueurs, chaque donne), à droite le détail de l'entrée choisie. L'onglet <b>Analyse</b> lance l'analyse et la montre donne par donne ; l'onglet <b>Rapports</b> liste les rapports PDF. <b>Fichier</b>, <b>Nouveau…</b> crée des donnes d'entraînement. L'onglet <b>Contrôle</b> est en préparation.</p>
+
+<h2>L'onglet Donnes</h2>
+<p>Il montre la séance ouverte. La liste de gauche donne :</p>
+<ul>
+  <li><b>Séance</b> : la date, d'où elle vient (Bridgemate, feuille de route, entraînement), le nombre de donnes et de tables ;</li>
+  <li><b>Joueurs</b> : chaque paire, avec les initiales et le nom complet quand il est connu ;</li>
+  <li><b>Alertes</b>, s'il y en a eu à l'import ;</li>
+  <li><b>Donne 1</b>, <b>Donne 2</b>… : les quatre mains, le donneur et la vulnérabilité, le double mort, le par, le résultat de chaque table et ses enchères, telles que les Bridgemate les ont enregistrées.</li>
+</ul>
+
+<h2>Le menu Fichier</h2>
+<p>Tout est dans la barre en haut de la fenêtre : le menu <b>Fichier</b> à gauche, puis les onglets <b>Donnes</b>, <b>Analyse</b>, <b>Rapports</b>, <b>Contrôle</b> et <b>Réglages</b>, et l'<b>Aide</b> à droite. Le menu <b>Fichier</b> :</p>
+<dl>
+  <dt>Nouveau…</dt>
+  <dd>Ferme la séance ouverte (la barre de titre ne montre plus de fichier) et propose une séance vide, à remplir à la main, ou des donnes tirées au hasard (voir plus bas). Dès qu'elle est créée, la nouvelle séance s'ouvre dans l'onglet <b>Donnes</b> et son nom s'affiche dans la barre de titre.</dd>
+  <dt>Ouvrir une séance…</dt>
+  <dd>Les séances déjà dans Bridge Coach, les plus récentes d'abord : tournois importés et donnes d'entraînement. La séance choisie s'ouvre, son nom s'affiche dans la barre de titre de la fenêtre, et Bridge Coach la rouvre au prochain lancement.</dd>
+  <dt>Importer…</dt>
+  <dd>Fait d'un fichier de tournoi une séance Bridge Coach : un <code>.bws</code> du dossier de Bridgemate (ceux déjà importés sont marqués), ou un fichier ailleurs sur l'ordinateur (<code>.bws</code>, feuille de route <code>.pdf</code> de FFBClubNet). Le fichier d'origine n'est pas modifié. L'import prend quelques secondes, puis la séance s'ouvre.</dd>
+  <dt>Exporter en PBN…</dt>
+  <dd>Écrit la séance ouverte au format <code>.pbn</code>, à côté d'elle : mains, donneur, vulnérabilité et double mort. Le <code>.pbn</code> s'importe dans Bridgemate (pour faire distribuer les donnes) et se lit dans la plupart des logiciels de bridge.</dd>
+  <dt>Ouvrir le dossier de travail</dt>
+  <dd>Le dossier où sont vos séances et vos rapports.</dd>
+</dl>
+
+<h2>Analyser une séance et créer les rapports</h2>
+<ol>
+  <li>Après un tournoi, l'onglet <b>Donnes</b> signale le nouveau fichier de Bridgemate : cliquez sur <b>Importer</b>. Sinon, choisissez une séance avec <b>Fichier</b>, <b>Ouvrir une séance…</b> Son nom s'affiche dans la barre de titre.</li>
+  <li>Dans l'onglet <b>Analyse</b>, choisissez <b>Analyse standard</b> en haut de la liste de gauche, puis cliquez sur <b>Lancer l'analyse</b>. <b>Analyse expert</b>, juste en dessous, dit si une analyse de l'expert existe pour cette séance.</li>
+  <li>Attendez la fin de la barre de progression, en général plusieurs minutes. Vous pouvez utiliser l'ordinateur pendant ce temps.</li>
+  <li>L'analyse se lit donne par donne dans l'onglet <b>Analyse</b> : enchères recommandées, entame et défense, plan de jeu, commentaire. Quand une analyse de l'expert existe, c'est elle qui s'affiche ; le bouton <b>Standard</b> montre l'analyse standard.</li>
+  <li>Les rapports PDF sont dans l'onglet <b>Rapports</b>, avec la date de leur création : cliquez sur un nom pour l'ouvrir.</li>
+</ol>
+<p class="note">Lancez l'analyse une fois le tournoi terminé : le calcul occupe beaucoup l'ordinateur.</p>
+
+<h2>L'analyse de l'expert, avec Claude</h2>
+<p>L'analyse de l'expert est écrite par Claude, sur le site <b>claude.ai</b>, dans votre navigateur. Dans l'onglet <b>Analyse</b>, choisissez <b>Analyse expert</b> et suivez les étapes :</p>
+<ol>
+  <li><b>Préparer les fichiers pour Claude</b> : Bridge Coach met dans le dossier <code>pour-claude</code> de votre dossier de travail tout ce dont Claude a besoin (la séance, l'analyse standard, le système, un exemple et la consigne), puis ouvre ce dossier.</li>
+  <li><b>Ouvrir claude.ai</b> et commencer une nouvelle conversation.</li>
+  <li>Glisser tous les fichiers du dossier dans la conversation.</li>
+  <li><b>Copier la consigne</b>, la coller dans la conversation et l'envoyer.</li>
+  <li>Claude écrit le fichier <code>…-expert.json</code> : le télécharger. Pour une longue séance, il peut répondre en plusieurs fichiers.</li>
+  <li><b>Importer l'analyse de l'expert…</b> : choisir le fichier téléchargé (un par un s'il y en a plusieurs). Bridge Coach vérifie qu'il correspond à la séance, garde l'analyse précédente sous un nom daté et ajoute les donnes.</li>
+  <li><b>Mettre à jour les rapports</b> : les rapports PDF reprennent l'analyse de l'expert en quelques secondes, sans refaire l'analyse standard.</li>
+</ol>
+
+
+<h2>Les rapports</h2>
+<dl>
+  <dt>Relevé des donnes</dt>
+  <dd>Ce qui a été joué : les mains, les enchères et les résultats de chaque table.</dd>
+  <dt>Analyse</dt>
+  <dd>L'avis du programme : enchères recommandées, entame et plan de jeu.</dd>
+  <dt>Analyse de l'expert et Comparaison</dt>
+  <dd>Ces deux rapports n'apparaissent que si une analyse rédigée existe pour ce tournoi.</dd>
+</dl>
+
+<h2>Lire le plan de jeu</h2>
+<p>« Essai à la table » donne une estimation : le programme joue la donne sur des mains adverses imaginées, sans voir les vraies, face à la meilleure défense. Le pourcentage est un ordre de grandeur, le mot qui l'accompagne compte davantage. À la vraie table, la défense se trompe parfois, et le contrat réussit un peu plus souvent.</p>
+
+<h2>Choisir une autre séance</h2>
+<p><b>Fichier</b>, <b>Ouvrir une séance…</b> Pour une séance rangée ailleurs sur l'ordinateur, cliquez sur <b>Choisir un fichier…</b> et choisissez son fichier <code>.bc.json</code>.</p>
+
+<p>Bridge Coach lit trois sortes de fichiers :</p>
+<dl>
+  <dt><code>.bws</code></dt>
+  <dd>Le fichier d'un tournoi, enregistré par Bridgemate.</dd>
+  <dt><code>.pdf</code></dt>
+  <dd>Une feuille de route de FFBClubNet : elle donne les mains, les contrats et les résultats, mais pas les enchères.</dd>
+  <dt><code>.bc.json</code></dt>
+  <dd>Une séance Bridge Coach. Chaque tournoi importé, et chaque fichier de donnes créé par <b>Fichier</b>, <b>Nouveau…</b>, en devient une : elle contient tout ce qu'il faut pour refaire les rapports, sans le fichier d'origine. Les joueurs y sont avec leurs initiales, et leur nom complet quand le fichier d'origine le donne.</dd>
+</dl>
+<p>Les séances sont rangées par mois dans le dossier <code>seances</code>, par exemple <code>seances/2026-11</code>. Les donnes créées par <b>Fichier</b>, <b>Nouveau…</b> commencent par <code>entrainement-</code>.</p>
+<p>Les donnes créées n'ayant pas été jouées, leur rapport ne contient ni relevé des donnes, ni résultats des tables.</p>
+
+<h2>Afficher le nom des joueurs</h2>
+<p>Dans les rapports, les joueurs sont désignés par leurs initiales. Cochez <b>Ajouter une page avec le nom des joueurs</b> avant de créer les rapports pour ajouter une première page avec les noms complets.</p>
+
+<h2>Taper ses propres donnes</h2>
+<ol>
+  <li><b>Fichier</b>, <b>Nouveau…</b>, puis <b>Créer une séance vide</b>. Elle s'appelle « Entraînement » et la date du jour (l'heure s'ajoute si ce nom existe déjà) et s'ouvre dans l'onglet <b>Donnes</b>, sur la donne 1.</li>
+  <li>Tapez les cartes de chaque couleur dans les champs, autour de la table : A R D V X 9 … 2 (ou 10 ; les lettres anglaises K Q J T marchent aussi). Une couleur vide est une chicane. Au centre, les cartes qui restent à placer ; une carte tapée deux fois est signalée.</li>
+  <li><b>Compléter au hasard</b> distribue les cartes qui manquent : tapez seulement votre main, ou la vôtre et celle du partenaire, le programme fait le reste. Le double mort et le par apparaissent dès que la donne est complète.</li>
+  <li><b>Ajouter une donne</b>, en bas de la liste de gauche, en ajoute une ; <b>Supprimer la donne</b> en retire une (les suivantes prennent le numéro d'avant). Le donneur et la vulnérabilité suivent le numéro de la donne et se changent en haut de la page.</li>
+</ol>
+<p>Tout est enregistré dès que vous quittez un champ : il n'y a rien à sauvegarder. Avant les changements, Bridge Coach garde une copie de la séance (au plus une toutes les 10 minutes, les 20 dernières) : la page <b>Séance</b> les liste, et <b>Restaurer</b> en remet une. Une donne incomplète est marquée « à compléter » ; l'analyse et les rapports la laissent de côté.</p>
+<p>Une donne s'affiche d'abord telle quelle ; le bouton <b>Modifier la donne</b>, en haut à droite, ouvre la saisie, et <b>Terminer</b> revient à l'affichage. Une donne nouvelle ou à compléter s'ouvre directement en saisie. Une donne modifiée perd son analyse standard (relancez l'analyse). Si elle a une analyse de l'expert, Bridge Coach le demande d'abord : cette analyse est mise de côté, gardée dans une copie datée, et il faudra la redemander à Claude pour cette donne ; les autres donnes gardent la leur.</p>
+<p>Seules les séances créées dans Bridge Coach se modifient : les donnes d'un tournoi sont celles qui ont été jouées, elles n'ont pas de bouton <b>Modifier la donne</b>.</p>
+
+<h2>Tirer des donnes au hasard, par sorte de main</h2>
+<ol>
+  <li>Choisissez <b>Fichier</b>, <b>Nouveau…</b>. Sous « Ou tirer des donnes au hasard, par sorte de main », chaque sorte (Grand chelem, Squeeze, Contre Spoutnik…) a ses boutons <b>−</b> et <b>+</b> : choisissez combien de donnes de chacune, 36 en tout au plus. <b>Aléatoire</b> donne des mains au hasard.</li>
+  <li>Cliquez sur <b>Créer le fichier Bridge Coach</b> : le programme cherche les donnes, les mélange et en fait une séance, qui s'ouvre aussitôt.</li>
+  <li>Cliquez sur <b>Analyser ces donnes</b> : l'onglet <b>Analyse</b> s'ouvre avec ces donnes, prêt à lancer l'analyse.</li>
+</ol>
+<p><b>Jeu de la carte</b> donne des contrats où le déclarant compte une levée de moins : à lui de la trouver. <b>Jeu de la carte avancé</b> donne des contrats où le programme a trouvé un squeeze, une mise en main ou un laisser-passer, cartes vues, et où le contrat gagne tout juste.</p>
+<p>Un thème rare peut demander plusieurs minutes. S'il n'est pas trouvé dans le temps prévu, la donne reste tirée normalement, et Bridge Coach le signale.</p>
+<p>Le dossier contient aussi un fichier <code>.pbn</code>. Il s'importe dans Bridgemate Control Software, version 3.1.2 ou plus récente : menu <b>Fichier</b>, <b>Importer</b>.</p>
+<p>Drury fait partie du système de Bridge Coach (à confirmer) : sur une ouverture de 1♥ ou 1♠ en 3e ou 4e, le partenaire qui a passé dit 2♣ avec un fit et 10 à 12 points. Roudi n'en fait pas partie : ces donnes sont choisies sur les mains, mais les enchères recommandées n'emploient pas cette convention.</p>
+
+<h2>Réglages</h2>
+<p>L'onglet <b>Réglages</b> montre les deux dossiers utilisés, et celui où le programme est installé, qui est à part. Le bouton <b>Modifier les réglages</b> ouvre un petit fichier de texte :</p>
+<dl>
+  <dt><code>bridgemate</code></dt>
+  <dd>Le dossier où Bridgemate enregistre ses fichiers <code>.bws</code>. Bridge Coach ne fait qu'y lire : il travaille sur une copie.</dd>
+  <dt><code>fichiers</code></dt>
+  <dd>Le dossier de travail : vos séances et vos rapports, par défaut <code>bridge-coach-files</code> dans vos Documents. Ce n'est pas le dossier où Bridge Coach est installé. Si vous le changez, les fichiers existants ne suivent pas : déplacez-les vous-même.</dd>
+</dl>
+<p>Modifiez le dossier voulu, enregistrez, puis fermez et rouvrez Bridge Coach.</p>
+
+<h2>Où sont mes fichiers ?</h2>
+<p>Ils sont dans le dossier de travail, indiqué par <code>fichiers</code> dans l'onglet <b>Réglages</b>, par défaut <code>bridge-coach-files</code> dans vos Documents. Dans l'onglet <b>Rapports</b>, <b>Ouvrir le dossier des rapports</b> y mène directement.</p>
+<ul>
+  <li><code>rapports</code> : les rapports PDF, classés par mois ;</li>
+  <li><code>seances</code> : les séances Bridge Coach (<code>.bc.json</code>), le fichier d'origine et les analyses.</li>
+</ul>
+
+<h2>Désinstaller Bridge Coach</h2>
+<p>Bridge Coach ne s'inscrit pas dans le système : on le désinstalle en supprimant ses dossiers.</p>
+<ol>
+  <li>Le dossier du programme, <code>bridge-coach</code> : le programme et ses bibliothèques, environ 220 Mo.</li>
+  <li>Les réglages : sous Windows <code>%APPDATA%\Bridge Coach</code> (à taper dans la barre d'adresse de l'Explorateur), sur Mac <code>~/Library/Application Support/Bridge Coach</code>.</li>
+  <li>Le raccourci du Bureau ; sous Windows aussi celui du menu Démarrer et l'icône épinglée à la barre des tâches (clic droit, <b>Détacher</b>) ; sur Mac aussi <b>Bridge Coach</b> dans Applications et son icône du Dock (la glisser hors du Dock).</li>
+  <li>Facultatif, vos fichiers : le dossier <code>bridge-coach-files</code> de vos Documents. Les analyses expertes ne se recréent pas : gardez-en une copie si vous en avez besoin.</li>
+  <li>Facultatif, sous Windows : Python 3.12, si rien d'autre ne s'en sert (<b>Paramètres</b>, <b>Applications</b>, <b>Applications installées</b>), et le cache <code>%LOCALAPPDATA%\pip\Cache</code>.</li>
+</ol>
+
+<h2>En cas de problème</h2>
+<dl>
+  <dt>« Aucun tournoi trouvé »</dt>
+  <dd>Vérifiez le dossier <code>bridgemate</code> dans l'onglet <b>Réglages</b>.</dd>
+  <dt>« … n'est pas un vrai .bws »</dt>
+  <dd>C'est une sauvegarde FFBClubNet protégée par un mot de passe. Il faut le fichier d'origine de Bridgemate.</dd>
+  <dt>« Le rapport n'a pas pu être créé »</dt>
+  <dd>Le détail est dans le fichier <code>derniere-erreur.txt</code>, dans le dossier <code>rapports</code>. Transmettez-le à la personne qui s'occupe du programme.</dd>
+  <dt>La création est trop longue</dt>
+  <dd>Le bouton <b>Annuler</b> l'arrête sans abîmer les rapports déjà faits. Sur un portable, branchez le chargeur et choisissez le mode d'alimentation <b>Meilleures performances</b>. Chaque analyse écrit <code>derniere-analyse.txt</code> dans le dossier <code>rapports</code> : le temps de chaque donne et ce que l'ordinateur a utilisé. Transmettez-le si l'analyse reste lente.</dd>
+</dl>
+</body>
+</html>

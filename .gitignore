@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+.DS_Store
+
+# Session data: never pushed
+rapports/
+reports/
+seances/
+bridge-coach.ini
+docs/**/*.json
+*.bws
+*.pdf
+*.zip
+
+# Official system documents (copyrighted)
+systems/*/ffb/
+.claude/

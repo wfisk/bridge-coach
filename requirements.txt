@@ -1,0 +1,7 @@
+# Bibliothèques Python du programme (installer.sh les met dans .venv/)
+reportlab>=4.2,<4.3     # les PDF ; 4.3 et plus demandent Python 3.10
+endplay>=0.5.12         # double mort (DDS) : entames, plan de jeu, séances simulées
+ruamel.yaml>=0.18       # lecture des règles (regles.yaml, entames.yaml)
+nicegui>=3.6,<4         # l'application (src/app.py)
+pywebview>=6.2          # sa fenêtre ; sans elle, elle s'ouvre dans le navigateur
+pypdfium2>=4.0          # facultatif : rendre les pages en images pour les vérifier

@@ -1,0 +1,89 @@
+# SEF 2024 : choix de l'entame, lu par src/entames.py (jeu.entame_regle).
+# Le texte des règles et leur source sont dans entames.md. Ces règles décident seules, sans
+# simulation : la première qui s'applique l'emporte, une exception se place donc plus haut.
+#
+# Même syntaxe que regles.yaml (systems/grammaire.md) : virgule = et, || (ou « ou ») = ou,
+# « non », parenthèses. Chaque condition porte sur UNE couleur candidate (jamais l'atout, sauf
+# s'il ne reste que lui) :
+#   partenaire     le partenaire l'a nommée            adverse     un adversaire l'a nommée
+#   sequence       deux honneurs qui se suivent : AR, RD, DV ou VX
+#   tete AR        la couleur commence par ces cartes (tete A : par l'as)
+#   honneur        un A, R, D ou V ; le X compte avec 4 cartes ou plus (X952), pas avec 3 (X65)
+#   longueur 4+    nombre de cartes (zones : 4+, 2-, 3, 2-3)
+#   atouts 2+      longueur du meneur à l'atout (contrat à la couleur)
+#   palier 6+      palier du contrat (6+ : un chelem)
+#   atout          la couleur est l'atout ; bicolore : le déclarant a nommé deux couleurs ou plus ;
+#                  soutenu : le mort a soutenu l'atout (avec la clé « atout: oui », la règle
+#                  choisit l'atout ; essayé pour l'entame atout, sans gain : voir entames.md)
+#
+# Clés d'une règle de « couleur » :
+#   si          la condition sur la couleur
+#   contrat     couleur ou SA (sans : les deux)
+#   hors        adverses : les couleurs adverses seulement s'il n'y en a pas d'autre
+#   sauf        on saute la règle si une couleur (prise de la même façon) remplit cette condition
+#   choix       parmi plusieurs couleurs : partenaire (dans l'ordre où il les a nommées),
+#               sequence (la plus haute tête), longue (la plus longue, puis une séquence à SA,
+#               puis le plus d'honneurs), longueur (la plus longue, sans autre critère),
+#               premiere (dans l'ordre ♠ ♥ ♦ ♣)
+#   carte       la liste de « carte » à suivre
+#   raison      le texte du rapport (sans : celui de la carte)
+#   nom         singleton : la règle que les séances simulées n'appliquent qu'une fois sur trois
+
+systeme: sef-2024
+
+couleur:
+  - { si: "partenaire", choix: partenaire, carte: partenaire, raison: "dans la couleur du partenaire" }
+  - { contrat: couleur, si: "tete A, palier 6+", choix: longueur, carte: as, raison: "contre un chelem, on encaisse un as" }
+  - { contrat: couleur, si: "sequence", hors: adverses, choix: sequence, carte: sequence, raison: "tête de séquence" }
+  # à partir du palier de 5, on encaisse l'as avant les défausses ; plus bas, on garde ses as
+  - { contrat: couleur, si: "tete A, longueur 2+, palier 5+", hors: adverses, sauf: "longueur 4+, (tete R || tete D)",
+      choix: longueur, carte: as, raison: "on n'entame pas sous l'as" }
+  - { contrat: couleur, si: "longueur 1, non honneur, atouts 2+, non adverse", choix: premiere,
+      carte: singleton, raison: "singleton, pour couper", nom: singleton }
+  # la plus longue couleur hors couleurs adverses (4 cartes à SA, 3 à la couleur), jamais sous l'as
+  - { contrat: SA, si: "longueur 4+, non adverse", choix: longue, carte: normale }
+  - { contrat: SA, choix: longue, carte: normale }
+  - { contrat: couleur, si: "longueur 3+, non adverse, non tete A", choix: longue, carte: normale }
+  - { contrat: couleur, si: "longueur 3+, non adverse", choix: longue, carte: normale }
+  - { contrat: couleur, si: "non tete A", choix: longue, carte: normale }
+  - { choix: longue, carte: normale }
+
+carte:
+  # dans une couleur choisie librement
+  normale:
+    - { si: "sequence", carte: tete, raison: "tête de séquence" }
+    - { si: "longueur 1", carte: haute, raison: "singleton" }
+    - { si: "longueur 2", carte: haute, raison: "la plus haute du doubleton" }
+    - { si: "longueur 3, honneur", carte: basse, raison: "4e meilleure sous un honneur" }
+    - { si: "honneur", carte: 4e, raison: "4e meilleure sous un honneur" }
+    - { si: "longueur 3", carte: haute, raison: "la plus haute de trois petites" }
+    - { carte: 2e, raison: "deuxième carte, sans honneur" }
+  # dans la couleur du partenaire
+  partenaire:
+    - { contrat: couleur, si: "tete A", carte: A }
+    - { si: "longueur 2-", carte: haute }
+    - { si: "sequence", carte: tete }
+    - { si: "longueur 3, honneur", carte: basse }
+    - { si: "honneur", carte: 4e }
+    - { si: "longueur 3", carte: haute }
+    - { carte: 2e }
+  # séquence à la couleur : l'as de AR (et de A-D-V)
+  sequence:
+    - { si: "tete A", carte: A }
+    - { carte: tete }
+  as:
+    - { carte: A }
+  singleton:
+    - { carte: haute }
+
+exemples:
+  - { main: "AR5 D84 RV7 A962", contrat: 4C, attendu: "♠A" }                         # AR : l'as
+  - { main: "V8752 84 X63 932", contrat: 3SA, attendu: "♠5" }                         # 4e meilleure
+  - { main: "8752 R84 X63 932", contrat: 3SA, attendu: "♠7" }                         # quatre petites : la 2e
+  - { main: "D3 A642 V8743 X2", contrat: 4P, partenaire: C, attendu: "♥A" }           # couleur du partenaire, l'as
+  - { main: "D3 X642 V8743 X2", contrat: 4P, partenaire: C, attendu: "♥2" }           # 4e meilleure du partenaire
+  - { main: "943 RD82 7 V8652", contrat: 4P, attendu: "♥R" }                          # séquence RD
+  - { main: "943 R982 7 V8652", contrat: 4P, attendu: "♦7" }                          # singleton, avec trois atouts
+  - { main: "943 RD82 A7 V865", contrat: 6P, attendu: "♦A" }                          # contre un chelem, l'as
+  - { main: "98432 A942 72 32", contrat: 5K, attendu: "♥A" }                          # au palier de 5, l'as
+  - { main: "9 7654 AD63 A942", contrat: 2P, attendu: "♥6" }                          # plus bas, on garde ses as

@@ -1,0 +1,1160 @@
+# SEF 2024 : règles d'enchères lues par le programme (src/regles.py).
+# Grammaire complète : ../grammaire.md. Vérifier : .venv/bin/python -I src/regles.py
+#
+# Aide-mémoire
+#   Couleurs T K C P ; honneurs A R D V X ; points H, HL, HLD (HLD(P) : atout pique ;
+#   HLD = H + courtes + atouts au-delà du 3e avec un singleton ou une chicane)
+#   M / N la plus longue majeure / mineure ; U / W couleur de l'ouvreur / du répondant ;
+#   Y / Z couleur de l'intervenant / de son partenaire ; UM : la majeure de l'ouvreur ;
+#   S1 à S4 le siège depuis le donneur
+#   Zones : 5+ au moins, 1- au plus, 6-10, 1= exactement ; ! le contraire (TKCP !1-)
+#   Virgule = et ; || = ou ; parenthèses pour grouper ; non ... ; reg / irreg
+#   Première règle vraie dans l'ordre ; - exemples : en fin de liste, vérifiés à chaque lecture.
+#   source : SEF (par défaut), à confirmer, SA (emprunté au Standard American).
+
+systeme: sef-2024
+
+definitions:
+  # la règle des 15 ne tranche que les mains limites en quatrième : 10-11 H sans couleur de 6 cartes.
+  # À 12 H+, ou avec une 6e, on ouvre (mains tirées au hasard, 2026-10-31 : ouvrir rapporte même sans la règle)
+  ouvrable: "H 12+ || H 11, S 1-2, regle des 20 || H 11, S 3 || H 10-11, S 4, (regle des 15 || P 6+ || C 6+ || K 6+ || T 6+)"
+  leger: "S 3, H 8-10, regle des 20 || S 3, H 10, P + C 9+"
+  # exactement 4 cartes dans une majeure que ni l'ouvreur (U) ni l'intervenant (Y) n'ont
+  # nommée (avec 5 cartes, on nomme la couleur)
+  majeure libre: "C 4, non U est C, non Y est C || P 4, non U est P, non Y est P"
+
+# ------------------------------------------------------------------ ouvertures
+ouverture:
+  - 2K:  { si: "reg, H 24+ || HL 25+", montre: "forcing de manche", source: à confirmer }
+  - 2T:  { si: "reg, H 22-23 || irreg, HL 21-24", montre: "fort indéterminé", source: à confirmer }
+  - 2SA: { si: "reg, H 20-21", montre: "20–21 H, régulier" }
+  - 1SA: { si: "reg, H 15-17, M 4-", montre: "15–17 H, régulier", note: "avec une majeure 5e : à confirmer" }
+  - 1P:  { si: "ouvrable, P 5+, P >= C", montre: "12–21 H, 5+ piques" }
+  - 1C:  { si: "ouvrable, C 5+", montre: "12–21 H, 5+ cœurs" }
+  - 1K:  { si: "ouvrable, K > T", montre: "12–21 H, 4+ carreaux" }
+  - 1K:  { si: "ouvrable, K 4+, K = T", montre: "12–21 H, 4+ carreaux" }
+  - 1K:  { si: "ouvrable, forme 4-4-3-2, K 3, T 2", montre: "12–21 H, 4-4 en majeures, 3 carreaux" }
+  - 1T:  { si: "ouvrable", montre: "12–21 H, 3+ trèfles" }
+  - 2P:  { si: "H 6-10, P 6, C 3-, S 1-3, non VN || H 8-10, P 6, C 3-, S 1-3", montre: "faible, 6 piques", source: à confirmer }
+  - 2C:  { si: "H 6-10, C 6, P 3-, S 1-3, non VN || H 8-10, C 6, P 3-, S 1-3", montre: "faible, 6 cœurs", source: à confirmer }
+  - 3P:  { si: "H 6-10, P 7+, S 1-3, non VN || H 8-10, P 7+, S 1-3", montre: "barrage, 7 piques" }
+  - 3C:  { si: "H 6-10, C 7+, S 1-3, non VN || H 8-10, C 7+, S 1-3", montre: "barrage, 7 cœurs" }
+  - 3K:  { si: "H 6-10, K 7+, S 1-3, non VN || H 8-10, K 7+, S 1-3", montre: "barrage, 7 carreaux" }
+  - 3T:  { si: "H 6-10, T 7+, S 1-3, non VN || H 8-10, T 7+, S 1-3", montre: "barrage, 7 trèfles" }
+  # en troisième, ouverture légère pour les mains qui ne barrent pas (un barrage y rapporte plus)
+  - 1P:  { si: "leger, P 5+, P >= C", montre: "ouverture légère en troisième" }
+  - 1C:  { si: "leger, C 5+", montre: "ouverture légère en troisième" }
+  - 1K:  { si: "leger, K >= T", montre: "ouverture légère en troisième" }
+  - 1T:  { si: "leger", montre: "ouverture légère en troisième" }
+  - passe: { montre: "pas d'ouverture" }
+  - exemples:
+      - { main: "A765 AX43 A982 3", position: 1, attendu: 1K }     # donne 2 du 23/10
+      - { main: "AR5 D84 RV7 A962", position: 1, attendu: 1SA }
+      - { main: "RD7652 85 X42 V3", position: 1, attendu: 2P }
+      - { main: "RD7652 85 X42 V3", position: 4, attendu: passe }
+      - { main: "5 RX96543 R2 AD5", position: 4, attendu: 1C }             # donne 15 du 30/10 : 12 H, règle des 15 non remplie
+      - { main: "AD984 8 RV63 X62", position: 4, attendu: 1P }             # 10 H + 5 piques
+      - { main: "A5 RV842 RX3 932", position: 4, attendu: passe }          # 11 H + 2 piques
+      - { main: "5 AV96543 R2 R52", position: 4, attendu: 1C }             # 11 H, sept cœurs
+      - { main: "DX82 ARV96 85 72", position: 3, attendu: 1C }             # donne 17 du 30/10 : neuf cartes en majeures
+      - { main: "8 - AD9842 R76321", position: 3, attendu: 1K }            # 9 H, règle des 20
+      - { main: "DX8 ARV96 852 72", position: 3, attendu: passe }          # 10 H + 5 + 3 = 18
+      - { main: "A5 842 R4 RV9732", position: 4, attendu: 1T }             # 11 H, six trèfles
+      - { main: "RD7652 85 X42 V3", position: 1, vul: VN, attendu: passe }   # 7 H : trop faible en VN (vulnérables contre non vulnérables)
+      - { main: "RD7652 85 X42 V3", position: 1, vul: VV, attendu: 2P }
+      - { main: "AV32 RD54 V72 D3", position: 1, attendu: 1K }
+
+# ------------------------------------------------------------------ réponses à 1SA (15–17) et 2SA (20–21)
+# Texas (../conventions/texas.md) et Stayman (../conventions/stayman.md), puis les SA selon
+# le total : 25 pour la manche, 31 pour le quantitatif, 33 pour le petit chelem, 37 pour le grand.
+"1SA":
+  - 2C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: texas }
+  - 2K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: texas }
+  - 2T:  { si: "H 8+, M 4, non forme 4-3-3-3", montre: "Stayman : une majeure 4e, 8+ H", nature: relais, nom: Stayman }
+  - 7SA: { si: "H 22+", montre: "grand chelem : 37+ points ensemble", nature: conclusion }
+  - 6SA: { si: "H 18-21", montre: "petit chelem : 33+ points ensemble", nature: conclusion }
+  - 4SA: { si: "H 16-17", montre: "quantitatif : invite au chelem", nature: invite }
+  - 3SA: { si: "H 10-15", montre: "manche", nature: conclusion }
+  - 2SA: { si: "H 8-9", montre: "invitation à 3SA", nature: invite }
+  - passe: { si: "H 7-", montre: "pas de manche possible" }
+  - exemples:
+      - { main: "RV752 D84 X63 92", attendu: 2C }        # 5 piques : texas
+      - { main: "R752 AD84 X63 92", attendu: 2T }        # 4 cœurs, 4 piques, 9 H : Stayman
+      - { main: "R75 D84 AX63 932", attendu: 2SA }       # 9 H
+      - { main: "R75 D84 AX63 R92", attendu: 3SA }
+
+"2SA":
+  - 3C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: texas }
+  - 3K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: texas }
+  - 3T:  { si: "H 3+, M 4, non forme 4-3-3-3", montre: "Stayman : une majeure 4e", nature: relais, nom: Stayman, source: à confirmer }
+  - 4T:  { si: "T 6+, T >= K, H 9-12", montre: "6+ trèfles, essai de chelem", nature: soutien_lent, source: à confirmer }
+  - 4K:  { si: "K 6+, H 9-12", montre: "6+ carreaux, essai de chelem", nature: soutien_lent, source: à confirmer }
+  - 7SA: { si: "H 17+", montre: "grand chelem", nature: conclusion }
+  - 6SA: { si: "H 13-16", montre: "petit chelem", nature: conclusion }
+  - 4SA: { si: "H 11-12", montre: "quantitatif : invite au chelem", nature: invite }
+  - 3SA: { si: "H 5-10", montre: "manche", nature: conclusion }
+  - passe: { si: "H 4-", montre: "pas de manche possible" }
+  - exemples:
+      - { main: "V8752 84 X63 932", attendu: 3C }        # texas même faible
+      - { main: "R75 D84 X763 V92", attendu: 3SA }
+
+# Réponses de l'ouvreur au Stayman et aux texas
+"1SA - 2T":
+  - 2C:  { si: "C 4+", montre: "4 cœurs, peut avoir 4 piques" }
+  - 2P:  { si: "P 4+", montre: "4 piques, pas 4 cœurs" }
+  - 2K:  { montre: "pas de majeure 4e" }
+"1SA - 2K":
+  - 2C:  { montre: "complète le texas", nature: relais }
+"1SA - 2C":
+  - 2P:  { montre: "complète le texas", nature: relais }
+"2SA - 4T | 2SA - 4K":
+  - exemples:
+      - { main: "2 RV2 642 AV8754", apres: 2SA, attendu: 4T }     # donne 20 du 01/11 (214059)
+"2SA - 3T":
+  - 3C:  { si: "C 4+", montre: "4 cœurs, peut avoir 4 piques", source: à confirmer }
+  - 3P:  { si: "P 4+", montre: "4 piques, pas 4 cœurs", source: à confirmer }
+  - 3K:  { montre: "pas de majeure 4e", source: à confirmer }
+"2SA - 3K":
+  - 3C:  { montre: "complète le texas", nature: relais }
+"2SA - 3C":
+  - 3P:  { montre: "complète le texas", nature: relais }
+
+# ------------------------------------------------------------------ redemande de l'ouvreur après 1T - 1SA, 1K - 1SA
+# Le répondant a 6–10 H sans majeure 4e : l'ouvreur passe avec une main minimum régulière
+# ou 4-4-4-1, répète une 6e, nomme une autre mineure 4e, propose la manche avec 18–19.
+"1N - 1SA":
+  - 2SA: { si: "reg, H 18-19", montre: "18–19 H, régulier, invitation", nature: invite }
+  - 3U:  { si: "U 6+, H 16-18", montre: "16–18 H, 6+ cartes, invitation", nature: invite }
+  - 2K:  { si: "K 4+, H 11-17, irreg", montre: "4+ carreaux, irrégulier", apres: 1T - 1SA }
+  - 2T:  { si: "T 4+, H 11-17, irreg, non forme 4-4-4-1", montre: "4+ trèfles, irrégulier", apres: 1K - 1SA }
+  - 2U:  { si: "U 6+, H 11-15", montre: "6+ cartes, minimum" }
+  - 3SA: { si: "H 18+", montre: "18+ H, manche", nature: conclusion, source: SA }
+  - passe: { si: "H 11-17", montre: "minimum, pas d'enchère utile" }
+  - exemples:
+      - { main: "A765 AX43 A982 3", apres: 1K - 1SA, attendu: passe }   # donne 2 du 23/10 (E)
+      - { main: "AD3 R4 A82 RDV52", apres: 1T - 1SA, attendu: 2SA }
+      - { main: "R4 A3 AD9752 V82", apres: 1K - 1SA, attendu: 2U }
+
+# ------------------------------------------------------------------ réponses à 1♥ / 1♠ (adversaires silencieux)
+# « 1M » vaut pour 1C et 1P ; U = la couleur de l'ouvreur. Une enchère impossible
+# (1P après 1P) est sautée ; « apres: 1P » réserve une règle à une seule des séquences.
+"1M | 1M (contre)":
+  - passe: { si: "U 3+, HLD(U) 5-", montre: "moins de 6 points" }
+  - 4U:  { si: "U 5+, H 5-10, (T 1- || K 1- || C 1- || P 1-)", montre: "fermeture : 5+ atouts, moins de 11 H, un singleton ou une chicane" }
+  # Drury : main passée (siège 1 ou 2), l'ouverture en 3e ou 4e ; 2♣ artificiel (conventions/drury.md)
+  - 2T:  { si: "S 1-2, U 3+, HLD(U) 10-12", montre: "Drury : main passée, 3+ atouts, 10–12 points", nature: drury, nom: Drury, source: à confirmer, apres: 1C | 1P }
+  - 2U:  { si: "U 3+, HLD 6-10", montre: "soutien simple, 6–10 points, 3+ cartes" }
+  - 3U:  { si: "U 3+, HLD 11-12, (U 4+ || non P 5+)", montre: "soutien limite, 11–12 points ; avec trois atouts et cinq piques, 1♠ d'abord", source: à confirmer }
+  - 2C:  { si: "U 3+, HLD 13+, C 5+, C > K, C > T", montre: "13+ points, fit différé", apres: 1P }
+  - 2K:  { si: "U 3+, HLD 13+, K 4+, K > T", montre: "13+ points, fit différé" }
+  - 2T:  { si: "U 3+, HLD 13+, T 4+", montre: "13+ points, fit différé" }
+  - 2K:  { si: "U 3+, HLD 13+, K > T", montre: "13+ points, fit différé" }
+  - 2T:  { si: "U 3+, HLD 13+", montre: "13+ points, fit différé" }
+  - passe: { si: "H 5-", montre: "moins de 6 H" }
+  - 1P:  { si: "H 6+, P 4+", montre: "6+ H, 4+ piques" }
+  - 1SA: { si: "H 6-10", montre: "6–10 H, sans fit" }
+  - 2C:  { si: "H 11+, C 5+, C > K, C > T", montre: "11+ H, 5+ cœurs, forcing", apres: 1P }
+  - 2K:  { si: "H 11+, K 4+, K > T", montre: "11+ H, 4+ carreaux, forcing" }
+  - 2T:  { si: "H 11+, T 4+", montre: "11+ H, 4+ trèfles, forcing" }
+  - 2K:  { si: "H 11+, K > T", montre: "11+ H, forcing" }
+  - 2T:  { si: "H 11+", montre: "11+ H, forcing" }
+  - exemples:
+      - { main: "R82 D75 RV73 X52", apres: 1C, attendu: 2U }     # 9 H, 3 cœurs
+      - { main: "AV82 75 RV73 X52", apres: 1C, attendu: 1P }
+      - { main: "AV82 75 RV73 X52", apres: 1P, attendu: 2U }     # 4 piques, 9 H + 1 (doubleton)
+      - { main: "V82 R7 RV73 DV52", apres: 1P, attendu: 3U }
+      - { main: "RX9832 X9 A632 9", apres: 1P, attendu: 4U }     # 6 atouts, singleton : manche
+      - { main: "754 X5 ARV63 V94", apres: 1P, position: 2, attendu: 2T }   # main passée, 3 atouts, HLD 10 : Drury
+      - { main: "754 X5 ARV63 V94", apres: 1P, attendu: 2U }                # la même, pas passée : soutien simple
+
+# ------------------------------------------------------------------ réponses à 1♣ (adversaires silencieux)
+"1T | 1T (contre)":
+  - passe: { si: "H 0-5", montre: "moins de 6 H" }
+  - 1K:  { si: "H 12+, M 4+, K 5+, K > M", montre: "12+ H, forcing de manche : la plus longue d'abord" }
+  - 1P:  { si: "H 6+, P 5+, P > C", montre: "6+ H, 5+ piques" }
+  - 1C:  { si: "H 6+, C 4+", montre: "6+ H, 4+ cœurs" }
+  - 1P:  { si: "H 6+, P 4+", montre: "6+ H, 4+ piques" }
+  - 1K:  { si: "H 6+, K 4+, (H 6-10 || irreg)", montre: "6+ H, 4+ carreaux" }
+  - 2T:  { si: "H 6-10, T 5+, irreg", montre: "6–10 H, 5+ trèfles" }
+  - 1SA: { si: "H 6-10", montre: "6–10 H, sans majeure 4e" }
+  - 2SA: { si: "reg, H 11-12", montre: "11–12 H, régulier, sans majeure 4e" }
+  - 3SA: { si: "reg, H 13-15", montre: "13–15 H, régulier, sans majeure 4e" }
+  - 3T:  { si: "H 11-12, T 5+", montre: "11–12 H, 5+ trèfles, invitation", source: SA }
+  - 1K:  { si: "H 13+", montre: "13+ H, forcing (carreaux parfois 3 cartes)", source: SA }
+  - exemples:
+      - { main: "X82 D75 RV7 DV53", attendu: 1SA }
+      - { main: "X8 D7 V73 RDV853", attendu: 2T }
+      - { main: "V8 AX98 A4 RDV52", attendu: 1C }     # 12+ H : la majeure, pas 2T (soutien faible)
+      - { main: "D32 DV3 AR AR865", attendu: 1K }     # 19 H sans majeure : forcing
+
+# ------------------------------------------------------------------ réponses à 1♦ (adversaires silencieux)
+"1K | 1K (contre)":
+  - passe: { si: "H 0-5", montre: "moins de 6 H" }
+  - 2T:  { si: "H 12+, M 4+, T 5+, T > M", montre: "12+ H, forcing de manche : la plus longue d'abord" }
+  - 1P:  { si: "H 6+, P 5+, P > C", montre: "6+ H, 5+ piques" }
+  - 1C:  { si: "H 6+, C 4+", montre: "6+ H, 4+ cœurs" }
+  - 1P:  { si: "H 6+, P 4+", montre: "6+ H, 4+ piques" }
+  - 2K:  { si: "H 6-10, K 5+ || H 6-10, K 4, irreg", montre: "6–10 H, soutien carreau",
+           note: "avec une main régulière, 1SA d'abord" }
+  - 1SA: { si: "H 6-10", montre: "6–10 H, sans majeure 4e" }
+  - 2SA: { si: "reg, H 11-12", montre: "11–12 H, régulier, sans majeure 4e" }
+  - 3SA: { si: "reg, H 13-15", montre: "13–15 H, régulier, sans majeure 4e" }
+  - 2T:  { si: "H 11+, T 4+", montre: "11+ H, 4+ trèfles, forcing" }
+  - 3K:  { si: "H 11-12, K 5+", montre: "11–12 H, 5+ carreaux, invitation", source: SA }
+  - 2T:  { si: "H 13+", montre: "13+ H, forcing (trèfles parfois 3 cartes)", source: SA }
+  - exemples:
+      - { main: "VX73 AD32 AV742 -", attendu: 1C }    # 12+ H : la majeure, pas 2K (soutien faible)
+      - { main: "AV8 AX3 ADX84 DV", attendu: 2T }     # 18 H sans majeure : forcing
+      - { main: "V82 D75 RV73 DV5", attendu: 1SA }                 # donne 2 du 23/10 (O)
+      - { main: "V8 75 RV732 D952", attendu: 2K }
+      - { main: "RV82 D7 RV73 X52", attendu: 1P }
+
+# ================================================================== redemandes de l'ouvreur
+# U = la couleur de l'ouvreur, W = celle du répondant. Bicolore cher (« reverse ») : une
+# deuxième couleur plus chère que la première au palier de 2, 17+ HL, forcing.
+
+# ------------------------------------------------------------------ après une réponse au palier de 1
+"1T - 1K":
+  - 2SA: { si: "reg, H 18-19", montre: "18–19 H, régulier", nature: invite }
+  - 1C:  { si: "C 4+, C >= P, H 11-18", montre: "4+ cœurs", source: SA, note: "les majeures 4e d'abord, avant 1SA" }
+  - 1P:  { si: "P 4+, H 11-18", montre: "4+ piques", source: SA }
+  - 1SA: { si: "reg, H 11-14", montre: "12–14 H, régulier, sans majeure 4e", nature: limite }
+  - 2K:  { si: "K 4+, T 4-, H 11-14", montre: "12–14, fit carreau", nature: limite }
+  - 3T:  { si: "T 6+, HL 16-18", montre: "16–18, 6+ trèfles", nature: invite }
+  - 2T:  { si: "HL 11-15, T 6+", montre: "12–15, 6+ trèfles", nature: limite }
+  - 2T:  { si: "H 11-17", montre: "trèfles répétés" }
+  - exemples:
+      - { main: "AV63 R4 D72 AV82", attendu: 1P }
+      - { main: "A63 R74 D72 AV82", attendu: 1SA }
+
+"1N - 1M":                         # 1T - 1C, 1T - 1P, 1K - 1C, 1K - 1P
+  - 4W:  { si: "W 4+, HLD 18+", montre: "18+ points, 4 cartes dans la majeure du répondant", nature: conclusion }
+  - 3W:  { si: "W 4+, HLD 15-17, H 13+", montre: "15–17 points, 4 cartes, invitation", nature: invite }
+  - 2W:  { si: "W 4+, HLD 11-17", montre: "12–14 points, 4 cartes", nature: limite }
+  - 1P:  { si: "P 4+, H 11-18", montre: "4 piques", apres: 1T - 1C | 1K - 1C }
+  - 2SA: { si: "reg, H 18-19", montre: "18–19 H, régulier", nature: invite }
+  - 1SA: { si: "reg, H 11-14", montre: "12–14 H, régulier", nature: limite }
+  - 2C:  { si: "HL 17-21, C 4+, C >= K, T 5-", montre: "bicolore cher, 17+ HL", nature: forcing, apres: 1T - 1P }
+  - 2K:  { si: "HL 17-21, K 4+, T 5-", montre: "bicolore cher, 17+ HL", nature: forcing, apres: 1T - 1C | 1T - 1P }
+  - 2C:  { si: "HL 17-21, C 4+, K 5-", montre: "bicolore cher, 17+ HL", nature: forcing, apres: 1K - 1P }
+  - 2T:  { si: "T 4+, K 5-, H 11-17", montre: "deuxième couleur, 4+ trèfles", apres: 1K - 1C | 1K - 1P }
+  - 3U:  { si: "U 6+, HL 16-18", montre: "16–18, 6+ cartes", nature: invite }
+  - 2U:  { si: "HL 11-15, U 6+", montre: "12–15, 6+ cartes", nature: limite }
+  - 2U:  { si: "H 11-17", montre: "couleur répétée" }
+  - exemples:
+      - { main: "R83 AV74 72 AV82", apres: 1T - 1C, attendu: 2C }   # 4 cœurs, 13 H + 1 : soutien simple
+      - { main: "R83 AV7 D72 R982", apres: 1T - 1C, attendu: 1SA }
+      - { main: "R8 A7 AD732 RV82", apres: 1K - 1P, attendu: 2T }
+
+"1C - 1P":
+  - 4P:  { si: "P 4+, HLD 18+", montre: "18+ points, 4 piques", nature: conclusion }
+  - 3P:  { si: "P 4+, HLD 15-17", montre: "15–17 points, 4 piques", nature: invite }
+  - 2P:  { si: "P 4+, HLD 11-14", montre: "12–14 points, 4 piques", nature: limite }
+  - 2SA: { si: "reg, H 18-19", montre: "18–19 H, régulier", nature: invite }
+  - 1SA: { si: "reg, H 11-14", montre: "12–14 H, régulier", nature: limite }
+  - 2T:  { si: "T 4+, T >= K, C 5-, H 11-17", montre: "deuxième couleur, 4+ trèfles" }
+  - 2K:  { si: "K 4+, C 5-, H 11-17", montre: "deuxième couleur, 4+ carreaux" }
+  - 3C:  { si: "C 6+, HL 16-18", montre: "16–18, 6+ cœurs", nature: invite }
+  - 2C:  { si: "HL 11-15, C 6+", montre: "12–15, 6+ cœurs", nature: limite }
+  - 2C:  { si: "H 11-17", montre: "cœurs répétés" }
+
+# ------------------------------------------------------------------ après un soutien
+"1M - 2U":
+  # bicolore 6-5 : les courtes comptent (mains tirées au hasard, 2026-10-31) ; sur les autres formes, elles coûtent
+  - 4U:  { si: "U 6+, (forme 6-5-1-1 || forme 6-5-2-0 || forme 7-5-1-0), HLD(U) 18+", montre: "6-5, 18+ avec les courtes : manche", nature: conclusion }
+  - 3U:  { si: "U 6+, (forme 6-5-1-1 || forme 6-5-2-0 || forme 7-5-1-0), HLD(U) 15-17", montre: "6-5, 15–17 avec les courtes : invitation", nature: invite }
+  - passe: { si: "HL 14-", montre: "minimum, pas de manche" }
+  - 3U:  { si: "HL 15-17", montre: "15–17, invitation", nature: invite }
+  - 4U:  { si: "HL 18+", montre: "18+, manche", nature: conclusion }
+"1N - 2U":
+  - passe: { si: "HL 14-", montre: "minimum, pas de manche" }
+  - 3SA: { si: "reg, H 18-19", montre: "18–19 H, régulier : 3SA plutôt que 5 en mineure", nature: conclusion, source: SA }
+  - 3U:  { si: "HL 15-17", montre: "15–17, invitation", nature: invite }
+  - 5U:  { si: "HL 18+", montre: "18+, manche", nature: conclusion }
+"1M - 3U":
+  - 4U:  { si: "HL 14+", montre: "accepte l'invitation", nature: conclusion }
+  - passe: { montre: "minimum, refuse l'invitation" }
+"1N - 3U":
+  - 3SA: { si: "H 14+, reg", montre: "accepte, en SA", nature: conclusion, source: SA }
+  - 5U:  { si: "HL 14+", montre: "accepte l'invitation", nature: conclusion }
+  - passe: { montre: "minimum, refuse l'invitation" }
+"1M - 4U":
+  - passe: { montre: "contrat atteint" }
+
+# ------------------------------------------------------------------ après une réponse au palier de 2 (11+, forcing)
+"1M - 2N":                         # 1C - 2T, 1C - 2K, 1P - 2T, 1P - 2K
+  # après Drury (ouverture en 3e ou 4e, le partenaire a passé) : la couleur de l'ouverture au bon palier
+  - 4U:  { si: "S 3-4, HL 15+", montre: "Drury : manche", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: à confirmer }
+  - 3U:  { si: "S 3-4, HL 13-14", montre: "Drury : bonne ouverture, invitation", nature: invite, apres: 1C - 2T | 1P - 2T, source: à confirmer }
+  - 2U:  { si: "S 3-4", montre: "Drury : ouverture minimum ou légère, on s'arrête", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: à confirmer }
+  - 3W:  { si: "W 4+, H 11-21", montre: "fit dans la mineure du répondant", nature: forcing }
+  - 2SA: { si: "reg, H 11-14", montre: "12–14 H, régulier", nature: limite }
+  - 3SA: { si: "reg, H 15-17", montre: "15–17 H, régulier", nature: conclusion, source: SA }
+  - 2C:  { si: "C 4+, P 5-, H 11-17", montre: "deuxième couleur, 4+ cœurs", apres: 1P - 2T | 1P - 2K }
+  - 2K:  { si: "K 4+, U 5-, H 11-17", montre: "deuxième couleur, 4+ carreaux", apres: 1C - 2T | 1P - 2T }
+  - 2P:  { si: "HL 17-21, P 4+, C 5-", montre: "bicolore cher, 17+ HL", nature: forcing, apres: 1C - 2T | 1C - 2K }
+  - 3U:  { si: "U 6+, HL 16-18", montre: "16–18, 6+ cartes" }
+  - 2U:  { si: "HL 11-15, U 5+", montre: "12–15, couleur répétée (5+)" }
+  - 2U:  { montre: "couleur répétée" }
+"1P - 2C":
+  - 3C:  { si: "C 3+, H 11-21", montre: "fit cœur", nature: forcing }
+  - 2SA: { si: "reg, H 11-14", montre: "12–14 H, régulier", nature: limite }
+  - 3SA: { si: "reg, H 15-17", montre: "15–17 H, régulier", nature: conclusion, source: SA }
+  - 3P:  { si: "P 6+, HL 16-18", montre: "16–18, 6+ piques" }
+  - 2P:  { si: "HL 11-15, P 6+", montre: "12–15, 6+ piques" }
+  - 2P:  { montre: "piques répétés" }
+"1K - 2T":
+  - 3T:  { si: "T 4+, H 11-21", montre: "fit trèfle", nature: forcing }
+  - 2SA: { si: "reg, H 11-14", montre: "12–14 H, régulier", nature: limite }
+  - 3SA: { si: "reg, H 15-17", montre: "15–17 H, régulier", nature: conclusion, source: SA }
+  - 2P:  { si: "HL 17-21, P 4+, K 5-", montre: "bicolore cher, 17+ HL", nature: forcing }
+  - 2C:  { si: "HL 17-21, C 4+, K 5-", montre: "bicolore cher, 17+ HL", nature: forcing }
+  - 3K:  { si: "K 6+, HL 16-18", montre: "16–18, 6+ carreaux" }
+  - 2K:  { si: "HL 11-15, K 5+", montre: "12–15, 5+ carreaux" }
+  - 2K:  { montre: "carreaux répétés" }
+
+# ------------------------------------------------------------------ après 2SA ou 3SA du répondant
+"1M - 2SA":
+  - 3SA: { si: "H 14+ || H 13, (bonne T || bonne K || bonne C || bonne P)", montre: "accepte", nature: conclusion }
+  - passe: { montre: "minimum" }
+"1N - 2SA":
+  - 3SA: { si: "H 14+ || H 13, (bonne T || bonne K || bonne C || bonne P)", montre: "accepte", nature: conclusion }
+  - passe: { montre: "minimum" }
+"1M - 3SA":
+  - passe: { montre: "contrat atteint" }
+"1N - 3SA":
+  - passe: { montre: "contrat atteint" }
+
+# ================================================================== redemandes du répondant
+# Le répondant connaît la force et la forme de l'ouvreur : il conclut ou invite.
+# Manche : 25 points ensemble (H pour les SA, HLD avec un fit).
+
+# ------------------------------------------------------------------ après 1SA de l'ouvreur (12–14, régulier)
+"1N - 1M - 1SA":
+  - 4W:  { si: "W 6+, H 13-18", montre: "6+ cartes, manche", nature: conclusion }
+  - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
+  - 3W:  { si: "W 6+, H 11-12", montre: "6+ cartes, 11–12 H, invitation", nature: invite }
+  - 2SA: { si: "H 11-12", montre: "11–12 H, invitation", nature: invite }
+  - 2W:  { si: "W 6+, H 6-10", montre: "6+ cartes, 6–10 H, pour jouer", nature: conclusion }
+  - passe: { si: "H 6-10", montre: "6–10 H, pas de manche" }
+  - exemples:
+      - { main: "R7 AV83 D92 7652", apres: 1T - 1C - 1SA, attendu: passe }
+      - { main: "R7 AV83 D92 V652", apres: 1T - 1C - 1SA, attendu: 2SA }
+      - { main: "R7 AD83 D92 R652", apres: 1T - 1C - 1SA, attendu: 3SA }
+"1C - 1P - 1SA":
+  - 4C:  { si: "C 3+, HLD(C) 13-18", montre: "fit cœur, manche", nature: conclusion }
+  - 4P:  { si: "P 6+, H 13-18", montre: "6+ piques, manche", nature: conclusion }
+  - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
+  - 3C:  { si: "C 3+, HLD(C) 11-12", montre: "fit cœur, invitation", nature: invite }
+  - 3P:  { si: "P 6+, H 11-12", montre: "6+ piques, invitation", nature: invite }
+  - 2SA: { si: "H 11-12", montre: "11–12 H, invitation", nature: invite }
+  - 2P:  { si: "P 6+, H 6-10", montre: "6+ piques, pour jouer", nature: conclusion }
+  - 2C:  { si: "C 2+, H 6-10, irreg", montre: "préférence cœur", nature: conclusion }
+  - passe: { si: "H 6-10", montre: "6–10 H, pas de manche" }
+"1T - 1K - 1SA":
+  - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
+  - 3K:  { si: "K 6+, H 11-12", montre: "6+ carreaux, invitation", nature: invite }
+  - 2SA: { si: "H 11-12", montre: "11–12 H, invitation", nature: invite }
+  - 2K:  { si: "K 6+, H 6-10", montre: "6+ carreaux, pour jouer", nature: conclusion }
+  - passe: { si: "H 6-10", montre: "pas de manche" }
+
+# ------------------------------------------------------------------ l'ouvreur a soutenu (12–14 ; 15–17 ; 18+)
+"1N - 1M - 2W":
+  - 4W:  { si: "HLD 13-18", montre: "manche", nature: conclusion }
+  - 3W:  { si: "HLD 11-12", montre: "invitation", nature: invite }
+  - passe: { si: "HLD(W) 10-", montre: "pas de manche" }
+"1C - 1P - 2W":
+  - 4W:  { si: "HLD 13-18", montre: "manche", nature: conclusion }
+  - 3W:  { si: "HLD 11-12", montre: "invitation", nature: invite }
+  - passe: { si: "HLD(W) 10-", montre: "pas de manche" }
+"1N - 1M - 3W":
+  - 4W:  { si: "HLD 9+", montre: "accepte l'invitation", nature: conclusion }
+  - passe: { montre: "minimum, refuse" }
+"1C - 1P - 3W":
+  - 4W:  { si: "HLD 9+", montre: "accepte l'invitation", nature: conclusion }
+  - passe: { montre: "minimum, refuse" }
+"1N - 1M - 4W":
+  - passe: { montre: "contrat atteint" }
+"1C - 1P - 4W":
+  - passe: { montre: "contrat atteint" }
+"1T - 1K - 2K":
+  - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
+  - 2SA: { si: "H 11-12", montre: "11–12 H, invitation", nature: invite }
+  - passe: { si: "H 10-", montre: "pas de manche" }
+
+# ------------------------------------------------------------------ l'ouvreur a répété sa couleur (12–15, 6+ cartes)
+"1N - 1M - 2U":
+  - 4W:  { si: "W 6+, H 13-18", montre: "6+ cartes, manche", nature: conclusion }
+  - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
+  - 3W:  { si: "W 6+, H 11-12", montre: "6+ cartes, invitation", nature: invite }
+  - 2SA: { si: "H 11-12", montre: "11–12 H, invitation", nature: invite }
+  - 3U:  { si: "U 2+, H 11-12", montre: "fit, invitation", nature: invite }
+  - 2W:  { si: "W 6+, H 6-10", montre: "6+ cartes, pour jouer", nature: conclusion }
+  - passe: { si: "H 10-", montre: "pas de manche" }
+"1T - 1K - 2T":
+  - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
+  - 3K:  { si: "K 6+, H 11-12", montre: "6+ carreaux, invitation", nature: invite }
+  - 2SA: { si: "H 11-12", montre: "11–12 H, invitation", nature: invite }
+  - 3T:  { si: "T 2+, H 11-12", montre: "fit, invitation", nature: invite }
+  - 2K:  { si: "K 6+, H 6-10", montre: "6+ carreaux, pour jouer", nature: conclusion }
+  - passe: { si: "H 10-", montre: "pas de manche" }
+"1C - 1P - 2C":
+  - 4C:  { si: "C 2+, HLD(C) 12-18", montre: "fit cœur, manche", nature: conclusion }
+  - 4P:  { si: "P 6+, H 13-18", montre: "6+ piques, manche", nature: conclusion }
+  - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
+  - 3C:  { si: "C 2+, HLD(C) 10-11", montre: "fit cœur, invitation", nature: invite }
+  - 3P:  { si: "P 6+, H 11-12", montre: "6+ piques, invitation", nature: invite }
+  - 2SA: { si: "H 11-12", montre: "11–12 H, invitation", nature: invite }
+  - 2P:  { si: "P 6+, H 6-10", montre: "6+ piques, pour jouer", nature: conclusion }
+  - passe: { si: "H 10-", montre: "pas de manche" }
+
+# l'ouvreur a nommé une mineure après 1♥ – 1♠ (12–17, 4+ cartes)
+"1C - 1P - 2T | 1C - 1P - 2K":
+  - 4C:  { si: "C 3+, HLD(C) 12-18", montre: "fit cœur, manche", nature: conclusion }
+  - 4P:  { si: "P 6+, H 13-18", montre: "6+ piques, manche", nature: conclusion }
+  - 2K:  { si: "H 11+, non arret K, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1C - 1P - 2T }
+  - 3T:  { si: "H 11+, non arret T, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1C - 1P - 2K }
+  - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
+  - 3C:  { si: "C 3+, HLD(C) 10-11", montre: "fit cœur, invitation", nature: invite }
+  - 3P:  { si: "P 6+, H 11-12", montre: "6+ piques, invitation", nature: invite }
+  - 2SA: { si: "H 11-12", montre: "11–12 H, invitation", nature: invite }
+  - 3T:  { si: "T 4+, H 10-12", montre: "soutien trèfle : invitation", nature: invite, apres: 1C - 1P - 2T }
+  - 3K:  { si: "K 4+, H 10-12", montre: "soutien carreau : invitation", nature: invite, apres: 1C - 1P - 2K }
+  - 2P:  { si: "P 6+, H 6-10", montre: "6+ piques, pour jouer", nature: conclusion }
+  - 2C:  { si: "C 2+, C >= T", montre: "préférence cœur", nature: conclusion, apres: 1C - 1P - 2T }
+  - 2C:  { si: "C 2+, C >= K", montre: "préférence cœur", nature: conclusion, apres: 1C - 1P - 2K }
+  - 2C:  { si: "C 3+", montre: "préférence cœur", nature: conclusion }
+  - passe: { montre: "préfère la mineure" }
+
+# ------------------------------------------------------------------ l'ouvreur a sauté dans sa couleur (16–18, 6+)
+"1N - 1M - 3U":
+  - 3SA: { si: "H 8+", montre: "8+ H, manche", nature: conclusion }
+  - passe: { montre: "minimum" }
+"1T - 1K - 3T":
+  - 3SA: { si: "H 8+", montre: "8+ H, manche", nature: conclusion }
+  - passe: { montre: "minimum" }
+"1C - 1P - 3C":
+  - 4C:  { si: "C 2+, H 8+", montre: "fit, manche", nature: conclusion }
+  - 3SA: { si: "H 8+", montre: "8+ H, manche", nature: conclusion }
+  - passe: { montre: "minimum" }
+
+# ------------------------------------------------------------------ après 2SA de l'ouvreur (18–19, régulier)
+"1N - 1M - 2SA":
+  - 4W:  { si: "W 6+, H 7+", montre: "6+ cartes, manche", nature: conclusion }
+  - 3SA: { si: "H 6+", montre: "manche", nature: conclusion, source: à confirmer }
+  - passe: { montre: "trop faible" }
+"1T - 1K - 2SA":
+  - 3SA: { si: "H 6+", montre: "manche", nature: conclusion, source: à confirmer }
+  - passe: { montre: "trop faible" }
+"1C - 1P - 2SA":
+  - 4C:  { si: "C 3+, H 6+", montre: "fit cœur, manche", nature: conclusion }
+  - 4P:  { si: "P 6+, H 7+", montre: "6+ piques, manche", nature: conclusion }
+  - 3SA: { si: "H 6+", montre: "manche", nature: conclusion, source: à confirmer }
+  - passe: { montre: "trop faible" }
+
+# ================================================================== interventions
+# Entre parenthèses : les enchères adverses (leurs passes sont sous-entendues).
+# Les rôles suivent les enchères : quand les adversaires ouvrent, U est leur couleur ;
+# nous sommes Y (l'intervenant) et Z (son partenaire). Toute la section : à confirmer.
+#   arret U : A, Rx, Dxx ou Vxxx dans la couleur de l'ouvreur
+#   bonne P : 5 piques avec deux honneurs parmi A R D V X, ou 6 piques
+
+# ------------------------------------------------------------------ sur une ouverture de 1 à la couleur (directement)
+"(1T)":
+  - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt trèfle" }
+  - 1P:  { si: "P 5+, P >= C, P >= K, (H 8-16, bonne P || H 10-16)", montre: "5+ piques, 8–16 H" }
+  - 1C:  { si: "C 5+, C >= K, (H 8-16, bonne C || H 10-16)", montre: "5+ cœurs, 8–16 H" }
+  - 1K:  { si: "K 5+, (H 8-16, bonne K || H 10-16)", montre: "5+ carreaux, 8–16 H" }
+  - 2P:  { si: "P 6+, H 6-10, non VN || P 6+, H 8-10", montre: "saut faible, 6 piques" }
+  - 2C:  { si: "C 6+, H 6-10, non VN || C 6+, H 8-10", montre: "saut faible, 6 cœurs" }
+  - 2K:  { si: "K 6+, H 6-10, non VN || K 6+, H 8-10", montre: "saut faible, 6 carreaux" }
+  - contre: { si: "H 12+, U 2-, CP 3+ || H 17+, (CP !1- || H 19+)", montre: "contre d'appel", nature: appel }
+  - passe: { montre: "pas d'intervention" }
+  - exemples:
+      - { main: "AD975 R82 V4 863", attendu: 1P }
+      - { main: "AD9 R82 V43 AV86", attendu: 1SA }
+      - { main: "AD95 R852 RV43 6", attendu: contre }
+
+"(1K)":
+  - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt carreau" }
+  - 1P:  { si: "P 5+, P >= C, (H 8-16, bonne P || H 10-16)", montre: "5+ piques, 8–16 H" }
+  - 1C:  { si: "C 5+, (H 8-16, bonne C || H 10-16)", montre: "5+ cœurs, 8–16 H" }
+  - 2T:  { si: "T 5+, H 11-18, bonne T, non vul nous || T 5+, H 12-18, bonne T", montre: "5+ trèfles, 11–18 H" }
+  - 2P:  { si: "P 6+, H 6-10, non VN || P 6+, H 8-10", montre: "saut faible, 6 piques" }
+  - 2C:  { si: "C 6+, H 6-10, non VN || C 6+, H 8-10", montre: "saut faible, 6 cœurs" }
+  - 3T:  { si: "T 6+, H 6-10, non VN || T 6+, H 8-10", montre: "saut faible, 6 trèfles" }
+  - contre: { si: "H 12+, U 2-, CP 3+ || H 17+, (CP !1- || H 19+)", montre: "contre d'appel", nature: appel }
+  - passe: { montre: "pas d'intervention" }
+
+"(1C)":
+  - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt cœur" }
+  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer }
+  - 1P:  { si: "P 5+, (H 8-16, bonne P || H 10-16)", montre: "5+ piques, 8–16 H" }
+  - 2K:  { si: "K 5+, K >= T, H 11-18, bonne K, non vul nous || K 5+, K >= T, H 12-18, bonne K", montre: "5+ carreaux, 11–18 H" }
+  - 2T:  { si: "T 5+, H 11-18, bonne T, non vul nous || T 5+, H 12-18, bonne T", montre: "5+ trèfles, 11–18 H" }
+  - 2P:  { si: "P 6+, H 6-10, non VN || P 6+, H 8-10", montre: "saut faible, 6 piques" }
+  - 3K:  { si: "K 6+, H 6-10, non VN || K 6+, H 8-10", montre: "saut faible, 6 carreaux" }
+  - 3T:  { si: "T 6+, H 6-10, non VN || T 6+, H 8-10", montre: "saut faible, 6 trèfles" }
+  - contre: { si: "H 12+, U 2-, P 3+ || H 17+, (P !1- || H 19+)", montre: "contre d'appel", nature: appel }
+  - passe: { montre: "pas d'intervention" }
+
+"(1P)":
+  - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt pique" }
+  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer }
+  - 2C:  { si: "C 5+, C >= K, C >= T, H 11-18, bonne C, non vul nous || C 5+, C >= K, C >= T, H 12-18, bonne C", montre: "5+ cœurs, 11–18 H" }
+  - 2K:  { si: "K 5+, K >= T, H 11-18, bonne K, non vul nous || K 5+, K >= T, H 12-18, bonne K", montre: "5+ carreaux, 11–18 H" }
+  - 2T:  { si: "T 5+, H 11-18, bonne T, non vul nous || T 5+, H 12-18, bonne T", montre: "5+ trèfles, 11–18 H" }
+  - 3C:  { si: "C 6+, H 6-10, non VN || C 6+, H 8-10", montre: "saut faible, 6 cœurs" }
+  - 3K:  { si: "K 6+, H 6-10, non VN || K 6+, H 8-10", montre: "saut faible, 6 carreaux" }
+  - 3T:  { si: "T 6+, H 6-10, non VN || T 6+, H 8-10", montre: "saut faible, 6 trèfles" }
+  - contre: { si: "H 12+, U 2-, C 3+ || H 17+, (C !1- || H 19+)", montre: "contre d'appel", nature: appel }
+  - passe: { montre: "pas d'intervention" }
+  - exemples:
+      - { main: "82 AR975 R4 V863", attendu: 2C }
+      - { main: "82 R9753 R4 V863", attendu: passe }
+      - { main: "82 AR975 R4 V863", vul: VN, attendu: passe }   # 11 H vulnérable : il en faut 12
+
+# ------------------------------------------------------------------ sur 1SA (directement)
+"(1SA)":
+  - contre: { si: "H 15+", montre: "punitif, 15+ H", nature: punitif }
+  - 2P:  { si: "P 6+, H 8-16", montre: "6 piques, naturel" }
+  - 2C:  { si: "C 6+, H 8-16", montre: "6 cœurs, naturel" }
+  - 2K:  { si: "K 6+, H 8-16", montre: "6 carreaux, naturel" }
+  - 2T:  { si: "T 6+, H 8-16", montre: "6 trèfles, naturel" }
+  - passe: { montre: "rien à dire sur 1SA" }
+
+# ------------------------------------------------------------------ réponse après une intervention adverse
+# *U : le palier le plus bas dans la couleur de l'ouvreur ; *U+1 : avec un saut.
+# palier(U) 2- : ce palier est 2 au plus. Y est C : l'intervention était à cœur.
+"1M (1x)":
+  - "*Y": { si: "U 4+, HLD(U) 13+, palier(Y) 3-", montre: "cue-bid : 4+ cartes de soutien, 13+ points, forcing de manche", nature: cue, atout: U }
+  - 4U:  { si: "U 3+, HLD 13+", montre: "fit et 13+ points : manche", nature: conclusion }
+  - "*U+1": { si: "U 3+, HLD 11-12, palier(U) 2-", montre: "fit, 11–12 points : invitation", nature: invite }
+  - "*U": { si: "U 3+, HLD 6-10, (palier(U) 2- || U 4+, palier(U) 3-)", montre: "soutien, 6–10 points", nature: limite }
+  - "*U": { si: "U 3+, HLD 11-12, palier(U) 3", montre: "soutien, 11–12 points (le saut est trop haut)", nature: invite }
+  - passe: { si: "U 3+", montre: "fit, mais trop faible pour monter" }
+  - passe: { si: "H 5-", montre: "moins de 6 H" }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik }
+  - "*P": { si: "P 5+, non U est P, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
+  - "*C": { si: "C 5+, non U est C, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
+  - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
+  - "*T": { si: "T 5+, non U est T, non Y est T, (palier(T) 1, H 6+ || palier(T) 2, H 11+)", montre: "5+ trèfles", nature: forcing }
+  - 1SA: { si: "H 8-10, arret Y", montre: "8–10 H, arrêt dans leur couleur", nature: limite }
+  - 2SA: { si: "H 11-12, arret Y", montre: "11–12 H, arrêt : invitation", nature: invite }
+  - 3SA: { si: "H 13+, arret Y", montre: "13+ H, arrêt : manche", nature: conclusion }
+  - passe: { montre: "rien d'adapté après l'intervention" }
+  - exemples:
+      - { main: "R82 D75 RV73 X52", apres: 1C (1P), attendu: 2C }    # soutien simple
+      - { main: "R82 AD75 RV73 52", apres: 1C (1P), attendu: 2P }    # 4 atouts, 13+ : cue-bid
+
+"1M (2x) | 1M (3x)":
+  - "*Y": { si: "U 4+, HLD(U) 13+, palier(Y) 3-", montre: "cue-bid : 4+ cartes de soutien, 13+ points, forcing de manche", nature: cue, atout: U }
+  - 4U:  { si: "U 3+, HLD 13+", montre: "fit et 13+ points : manche", nature: conclusion }
+  - "*U+1": { si: "U 3+, HLD 11-12, palier(U) 2-", montre: "fit, 11–12 points : invitation", nature: invite }
+  - "*U": { si: "U 3+, HLD 6-10, (palier(U) 2- || U 4+, palier(U) 3-)", montre: "soutien, 6–10 points", nature: limite }
+  - "*U": { si: "U 3+, HLD 11-12, palier(U) 3", montre: "soutien, 11–12 points (le saut est trop haut)", nature: invite }
+  - passe: { si: "U 3+", montre: "fit, mais trop faible pour monter" }
+  - passe: { si: "H 5-", montre: "moins de 6 H" }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik }
+  - "*P": { si: "P 5+, non U est P, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
+  - "*C": { si: "C 5+, non U est C, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
+  - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
+  - "*T": { si: "T 5+, non U est T, non Y est T, (palier(T) 1, H 6+ || palier(T) 2, H 11+)", montre: "5+ trèfles", nature: forcing }
+  - 2SA: { si: "H 11-12, arret Y", montre: "11–12 H, arrêt : invitation", nature: invite }
+  - 3SA: { si: "H 13+, arret Y", montre: "13+ H, arrêt : manche", nature: conclusion }
+  - passe: { montre: "rien d'adapté après l'intervention" }
+
+"1N (1x)":
+  - 1SA: { si: "reg, H 8-10, arret Y, non majeure libre", montre: "8–10 H, régulier, arrêt : plutôt que le soutien mineur", nature: limite }
+  - 2SA: { si: "reg, H 11-12, arret Y, non majeure libre", montre: "11–12 H, régulier, arrêt : invitation", nature: invite }
+  - 3SA: { si: "reg, H 13+, arret Y, non majeure libre", montre: "13+ H, régulier, arrêt : manche", nature: conclusion }
+  - 3SA: { si: "U 4+, H 13+, arret Y", montre: "fit mineur, 13+ H, arrêt : manche", nature: conclusion }
+  - "*Y": { si: "U 4+, H 12+, non arret Y, palier(Y) 3-, non majeure libre", montre: "cue-bid : fit mineur, 12+ H, forcing de manche, sans arrêt", nature: cue, atout: U }
+  - "*U+1": { si: "U 4+, HLD 11+, palier(U) 2-", montre: "fit, 11+ points : invitation", nature: invite }
+  - "*U": { si: "U 4+, HLD 6-10, palier(U) 3-", montre: "soutien, 6–10 points", nature: limite }
+  - "*U": { si: "U 4+, HLD 11+, palier(U) 3", montre: "soutien, 11+ points (le saut est trop haut)", nature: invite }
+  - passe: { si: "U 4+", montre: "fit, mais trop faible pour monter" }
+  - passe: { si: "H 5-", montre: "moins de 6 H" }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik }
+  - "*P": { si: "P 5+, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
+  - "*C": { si: "C 5+, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
+  - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
+  - "*T": { si: "T 5+, non U est T, non Y est T, (palier(T) 1, H 6+ || palier(T) 2, H 11+)", montre: "5+ trèfles", nature: forcing }
+  - "*Y": { si: "H 12+, non arret Y, palier(Y) 3-, non majeure libre", montre: "cue-bid : 12+ H, forcing de manche, demande l'arrêt pour jouer à SA", nature: cue, atout: U }
+  - 1SA: { si: "H 8-10, arret Y", montre: "8–10 H, arrêt dans leur couleur", nature: limite }
+  - 2SA: { si: "H 11-12, arret Y", montre: "11–12 H, arrêt : invitation", nature: invite }
+  - 3SA: { si: "H 13+, arret Y", montre: "13+ H, arrêt : manche", nature: conclusion }
+  - passe: { montre: "rien d'adapté après l'intervention" }
+  - exemples:
+      - { main: "R8 AV75 RV73 X52", apres: 1T (1P), attendu: contre }   # Spoutnik : 4 cœurs
+      - { main: "85 AD2 RD2 D8632", apres: 1T (1P), attendu: 2P }       # 13 H, pas d'arrêt : cue-bid
+
+"1N (2x) | 1N (3x)":
+  - 2SA: { si: "reg, H 11-12, arret Y, non majeure libre", montre: "11–12 H, régulier, arrêt : invitation", nature: invite }
+  - 3SA: { si: "reg, H 13+, arret Y, non majeure libre", montre: "13+ H, régulier, arrêt : manche", nature: conclusion }
+  - 3SA: { si: "U 4+, H 13+, arret Y", montre: "fit mineur, 13+ H, arrêt : manche", nature: conclusion }
+  - "*Y": { si: "U 4+, H 12+, non arret Y, palier(Y) 3-, non majeure libre", montre: "cue-bid : fit mineur, 12+ H, forcing de manche, sans arrêt", nature: cue, atout: U }
+  - "*U+1": { si: "U 4+, HLD 11+, palier(U) 2-", montre: "fit, 11+ points : invitation", nature: invite }
+  - "*U": { si: "U 4+, HLD 6-10, palier(U) 3-", montre: "soutien, 6–10 points", nature: limite }
+  - "*U": { si: "U 4+, HLD 11+, palier(U) 3", montre: "soutien, 11+ points (le saut est trop haut)", nature: invite }
+  - passe: { si: "U 4+", montre: "fit, mais trop faible pour monter" }
+  - passe: { si: "H 5-", montre: "moins de 6 H" }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik }
+  - "*P": { si: "P 5+, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
+  - "*C": { si: "C 5+, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
+  - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
+  - "*T": { si: "T 5+, non U est T, non Y est T, (palier(T) 1, H 6+ || palier(T) 2, H 11+)", montre: "5+ trèfles", nature: forcing }
+  - "*Y": { si: "H 12+, non arret Y, palier(Y) 3-, non majeure libre", montre: "cue-bid : 12+ H, forcing de manche, demande l'arrêt pour jouer à SA", nature: cue, atout: U }
+  - 2SA: { si: "H 11-12, arret Y", montre: "11–12 H, arrêt : invitation", nature: invite }
+  - 3SA: { si: "H 13+, arret Y", montre: "13+ H, arrêt : manche", nature: conclusion }
+  - passe: { montre: "rien d'adapté après l'intervention" }
+
+"1SA (2x)":
+  - passe: { si: "H 5-", montre: "moins de 6 H" }
+  - 3SA: { si: "H 10+, arret Y", montre: "10+ H, arrêt : manche", nature: conclusion }
+  - 2SA: { si: "H 8-9, arret Y, reg", montre: "8–9 H, arrêt : invitation", nature: invite }
+  - 3P: { si: "P 5+, non Y est P, H 10+, palier(P) 2", montre: "5+ piques, 10+ H", nature: forcing, source: à confirmer }
+  - 3C: { si: "C 5+, non Y est C, H 10+, palier(C) 2", montre: "5+ cœurs, 10+ H", nature: forcing, source: à confirmer }
+  - "*P": { si: "P 5+, non Y est P, (palier(P) 2- || palier(P) 3, H 10+)", montre: "5+ piques", nature: limite, source: à confirmer }
+  - "*C": { si: "C 5+, non Y est C, (palier(C) 2- || palier(C) 3, H 10+)", montre: "5+ cœurs", nature: limite, source: à confirmer }
+  - "*K": { si: "K 5+, non Y est K, (palier(K) 2- || palier(K) 3, H 10+)", montre: "5+ carreaux", nature: limite, source: à confirmer }
+  - "*T": { si: "T 5+, non Y est T, (palier(T) 2- || palier(T) 3, H 10+)", montre: "5+ trèfles", nature: limite, source: à confirmer }
+  - passe: { montre: "rien d'adapté après l'intervention sur 1SA" }
+
+# ================================================================== le partenaire de l'intervenant (avance)
+# Ils ont ouvert (U), le partenaire est intervenu (Y) ; nous sommes Z. W : le répondant adverse.
+
+# ------------------------------------------------------------------ après une intervention à la couleur
+"(1x) 1x | (1x) 2x | (1x) 3x | (1x) 1x (contre) | (1x) 2x (contre)":
+  - "*U+1": { si: "Y 4+, HLD(Y) 12+, (Y est C || Y est P), palier(U) 2-", montre: "cue-bid à saut : 4+ atouts, 12+ points", nature: cue, atout: Y }
+  - "*U": { si: "Y 3+, HLD(Y) 11+, (Y est C || Y est P), palier(U) 3-", montre: "cue-bid : fit, 11+ points, demande la force de l'intervention", nature: cue, atout: Y }
+  - 4Y:  { si: "Y 3+, HLD 13+, (Y est C || Y est P)", montre: "fit et 13+ points : manche", nature: conclusion }
+  - "*Y+1": { si: "Y 3+, HLD 11-12, palier(Y) 2-", montre: "fit, 11–12 points : invitation", nature: invite }
+  - "*Y+1": { si: "Y 3+, HLD 13+, palier(Y) 2-, (Y est T || Y est K)", montre: "fit mineur, 13+ points", nature: forcing }
+  - "*Y+1": { si: "Y 4+, HLD 5-10, (Y est C || Y est P), palier(Y) 2-", montre: "soutien à saut : barrage, 4+ atouts", nature: conclusion }
+  - "*Y": { si: "Y 3+, HLD 7-10, palier(Y) 3-", montre: "soutien, 7–10 points", nature: limite }
+  - "*Y": { si: "Y 3+, HLD 11-12, palier(Y) 3", montre: "soutien, 11–12 points (le saut est trop haut)", nature: invite }
+  - "*Y": { si: "Y 3+, HLD 13+, palier(Y) 3, (Y est T || Y est K)", montre: "fit mineur, 13+ points", nature: forcing }
+  - passe: { si: "Y 3+", montre: "fit, mais trop faible" }
+  - 1SA: { si: "reg, arret U, H 8-11", montre: "8–11 H, arrêt dans leur couleur", nature: limite }
+  - 2SA: { si: "reg, arret U, H 12-14", montre: "12–14 H, arrêt : invitation", nature: invite }
+  - 3SA: { si: "reg, arret U, H 15+", montre: "15+ H, arrêt : manche", nature: conclusion }
+  - "*P": { si: "P 5+, non Y est P, non U est P, (palier(P) 1, H 8+ || palier(P) 2, H 10+)", montre: "5+ piques" }
+  - "*C": { si: "C 5+, non Y est C, non U est C, (palier(C) 1, H 8+ || palier(C) 2, H 10+)", montre: "5+ cœurs" }
+  - "*K": { si: "K 5+, non Y est K, non U est K, (palier(K) 1, H 8+ || palier(K) 2, H 10+)", montre: "5+ carreaux" }
+  - "*T": { si: "T 5+, non Y est T, non U est T, (palier(T) 1, H 8+ || palier(T) 2, H 10+)", montre: "5+ trèfles" }
+  - passe: { montre: "rien à ajouter" }
+  - exemples:
+      - { main: "R82 D752 RV7 X52", apres: (1T) 1P, attendu: 2P }       # soutien simple
+      - { main: "R82 AD75 R87 X52", apres: (1T) 1P, attendu: 2T }       # 12 points : cue-bid
+      - { main: "R842 AD75 R87 52", apres: (1T) 1P, attendu: 3T }       # 13 points, 4 atouts : cue-bid à saut
+
+"(1x) 1x (2x) | (1x) 1x (3x) | (1x) 2x (3x)":     # le répondant adverse a nommé une couleur
+  - 4Y:  { si: "Y 3+, HLD 13+, (Y est C || Y est P)", montre: "fit et 13+ points : manche", nature: conclusion }
+  - "*Y+1": { si: "Y 3+, HLD 11-12, palier(Y) 2-", montre: "fit, 11–12 points : invitation", nature: invite }
+  - "*Y+1": { si: "Y 3+, HLD 13+, palier(Y) 2-, (Y est T || Y est K)", montre: "fit mineur, 13+ points", nature: forcing }
+  - "*Y": { si: "Y 3+, HLD 7-10, palier(Y) 3-", montre: "soutien, 7–10 points", nature: limite }
+  - "*Y": { si: "Y 3+, HLD 11-12, palier(Y) 3", montre: "soutien, 11–12 points (le saut est trop haut)", nature: invite }
+  - "*Y": { si: "Y 3+, HLD 13+, palier(Y) 3, (Y est T || Y est K)", montre: "fit mineur, 13+ points", nature: forcing }
+  - passe: { si: "Y 3+", montre: "fit, mais trop faible" }
+  - 2SA: { si: "reg, arret W, H 12-14", montre: "12–14 H, arrêt : invitation", nature: invite }
+  - 3SA: { si: "reg, arret W, H 15+", montre: "15+ H, arrêt : manche", nature: conclusion }
+  - "*P": { si: "P 5+, non Y est P, non U est P, non W est P, palier(P) 2-, H 10+", montre: "5+ piques" }
+  - "*C": { si: "C 5+, non Y est C, non U est C, non W est C, palier(C) 2-, H 10+", montre: "5+ cœurs" }
+  - "*K": { si: "K 5+, non Y est K, non U est K, non W est K, palier(K) 2-, H 10+", montre: "5+ carreaux" }
+  - "*T": { si: "T 5+, non Y est T, non U est T, non W est T, palier(T) 2-, H 10+", montre: "5+ trèfles" }
+  - passe: { montre: "rien à ajouter" }
+
+# ------------------------------------------------------------------ après un contre d'appel du partenaire
+# On nomme sa meilleure couleur, une majeure 4e d'abord : au palier le plus bas avec 0–8 H,
+# avec un saut avec 9–11 H, à la manche avec 12+ H. 1SA : 6–9 H, arrêt, sans majeure 4e.
+"(1x) contre | (2x) passe contre":
+  - 4P:  { si: "H 12+, P 4+, P >= C, non U est P", montre: "12+ H, 4+ piques : manche", nature: conclusion }
+  - 4C:  { si: "H 12+, C 4+, non U est C", montre: "12+ H, 4+ cœurs : manche", nature: conclusion }
+  - 3SA: { si: "H 12+, arret U", montre: "12+ H, arrêt : manche", nature: conclusion }
+  - 1SA: { si: "H 6-9, arret U, reg, (C 3- || U est C), (P 3- || U est P)", montre: "6–9 H, arrêt, sans majeure 4e", nature: limite }
+  - "*P+1": { si: "H 9+, P 4+, P >= C, non U est P, palier(P) 2-", montre: "9–11 H, 4+ piques", nature: invite }
+  - "*C+1": { si: "H 9+, C 4+, non U est C, palier(C) 2-", montre: "9–11 H, 4+ cœurs", nature: invite }
+  - "*K+1": { si: "H 9+, K 4+, K >= T, non U est K, palier(K) 2-", montre: "9–11 H, 4+ carreaux", nature: invite }
+  - "*T+1": { si: "H 9+, T 4+, non U est T, palier(T) 2-", montre: "9–11 H, 4+ trèfles", nature: invite }
+  - "*P": { si: "H 8-, P 4+, P >= C, non U est P", montre: "0–8 H, 4+ piques", nature: limite }
+  - "*C": { si: "H 8-, C 4+, non U est C", montre: "0–8 H, 4+ cœurs", nature: limite }
+  - "*K": { si: "H 8-, K >= T, non U est K", montre: "0–8 H, carreaux", nature: limite }
+  - "*T": { si: "H 8-, non U est T", montre: "0–8 H, trèfles", nature: limite }
+  - "*K": { si: "H 8-, non U est K", montre: "0–8 H, carreaux", nature: limite }
+  - "*C": { si: "H 8-, non U est C", montre: "0–8 H, cœurs", nature: limite }
+  - "*P": { si: "non U est P, P 4+", montre: "meilleure couleur, piques" }
+  - "*C": { si: "non U est C, C 4+", montre: "meilleure couleur, cœurs" }
+  - "*K": { si: "non U est K", montre: "meilleure couleur, carreaux" }
+  - "*T": { si: "non U est T", montre: "meilleure couleur, trèfles" }
+  - exemples:
+      - { main: "V852 D74 X63 952", apres: (1K) contre, attendu: 1P }
+      - { main: "AV82 D74 X63 R52", apres: (1K) contre, attendu: 2P }
+      - { main: "D82 R74 DV63 952", apres: (1C) contre, attendu: 1SA }      # arrêt R74, régulier
+
+"(1x) contre (1x) | (1x) contre (2x)":            # le répondant adverse a parlé : on n'est plus obligé
+  - passe: { si: "H 5-", montre: "faible, libéré par l'enchère adverse" }
+  - 4P:  { si: "H 12+, P 4+, P >= C, non U est P, non W est P", montre: "12+ H, 4+ piques : manche", nature: conclusion }
+  - 4C:  { si: "H 12+, C 4+, non U est C, non W est C", montre: "12+ H, 4+ cœurs : manche", nature: conclusion }
+  - 3SA: { si: "H 12+, arret U, arret W", montre: "12+ H, arrêts : manche", nature: conclusion }
+  - "*P+1": { si: "H 9+, P 4+, P >= C, non U est P, non W est P, palier(P) 2-", montre: "9–11 H, 4+ piques", nature: invite }
+  - "*C+1": { si: "H 9+, C 4+, non U est C, non W est C, palier(C) 2-", montre: "9–11 H, 4+ cœurs", nature: invite }
+  - "*P": { si: "P 4+, P >= C, non U est P, non W est P, palier(P) 2-", montre: "4+ piques", nature: limite }
+  - "*C": { si: "C 4+, non U est C, non W est C, palier(C) 2-", montre: "4+ cœurs", nature: limite }
+  - "*K": { si: "K 5+, non U est K, non W est K, palier(K) 2-", montre: "5+ carreaux", nature: limite }
+  - "*T": { si: "T 5+, non U est T, non W est T, palier(T) 2-", montre: "5+ trèfles", nature: limite }
+  - passe: { montre: "rien d'adapté" }
+
+# ================================================================== réveil
+# 1x – passe – passe : on « emprunte » 3 points au partenaire (zones 3 points plus basses).
+"(1x) passe":
+  - 1SA: { si: "reg, H 12-15, arret U", montre: "12–15 H en réveil, régulier, arrêt" }
+  - "*P": { si: "P 5+, P >= C, non U est P, (palier(P) 1, (H 5-13, bonne P || H 7-13) || palier(P) 2, H 8-13, bonne P)", montre: "réveil, 5+ piques", nature: reveil }
+  - "*C": { si: "C 5+, non U est C, (palier(C) 1, (H 5-13, bonne C || H 7-13) || palier(C) 2, H 8-13, bonne C)", montre: "réveil, 5+ cœurs", nature: reveil }
+  - "*K": { si: "K 5+, K >= T, non U est K, (palier(K) 1, (H 5-13, bonne K || H 7-13) || palier(K) 2, H 8-13, bonne K)", montre: "réveil, 5+ carreaux", nature: reveil }
+  - "*T": { si: "T 5+, non U est T, (palier(T) 1, (H 5-13, bonne T || H 7-13) || palier(T) 2, H 8-13, bonne T)", montre: "réveil, 5+ trèfles", nature: reveil }
+  - contre: { si: "H 9+, U 2-, (C 3+ || U est C), (P 3+ || U est P) || H 14+", montre: "contre de réveil", nature: appel }
+  - passe: { montre: "laisse jouer" }
+  - exemples:
+      - { main: "AV975 82 R84 863", apres: (1K) passe, attendu: 1P }    # 8 H : réveil à 1♠
+      - { main: "AV9 D82 R84 R863", apres: (1T) passe, attendu: 1SA }   # 13 H en réveil
+
+"(1SA) passe":
+  - contre: { si: "H 15+", montre: "réveil, 15+ H", nature: punitif }
+  - 2P:  { si: "P 6+, H 5+", montre: "6 piques" }
+  - 2C:  { si: "C 6+, H 5+", montre: "6 cœurs" }
+  - 2K:  { si: "K 6+, H 5+", montre: "6 carreaux" }
+  - 2T:  { si: "T 6+, H 5+", montre: "6 trèfles" }
+  - passe: { montre: "laisse jouer" }
+
+# ================================================================== l'ouvreur après une intervention
+# ------------------------------------------------------------------ le répondant a passé
+"1x (1x) passe | 1x (2x) passe | 1x (3x) passe":
+  - 4U:  { si: "U 7+, HL 19+, (U est C || U est P)", montre: "7+ cartes, 19+ HL : manche", nature: conclusion }
+  - "*U": { si: "U 6+, (palier(U) 2- || palier(U) 3, HL 16+), HL 11-18", montre: "6+ cartes, répète en concurrence" }
+  - contre: { si: "HL 17+, Y 2-", montre: "contre de réveil, 17+, court dans leur couleur", nature: appel }
+  - passe: { montre: "rien à ajouter" }
+"1x (contre) passe":
+  - 4U:  { si: "U 7+, HL 19+, (U est C || U est P)", montre: "7+ cartes, 19+ HL : manche", nature: conclusion }
+  - "*U": { si: "U 6+", montre: "6+ cartes, répète" }
+  - passe: { montre: "rien à ajouter" }
+
+# ------------------------------------------------------------------ après le Spoutnik du partenaire
+"1x (1x) contre | 1x (2x) contre":
+  - "*P+1": { si: "P 4+, HL 16+, non U est P, non Y est P", montre: "4 piques, 16+", nature: invite }
+  - "*P": { si: "P 4+, HL 11-15, non U est P, non Y est P", montre: "4 piques, 12–15", nature: limite }
+  - "*C+1": { si: "C 4+, HL 16+, non U est C, non Y est C", montre: "4 cœurs, 16+", nature: invite }
+  - "*C": { si: "C 4+, HL 11-15, non U est C, non Y est C", montre: "4 cœurs, 12–15", nature: limite }
+  - "*SA": { si: "reg, arret Y, H 11-14", montre: "12–14 H, régulier, arrêt dans leur couleur", nature: limite }
+  - "*U": { si: "palier(U) 3-, HL 11-15, U 5+", montre: "12–15, 5+ cartes, répète sa couleur", nature: limite }
+  - "*U": { si: "palier(U) 3-", montre: "répète sa couleur", nature: limite }
+  - passe: { montre: "trop haut pour répéter" }
+
+# ------------------------------------------------------------------ après notre intervention à 1SA (15–18)
+# Enchères naturelles ; Stayman et texas « en place » : à confirmer.
+"(1x) 1SA":
+  - 4C:  { si: "C 6+, H 8+, non U est C", montre: "6+ cœurs : manche", nature: conclusion, source: à confirmer }
+  - 4P:  { si: "P 6+, H 8+, non U est P", montre: "6+ piques : manche", nature: conclusion, source: à confirmer }
+  - 3SA: { si: "H 9-15", montre: "9+ H : manche", nature: conclusion, source: à confirmer }
+  - 2SA: { si: "H 7-8", montre: "7–8 H : invitation", nature: invite, source: à confirmer }
+  - "*P": { si: "P 5+, H 0-7, non U est P", montre: "5+ piques, pour jouer", nature: conclusion, source: à confirmer }
+  - "*C": { si: "C 5+, H 0-7, non U est C", montre: "5+ cœurs, pour jouer", nature: conclusion, source: à confirmer }
+  - "*K": { si: "K 5+, H 0-7, non U est K", montre: "5+ carreaux, pour jouer", nature: conclusion, source: à confirmer }
+  - "*T": { si: "T 5+, H 0-7, non U est T", montre: "5+ trèfles, pour jouer", nature: conclusion, source: à confirmer }
+  - passe: { si: "H 6-", montre: "pas de manche" }
+
+# ------------------------------------------------------------------ intervention sur un deux faible ou un barrage
+"(2K) | (2C) | (2P) | (2C) passe | (2P) passe":
+  - "*P": { si: "P 5+, P >= C, non U est P, palier(P) 2, H 11-16, bonne P", montre: "5+ piques, 11–16 H" }
+  - "*C": { si: "C 5+, non U est C, palier(C) 2, H 11-16, bonne C", montre: "5+ cœurs, 11–16 H" }
+  - "*P": { si: "P 5+, non U est P, palier(P) 3, H 14-17, bonne P", montre: "5+ piques, 14–17 H", source: à confirmer }
+  - "*C": { si: "C 5+, non U est C, palier(C) 3, H 14-17, bonne C", montre: "5+ cœurs, 14–17 H", source: à confirmer }
+  - "*K": { si: "K 5+, K >= T, non U est K, palier(K) 3, H 14-17, bonne K", montre: "5+ carreaux, 14–17 H", source: à confirmer }
+  - "*T": { si: "T 5+, non U est T, palier(T) 3, H 14-17, bonne T", montre: "5+ trèfles, 14–17 H", source: à confirmer }
+  - contre: { si: "H 12+, U 2-, (C 3+ || U est C), (P 3+ || U est P) || H 17+", montre: "contre d'appel", nature: appel }
+  - passe: { montre: "pas d'intervention" }
+
+"(3x) | (3x) passe":
+  - "*P": { si: "P 6+, non U est P, palier(P) 3-4, H 10-17, bonne P", montre: "6+ piques, 10–17 H", source: à confirmer }
+  - "*C": { si: "C 6+, non U est C, palier(C) 3-4, H 10-17, bonne C", montre: "6+ cœurs, 10–17 H", source: à confirmer }
+  - "*K": { si: "K 6+, non U est K, palier(K) 3-4, H 10-17, bonne K, K >= T", montre: "6+ carreaux, 10–17 H", source: à confirmer }
+  - "*T": { si: "T 6+, non U est T, palier(T) 3-4, H 10-17, bonne T", montre: "6+ trèfles, 10–17 H", source: à confirmer }
+  - contre: { si: "H 15+, U 2-, (C 3+ || U est C), (P 3+ || U est P) || H 20+", montre: "contre d'appel sur barrage", nature: appel }
+  - passe: { montre: "pas d'intervention au palier de 3" }
+  - exemples:
+      - { main: "ARDV53 95 873 D5", apres: (3C), attendu: 3P }     # donne 9 du 01/11 (224232)
+
+# ------------------------------------------------------------------ le répondant après sa réponse au palier de 2 (11+)
+# Montrer d'abord une majeure 4e encore inconnue, puis conclure à SA ou dans le fit.
+"1K - 2T - 2K":
+  - 2C:  { si: "C 4+, C >= P, H 11+", montre: "4+ cœurs", nature: forcing }
+  - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing }
+  - 3SA: { si: "H 13+", montre: "13+ H : manche", nature: conclusion }
+  - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
+  - 3T:  { si: "T 6+", montre: "6+ trèfles", nature: limite }
+  - 3K:  { si: "K 3+", montre: "fit carreau", nature: invite }
+  - 2SA: { montre: "sans enchère meilleure", nature: invite }
+  - exemples:
+      - { main: "RD85 DVX V AR532", attendu: 2P }       # donne 8 du 23/10 : la majeure avant 3SA
+"1K - 2T - 2SA":
+  - 3SA: { si: "H 12+", montre: "12+ H : manche", nature: conclusion }
+  - passe: { montre: "minimum" }
+"1K - 2T - 2C | 1K - 2T - 2P":
+  - 4UM: { si: "UM 4+, HLD(UM) 13+", montre: "fit dans la majeure de l'ouvreur : manche", nature: conclusion }
+  - 3UM: { si: "UM 4+, HLD(UM) 11-12", montre: "fit dans la majeure de l'ouvreur : invitation", nature: invite }
+  - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing, apres: 1K - 2T - 2C }
+  - 3SA: { si: "H 13+", montre: "13+ H : manche", nature: conclusion }
+  - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
+  - 3T:  { si: "T 6+", montre: "6+ trèfles", nature: limite }
+  - 2SA: { montre: "sans enchère meilleure", nature: invite }
+"1C - 2T - 2K":
+  - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing }
+  - exemples:
+      - { main: "D9763 - R5 ADVX83", apres: 1C - 2T - 2K, attendu: 2P }    # donne 9 du 01/11 (214059)
+"1C - 2T - 3C | 1P - 2T - 3P":
+  - 4U:  { si: "S 1-2, HLD(U) 11+", montre: "Drury : maximum, accepte", nature: conclusion, source: à confirmer }
+  - passe: { si: "S 1-2", montre: "Drury : minimum, refuse" }
+"1M - 2N - 2U":
+  - 4U:  { si: "U 3+, HLD 13+", montre: "fit : manche", nature: conclusion }
+  - 3U:  { si: "U 3+, HLD 11-12", montre: "fit : invitation", nature: invite }
+  - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing, apres: 1C - 2T - 2C | 1C - 2K - 2C }
+  - 3SA: { si: "H 13+", montre: "13+ H : manche", nature: conclusion }
+  - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
+  - 3W:  { si: "W 6+", montre: "6+ cartes", nature: limite }
+  - 2SA: { montre: "sans enchère meilleure", nature: invite }
+"1M - 2N - 2SA":
+  - 4U:  { si: "U 3+, H 12+", montre: "fit : manche", nature: conclusion }
+  - 3SA: { si: "H 12+", montre: "12+ H : manche", nature: conclusion }
+  - passe: { montre: "minimum" }
+
+"1K - 1C - 1P - 1SA | 1T - 1C - 1P - 1SA | 1T - 1K - 1C - 1SA | 1T - 1K - 1P - 1SA":
+  - passe: { si: "H 16-, non (U 6+), non (W 4+)", montre: "12–16 H : on joue 1SA" }
+
+"(1x) 1x passe (2x)":
+  - "*Y": { si: "Y 7+, H 12+, palier(Y) 2-", montre: "7+ cartes : répète en concurrence", nature: limite, source: à confirmer }
+
+# ------------------------------------------------------------------ l'intervenant au tour suivant (partenaire muet)
+"(1x) 1x (contre) passe (2x) | (1x) 2x (contre) passe (2x) | (1x) 1x (1x) passe (2x) | (1x) 2x (2x) passe (2x)":
+  - "*Y": { si: "Y 6+, H 14+, palier(Y) 3-", montre: "6+ cartes, 14+ H : répète en concurrence", nature: limite, source: à confirmer }
+  - passe: { montre: "intervention normale : on laisse" }
+
+# ------------------------------------------------------------------ après notre 2SA bicolore mineur
+"(1M) 2SA | (1M) passe (2M) 2SA":
+  - 5K:  { si: "K 4+, K >= T, H 11+", montre: "fit carreau, 11+ H : manche", nature: conclusion, source: à confirmer }
+  - 5T:  { si: "T 4+, H 11+", montre: "fit trèfle, 11+ H : manche", nature: conclusion, source: à confirmer }
+  - 3K:  { si: "K >= T", montre: "préférence carreau", nature: conclusion, source: à confirmer }
+  - 3T:  { montre: "préférence trèfle", nature: conclusion, source: à confirmer }
+
+# ================================================================== suites constructives (plan : a-faire.md)
+# ------------------------------------------------------------------ 1.1 l'ouvreur après 1M – 1SA (6–10, pas de fit)
+"1M - 1SA":
+  - 2SA: { si: "reg, H 18-19", montre: "18–19 H, régulier : invitation", nature: invite }
+  - 3U:  { si: "U 6+, HL 16-19", montre: "16–19, 6+ cartes : invitation", nature: invite }
+  - 4U:  { si: "U 7+, HL 19+", montre: "7+ cartes, 19+ HL : manche", nature: conclusion }
+  - 2P:  { si: "P 4+, HL 17-21", montre: "bicolore cher, 17+ HL, 4 piques", nature: forcing, apres: 1C - 1SA }
+  - 2U:  { si: "U 6+, HL 11-15", montre: "12–15, 6+ cartes", nature: limite }
+  - passe: { si: "reg, H 11-17", montre: "10–17 H, régulier : on joue 1SA" }
+  - 2C:  { si: "C 4+, H 11-19", montre: "4+ cœurs, 12–19", apres: 1P - 1SA }
+  - 2K:  { si: "K 4+, K >= T, H 11-19", montre: "4+ carreaux, 12–19" }
+  - 2T:  { si: "T 4+, H 11-19", montre: "4+ trèfles, 12–19" }
+  - 2U:  { montre: "couleur répétée" }
+  - exemples:
+      - { main: "R7 AV875 D92 R52", apres: 1C - 1SA, attendu: passe }
+      - { main: "R7 AV8752 D92 R5", apres: 1C - 1SA, attendu: 2C }
+      - { main: "R7 AV875 D92 RV52", apres: 1C - 1SA, attendu: 2T }
+      - { main: "AD2 ADX52 R43 98", apres: 1C - 1SA, attendu: passe }   # 15 H, 5-3-3-2
+
+# ------------------------------------------------------------------ 1.2 le répondant après le Stayman et les texas
+# U : la majeure de l'ouvreur (réponse au Stayman) ou celle du texas. Avec un fit et le
+# chelem en vue (18+ points), le moteur garde son Blackwood (étape 4 du plan).
+"1SA - 2T - 2C | 1SA - 2T - 2P":
+  - 4U:  { si: "U 4+, HLD(U) 10-17", montre: "fit : manche", nature: conclusion }
+  - 3U:  { si: "U 4+, HLD(U) 8-9", montre: "fit : invitation", nature: invite }
+  - 6SA: { si: "non U 4+, H 18+", montre: "pas de fit, 33+ points : petit chelem", nature: conclusion }
+  - 3SA: { si: "non U 4+, H 10-17", montre: "pas de fit : manche à SA", nature: conclusion }
+  - 2SA: { si: "non U 4+, H 8-9", montre: "pas de fit : invitation", nature: invite }
+"1SA - 2T - 2K":
+  - 6SA: { si: "H 18+", montre: "33+ points : petit chelem", nature: conclusion }
+  - 3SA: { si: "H 10-17", montre: "manche à SA", nature: conclusion }
+  - 2SA: { si: "H 8-9", montre: "invitation", nature: invite }
+"1SA - 2K - 2C | 1SA - 2C - 2P":
+  - 6U:  { si: "U 6+, H 18+", montre: "6+ cartes, 33+ points : petit chelem", nature: conclusion }
+  - 4SA: { si: "H 16+", montre: "quantitatif : invite au chelem", nature: invite }
+  - 4U:  { si: "H 10-15, (U 6+ || irreg)", montre: "manche dans la majeure", nature: conclusion }
+  - 3SA: { si: "H 10-15", montre: "manche : choix entre 3SA et 4 dans la majeure (5 cartes)", nature: choix, atout: U }
+  - 3U:  { si: "U 6+, H 8-9", montre: "6 cartes : invitation", nature: invite }
+  - 2SA: { si: "H 8-9", montre: "5 cartes : invitation", nature: invite, atout: U }
+  - passe: { si: "H 7-", montre: "pas de manche" }
+  - exemples:
+      - { main: "AV752 D84 X63 92", apres: 1SA - 2C - 2P, attendu: passe }
+      - { main: "AV752 D84 V63 92", apres: 1SA - 2C - 2P, attendu: 2SA }
+      - { main: "AV752 D84 R63 R2", apres: 1SA - 2C - 2P, attendu: 3SA }
+"2SA - 3T - 3C | 2SA - 3T - 3P":
+  - 4U:  { si: "U 4+, HLD(U) 5-12", montre: "fit : manche", nature: conclusion }
+  - 6SA: { si: "non U 4+, H 13+", montre: "pas de fit : petit chelem", nature: conclusion }
+  - 3SA: { si: "non U 4+, H 5-12", montre: "pas de fit : manche à SA", nature: conclusion }
+"2SA - 3T - 3K":
+  - 6SA: { si: "H 13+", montre: "petit chelem", nature: conclusion }
+  - 3SA: { si: "H 5-12", montre: "manche à SA", nature: conclusion }
+"2SA - 3K - 3C | 2SA - 3C - 3P":
+  - 6U:  { si: "U 6+, H 13+", montre: "6+ cartes : petit chelem", nature: conclusion }
+  - 4SA: { si: "H 11+", montre: "quantitatif : invite au chelem", nature: invite }
+  - 4U:  { si: "H 5-10, (U 6+ || irreg)", montre: "manche dans la majeure", nature: conclusion }
+  - 3SA: { si: "H 5-10", montre: "manche : choix entre 3SA et 4 dans la majeure", nature: choix, atout: U }
+  - passe: { si: "H 4-", montre: "pas de manche" }
+
+# ------------------------------------------------------------------ 1.3 le répondant au tour suivant
+# l'ouvreur a montré une majeure 4e au palier de 1 (12–18)
+"1N - 1C - 1P | 1T - 1K - 1C | 1T - 1K - 1P":
+  - 4UM: { si: "UM 4+, HLD(UM) 13+", montre: "fit dans la majeure de l'ouvreur : manche", nature: conclusion }
+  - 3UM: { si: "UM 4+, HLD(UM) 11-12", montre: "fit : invitation", nature: invite }
+  - 2UM: { si: "UM 4+, HLD(UM) 6-10", montre: "fit : soutien simple", nature: limite }
+  - 1P:  { si: "P 4+, H 6+", montre: "4+ piques", nature: forcing, apres: 1T - 1K - 1C }
+  - 3W:  { si: "W 6+, H 11-12", montre: "6+ cartes : invitation", nature: invite }
+  - 2K:  { si: "H 11+, non arret K", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1T - 1C - 1P }
+  - 2T:  { si: "H 11+, non arret T", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1K - 1C - 1P }
+  - 2C:  { si: "H 11+, non arret C", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1T - 1K - 1P }
+  - 3SA: { si: "H 13-18", montre: "13+ H : manche", nature: conclusion }
+  - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
+  - 2W:  { si: "W 6+, H 6-10", montre: "6+ cartes : pour jouer", nature: conclusion }
+  - 2W:  { si: "W 5+, H 6-10, irreg", montre: "5+ cartes, main irrégulière : pour jouer", nature: conclusion }
+  - 1SA: { si: "H 6-10, TKCP !1-", montre: "6–10 H, pas de fit, sans singleton", nature: limite }
+  - 2U:  { montre: "préférence pour la mineure de l'ouvreur", nature: limite }
+
+# après 1M – 1SA, l'ouvreur a nommé une mineure (4+) ou 2♥ après 1♠
+"1M - 1SA - 2T | 1M - 1SA - 2K":
+  - "3UN": { si: "UN 5+, H 9-10", montre: "soutien de la mineure : invitation", nature: invite }
+  - 2SA: { si: "H 10, U 2-", montre: "maximum, pas de préférence : invitation", nature: invite }
+  - 2U:  { si: "U >= UN", montre: "préférence (autant de cartes dans la majeure)", nature: conclusion }
+  - passe: { montre: "préfère la deuxième couleur" }
+"1P - 1SA - 2C":
+  - 3C:  { si: "C 4+, H 9-10", montre: "soutien cœur : invitation", nature: invite }
+  - 2P:  { si: "P >= C", montre: "préférence pique", nature: conclusion }
+  - passe: { montre: "préfère les cœurs" }
+"1M - 1SA - 2U":
+  - 3U:  { si: "U 2+, H 9-10", montre: "maximum avec deux cartes : invitation", nature: invite }
+  - passe: { montre: "contrat atteint" }
+"1M - 1SA - 2SA":
+  - 4U:  { si: "U 3+, H 8+", montre: "3 cartes et un maximum : manche dans la majeure", nature: conclusion }
+  - 3SA: { si: "H 8+", montre: "maximum : manche", nature: conclusion }
+  - passe: { montre: "minimum" }
+"1M - 1SA - 3U":
+  - 4U:  { si: "U 2+, H 8+", montre: "maximum : manche", nature: conclusion }
+  - 3SA: { si: "H 8+", montre: "maximum, singleton : 3SA", nature: conclusion }
+  - passe: { montre: "minimum" }
+
+# l'ouvreur invite après un soutien simple (1M – 2M – 3M)
+"1M - 2U - 3U":
+  - 4U:  { si: "HLD 8+", montre: "maximum du soutien simple : manche", nature: conclusion }
+  - passe: { montre: "minimum : refuse" }
+
+# ------------------------------------------------------------------ 1.4 réponses aux deux faibles et aux barrages
+"2M":
+  - 4U:  { si: "U 3+, HLD(U) 16+ || U 2, HLD(U) 17+", montre: "fit et assez de points : manche", nature: conclusion }
+  - passe: { montre: "pas de manche face au deux faible" }
+"2M - 3U | 2M - 4U":
+  - passe: { montre: "le partenaire a décidé" }
+"3M":
+  - 4U:  { si: "U 2+, HLD(U) 15+", montre: "fit : manche", nature: conclusion }
+  - passe: { montre: "pas de manche face au barrage" }
+"3N":
+  - 3SA: { si: "U 2+, H 15-18", montre: "15+ H, la couleur du barrage pour faire des levées : 3SA", nature: conclusion, source: à confirmer }
+  - 5U:  { si: "U 2+, HLD(U) 19+", montre: "fit : manche en mineure", nature: conclusion }
+  - passe: { montre: "pas de manche face au barrage" }
+"3M - 4U | 3N - 3SA | 3N - 5U":
+  - passe: { montre: "le partenaire a décidé" }
+
+# ------------------------------------------------------------------ 1.5 ouvertures fortes : 2♣ et 2♦
+"2T":
+  - 2K:  { montre: "relais d'attente", nature: relais }
+"2T - 2K":
+  - 2SA: { si: "reg, H 22-23", montre: "22–23 H, régulier", nature: invite }
+  - 2P:  { si: "P 5+, P >= C, P >= K, P >= T", montre: "5+ piques" }
+  - 2C:  { si: "C 5+, C >= K, C >= T", montre: "5+ cœurs" }
+  - 3K:  { si: "K 5+, K >= T", montre: "5+ carreaux" }
+  - 3T:  { si: "T 5+", montre: "5+ trèfles" }
+  - 2SA: { montre: "main forte sans couleur 5e", nature: invite }
+"2K":
+  - 2C:  { montre: "relais", nature: relais, source: à confirmer }
+# Après 2♣ – 2♦ – 2♥, quatre piques se nomment avant 3SA (le fit 4-4 à pique) ; le reste, le code.
+"2T - 2K - 2C":
+  - 2P:  { si: "P 4+, C 2-", montre: "4+ piques, forcing", nature: forcing, source: à confirmer }
+  - exemples:
+      - { main: "6542 72 A876 V84", apres: 2T - 2K - 2C, attendu: 2P }     # donne 4 du 01/11
+"2T - 2K - 2C - 2P":
+  - 3C:  { si: "C 6+, P 3-", montre: "6+ cœurs, forcing", nature: forcing, source: à confirmer }
+
+
+# ------------------------------------------------------------------ après 2♣ – 2♦ : le répondant (22–23 régulier, ou main forte)
+# Après 2♣ – 2♦ – 2SA, le système de 2SA, deux points de moins chez le répondant ; U devient UM
+# (U serait le trèfle artificiel de 2♣).
+"2T - 2K - 2SA":
+  - 3C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: texas }
+  - 3K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: texas }
+  - 3T:  { si: "H 1+, M 4, non forme 4-3-3-3", montre: "Stayman : une majeure 4e", nature: relais, nom: Stayman, source: à confirmer }
+  - 7SA: { si: "H 15+", montre: "grand chelem", nature: conclusion }
+  - 6SA: { si: "H 11-14", montre: "petit chelem", nature: conclusion }
+  - 4SA: { si: "H 9-10", montre: "quantitatif : invite au chelem", nature: invite }
+  - 3SA: { si: "H 3-8", montre: "manche", nature: conclusion }
+  - passe: { si: "H 2-", montre: "pas de manche possible" }
+"2T - 2K - 2SA - 3T":
+  - 3C:  { si: "C 4+", montre: "4 cœurs, peut avoir 4 piques", source: à confirmer }
+  - 3P:  { si: "P 4+", montre: "4 piques, pas 4 cœurs", source: à confirmer }
+  - 3K:  { montre: "pas de majeure 4e", source: à confirmer }
+"2T - 2K - 2SA - 3K":
+  - 3C:  { montre: "complète le texas", nature: relais }
+"2T - 2K - 2SA - 3C":
+  - 3P:  { montre: "complète le texas", nature: relais }
+"2T - 2K - 2SA - 3T - 3C | 2T - 2K - 2SA - 3T - 3P":
+  - 4UM: { si: "UM 4+, HLD(UM) 3-10", montre: "fit : manche", nature: conclusion }
+  - 6SA: { si: "non UM 4+, H 11+", montre: "pas de fit : petit chelem", nature: conclusion }
+  - 3SA: { si: "non UM 4+, H 3-10", montre: "pas de fit : manche à SA", nature: conclusion }
+"2T - 2K - 2SA - 3T - 3K":
+  - 6SA: { si: "H 11+", montre: "petit chelem", nature: conclusion }
+  - 3SA: { si: "H 3-10", montre: "manche à SA", nature: conclusion }
+"2T - 2K - 2SA - 3K - 3C | 2T - 2K - 2SA - 3C - 3P":
+  - 6UM: { si: "UM 6+, H 11+", montre: "6+ cartes : petit chelem", nature: conclusion }
+  - 4SA: { si: "H 9+", montre: "quantitatif : invite au chelem", nature: invite }
+  - 4UM: { si: "H 3-8, (UM 6+ || irreg)", montre: "manche dans la majeure", nature: conclusion }
+  - 3SA: { si: "H 3-8", montre: "manche : choix entre 3SA et 4 dans la majeure", nature: choix, atout: UM }
+  - passe: { si: "H 2-", montre: "pas de manche" }
+# ================================================================== 2. en défense, après la réponse adverse
+# Ils ont ouvert (U) et répondu (W) ; le partenaire a passé. On évite leurs deux couleurs.
+"(1x) passe (1x) | (1x) passe (2x)":
+  - 1SA: { si: "reg, H 15-18, arret U, arret W", montre: "15–18 H, régulier, arrêts dans leurs deux couleurs" }
+  - "*P": { si: "P 5+, non U est P, non W est P, (palier(P) 1, H 8-16, bonne P || palier(P) 2, H 11-16, bonne P)", montre: "5+ piques" }
+  - "*C": { si: "C 5+, non U est C, non W est C, (palier(C) 1, H 8-16, bonne C || palier(C) 2, H 11-16, bonne C)", montre: "5+ cœurs" }
+  - "*K": { si: "K 5+, non U est K, non W est K, palier(K) 2, H 11-16, bonne K", montre: "5+ carreaux" }
+  - "*T": { si: "T 5+, non U est T, non W est T, palier(T) 2, H 11-16, bonne T", montre: "5+ trèfles" }
+  # au palier de 3 après leur soutien, avec six cartes (mains tirées au hasard, 2026-10-31 : +1,7 IMP)
+  - "*C": { si: "C 6+, non U est C, non W est C, palier(C) 3, H 11-16", montre: "6+ cœurs" }
+  - "*K": { si: "K 6+, K >= T, non U est K, non W est K, palier(K) 3, H 11-16", montre: "6+ carreaux" }
+  - "*T": { si: "T 6+, non U est T, non W est T, palier(T) 3, H 11-16", montre: "6+ trèfles" }
+  - 2SA: { si: "K 5+, T 5+, H 10-18, (U est C || U est P), (W est C || W est P)", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer }
+  - contre: { si: "H 12+, (T 4+ || U est T || W est T), (K 4+ || U est K || W est K), (C 4+ || U est C || W est C), (P 4+ || U est P || W est P)", montre: "contre : 4+ cartes dans les deux couleurs restantes", nature: appel }
+  - passe: { montre: "pas d'intervention" }
+"(1x) passe (1SA)":
+  - "*P": { si: "P 5+, non U est P, H 11-16, bonne P", montre: "5+ piques" }
+  - "*C": { si: "C 5+, non U est C, H 11-16, bonne C", montre: "5+ cœurs" }
+  - "*K": { si: "K 5+, non U est K, H 11-16, bonne K", montre: "5+ carreaux" }
+  - "*T": { si: "T 5+, non U est T, H 11-16, bonne T", montre: "5+ trèfles" }
+  - contre: { si: "H 13+, U 2-", montre: "contre : 13+ H, court dans la couleur d'ouverture", nature: appel }
+  - passe: { montre: "pas d'intervention" }
+"(1SA) passe (2x)":
+  - passe: { montre: "pas d'intervention sur leur Stayman ou leur texas" }
+
+# ------------------------------------------------------------------ 2.2 en défense, au tour suivant
+"(1x) passe (1x) passe (1x) | (1x) passe (1x) passe (2x) | (1x) passe (1x) passe (1SA) | (1x) passe (1x) passe (2SA) | (1x) passe (1SA) passe (2x) | (1x) passe (2x) passe (2x) | (1x) passe (2x) passe (3x) | (1SA) passe (2x) passe (2x) | (1SA) passe (2x) passe (3x)":
+  - passe: { montre: "ils continuent leur dialogue : on passe" }
+"(1M) passe (2U) passe | (1N) passe (2U) passe":
+  - contre: { si: "H 12+, U 2-", montre: "réveil : contre, court dans leur couleur", nature: appel }
+  - "*P": { si: "P 5+, non U est P, palier(P) 2-, H 8-15", montre: "réveil : 5+ piques" }
+  - "*C": { si: "C 5+, non U est C, palier(C) 2-, H 8-15", montre: "réveil : 5+ cœurs" }
+  - "*K": { si: "K 5+, non U est K, palier(K) 2-, H 8-15", montre: "réveil : 5+ carreaux" }
+  - passe: { montre: "laisse jouer leur partielle" }
+"(2T) | (2T) passe (2K) | (1x) passe (3x)":
+  - passe: { montre: "pas d'intervention" }
+
+# ------------------------------------------------------------------ 1.3 (suite) répondant après la deuxième couleur de l'ouvreur
+"1K - 1M - 2T":
+  - 2P:  { si: "H 11+, non arret P, P 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, apres: 1K - 1C - 2T }
+  - 2C:  { si: "H 11+, non arret C, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1K - 1P - 2T }
+  - 3SA: { si: "H 13-18", montre: "13+ H : manche", nature: conclusion }
+  - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
+  - 3T:  { si: "T 4+, H 10-12", montre: "soutien trèfle : invitation", nature: invite }
+  - 2W:  { si: "W 6+, H 6-10", montre: "6+ cartes : pour jouer", nature: conclusion }
+  - 2K:  { si: "K >= T", montre: "préférence carreau", nature: conclusion }
+  - passe: { montre: "préfère les trèfles" }
+"1N - 1M - 2U - 2SA":
+  - 3SA: { si: "HL 14+", montre: "maximum : accepte", nature: conclusion }
+  - 3U:  { montre: "minimum, 6+ cartes : refuse", nature: conclusion }
+
+
+# ------------------------------------------------------------------ l'ouvreur répond à la 4e couleur forcing
+# 4e couleur : 11+ H, forcing, souvent sans arrêt dans cette couleur. L'ouvreur montre d'abord
+# 3 cartes dans la couleur du répondant, puis l'arrêt (SA), puis une couleur 6e ; sinon il répète.
+"1T - 1C - 1P - 2K":
+  - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
+  - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
+  - 3SA: { si: "arret K, H 15+", montre: "arrêt carreau, 15+ H", nature: conclusion }
+  - 2SA: { si: "arret K", montre: "arrêt carreau, 12–14 H", nature: limite }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt carreau", nature: forcing }
+  - "*U": { montre: "pas d'arrêt carreau ni de soutien : répète sa couleur", nature: forcing }
+"1K - 1C - 1P - 2T":
+  - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
+  - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
+  - 3SA: { si: "arret T, H 15+", montre: "arrêt trèfle, 15+ H", nature: conclusion }
+  - 2SA: { si: "arret T", montre: "arrêt trèfle, 12–14 H", nature: limite }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt trèfle", nature: forcing }
+  - "*U": { montre: "pas d'arrêt trèfle ni de soutien : répète sa couleur", nature: forcing }
+"1T - 1K - 1P - 2C":
+  - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
+  - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
+  - 3SA: { si: "arret C, H 15+", montre: "arrêt cœur, 15+ H", nature: conclusion }
+  - 2SA: { si: "arret C", montre: "arrêt cœur, 12–14 H", nature: limite }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt cœur", nature: forcing }
+  - "*U": { montre: "pas d'arrêt cœur ni de soutien : répète sa couleur", nature: forcing }
+"1K - 1C - 2T - 2P":
+  - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
+  - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
+  - 3SA: { si: "arret P, H 15+", montre: "arrêt pique, 15+ H", nature: conclusion }
+  - 2SA: { si: "arret P", montre: "arrêt pique, 12–14 H", nature: limite }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt pique", nature: forcing }
+  - "*U": { montre: "pas d'arrêt pique ni de soutien : répète sa couleur", nature: forcing }
+"1K - 1P - 2T - 2C":
+  - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
+  - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
+  - 3SA: { si: "arret C, H 15+", montre: "arrêt cœur, 15+ H", nature: conclusion }
+  - 2SA: { si: "arret C", montre: "arrêt cœur, 12–14 H", nature: limite }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt cœur", nature: forcing }
+  - "*U": { montre: "pas d'arrêt cœur ni de soutien : répète sa couleur", nature: forcing }
+
+"1C - 1P - 2T - 2K":
+  - "*P+1": { si: "P 3, H 15+", montre: "3 cartes à pique, 15+ H", nature: forcing }
+  - "*P":  { si: "P 3", montre: "3 cartes à pique", nature: forcing }
+  - 3SA: { si: "arret K, H 15+", montre: "arrêt carreau, 15+ H", nature: conclusion }
+  - "*SA": { si: "arret K", montre: "arrêt carreau, 12–14 H", nature: limite }
+  - "*C": { si: "C 6+", montre: "6+ cœurs, pas d'arrêt carreau", nature: forcing }
+  - "*T": { si: "T 5+", montre: "5+ trèfles, pas d'arrêt carreau", nature: forcing }
+  - "*C": { montre: "pas d'arrêt carreau ni de soutien : répète ses cœurs", nature: forcing }
+"1C - 1P - 2K - 3T":
+  - "*P+1": { si: "P 3, H 15+", montre: "3 cartes à pique, 15+ H", nature: forcing }
+  - "*P":  { si: "P 3", montre: "3 cartes à pique", nature: forcing }
+  - 3SA: { si: "arret T, H 15+", montre: "arrêt trèfle, 15+ H", nature: conclusion }
+  - "*SA": { si: "arret T", montre: "arrêt trèfle, 12–14 H", nature: limite }
+  - "*C": { si: "C 6+", montre: "6+ cœurs, pas d'arrêt trèfle", nature: forcing }
+  - "*K": { si: "K 5+", montre: "5+ carreaus, pas d'arrêt trèfle", nature: forcing }
+  - "*C": { montre: "pas d'arrêt trèfle ni de soutien : répète ses cœurs", nature: forcing }
+
+# ------------------------------------------------------------------ le répondant après le 2SA de l'ouvreur (12–14 H, arrêt)
+# 4e couleur (11+ H) puis 2SA : 23 points au moins. Le fit dans la couleur de l'ouvreur donne des
+# levées de longueur : avec 11 H et quatre cartes à deux gros honneurs (AR, AD, RD : 5+ H dans la couleur), la manche.
+"1T - 1C - 1P - 2K - 2SA | 1K - 1C - 1P - 2T - 2SA | 1T - 1K - 1P - 2C - 2SA | 1K - 1C - 2T - 2P - 2SA | 1K - 1P - 2T - 2C - 2SA | 1C - 1P - 2T - 2K - 2SA":
+  - 3SA: { si: "H 12+ || U 4+, H(U) 5+", montre: "manche", nature: conclusion }
+  - passe: { montre: "11 H sans fit : 2SA suffit" }
+  - exemples:
+      - { main: "VX4 RX63 AR63 32", apres: 1K - 1C - 2T - 2P - 2SA, attendu: 3SA }     # donne 2 du 01/11
+      - { main: "VX4 RX63 AR6 432", apres: 1K - 1C - 2T - 2P - 2SA, attendu: passe }
+      - { main: "ARV V764 86 DX76", apres: 1T - 1C - 1P - 2K - 2SA, attendu: passe }      # donne 7 du 01/11
+
+# ------------------------------------------------------------------ contrats atteints : on passe
+"1M - 3U - 4U | 1SA - 3SA | 1SA - 4C | 1SA - 4P | 2SA - 3SA | 1N - 2SA - 3SA":
+  - passe: { montre: "contrat atteint" }
+"(2SA) | (1SA) passe (3SA) | (1M) passe (3U) passe (4U) | (1M) passe (2U) passe (4U) | (1M) passe (4U) | 2M passe (contre) | 2M (contre)":
+  - passe: { montre: "rien à ajouter" }
+
+# ------------------------------------------------------------------ 3.2 le répondant après une intervention à 1SA ; l'ouvreur quand ils interviennent après notre réponse
+"1x (1SA)":
+  - contre: { si: "H 9+", montre: "9+ H : punitif", nature: punitif, source: à confirmer }
+  - "*U": { si: "U 4+, HLD 6-8 || U 3+, HLD 6-8, (U est C || U est P)", montre: "soutien, 6–8 points", nature: limite }
+  - "*P": { si: "P 6+, non U est P, H 5-8", montre: "6+ piques, pour jouer" }
+  - "*C": { si: "C 6+, non U est C, H 5-8", montre: "6+ cœurs, pour jouer" }
+  - passe: { montre: "rien d'adapté" }
+"1x - 1x (1x) | 1x - 1x (2x)":
+  - "*Z": { si: "W 4+, reg, H 18-19, (W est C || W est P), palier(Z) 3-", montre: "cue-bid : 4 cartes de soutien, 18–19 H, régulier", nature: cue, atout: W }
+  - "*W+1": { si: "W 4+, HLD(W) 15-17, (W est C || W est P)", montre: "4 cartes, 15–17 : invitation", nature: invite }
+  - "*W": { si: "W 4+, (W est C || W est P), palier(W) 2-", montre: "4 cartes : soutien", nature: limite }
+  - "*SA": { si: "reg, H 11-14, arret Z, palier(SA) 1", montre: "12–14 H, régulier, arrêt dans leur couleur", nature: limite }
+  - "*U+1": { si: "U 6+, HL 16-18, palier(U) 2-", montre: "6+ cartes, 16–18 HL : saut", nature: limite }
+  - "*U": { si: "U 6+, palier(U) 2-", montre: "6+ cartes" }
+  - passe: { montre: "rien d'adapté : le partenaire reparlera" }

@@ -119,26 +119,30 @@ CSS_CARTES = """
 .eventail .groupe { margin-right: 26px; }
 .eventail .groupe:last-child { margin-right: 16px; }
 .groupe.colonne .carte { width: 34px; height: 46px; margin-right: -15px; padding: 2px 4px; font-size: 15px; }
-.dos { width: 46px; height: 66px; border-radius: 6px; border: 2px solid #fff; outline: 1px solid #9aa5b1;
-  background: repeating-linear-gradient(45deg, #2f5d8c 0 4px, #3d6fa3 4px 8px); }
-.dos-ligne .dos + .dos { margin-left: -32px; }
-.dos-colonne .dos { width: 66px; height: 46px; } .dos-colonne .dos + .dos { margin-top: -34px; }
+.dos { width: 32px; height: 46px; border-radius: 4px; border: 2px solid #fff; outline: 1px solid #c3cbd4;
+  background: repeating-linear-gradient(45deg, #9aa8b8 0 3px, #b0bccA 3px 6px); }
+.dos-ligne .dos + .dos { margin-left: -22px; }
+.dos-colonne .dos { width: 46px; height: 32px; } .dos-colonne .dos + .dos { margin-top: -23px; }
+.main-grande .carte { width: 55px; height: 79px; font-size: 20px; margin-right: -22px; }
+.main-grande .groupe { margin-right: 30px; }
+.main-grande.a-vous { filter: drop-shadow(0 0 6px rgba(242, 183, 5, .9)); }
+.onglet.eteint { background: #d9d9d6 !important; color: #9a9a96 !important; }
 .onglet.indice { background: #fff; color: #1f6b45; display: flex; align-items: center; gap: 2px; }
 .sa { color: #2b2b2b; background: #eceff1; } .pique { color: #1f3fa0; background: #e3eaf8; }
 .coeur { color: #c0141c; background: #fbe4e4; } .carreau { color: #c86a00; background: #fff0d6; }
 .trefle { color: #1d7a35; background: #e1f2e5; }
-.carton { position: relative; width: 54px; height: 36px; padding: 3px 6px; border: 1px solid #8e99a4; border-radius: 5px;
+.carton { position: relative; width: 64px; height: 42px; padding: 3px 6px; border: 1px solid #8e99a4; border-radius: 5px;
   font-size: 15px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.25); display: flex; align-items: flex-start;
   justify-content: flex-start; line-height: 1.1; }
-.carton.passe { background: #2e7d32; border-color: #1f5e24; color: #fff; font-size: 12px; }
+.carton.passe { background: #2e7d32; border-color: #1f5e24; color: #fff; font-size: 14px; }
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
-.pile { display: flex; align-items: center; justify-content: center; min-height: 36px; min-width: 60px; }
-.pile.vers-bas { flex-direction: column; } .pile.vers-bas .carton + .carton { margin-top: -14px; }
+.pile { display: flex; align-items: center; justify-content: center; min-height: 42px; min-width: 70px; }
+.pile.vers-bas { flex-direction: column; } .pile.vers-bas .carton + .carton { margin-top: -18px; }
 .pile.vers-haut { flex-direction: column-reverse; } .pile.vers-haut .carton { align-items: flex-end; }
 .pile.vers-haut .carton + .carton { margin-bottom: -14px; }
-.pile.vers-droite { flex-direction: row; } .pile.vers-droite .carton + .carton { margin-left: -20px; }
+.pile.vers-droite { flex-direction: row; } .pile.vers-droite .carton + .carton { margin-left: -24px; }
 .pile.vers-gauche { flex-direction: row-reverse; } .pile.vers-gauche .carton { justify-content: flex-end; }
 .pile.vers-gauche .carton + .carton { margin-right: -20px; }
 .boite-encheres { background: #c0392b; border-radius: 12px; padding: 8px; }
@@ -152,7 +156,7 @@ CSS_CARTES = """
 .onglet { min-width: 44px; padding: 4px 8px; border-radius: 6px 6px 2px 2px; font-size: 14px; font-weight: 700; color: #fff;
   text-align: center; cursor: pointer; }
 .onglet.passe { background: #2e7d32; } .onglet.contre { background: #e53935; } .onglet.surcontre { background: #1565c0; }
-.onglet.eteint { opacity: .35; cursor: default; }
+.onglet.eteint { cursor: default; }
 @keyframes pense { 50% { opacity: .35; } }
 .pense { animation: pense 1s ease-in-out infinite; }
 """
@@ -851,27 +855,35 @@ def page():
                 f"<div></div>{case(haut)}<div></div>{case(gauche)}{etui(p.d, places)}{case(droite)}<div></div>{case(bas)}<div></div></div>")
 
     def etui(d, places, petit=False):
-        """L'étui de la donne au centre, debout comme un vrai étui : chaque place en toutes lettres, les côtés écrits en
-        travers ; fond rouge si son camp est vulnérable, vert sinon ; le donneur s'appelle « Donneur » ; le joueur qui
-        réfléchit clignote."""
+        """L'étui de la donne au centre, comme un vrai étui : Nord et Sud toujours sur les petits côtés (debout quand
+        Nord-Sud sont en haut et en bas, couché sinon), leurs bandes sur toute la largeur, Est et Ouest entre elles ;
+        chaque nom se lit depuis sa place ; fond rouge si son camp est vulnérable, vert sinon ; le donneur écrit
+        « Donneur » en jaune ; le joueur qui réfléchit clignote."""
         v = d["vul"]; vul = lambda x: v == "Tous" or v == ("N-S" if x in "NS" else "E-O")
-        w, L, h, f = (72, 85, 22, 12) if petit else ETUI    # 84 × 149 : 9:16   # w : largeur, L : hauteur des côtés, h : épaisseur des bandes
-        haut = places[0]                                      # chaque étiquette se lit depuis sa place : celle d'en face à l'envers
-        def case(x, cote=None):
+        l, L, h, f = (84, 149, 22, 12) if petit else ETUI      # l × L : l'étui (9:16), h : épaisseur des bandes
+        haut, gauche, droite, bas = places
+        debout = haut in "NS"
+        W, H = (l, L) if debout else (L, l)
+        if debout:                                            # grid-area : ligne, colonne, ligne de fin, colonne de fin
+            place = {haut: "1 / 1 / 2 / 4", bas: "3 / 1 / 4 / 4", gauche: "2 / 1 / 3 / 2", droite: "2 / 3 / 3 / 4"}
+        else:                                                 # Nord et Sud à gauche et à droite, Est-Ouest entre eux
+            place = {gauche: "1 / 1 / 4 / 2", droite: "1 / 3 / 4 / 4", haut: "1 / 2 / 2 / 3", bas: "3 / 2 / 4 / 3"}
+        def bande(x):
             nom = "<span style='color:#ffd54a'>Donneur</span>" if x == d["donneur"] else SIEGE[x]   # le donneur en jaune
             fond = "#c0141c" if vul(x) else "#2e7d32"
-            taille = f"width:{h}px;height:{L}px;writing-mode:vertical-rl;" + ("transform:rotate(180deg);" if cote == "gauche" else "") \
-                if cote else f"width:{w}px;height:{h}px;" + ("transform:rotate(180deg);" if x == haut else "")
-            return (f"<div class='{'pense' if jeu.get('pense') == x else ''}' style='{taille}display:flex;align-items:center;"
-                    f"justify-content:center;border-radius:5px;font-size:{f}px;font-weight:700;color:#fff;background:{fond}'>{nom}</div>")
-        haut, gauche, droite, bas = places
-        return (f"<div title='En rouge les camps vulnérables, en vert les autres' style='display:grid;"
-                f"grid-template-columns:{h}px {w - 2 * h - 8}px {h}px;grid-template-rows:{h}px {L}px {h}px;gap:4px;padding:6px;"
-                f"border-radius:8px;background:#5d6d7e;align-items:center;justify-items:center;box-shadow:0 2px 4px rgba(0,0,0,.25)'>"
-                f"<div style='grid-column:1 / 4'>{case(haut)}</div>{case(gauche, 'gauche')}<div></div>{case(droite, 'droite')}"
-                f"<div style='grid-column:1 / 4'>{case(bas)}</div></div>")   # les côtés juste sous le haut : pas de coins vides
+            if x in (haut, bas):
+                forme = "width:100%;height:100%;" + ("transform:rotate(180deg);" if x == haut else "")
+            else:
+                forme = "width:100%;height:100%;writing-mode:vertical-rl;" + ("transform:rotate(180deg);" if x == gauche else "")
+            return (f"<div class='{'pense' if jeu.get('pense') == x else ''}' style='grid-area:{place[x]};{forme}display:flex;"
+                    f"align-items:center;justify-content:center;border-radius:5px;font-size:{f}px;font-weight:700;color:#fff;"
+                    f"background:{fond}'>{nom}</div>")
+        return (f"<div title='En rouge les camps vulnérables, en vert les autres' style='display:grid;box-sizing:border-box;"
+                f"width:{W}px;height:{H}px;grid-template-columns:{h}px 1fr {h}px;grid-template-rows:{h}px 1fr {h}px;gap:4px;"
+                f"padding:6px;border-radius:8px;background:#e4e7eb;border:1px solid #c8ced5;box-shadow:0 1px 2px rgba(0,0,0,.12)'>"
+                f"{bande(haut)}{bande(gauche)}{bande(droite)}{bande(bas)}</div>")
 
-    ETUI = (123, 160, 30, 14)    # largeur, hauteur des côtés, épaisseur des bandes, texte : l'étui entier fait 135 × 240, 9:16
+    ETUI = (135, 240, 30, 14)    # les côtés de l'étui (9:16), l'épaisseur des bandes, le texte
 
     def tapis_encheres(d, places):
         """Les enchères posées devant chaque joueur, comme les cartons d'une boîte à enchères ; la dernière ressort."""
@@ -888,7 +900,7 @@ def page():
             bs = devant[x]
             cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k) for k, b in enumerate(bs))
             cale = "justify-self:start;justify-content:flex-start" if sens == "vers-droite" else \
-                f"align-self:start;margin-top:{ETUI[2] + 10}px"   # à gauche ; sur les côtés, à hauteur du nom
+                f"align-self:start;margin-top:{ETUI[2] + 10 if places[0] in 'NS' else 0}px"   # à gauche ; sur les côtés, à hauteur du nom
             return f"<div class='pile {sens}' style='{cale}'>{cartons}</div>"
         haut, gauche, droite, bas = places
         return (f"<div style='display:grid;grid-template-columns:auto auto auto;gap:8px;align-items:center;justify-items:center'>"
@@ -917,10 +929,12 @@ def page():
                     for r in cartes.get(coul, ""):
                         carte_el(coul, r, jouables, sur_clic)
 
-    def eventail(cartes, jouables=None, sur_clic=None, colonnes=False):
+    def eventail(cartes, jouables=None, sur_clic=None, colonnes=False, grande=False, a_vous=False):
         """Une main en cartes : {couleur: rangs français du plus fort au plus faible}. En ligne, un petit espace entre les
-        couleurs ; en colonnes (une main sur le côté), une couleur par ligne. jouables : les cartes cliquables."""
-        with (ui.column().classes("gap-1") if colonnes else ui.row().classes("no-wrap items-end gap-0 eventail")):
+        couleurs ; en colonnes (une main sur le côté), une couleur par ligne. jouables : les cartes cliquables ;
+        grande : votre main, plus grande, qui luit quand c'est à vous."""
+        cls = " main-grande" * grande + " a-vous" * (grande and a_vous)
+        with (ui.column().classes("gap-1") if colonnes else ui.row().classes("no-wrap items-end gap-0 eventail" + cls)):
             for coul in ORDRE_MAIN:
                 rangs = cartes.get(coul, "")
                 if colonnes and not rangs:
@@ -931,8 +945,12 @@ def page():
     def dos(ou, n):
         """Une main cachée : n dos de cartes, en ligne en haut, en colonne sur les côtés."""
         sens = "dos-ligne" if ou in ("haut", "bas") else "dos-colonne"
-        ui.html(f"<div class='{sens}' style='display:flex;flex-direction:{'row' if sens == 'dos-ligne' else 'column'}'>"
-                + "<div class='dos'></div>" * n + "</div>", sanitize=False)
+        m = (n - 1) / 2                                    # un léger éventail, tenu par le joueur
+        pivot = {"haut": "50% -500%", "gauche": "-500% 50%", "droite": "600% 50%"}.get(ou, "50% 600%")   # du côté du joueur
+        sens_ = {"haut": -1, "gauche": 1, "droite": -1}.get(ou, 1)
+        un = lambda k: f"<div class='dos' style='transform-origin:{pivot};transform:rotate({sens_ * (k - m) * 1.2:.1f}deg)'></div>"
+        ui.html(f"<div class='{sens}' style='display:flex;flex-direction:{'row' if sens == 'dos-ligne' else 'column'};padding:4px'>"
+                + "".join(un(k) for k in range(n)) + "</div>", sanitize=False)
 
     def table(d, places, contenu, centre=None, sur_table=()):
         """La table, une grande surface vert clair : l'étui, les cartons, le pli et le mort posé dessus ; les mains des
@@ -945,13 +963,14 @@ def page():
                     if "haut" not in sur_table: contenu(haut, "haut")
                 with ui.column().classes("items-start"): contenu(gauche, "gauche")
                 with ui.column().classes("items-center gap-4 w-full").style(
-                        "background:#e3f0e5;border:1px solid #c9dfcd;border-radius:28px;padding:20px 16px"):   # la table
+                        "background:#f3efe7;border:1px solid #e3dccf;border-radius:28px;padding:20px 16px 36px"):   # la table
                     if "haut" in sur_table: contenu(haut, "haut")
                     if centre: centre()
                     if "bas" in sur_table: contenu(bas, "bas")
                 with ui.column().classes("items-end"): contenu(droite, "droite")
-                with ui.column().classes("items-center w-full").style("grid-column: 1 / 4"):
-                    if "bas" not in sur_table: contenu(bas, "bas")
+                with ui.column().classes("items-center w-full").style(
+                        "grid-column: 1 / 4" + ("" if "bas" in sur_table else ";margin-top:-28px;position:relative;z-index:2")):
+                    if "bas" not in sur_table: contenu(bas, "bas")             # votre main, tenue au-dessus du bord
 
     def mains_fr(d, x):
         return dict(zip(carte.COULEURS, ("" if m == "-" else m for m in d["mains"][x].split())))
@@ -970,7 +989,7 @@ def page():
                         jouables = {(k, r.translate(carte.FR)) for k, r in p.legales()} if cliquable and tour == x else None
                         clic = lambda y: carte_jouer((y[0], y[1].translate(carte.EN)))
                         if x == p.mort(): mort_etale(cartes, jouables, clic, p.den)
-                        else: eventail(cartes, jouables, clic, colonnes=ou in ("gauche", "droite"))
+                        else: eventail(cartes, jouables, clic, colonnes=ou in ("gauche", "droite"), grande=x == s)   # les cartes jouables ont déjà leur bord
             elif not p.fini():
                 dos(ou, sum(len(v) for v in p.pos.reste[x].values()))
         table(d, places, contenu, lambda: ui.html(pli_html(p, places), sanitize=False),
@@ -1009,7 +1028,8 @@ def page():
                 else:
                     def contenu(x, ou):
                         if x == s or montrer:
-                            eventail(mains_fr(d, x), colonnes=ou in ("gauche", "droite"))
+                            eventail(mains_fr(d, x), colonnes=ou in ("gauche", "droite"), grande=x == s,
+                                     a_vous=x == s and not fini and not attente)
                         else: dos(ou, 13)
                     table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False))
             with ui.column().classes("gap-3 p-4 overflow-y-auto").style(                   # la barre de droite : l'essentiel
@@ -1021,11 +1041,12 @@ def page():
                     vues = jeu["seq"] if p else jeu["seq"][:jeu["affiche"]]
                     ui.html(grille_html(jouer.grille(vues, d["donneur"], not fini and not attente and not p), d["vul"])
                             .replace("border-collapse:collapse", "border-collapse:separate;border-spacing:4px 0"), sanitize=False)
-                autres = [(x, b, t_) for x, b, t_ in jeu["ex"][:jeu["affiche"]] if x != s and t_]
-                if autres:
-                    with ui.expansion("Le sens des enchères", icon="help_outline").props("dense").classes("w-full text-sm"):
-                        for x, b, t_ in autres:
-                            ui.html(f"<div style='font-size:14px'><b>{SIEGE[x]} {rouge(b)}</b> : {rouge(t_)}</div>", sanitize=False)
+                    autres = [(x, b, t_) for x, b, t_ in jeu["ex"][:jeu["affiche"]] if x != s and t_]
+                    if autres:                                  # un petit lien sous la grille
+                        with ui.expansion("Le sens des enchères").props("dense header-class='text-primary text-sm px-1'") \
+                                .classes("w-full mt-1"):
+                            for x, b, t_ in autres:
+                                ui.html(f"<div style='font-size:14px'><b>{SIEGE[x]} {rouge(b)}</b> : {rouge(t_)}</div>", sanitize=False)
                 if p:
                     vous, defense = p.levees()
                     ui.label(f"{p.contrat} par {SIEGE[p.decl]}").classes("text-base font-bold")

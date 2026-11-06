@@ -53,7 +53,10 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         JSON (four-column grids; each lead from the declarer's left, a card of that hand: rapport.entame_valide), keeps the old file as -expert-avant-<date-time>.json and merges deal by deal; "Mettre à jour les rapports"
                         runs rapport.py --rapports: the PDFs from the saved -standard.json, no new analysis), then each deal's analysis, the Expert's when it exists (toggle
                         Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: the session's PDFs and the bilan as links with
-                        file name and date (lien_pdf); Contrôle (still empty), Réglages;
+                        file name and date (lien_pdf); Réglages. Jouer (between Donnes and Analyse; Contrôle was removed): the player
+                        bids one seat, the engine the three others (vue_jouer, boite_encheres; logic in jouer.py), then the
+                        contract against Expert and Standard. The sidebar entry (vue["entree"]) is shared by Donnes, Jouer and
+                        Analyse: a deal chosen in one stays chosen in the others;
                         window 1000×800,
                         with Aide at the top. Rapports picks the .bws created last, runs rapport.py as a separate process
                         (never inside the server) and reads its lines ("Donne 3 sur 24", "Rapport prêt : …")
@@ -157,6 +160,11 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (renumbers; the standard analysis follows). Unfinished deals are saved with "a_completer"; dm, par
                         and points come once 52 cards are placed. Every save first copies the file to versions/ (at most one
                         copy per 10 minutes, 20 kept; restaurer). rapport.py leaves unfinished deals out of analysis and PDFs
+      jouer.py          the Jouer tab's logic: default seat (declarer of the Expert's, else Standard's auction), legal calls,
+                        avancer (encherir with imposees = the calls made, arret = the player's seat: stops there with the
+                        system's call as the Indice; a call the engine would not make is read by encheres.interpreter from the
+                        rule file, else as natural), comparer (contract, double-dummy result, IMP for the player against the
+                        Expert / Standard, first differing call), attempts saved in <name>-jeu.json beside the session
       lignes.py         simulated declarer: at each card imagines 12 worlds true to the auction, lead and play,
                         solves them, keeps the card that wins most often; never sees the defenders' hands
                         of the deal played, defence double-dummy. analyser() runs it on 40 imagined deals: make

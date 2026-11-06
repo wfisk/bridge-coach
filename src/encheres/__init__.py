@@ -139,8 +139,32 @@ def completer(a, s, hist, infos):
         a.L = dict(a.L or {}, **{c: min(max(infos[s].L[c] + 1, 5), 6)})
 
 
-def encherir(donne, bruit=None):
-    """bruit = {siège: ±points} : jugement d'un joueur plus optimiste ou plus prudent (simulations)."""
+def interpreter(cle, enchere, a_dire=""):
+    """Ce que montre une enchère choisie par un joueur et non par le moteur : la règle du fichier qui la propose pour
+    cette séquence (la première), sinon une lecture naturelle. Le partenaire du joueur continue avec elle."""
+    sy = systeme()
+    if sy:
+        from regles import sequence
+        k = cle if isinstance(cle, tuple) else sequence(cle)
+        r = next((r for r in sy.sequences.get(k, []) if r.enchere == enchere), None)
+        if r:
+            mo = r.condition.montre()
+            if mo["pts"] and mo["pts"][1] >= 37: mo["pts"] = (mo["pts"][0], 40)
+            return Appel(enchere, f"votre enchère : {r.montre}" if r.montre else "votre enchère", mo["pts"], mo["L"],
+                         True if mo["reg"] else None, nature=r.nature,
+                         atout=r.atout or (enchere[1:] if enchere[0].isdigit() and enchere[1:] != "SA" else None))
+    if enchere[0].isdigit() and enchere[1:] != "SA":
+        return Appel(enchere, "votre enchère, non décrite par le système : lue comme naturelle", L={enchere[1:]: 4})
+    return Appel(enchere, "votre enchère, non décrite par le système" if enchere != "passe" else "",
+                 nature="appel" if enchere == "contre" else "")
+
+
+def encherir(donne, bruit=None, imposees=None, arret=None):
+    """bruit = {siège: ±points} : jugement d'un joueur plus optimiste ou plus prudent (simulations).
+    imposees : les premières enchères de la séquence, depuis le donneur, déjà faites à la table (un joueur en a choisi
+    certaines) ; le moteur reprend après elles. arret : le siège d'un joueur ; on s'arrête quand c'est à lui de parler,
+    et « conseil » dit ce que le système lui ferait dire (le bouton Indice)."""
+    imposees = list(imposees or [])
     mains = {s: Main(donne["mains"][s]) for s in ROT}
     for s, dv in (bruit or {}).items(): mains[s].hcp += dv
     i0 = ROT.index(donne["donneur"])
@@ -172,6 +196,12 @@ def encherir(donne, bruit=None):
             a = punir(mains[s], s, a, hist, infos, etat)
         if not legal(a.enchere, s, etat):
             a = Appel("passe", f"({a.enchere} n'est plus possible)")
+        if k >= len(imposees) and s == arret:               # au joueur de parler : on s'arrête, avec l'avis du système
+            return dict(encheres=seq, explications=expl, contrat=None, declarant=None, statut=statut, notes=[],
+                        a_vous=True, conseil=dict(enchere=a.enchere, texte=a.texte))
+        if k < len(imposees) and imposees[k] != a.enchere:   # l'enchère faite à la table, pas celle du moteur
+            if not legal(imposees[k], s, etat): raise ValueError(f"{imposees[k]} n'est pas possible ici")
+            a = interpreter("ouverture" if ouvreur is None else cle_regles(seq, i0, s), imposees[k])
         seq.append(a.enchere); expl.append((s, a.enchere, a.texte))
         if a.enchere != "passe":
             completer(a, s, hist, infos)
@@ -184,7 +214,7 @@ def encherir(donne, bruit=None):
     d = etat["dernier"]
     decl = next(x for x, a in hist if camp(x) == camp(etat["par"]) and a.enchere[1:] == d[1:]) if d else None
     return dict(encheres=seq, explications=expl, contrat=(d + "X" * etat["dbl"]) if d else "passe",
-                declarant=decl, statut=statut, notes=[])
+                declarant=decl, statut=statut, notes=[], a_vous=False)
 
 
 # ---------------------------------------------------------------- vulnérabilité (placer)

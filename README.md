@@ -190,8 +190,9 @@ Bridge Coach ne s'inscrit pas dans le système : on le désinstalle en suppriman
 
 Une fenêtre : elle propose le dernier tournoi du dossier de Bridgemate réglé dans `bridge-coach.ini`, un bouton crée les
 rapports, une barre suit la progression, puis des boutons ouvrent les PDF. « Autre tournoi… » permet
-de choisir un autre fichier. L'onglet Donnes crée des donnes d'entraînement par thème, avec un `.pbn` à importer
-dans Bridgemate. Elle n'a été essayée que sur Mac.
+de choisir un autre fichier. L'onglet Donnes montre et modifie les donnes ; l'onglet Jouer fait enchérir une donne à un joueur, le programme
+tenant les trois autres places, puis compare son contrat aux analyses. Fichier, Nouveau… crée des donnes
+d'entraînement par thème, avec un `.pbn` à importer dans Bridgemate. Elle n'a été essayée que sur Mac.
 
 Pour l'ouvrir d'un clic : sur Mac, `./raccourci-mac.sh` crée l'application dans le dossier Applications, un lien
 sur le Bureau, et l'ajoute au Dock si on le veut ; sur Windows, `installer.bat` crée le raccourci du Bureau et,

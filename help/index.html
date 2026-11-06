@@ -20,7 +20,17 @@
 <body>
 <h1>Aide de Bridge Coach</h1>
 <p>Bridge Coach lit le fichier d'un tournoi joué avec Bridgemate et en tire des rapports au format PDF.</p>
-<p>L'onglet <b>Donnes</b> montre la séance ouverte : à gauche, la liste de ce qu'elle contient (la séance, les joueurs, chaque donne), à droite le détail de l'entrée choisie. L'onglet <b>Analyse</b> lance l'analyse et la montre donne par donne ; l'onglet <b>Rapports</b> liste les rapports PDF. <b>Fichier</b>, <b>Nouveau…</b> crée des donnes d'entraînement. L'onglet <b>Contrôle</b> est en préparation.</p>
+<p>L'onglet <b>Donnes</b> montre la séance ouverte : à gauche, la liste de ce qu'elle contient (la séance, les joueurs, chaque donne), à droite le détail de l'entrée choisie. L'onglet <b>Jouer</b> vous fait enchérir une donne, le programme tenant les trois autres places. L'onglet <b>Analyse</b> lance l'analyse et la montre donne par donne ; l'onglet <b>Rapports</b> liste les rapports PDF. <b>Fichier</b>, <b>Nouveau…</b> crée des donnes d'entraînement. Une donne choisie dans un onglet reste choisie dans les autres.</p>
+
+<h2>Jouer : enchérir une donne</h2>
+<p>Choisissez une donne à gauche. Vous êtes en bas de la table ; votre place est d'abord celle du déclarant de la séquence recommandée (l'analyse de l'expert, sinon l'analyse standard). <b>Votre place</b>, en haut à droite, en choisit une autre. Le programme enchérit pour votre partenaire et pour les adversaires, selon le système ; leurs mains restent cachées jusqu'à la fin.</p>
+<ul>
+  <li>Cliquez votre enchère dans la boîte : celles qui ne sont plus possibles sont grisées.</li>
+  <li><b>Indice</b> dit ce que le système vous ferait dire, et pourquoi, seulement si vous le demandez.</li>
+  <li><b>Ce que disent les enchères du programme</b> explique chaque enchère des autres joueurs, comme on le demande à la table.</li>
+  <li>Si vous sortez du système, votre partenaire continue au mieux ; parfois il passe, faute de règle pour la séquence.</li>
+</ul>
+<p>À la fin, les quatre mains apparaissent, avec votre contrat face à ceux de l'analyse de l'expert et de l'analyse standard : le résultat au double mort, les IMP que vous gagnez ou perdez, la première enchère où les séquences diffèrent, et les séquences côte à côte. <b>Recommencer</b> rejoue la donne, <b>Donne suivante</b> passe à la suivante. Chaque essai est gardé à côté de la séance (<code>…-jeu.json</code>) ; la donne est marquée « enchérie ». Les analyses ne changent pas. Le jeu de la carte viendra ensuite.</p>
 
 <h2>L'onglet Donnes</h2>
 <p>Il montre la séance ouverte. La liste de gauche donne :</p>
@@ -32,7 +42,7 @@
 </ul>
 
 <h2>Le menu Fichier</h2>
-<p>Tout est dans la barre en haut de la fenêtre : le menu <b>Fichier</b> à gauche, puis les onglets <b>Donnes</b>, <b>Analyse</b>, <b>Rapports</b>, <b>Contrôle</b> et <b>Réglages</b>, et l'<b>Aide</b> à droite. Le menu <b>Fichier</b> :</p>
+<p>Tout est dans la barre en haut de la fenêtre : le menu <b>Fichier</b> à gauche, puis les onglets <b>Donnes</b>, <b>Jouer</b>, <b>Analyse</b>, <b>Rapports</b> et <b>Réglages</b>, et l'<b>Aide</b> à droite. Le menu <b>Fichier</b> :</p>
 <dl>
   <dt>Nouveau…</dt>
   <dd>Ferme la séance ouverte (la barre de titre ne montre plus de fichier) et propose une séance vide, à remplir à la main, ou des donnes tirées au hasard (voir plus bas). Dès qu'elle est créée, la nouvelle séance s'ouvre dans l'onglet <b>Donnes</b> et son nom s'affiche dans la barre de titre.</dd>

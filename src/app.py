@@ -12,7 +12,7 @@ import datetime, glob, json, os, re, shutil, signal, subprocess, sys, tempfile, 
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import donnes, edition, maj, rapport
+import donnes, edition, jouer, maj, rapport
 from nicegui import app, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -656,6 +656,113 @@ def page():
         repli = (std or {}).get("donnes", {}).get(n, {})   # l'expert reprend du programme ce qu'il n'écrit pas (cartes vues…)
         page_analyse(d, a, repli, vue["version"])
 
+    jeu = {"cle": None}                                   # la donne en cours dans l'onglet Jouer
+
+    def jeu_depart(c, d, siege=None):
+        siege = siege or jouer.siege_par_defaut(d, lire_analyses(c))
+        seq, ex, ind = jouer.avancer(d, [], siege)
+        jeu.update(cle=(c, d["n"]), siege=siege, seq=seq, ex=ex, indice=ind, voir_indice=False, garde=False)
+
+    def jeu_annonce(d, b):
+        if b not in jouer.legales(jeu["seq"], d["donneur"]): return
+        seq, ex, ind = jouer.avancer(d, jeu["seq"] + [b], jeu["siege"])
+        jeu.update(seq=seq, ex=ex, indice=ind, voir_indice=False); vue_jouer.refresh()
+
+    def jeu_suivante(data, d):
+        ns = [x["n"] for x in data["donnes"] if not x.get("a_completer")]
+        k = ns.index(d["n"]); aller(f"d{ns[(k + 1) % len(ns)]}")
+
+    def boite_encheres(d):
+        """Les enchères possibles, palier par palier ; celles qui ne le sont plus sont grisées."""
+        ok = jouer.legales(jeu["seq"], d["donneur"])
+        with ui.column().classes("gap-1"):
+            for n in range(1, 8):
+                with ui.row().classes("gap-1 no-wrap"):
+                    for den in jouer.DENOMS:
+                        b = f"{n}{den}"
+                        ui.button(b, on_click=lambda b=b: jeu_annonce(d, b)) \
+                            .props(f"outline dense no-caps color={'red-9' if den in '♥♦' else 'primary'}").classes("w-12").set_enabled(b in ok)
+            with ui.row().classes("gap-1 no-wrap mt-1"):
+                ui.button("Passe", on_click=lambda: jeu_annonce(d, "passe")).props("unelevated dense no-caps").classes("w-20")
+                for b, coul in (("contre", "red-8"), ("surcontre", "blue-8")):
+                    ui.button(b.capitalize(), on_click=lambda b=b: jeu_annonce(d, b)).props(f"unelevated dense no-caps color={coul}") \
+                        .classes("w-24").set_enabled(b in ok)
+
+    @ui.refreshable
+    def vue_jouer():
+        c = choix["chemin"]; data = lire_seance(c)
+        if not data:
+            ui.label("Aucune séance ouverte : Fichier, Ouvrir une séance…").classes("text-base"); return
+        es = entrees_de(data) if sur_jouer() else []
+        if not es: return
+        e = vue["entree"] if vue["entree"] in dict(es) else es[0][0]
+        d = next(x for x in data["donnes"] if f"d{x['n']}" == e)
+        if jeu["cle"] != (c, d["n"]): jeu_depart(c, d)
+        s = jeu["siege"]; part = jouer.PART[s]
+        gauche, droite = jouer.ROT[(jouer.ROT.index(s) + 1) % 4], jouer.ROT[(jouer.ROT.index(s) + 3) % 4]
+        fini = jeu["indice"] is None
+        with ui.row().classes("w-full items-center justify-between"):
+            with ui.column().classes("gap-0"):
+                ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
+                ui.label(f"Donneur {SIEGE[d['donneur']]} · vulnérabilité : {d['vul']}").classes("text-base text-gray-600")
+            with ui.row().classes("items-center gap-2"):
+                ui.label("Votre place :").classes("text-base")
+                ui.toggle({x: SIEGE[x] for x in "NESO"}, value=s, on_change=lambda ev: (jeu_depart(c, d, ev.value), vue_jouer.refresh())) \
+                    .props("no-caps dense toggle-color=primary")
+        cache = lambda x: f"<div style='font-size:15px;color:#888'><b>{SIEGE[x]}</b>{' · partenaire' if x == part else ''}<br/>main cachée</div>"
+        with ui.grid(columns="160px 300px 160px").classes("gap-3 items-center mt-2"):
+            ui.label("")
+            ui.html(main_html(d, part) if fini else cache(part), sanitize=False)
+            ui.label("")
+            ui.html(main_html(d, gauche) if fini else cache(gauche), sanitize=False)
+            ui.html(grille_html(jouer.grille(jeu["seq"], d["donneur"], not fini)), sanitize=False)
+            ui.html(main_html(d, droite) if fini else cache(droite), sanitize=False)
+            ui.label("")
+            ui.html(main_html(d, s), sanitize=False)
+            ui.label("")
+        if not fini:
+            with ui.row().classes("gap-8 items-start mt-3"):
+                boite_encheres(d)
+                with ui.column().classes("gap-2 max-w-sm"):
+                    ui.button("Indice", icon="lightbulb", on_click=lambda: (jeu.update(voir_indice=True), vue_jouer.refresh())).props("outline")
+                    if jeu["voir_indice"]:
+                        ui.html(f"<div style='font-size:15px'>Le système dirait <b>{rouge(jeu['indice']['enchere'])}</b> : "
+                                f"{rouge(jeu['indice']['texte'])}</div>", sanitize=False)
+        autres = [(x, b, t) for x, b, t in jeu["ex"] if x != s and t]
+        if autres:
+            with ui.expansion("Ce que disent les enchères du programme", icon="help_outline").classes("w-full max-w-2xl mt-2"):
+                for x, b, t in autres:
+                    ui.html(f"<div style='font-size:15px'><b>{SIEGE[x]} {rouge(b)}</b> : {rouge(t)}</div>", sanitize=False)
+        if fini:
+            if not jeu["garde"]:
+                jouer.enregistrer(base_seance(c), d["n"], s, jeu["seq"], d["donneur"]); jeu["garde"] = True; barre_seance.refresh()
+            r = jouer.comparer(d, jeu["seq"], s, lire_analyses(c))
+            ui.label("Votre contrat face aux analyses").classes("text-base font-bold mt-4")
+            lignes = []
+            nom_contrat = lambda texte: re.sub(r" ([NESO])$", lambda m: " " + SIEGE[m[1]], texte)
+            for x in r["lignes"]:
+                m = x["marge"]; res = "" if x["levees"] is None else ("=" if m == 0 else f"+{m}" if m > 0 else f"<span style='color:#c0141c'>−{-m}</span>")
+                i = "" if x["imp"] is None else ("0" if x["imp"] == 0 else f"{x['imp']:+d}".replace("-", "−"))
+                lignes.append(f"<tr><td style='padding:2px 12px;font-weight:600'>{x['nom']}</td><td style='padding:2px 12px'>{rouge(nom_contrat(x['texte']))}</td>"
+                              f"<td style='padding:2px 12px;text-align:center'>{res}</td><td style='padding:2px 12px;text-align:right'>{i}</td></tr>")
+            ui.html("<table style='font-size:15px;border-collapse:collapse'><tr><th></th><th style='padding:2px 12px;text-align:left'>Contrat</th>"
+                    "<th style='padding:2px 12px'>Double mort</th><th style='padding:2px 12px'>IMP pour vous</th></tr>" + "".join(lignes) + "</table>",
+                    sanitize=False)
+            ui.label("IMP pour vous : ce que votre contrat gagne (+) ou perd (−) face à celui de l'analyse, au double mort.").classes("text-sm text-gray-600")
+            if r["ecart"]:
+                k = r["ecart"]
+                ui.html(f"<div style='font-size:15px;margin-top:6px'>Première différence : <b>{SIEGE[k['siege']]}</b> dit {rouge(k['vous'])}, "
+                        f"l'analyse {k['nom'].lower()} {rouge(k['reference'])}.</div>", sanitize=False)
+            with ui.row().classes("gap-8 items-start mt-2"):
+                for x in r["lignes"]:
+                    with ui.column().classes("gap-0"):
+                        ui.label(x["nom"]).classes("text-base font-bold")
+                        ui.html(grille_html(jouer.grille(x["seq"], d["donneur"])), sanitize=False)
+            page_dm_par(d)
+            with ui.row().classes("gap-3 mt-3"):
+                ui.button("Recommencer", icon="replay", on_click=lambda: (jeu_depart(c, d, s), vue_jouer.refresh())).props("outline")
+                ui.button("Donne suivante", icon="arrow_forward", on_click=lambda: jeu_suivante(data, d))
+
     def page_versions(c):
         """Les versions gardées d'une séance modifiable, pour revenir en arrière."""
         vs = edition.versions(c)
@@ -780,8 +887,15 @@ def page():
     def sur_analyse():
         return onglets.value in (o_analyse, "Analyse")
 
+    def sur_jouer():
+        return onglets.value in (o_jouer, "Jouer")
+
     def entrees_de(data):
         """Les entrées de la barre latérale : la séance, puis (onglet Donnes) les joueurs et les alertes, puis chaque donne."""
+        if sur_jouer():                                   # Jouer : les donnes seules, et celles déjà enchéries
+            faits = jouer.lire_essais(base_seance(choix["chemin"]))["donnes"]
+            return [(f"d{d['n']}", f"Donne {d['n']}" + (" · enchérie" if faits.get(str(d["n"])) else ""))
+                    for d in data["donnes"] if not d.get("a_completer")]
         haut = [("standard", "Analyse standard"), ("expert", "Analyse expert")] if sur_analyse() else \
             [("seance", "Séance")] + ([("joueurs", "Joueurs")] if data.get("joueurs") else []) + \
             ([("alertes", "Alertes")] if data.get("alertes") else [])
@@ -867,7 +981,7 @@ def page():
         controles.set_visibility(bool(data) and (T.actif or (sur_analyse() and entree_effective(data) == "standard")))
 
     def aller(k):
-        vue["entree"] = k; vue["edition"] = None; barre_seance.refresh(); vue_seance.refresh(); vue_analyse.refresh(); montrer_controles()
+        vue["entree"] = k; vue["edition"] = None; barre_seance.refresh(); vue_seance.refresh(); vue_analyse.refresh(); vue_jouer.refresh(); montrer_controles()
 
     @ui.refreshable
     def barre_seance():
@@ -881,13 +995,13 @@ def page():
                 .classes("w-full rounded-none px-4 py-1 text-gray-800") \
                 .style(f"border-left: 4px solid {'#1f6b45' if choisie else 'transparent'}")
             if choisie: b.classes("bg-white text-primary font-bold")
-        if not sur_analyse() and edition.modifiable(choix["chemin"])[0]:
+        if not sur_analyse() and not sur_jouer() and edition.modifiable(choix["chemin"])[0]:
             ui.button("Ajouter une donne", icon="add", on_click=lambda: ajouter()).props("flat no-caps align=left dense no-wrap") \
                 .classes("w-full rounded-none px-4 py-2 mt-2 text-primary").style("border-left: 4px solid transparent")
 
     def montrer_barre():
         """La barre latérale : sur les onglets Donnes et Analyse, quand une séance est ouverte."""
-        tiroir.set_value(onglets.value in (o_donnes, "Donnes", o_analyse, "Analyse") and lire_seance(choix["chemin"]) is not None)
+        tiroir.set_value(onglets.value in (o_donnes, "Donnes", o_jouer, "Jouer", o_analyse, "Analyse") and lire_seance(choix["chemin"]) is not None)
     vu = {"fini": None}; vu_d = {"fini": None}; vu_i = {"fini": None}
 
     with ui.header(elevated=False).classes("bg-gray-100 text-primary px-2 py-0 border-b border-gray-300"):   # la barre de menus
@@ -902,16 +1016,16 @@ def page():
                     ui.menu_item("Ouvrir le dossier de travail", on_click=lambda: ouvrir(rapport.DONNEES))
             with ui.tabs().props("no-caps dense inline-label align=left active-color=primary indicator-color=primary").classes("text-gray-700 grow") as onglets:   # les onglets, dans la barre
                 o_donnes = ui.tab("Donnes")
+                o_jouer = ui.tab("Jouer")
                 o_analyse = ui.tab("Analyse")
                 o_rapports = ui.tab("Rapports")
-                o_controle = ui.tab("Contrôle")
                 o_reglages = ui.tab("Réglages")
                 o_aide = ui.tab("Aide").classes("hidden")          # la page d'aide : montrée par le bouton de droite
                 o_nouveau = ui.tab("Nouveau").classes("hidden")    # Fichier, Nouveau… : la page de création des donnes
             aide = ui.button("Aide", on_click=lambda: onglets.set_value(o_aide)).props("flat no-caps dense").classes("px-3")
             onglets.on_value_change(lambda e: (aide.classes(add="bg-green-50 font-bold") if e.value in (o_aide, "Aide")
                                                else aide.classes(remove="bg-green-50 font-bold"), montrer_barre(), barre_seance.refresh(),
-                                               vue_analyse.refresh(), montrer_controles()))
+                                               vue_analyse.refresh(), vue_jouer.refresh(), montrer_controles()))
 
     with ui.left_drawer(value=False, fixed=True, bordered=True).props("width=200 behavior=desktop") \
             .classes("bg-gray-100 p-0 gap-0") as tiroir:      # la barre latérale de des onglets Donnes et Analyse : bord gauche, toute la hauteur
@@ -935,6 +1049,9 @@ def page():
                 texte_i = ui.label("").classes("text-base")
                 faute_i = ui.label("").classes("text-base text-red-800")
                 vue_seance()
+
+            with ui.tab_panel(o_jouer).classes("px-0"):
+                vue_jouer()
 
             with ui.tab_panel(o_analyse).classes("px-0 gap-3"):
                 with ui.column().classes("w-full gap-3 pb-3 border-b border-gray-200") as controles:   # fixe : la barre y avance
@@ -967,9 +1084,6 @@ def page():
                         ui.button("Ouvrir le dossier des rapports", on_click=lambda p=prets[next(iter(prets))]: ouvrir(os.path.dirname(p))) \
                             .props("flat no-caps").classes("mt-2 px-0")
                 resultats()
-
-            with ui.tab_panel(o_controle).classes("px-0 max-w-xl mx-auto"):
-                ui.label("Contrôler un fichier Bridgemate avant de publier les résultats : à venir.")
 
             with ui.tab_panel(o_reglages).classes("px-0 gap-5 max-w-xl mx-auto"):
                 for titre, chemin in (("Dossier de Bridgemate : les fichiers .bws, lus sans être modifiés", dossier),

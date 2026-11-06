@@ -33,6 +33,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (--dock: no question; never twice). Python runs with
                         -X utf8 everywhere: Windows does not default to UTF-8, and -I ignores PYTHONUTF8
     bridge-coach.exemple.ini template of the user's bridge-coach.ini, copied on the first run
+    VERSION, publier.sh  the published version; ./publier.sh 1.4 "note" runs the tests, writes VERSION, tags v1.4 and pushes.
+                        Members are offered only vX.Y tags, never work in progress on main
     src/                Python code
       app.py            the NiceGUI application: one bar across the top (ui.header: Fichier menu, the tabs, Aide; not the native bar: the window process leaves
                         the Dock, so macOS would show none) with Ouvrir une séance (the .bc.json, by session date), Importer
@@ -68,6 +70,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         A .bc.json (or the old -donnes.json) is read as is (donnes_pretes), skipping the import.
                         migrer(), on every start: reports/ → rapports/, <name>-donnes.json → <name>.bc.json with
                         its source and players (<name>-paires.json merged in, then removed)
+      maj.py            updates from GitHub, standard library only: derniere_version (tags API, only on the Réglages
+                        button), then a separate process (--appliquer V --attendre <app pid>) waits for the app to close,
+                        downloads the tag's zip, moves the old program to .ancien-programme/, puts the new one, pip only if
+                        requirements.txt changed, checks the new code imports, restores the old one on any failure, writes
+                        rapports/derniere-mise-a-jour.txt and reopens the app. Never touches .venv/.git; a Git clone is told
+                        to use git pull. tests/test_maj.py applies a good and a broken version to throwaway copies
       donnes.py         creates training deals: a count per theme ("Squeeze=4" "Aléatoire=8", lire_quotas; the app's − / + list), each theme a test on a random
                         deal (THEMES: engine auction, double-dummy, coups.py or the plan's count), DELAI seconds per deal, then
                         random and says so. Writes entrainement-<date>-<HHMMSS>.bc.json (source "entrainement" or "saisie") and a .pbn for Bridgemate

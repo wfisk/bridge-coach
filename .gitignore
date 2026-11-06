@@ -15,3 +15,4 @@ docs/**/*.json
 # Official system documents (copyrighted)
 systems/*/ffb/
 .claude/
+.ancien-programme/

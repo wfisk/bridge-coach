@@ -12,7 +12,7 @@ import datetime, glob, json, os, re, shutil, signal, subprocess, sys, tempfile, 
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import donnes, edition, rapport
+import donnes, edition, maj, rapport
 from nicegui import app, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -986,6 +986,20 @@ def page():
                 ui.button("Modifier les réglages", on_click=ouvrir_reglages).classes("w-full text-base py-3")
                 ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-sm text-gray-600")
 
+                ui.separator().classes("my-2")
+                ui.label(f"Bridge Coach, version {maj.version_locale()}").classes("text-base font-bold")
+                with ui.row().classes("items-center gap-3"):
+                    ui.button("Rechercher une mise à jour", on_click=lambda: chercher_maj()).props("outline")
+                    bouton_maj = ui.button("", on_click=lambda: lancer_maj()).props("unelevated")
+                    bouton_maj.set_visibility(False)
+                etat_maj = ui.label("Bridge Coach ne contacte GitHub que si vous cliquez ; il n'envoie rien.").classes("text-sm text-gray-600")
+                journal = os.path.join(rapport.RAPPORTS, maj.JOURNAL)
+                if os.path.exists(journal):
+                    lignes_j = [x for x in open(journal, encoding="utf-8").read().splitlines() if x.strip()]
+                    if lignes_j:
+                        quand = datetime.datetime.fromtimestamp(os.path.getmtime(journal)).strftime("%d/%m/%Y")
+                        ui.label(f"Dernière mise à jour, le {quand} : {lignes_j[0]} — {lignes_j[-1]}").classes("text-sm text-gray-600")
+
             with ui.tab_panel(o_aide).classes("px-0 max-w-xl mx-auto"):   # une page comme les autres : un onglet la quitte
                 ui.html(texte_aide(), sanitize=False).classes("aide w-full pb-8")
 
@@ -1107,6 +1121,35 @@ def page():
         choix["chemin"] = None; montrer_titre(); expert_msg.update(texte="", faute=False)
         vue_seance.refresh(); barre_seance.refresh(); vue_analyse.refresh(); resultats.refresh()
         onglets.set_value(o_nouveau); montrer_barre(); montrer_controles()
+
+    maj_vue = {"version": None}
+
+    async def chercher_maj():
+        if maj.est_depot_git():
+            etat_maj.text = "Ce dossier est une copie Git du programme : mettez-le à jour avec git pull."; return
+        etat_maj.text = "Recherche sur GitHub…"; bouton_maj.set_visibility(False)
+        try:
+            v = await run.io_bound(maj.derniere_version)
+        except Exception:
+            etat_maj.text = "GitHub ne répond pas : vérifiez la connexion à Internet, puis réessayez."; return
+        if not v or maj.cle(v) <= maj.cle(maj.version_locale()):
+            etat_maj.text = f"Bridge Coach est à jour (version {maj.version_locale()})."; return
+        maj_vue["version"] = v
+        etat_maj.text = (f"La version {v} est disponible. Bridge Coach va se fermer, se mettre à jour en une minute environ, "
+                         "puis se rouvrir. Vos séances, vos rapports et vos réglages ne changent pas.")
+        bouton_maj.text = f"Mettre à jour vers {v}"; bouton_maj.set_visibility(True)
+
+    def lancer_maj():
+        v = maj_vue["version"]
+        if not v: return
+        if any(x.actif for x in (T, D, I)):
+            etat_maj.text = "Un calcul est en cours : attendez qu'il se termine, puis recommencez."; return
+        opts = {"creationflags": 0x00000008 | 0x00000200} if sys.platform == "win32" else {"start_new_session": True}
+        subprocess.Popen([sys.executable, "-I", "-X", "utf8", os.path.join(ICI, "maj.py"), "--appliquer", v,
+                          "--attendre", str(os.getpid()), "--journal", rapport.RAPPORTS], cwd=rapport.RACINE,
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **opts)
+        etat_maj.text = "Bridge Coach se ferme pour la mise à jour, puis se rouvre tout seul."
+        ui.timer(1.5, app.shutdown, once=True)
 
     def choisir(c):
         choix["chemin"] = c; dialogue.close(); faute.text = ""

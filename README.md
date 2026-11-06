@@ -112,35 +112,33 @@ dossier du programme change de place, relancez `./raccourci-mac.sh`.
 
 ## Mettre à jour
 
-Une mise à jour ne remplace que le dossier du programme. Vos tournois, rapports et analyses expertes
-(`bridge-coach-files`) et vos réglages restent où ils sont, sans changement.
+Une mise à jour ne remplace que le programme. Vos séances, rapports, analyses expertes (`bridge-coach-files`) et
+vos réglages restent où ils sont, sans changement.
 
-**Windows**
+**Depuis l'application (le plus simple)**
 
-1. Fermez Bridge Coach (et sa fenêtre noire).
+1. Onglet **Réglages**, en bas : la version installée, et le bouton **Rechercher une mise à jour**.
+2. S'il y a une version nouvelle : **Mettre à jour vers 1.4**. Bridge Coach se ferme, télécharge le programme
+   (environ 1 Mo), le remplace, et se rouvre tout seul, en une minute environ.
+3. Les bibliothèques (`.venv`, 216 Mo) ne sont réinstallées que si la version nouvelle en demande d'autres
+   (`requirements.txt` a changé). Si quelque chose se passe mal, l'ancien programme est remis en place.
+   Le compte rendu est dans `bridge-coach-files/rapports/derniere-mise-a-jour.txt`.
+
+Bridge Coach ne contacte GitHub que quand on clique sur ce bouton, et n'envoie rien. Il ne propose que les versions
+publiées (étiquettes `v1.4` du dépôt), jamais le travail en cours.
+
+**À la main** (une installation d'avant ce bouton, ou si GitHub ne répond pas)
+
+1. Fermez Bridge Coach (et sa fenêtre noire sous Windows).
 2. Renommez le dossier du programme `bridge-coach` en `bridge-coach-ancien`.
-3. Téléchargez la nouvelle version : sur la page GitHub du dépôt, **Code**, **Download ZIP**. Décompressez-la au
-   même endroit et renommez le dossier `bridge-coach`.
-4. Double-cliquez sur `installer.bat` : il refait `.venv` et les bibliothèques, en quelques minutes.
-5. Ouvrez Bridge Coach. Le raccourci du Bureau marche toujours, puisque le dossier a gardé son nom et sa place.
-6. Si tout va bien, supprimez `bridge-coach-ancien`. Sinon, supprimez le nouveau dossier et rendez à
-   l'ancien son nom : vous retrouvez la version d'avant.
+3. Sur la page GitHub, **Code**, **Download ZIP** ; décompressez au même endroit, renommez le dossier `bridge-coach`.
+4. Lancez `installer.bat` (Windows) ou `./installer.sh` (Mac) : il refait `.venv` et les raccourcis.
+5. Si tout va bien, supprimez `bridge-coach-ancien`.
 
-**Mac** (programme installé avec `git clone`)
+Un dossier installé avec `git clone` se met à jour par `git pull` puis `./installer.sh` ; le bouton le signale.
 
-1. Fermez Bridge Coach.
-2. Dans le Terminal :
-
-   ```
-   cd ~/Documents/bridge-coach
-   git pull
-   ./installer.sh
-   ```
-
-   `installer.sh` garde `.venv`, ajoute les bibliothèques nouvelles s'il y en a et vérifie que les règles se lisent.
-3. Ouvrez Bridge Coach. Si le dossier du programme a changé de place, relancez `./raccourci-mac.sh`.
-
-Le dépôt est public : n'importe qui peut télécharger une nouvelle version, sans compte GitHub.
+**Publier une version** (pour le responsable du programme) : `./publier.sh 1.4 "Ce qui change"`. Le script vérifie
+les tests, écrit `VERSION`, crée l'étiquette `v1.4` et l'envoie sur GitHub ; les membres la voient aussitôt.
 
 ## Désinstaller
 

@@ -611,10 +611,11 @@ def grille_html(enc, vul=None):
     """Une grille d'enchères Ouest Nord Est Sud (lignes du -standard.json ou du -expert.json). vul : la vulnérabilité de
     la donne ; chaque place est alors soulignée d'un trait épais, rouge si vulnérable, vert sinon."""
     trait = lambda s: "" if vul is None else \
-        f";border-bottom:4px solid {'#c0141c' if vul == 'Tous' or vul == ('N-S' if s in 'NS' else 'E-O') else '#2e7d32'}"
+        f";width:25%;border-bottom:6px solid {'#c0141c' if vul == 'Tous' or vul == ('N-S' if s in 'NS' else 'E-O') else '#2e7d32'}"
     tete = "".join(f"<th style='padding:2px 10px;text-align:center{trait(s)}'>{SIEGE[s]}</th>" for s in "ONES")
     corps = "".join("<tr>" + "".join(f"<td style='padding:1px 10px;text-align:center'>{rouge(c)}</td>" for c in r) + "</tr>" for r in enc)
-    return f"<table style='border-collapse:collapse;font-size:15px'><tr>{tete}</tr>{corps}</table>"
+    large = "" if vul is None else ";width:100%;table-layout:fixed"          # quatre colonnes égales
+    return f"<table style='border-collapse:collapse;font-size:15px{large}'><tr>{tete}</tr>{corps}</table>"
 
 
 def page_analyse(d, a, repli, version):
@@ -854,12 +855,10 @@ def page():
         travers ; fond rouge si son camp est vulnérable, vert sinon ; le donneur s'appelle « Donneur » ; le joueur qui
         réfléchit clignote."""
         v = d["vul"]; vul = lambda x: v == "Tous" or v == ("N-S" if x in "NS" else "E-O")
-        w, L, h, f = (64, 120, 22, 12) if petit else ETUI   # un étui : nettement plus long que large   # w : largeur, L : hauteur (plus haut que large), h : épaisseur
+        w, L, h, f = (72, 85, 22, 12) if petit else ETUI    # 84 × 149 : 9:16   # w : largeur, L : hauteur des côtés, h : épaisseur des bandes
         haut = places[0]                                      # chaque étiquette se lit depuis sa place : celle d'en face à l'envers
         def case(x, cote=None):
-            nom = SIEGE[x] + ("<span title='Donneur' style='display:inline-flex;align-items:center;justify-content:center;width:17px;"
-                              "height:17px;margin:4px;border-radius:50%;background:#fff;color:#333;font-size:11px'>D</span>"
-                              if x == d["donneur"] else "")
+            nom = "<span style='color:#ffd54a'>Donneur</span>" if x == d["donneur"] else SIEGE[x]   # le donneur en jaune
             fond = "#c0141c" if vul(x) else "#2e7d32"
             taille = f"width:{h}px;height:{L}px;writing-mode:vertical-rl;" + ("transform:rotate(180deg);" if cote == "gauche" else "") \
                 if cote else f"width:{w}px;height:{h}px;" + ("transform:rotate(180deg);" if x == haut else "")
@@ -867,12 +866,12 @@ def page():
                     f"justify-content:center;border-radius:5px;font-size:{f}px;font-weight:700;color:#fff;background:{fond}'>{nom}</div>")
         haut, gauche, droite, bas = places
         return (f"<div title='En rouge les camps vulnérables, en vert les autres' style='display:grid;"
-                f"grid-template-columns:{h}px {w}px {h}px;grid-template-rows:{h}px {L}px {h}px;gap:4px;padding:6px;"
+                f"grid-template-columns:{h}px {w - 2 * h - 8}px {h}px;grid-template-rows:{h}px {L}px {h}px;gap:4px;padding:6px;"
                 f"border-radius:8px;background:#5d6d7e;align-items:center;justify-items:center;box-shadow:0 2px 4px rgba(0,0,0,.25)'>"
-                f"<div></div>{case(haut)}<div></div>{case(gauche, 'gauche')}<div></div>{case(droite, 'droite')}"
-                f"<div></div>{case(bas)}<div></div></div>")
+                f"<div style='grid-column:1 / 4'>{case(haut)}</div>{case(gauche, 'gauche')}<div></div>{case(droite, 'droite')}"
+                f"<div style='grid-column:1 / 4'>{case(bas)}</div></div>")   # les côtés juste sous le haut : pas de coins vides
 
-    ETUI = (84, 160, 30, 14)                             # largeur, hauteur, épaisseur des bandes, taille du texte
+    ETUI = (123, 160, 30, 14)    # largeur, hauteur des côtés, épaisseur des bandes, texte : l'étui entier fait 135 × 240, 9:16
 
     def tapis_encheres(d, places):
         """Les enchères posées devant chaque joueur, comme les cartons d'une boîte à enchères ; la dernière ressort."""
@@ -935,13 +934,11 @@ def page():
         ui.html(f"<div class='{sens}' style='display:flex;flex-direction:{'row' if sens == 'dos-ligne' else 'column'}'>"
                 + "<div class='dos'></div>" * n + "</div>", sanitize=False)
 
-    def table(d, places, contenu, centre=None, centrer=False, sur_table=()):
+    def table(d, places, contenu, centre=None, sur_table=()):
         """La table, une grande surface vert clair : l'étui, les cartons, le pli et le mort posé dessus ; les mains des
         joueurs autour. contenu(siège, position) dessine une place ; sur_table : les positions posées sur la table (le mort)."""
         haut, gauche, droite, bas = places
-        with ui.element("div").classes("w-full py-2 overflow-x-auto").style(
-                f"min-height:calc(100vh - {HAUTEUR_BARRE + 48}px);display:flex;flex-direction:column;justify-content:center"
-                if centrer else ""):
+        with ui.element("div").classes("w-full py-2 overflow-x-auto"):   # en haut de l'écran
             with ui.grid(columns="max-content minmax(0,1fr) max-content").classes("w-full items-center gap-4") \
                     .style("max-width:760px;margin:0 auto"):
                 with ui.column().classes("items-center w-full").style("grid-column: 1 / 4"):
@@ -976,7 +973,7 @@ def page():
                         else: eventail(cartes, jouables, clic, colonnes=ou in ("gauche", "droite"))
             elif not p.fini():
                 dos(ou, sum(len(v) for v in p.pos.reste[x].values()))
-        table(d, places, contenu, lambda: ui.html(pli_html(p, places), sanitize=False), centrer=not p.fini(),
+        table(d, places, contenu, lambda: ui.html(pli_html(p, places), sanitize=False),
               sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == p.mort() and not p.fini()])
 
     @ui.refreshable
@@ -1014,7 +1011,7 @@ def page():
                         if x == s or montrer:
                             eventail(mains_fr(d, x), colonnes=ou in ("gauche", "droite"))
                         else: dos(ou, 13)
-                    table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False), centrer=not montrer)
+                    table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False))
             with ui.column().classes("gap-3 p-4 overflow-y-auto").style(                   # la barre de droite : l'essentiel
                     f"position:fixed;top:{HAUTEUR_BARRE}px;right:0;bottom:0;width:{LARGEUR_PANNEAU}px;background:{GRIS_BARRE};"
                     "border-left:1px solid #dcdcd8;z-index:1;overflow-x:hidden"):

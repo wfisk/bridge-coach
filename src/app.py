@@ -138,6 +138,8 @@ CSS_CARTES = """
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
+.carton:not(.recent)::after { content: ""; position: absolute; inset: -1px; border-radius: 5px;
+  background: rgba(255, 255, 255, .4); }   /* les enchères d'avant, voilées : la dernière ressort */
 .pile { display: flex; align-items: center; justify-content: center; min-height: 42px; min-width: 70px; }
 .pile.vers-bas { flex-direction: column; } .pile.vers-bas .carton + .carton { margin-top: -18px; }
 .pile.vers-haut { flex-direction: column-reverse; } .pile.vers-haut .carton { align-items: flex-end; }

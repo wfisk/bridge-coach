@@ -97,9 +97,40 @@ def date_lisible(chemin):
 GRIS_BARRE = "#f3f3f1"
 LARGEUR_PANNEAU = 300                                     # la barre de droite de l'onglet Jouer
 # le côté de la table de l'onglet Jouer : ce que laissent la largeur (barres, mains des côtés) et la hauteur (mains du
-# haut et du bas), pour que tout tienne dans la fenêtre sans barre de défilement
-COTE_TABLE = "clamp(320px, min(100vw - 740px, 100vh - 375px), 640px)"
+# haut et du bas), 440px au moins : en dessous, toute la table rétrécit (JS_AJUSTE)
+COTE_TABLE = "clamp(440px, min(100vw - 740px, 100vh - 375px), 640px)"
 HAUTEUR_BARRE = 37                                        # la barre de menus du haut                                    # le gris clair des barres latérales, comme celle de Claude
+
+JS_AJUSTE = """<script>
+// La table de l'onglet Jouer rétrécit avec la fenêtre plutôt que d'ouvrir une barre de défilement : le bloc .ajuste
+// garde sa taille naturelle et prend l'échelle qui le fait tenir dans la largeur de son parent et la hauteur de la fenêtre.
+(function () {
+  function ajuster() {
+    document.querySelectorAll('.ajuste').forEach(function (el) {
+      var parent = el.parentElement, w = el.offsetWidth, h = el.offsetHeight;
+      if (!w || !h) return;
+      var marge = parseFloat(getComputedStyle(parent).paddingTop) || 0;
+      var haut = parent.getBoundingClientRect().top + window.scrollY + marge;
+      var e = Math.min(1, parent.clientWidth / w, (window.innerHeight - haut - 8) / h);
+      e = Math.max(e, 0.45);
+      el.style.transform = 'scale(' + e + ')';
+      el.style.marginLeft = Math.max(0, (parent.clientWidth - w * e) / 2) + 'px';
+      parent.style.height = Math.ceil(h * e + marge) + 'px';
+    });
+  }
+  var vus = new WeakSet(), ro = new ResizeObserver(ajuster);
+  function suivre() {
+    document.querySelectorAll('.ajuste').forEach(function (el) {
+      if (!vus.has(el)) { vus.add(el); ro.observe(el); ro.observe(el.parentElement); }
+    });
+  }
+  window.addEventListener('resize', ajuster);
+  document.addEventListener('DOMContentLoaded', function () {
+    new MutationObserver(function () { suivre(); ajuster(); }).observe(document.body, {childList: true, subtree: true});
+    suivre(); ajuster();
+  });
+})();
+</script>"""
 
 CSS_CARTES = """
 ::-webkit-scrollbar { width: 14px; height: 14px; background: transparent; }
@@ -141,22 +172,22 @@ CSS_CARTES = """
 .sa { color: #2b2b2b; background: #eceff1; } .pique { color: #1f3fa0; background: #e3eaf8; }
 .coeur { color: #c0141c; background: #fbe4e4; } .carreau { color: #c86a00; background: #fff0d6; }
 .trefle { color: #1d7a35; background: #e1f2e5; }
-.carton { position: relative; width: 64px; height: 42px; padding: 3px 6px; border: 1px solid #8e99a4; border-radius: 5px;
-  font-size: 15px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.25); display: flex; align-items: flex-start;
+.carton { position: relative; width: 72px; height: 46px; padding: 2px 6px; border: 1px solid #8e99a4; border-radius: 5px;
+  font-size: 20px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.25); display: flex; align-items: flex-start;
   justify-content: flex-start; line-height: 1.1; }
-.carton.passe { background: #2e7d32; border-color: #1f5e24; color: #fff; font-size: 14px; }
+.carton.passe { background: #2e7d32; border-color: #1f5e24; color: #fff; font-size: 17px; }
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
 .carton:not(.derniere)::after { content: ""; position: absolute; inset: -1px; border-radius: 5px;
   background: rgba(255, 255, 255, .4); }   /* la dernière enchère de chacun en clair, les précédentes voilées */
-.pile { display: flex; align-items: center; justify-content: center; min-height: 42px; min-width: 70px; }
-.pile.vers-bas { flex-direction: column; } .pile.vers-bas .carton + .carton { margin-top: -18px; }
+.pile { display: flex; align-items: center; justify-content: center; min-height: 46px; min-width: 78px; }
+.pile.vers-bas { flex-direction: column; } .pile.vers-bas .carton + .carton { margin-top: -19px; }
 .pile.vers-haut { flex-direction: column-reverse; } .pile.vers-haut .carton { align-items: flex-end; }
-.pile.vers-haut .carton + .carton { margin-bottom: -14px; }
-.pile.vers-droite { flex-direction: row; } .pile.vers-droite .carton + .carton { margin-left: -24px; }
+.pile.vers-haut .carton + .carton { margin-bottom: -17px; }
+.pile.vers-droite { flex-direction: row; } .pile.vers-droite .carton + .carton { margin-left: -22px; }
 .pile.vers-gauche { flex-direction: row-reverse; } .pile.vers-gauche .carton { justify-content: flex-end; }
-.pile.vers-gauche .carton + .carton { margin-right: -20px; }
+.pile.vers-gauche .carton + .carton { margin-right: -22px; }
 .boite-encheres { background: #c0392b; border-radius: 12px; padding: 8px; }
 .ratelier { background: #f4f5f6; border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
 .tirette { width: 40px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px;
@@ -719,6 +750,7 @@ def page():
     ui.colors(primary="#1f6b45")
     ui.add_css("body, .q-layout, .q-page, .q-page-container, .q-tab-panels, .q-tab-panel { background: #fff; } "   # une page toute blanche
                "body { font-size: 16px; } .q-btn { text-transform: none; }" + CSS_AIDE + CSS_CARTES)
+    ui.add_head_html(JS_AJUSTE)
     seances, dossier = reglages()
     deja = seances_bc()
     choix = {"chemin": T.seance or seance_active() or (deja[0] if deja else None)}
@@ -1059,9 +1091,10 @@ def page():
         """La table, une grande surface vert clair : l'étui, les cartons, le pli et le mort posé dessus ; les mains des
         joueurs autour. contenu(siège, position) dessine une place ; sur_table : les positions posées sur la table (le mort)."""
         haut, gauche, droite, bas = places
-        with ui.element("div").classes("w-full py-2 overflow-x-auto"):   # en haut de l'écran
-            with ui.grid(columns="1fr auto 1fr").classes("w-full items-center gap-x-2 gap-y-4"):   # les mains des côtés contre la table
-                with ui.column().classes("items-center w-full").style("grid-column: 1 / 4"):
+        with ui.element("div").classes("w-full").style("overflow:hidden;padding-top:8px"), \
+                ui.element("div").classes("ajuste").style("width:max-content;transform-origin:0 0"):   # rétrécit avec la fenêtre (JS_AJUSTE)
+            with ui.grid(columns="1fr auto 1fr").classes("items-center gap-x-2 gap-y-4"):   # les mains des côtés contre la table
+                with ui.column().classes("items-center").style("grid-column: 1 / 4"):
                     if "haut" not in sur_table: contenu(haut, "haut")
                 with ui.column().classes("items-end"): contenu(gauche, "gauche")
                 with ui.column().classes("items-center gap-4").style(       # la table, carrée comme une vraie, à la taille de la fenêtre
@@ -1071,7 +1104,7 @@ def page():
                     if centre: centre()
                     if "bas" in sur_table: contenu(bas, "bas")
                 with ui.column().classes("items-start"): contenu(droite, "droite")
-                with ui.column().classes("items-center w-full").style(
+                with ui.column().classes("items-center").style(
                         "grid-column: 1 / 4" + ("" if "bas" in sur_table else ";margin-top:12px")):
                     if "bas" not in sur_table: contenu(bas, "bas")             # votre main, un peu en retrait de la table
 

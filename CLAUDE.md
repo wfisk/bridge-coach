@@ -165,6 +165,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         system's call as the Indice; a call the engine would not make is read by encheres.interpreter from the
                         rule file, else as natural), comparer (contract, double-dummy result, IMP for the player against the
                         Expert / Standard, first differing call), attempts saved in <name>-jeu.json beside the session
+      carte.py          card play in the Jouer tab: Partie (coups.Position, lead from the rules, legal cards, tricks, claim
+                        checked double-dummy); the player holds declarer and dummy. Defence like lignes.py from the defender's
+                        seat: 16 worlds of the two hidden hands true to the auction (lire_encheres), cards played and shown voids,
+                        solved double-dummy, the card that sets the contract most often (then most tricks, then the lowest).
+                        Bench vs a double-dummy declarer, 40 fresh deals: lead +0.23, defence +0.20 trick per deal (without the
+                        auction +0.30). Indice: lignes._carte. The app adds a thinking pause (0.8–0.9 s) to every engine call and card
       lignes.py         simulated declarer: at each card imagines 12 worlds true to the auction, lead and play,
                         solves them, keeps the card that wins most often; never sees the defenders' hands
                         of the deal played, defence double-dummy. analyser() runs it on 40 imagined deals: make

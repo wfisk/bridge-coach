@@ -138,3 +138,12 @@ def enregistrer(base, n, siege, seq, donneur):
     x["donnes"].setdefault(str(n), []).append(dict(date=datetime.datetime.now().isoformat(timespec="seconds"),
                                                  siege=siege, encheres=list(seq), contrat=c, declarant=decl))
     json.dump(x, open(fichier_jeu(base), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
+def completer_jeu(base, n, cartes, levees):
+    """Ajoute le jeu de la carte au dernier essai de la donne n : les cartes dans l'ordre et les levées du déclarant."""
+    x = lire_essais(base)
+    essais = x["donnes"].get(str(n)) or []
+    if not essais: return
+    essais[-1]["cartes"] = list(cartes); essais[-1]["levees"] = levees
+    json.dump(x, open(fichier_jeu(base), "w", encoding="utf-8"), ensure_ascii=False, indent=1)

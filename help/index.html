@@ -30,7 +30,16 @@
   <li><b>Ce que disent les enchères du programme</b> explique chaque enchère des autres joueurs, comme on le demande à la table.</li>
   <li>Si vous sortez du système, votre partenaire continue au mieux ; parfois il passe, faute de règle pour la séquence.</li>
 </ul>
-<p>À la fin, les quatre mains apparaissent, avec votre contrat face à ceux de l'analyse de l'expert et de l'analyse standard : le résultat au double mort, les IMP que vous gagnez ou perdez, la première enchère où les séquences diffèrent, et les séquences côte à côte. <b>Recommencer</b> rejoue la donne, <b>Donne suivante</b> passe à la suivante. Chaque essai est gardé à côté de la séance (<code>…-jeu.json</code>) ; la donne est marquée « enchérie ». Les analyses ne changent pas. Le jeu de la carte viendra ensuite.</p>
+<p>Le programme prend un petit temps de réflexion avant chaque enchère, comme à la table.</p>
+<p>À la fin, si votre camp déclare, <b>Jouer la carte</b> : vous tenez le déclarant et le mort, le programme défend (voir plus bas) ; les autres mains et l'analyse restent cachées jusqu'à la fin du jeu, sauf si vous choisissez <b>Voir les mains sans jouer</b>. Sinon, les quatre mains apparaissent, avec votre contrat face à ceux de l'analyse de l'expert et de l'analyse standard : le résultat au double mort, les IMP que vous gagnez ou perdez, la première enchère où les séquences diffèrent, et les séquences côte à côte. <b>Recommencer</b> rejoue la donne, <b>Donne suivante</b> passe à la suivante. Chaque essai est gardé à côté de la séance (<code>…-jeu.json</code>) ; la donne est marquée « enchérie ». Les analyses ne changent pas.</p>
+<h3>Jouer la carte</h3>
+<p>La défense entame selon les règles du système, puis le mort s'étale. Cliquez la carte à jouer dans la main dont c'est le tour, le déclarant ou le mort : seules les cartes possibles sont actives. Chaque défenseur réfléchit un instant : comme un joueur, il imagine les mains qu'il ne voit pas, d'après les enchères et les cartes déjà jouées, et joue la carte qui fait chuter le contrat le plus souvent ; il ne regarde jamais vos cartes. Le pli terminé reste un instant au centre.</p>
+<ul>
+  <li><b>Indice</b> dit la carte que jouerait le programme à votre place.</li>
+  <li><b>Réclamer le reste</b> donne toutes les levées qui restent, si la défense ne peut vraiment plus rien faire.</li>
+  <li><b>Plis joués</b> montre chaque pli, avec qui l'a gagné.</li>
+</ul>
+<p>À la fin : vos levées, le résultat du contrat et ce qu'il donne au double mort, puis la comparaison avec les analyses. <b>Rejouer la carte</b> recommence le jeu du même contrat. Quand votre camp défend, le jeu en défense viendra plus tard.</p>
 
 <h2>L'onglet Donnes</h2>
 <p>Il montre la séance ouverte. La liste de gauche donne :</p>

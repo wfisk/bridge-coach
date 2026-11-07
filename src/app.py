@@ -984,8 +984,8 @@ def page():
     def etui(d, places, petit=False):
         """L'étui de la donne au centre, comme un vrai étui : Nord et Sud toujours sur les petits côtés (debout quand
         Nord-Sud sont en haut et en bas, couché sinon), leurs bandes sur toute la largeur, Est et Ouest entre elles ;
-        chaque nom se lit depuis sa place ; fond rouge si son camp est vulnérable, vert sinon ; le donneur écrit
-        « DONNEUR » en capitales ; le joueur qui réfléchit clignote."""
+        chaque nom se lit depuis sa place, en capitales, blanc sur rouge si son camp est vulnérable, sur vert sinon ; le
+        donneur écrit « Donneur » en rouge ou vert sur blanc ; le joueur qui réfléchit clignote."""
         v = d["vul"]; vul = lambda x: v == "Tous" or v == ("N-S" if x in "NS" else "E-O")
         l, L, h, f = (84, 149, 22, 12) if petit else ETUI      # l × L : l'étui (9:16), h : épaisseur des bandes
         haut, gauche, droite, bas = places
@@ -996,15 +996,18 @@ def page():
         else:                                                 # Nord et Sud à gauche et à droite, Est-Ouest entre eux
             place = {gauche: "1 / 1 / 4 / 2", droite: "1 / 3 / 4 / 4", haut: "1 / 2 / 2 / 3", bas: "3 / 2 / 4 / 3"}
         def bande(x):
-            nom = "DONNEUR" if x == d["donneur"] else SIEGE[x]  # le donneur en capitales
-            fond = "#c0141c" if vul(x) else "#2e7d32"
+            teinte = "#c0141c" if vul(x) else "#2e7d32"
+            if x == d["donneur"]:                             # le donneur : « Donneur » en couleur sur blanc
+                nom, fond, encre = "Donneur", f"#fff;border:2px solid {teinte}", teinte
+            else:                                             # les autres : le nom en capitales, blanc sur la couleur
+                nom, fond, encre = SIEGE[x].upper(), teinte, "#fff"
             if x in (haut, bas):
                 forme = "width:100%;height:100%;" + ("transform:rotate(180deg);" if x == haut else "")
             else:
                 forme = "width:100%;height:100%;writing-mode:vertical-rl;" + ("transform:rotate(180deg);" if x == gauche else "")
             return (f"<div class='{'pense' if jeu.get('pense') == x else ''}' style='grid-area:{place[x]};{forme}display:flex;"
-                    f"align-items:center;justify-content:center;border-radius:5px;font-size:{f}px;font-weight:700;color:#fff;"
-                    f"background:{fond}'>{nom}</div>")
+                    f"align-items:center;justify-content:center;border-radius:5px;font-size:{f}px;font-weight:700;color:{encre};"
+                    f"box-sizing:border-box;background:{fond}'>{nom}</div>")
         return (f"<div title='En rouge les camps vulnérables, en vert les autres' style='display:grid;box-sizing:border-box;"
                 f"width:{W}px;height:{H}px;grid-template-columns:{h}px 1fr {h}px;grid-template-rows:{h}px 1fr {h}px;gap:4px;"
                 f"padding:6px;border-radius:8px;background:#e4e7eb;border:1px solid #c8ced5;box-shadow:0 1px 2px rgba(0,0,0,.12)'>"

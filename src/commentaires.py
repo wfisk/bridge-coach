@@ -126,7 +126,8 @@ def resume(d):
     # meilleur et moins bon score Nord-Sud
     hi = max(ts, key=lambda t: t["score_ns"]); lo = min(ts, key=lambda t: t["score_ns"])
     if hi["score_ns"] != lo["score_ns"]:
-        q = lambda t: f"{t['contrat']} par {t['declarant']} {t['resultat']}, table {t['table']}, {t.get('nom_ns') or t['paire_ns']}"
+        q = lambda t: f"{t['contrat']} par {t['declarant']} {t['resultat']}, table {t['table']}" + \
+            (f", {t.get('nom_ns') or t['paire_ns']}" if t.get("nom_ns") or t.get("paire_ns") else "")   # paire inconnue : rien
         out.append(f"Meilleur score N-S : {hi['score_ns']:+d} ({q(hi)}) ; le moins bon : {lo['score_ns']:+d} ({q(lo)}).")
     return out
 

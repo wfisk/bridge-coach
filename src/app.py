@@ -1671,8 +1671,8 @@ def page():
                 if os.path.exists(journal):
                     lignes_j = [x for x in open(journal, encoding="utf-8").read().splitlines() if x.strip()]
                     if lignes_j:
-                        quand = datetime.datetime.fromtimestamp(os.path.getmtime(journal)).strftime("%d/%m/%Y")
-                        ui.label(f"Dernière mise à jour, le {quand} : {lignes_j[0]} — {lignes_j[-1]}").classes("text-sm text-gray-600")
+                        le = datetime.datetime.fromtimestamp(os.path.getmtime(journal)).strftime("%d/%m/%Y")   # pas « quand » : la fonction
+                        ui.label(f"Dernière mise à jour, le {le} : {lignes_j[0]} — {lignes_j[-1]}").classes("text-sm text-gray-600")
 
             with ui.tab_panel(o_aide).classes("px-0 max-w-xl mx-auto"):   # une page comme les autres : un onglet la quitte
                 page_aide()                                    # une section à la fois, choisie dans la barre de gauche

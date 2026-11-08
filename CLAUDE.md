@@ -82,7 +82,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         entete, ecrire_bc), keeps a copy of the original beside it, builds the PDFs into
                         rapports/AAAA-MM/ (writes each PDF under a temporary name then swaps it in:
                         Documents is synced by a full iCloud, which kept old versions otherwise)
-                        A .bc.json (or the old -donnes.json) is read as is (donnes_pretes), skipping the import.
+                        A .bc.json (or the old -donnes.json) is read as is (donnes_pretes), skipping the import. One already inside seances/ stays
+                        where it is, under its own name (even with a date in it): no undated copy is made.
                         migrer(), on every start: reports/ → rapports/, <name>-donnes.json → <name>.bc.json with
                         its source and players (<name>-paires.json merged in, then removed)
       maj.py            updates from GitHub, standard library only: derniere_version (tags API, only on the Réglages

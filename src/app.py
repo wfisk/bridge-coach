@@ -1004,7 +1004,7 @@ def page():
             if x in (haut, bas):
                 forme = "width:100%;height:100%;" + ("transform:rotate(180deg);" if x == haut else "")
             else:
-                forme = "width:100%;height:100%;writing-mode:vertical-rl;" + ("transform:rotate(180deg);" if x == gauche else "")
+                forme = "width:100%;height:100%;writing-mode:vertical-rl;" + ("transform:rotate(180deg);" if x == droite else "")   # le haut des lettres vers le centre, loin du lecteur
             return (f"<div class='{'pense' if jeu.get('pense') == x else ''}' style='grid-area:{place[x]};{forme}display:flex;"
                     f"align-items:center;justify-content:center;border-radius:5px;font-size:{f}px;font-weight:700;color:{encre};"
                     f"box-sizing:border-box;background:{fond}'>{nom}</div>")

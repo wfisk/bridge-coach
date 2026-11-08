@@ -395,6 +395,8 @@ def main():
     j, m, a = data["session"]["date"].split("/")
     date = f"{a}-{m}-{j}"
     DATA = os.path.join(SEANCES, f"{a}-{m}"); SORTIE = os.path.join(RAPPORTS, f"{a}-{m}")
+    if pret and bws.endswith(BC) and os.path.dirname(os.path.dirname(bws)) == os.path.abspath(SEANCES):
+        DATA = os.path.dirname(bws); nom = os.path.basename(bws)[:-len(BC)]   # déjà rangée : elle reste où elle est, sous son nom
     os.makedirs(DATA, exist_ok=True); os.makedirs(SORTIE, exist_ok=True)
     fichier = lambda suite: os.path.join(DATA, nom + suite)   # seances : le nom d'origine, sans date
     donnes = fichier(BC)

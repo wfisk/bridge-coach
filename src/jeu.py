@@ -45,16 +45,19 @@ def couleurs_nommees(encheres, donneur):
         if b in ("passe", "contre", "surcontre"): continue
         m = re.fullmatch(r"([1-7])([♣♦♥♠]|SA)", b)
         ouverture = premiere; premiere = False
-        moi = tout.get(qui, []); partenaire = tout.get(PART[qui], [])
+        moi = list(tout.get(qui, [])); partenaire = list(tout.get(PART[qui], []))   # avant cette enchère
         prec[qui] = b; tout.setdefault(qui, []).append(b)
         if not m or m[2] == "SA" or m[1] > "3": continue
-        fit = {x[1:] for x in moi} & {x[1:] for x in partenaire} - {"SA"}
+        fit = {x[1:] for x in moi + [b]} & {x[1:] for x in partenaire} - {"SA"}
         if fit and m[2] not in fit: continue               # après le fit, une nouvelle couleur est un contrôle
         if ouverture and b in ("2♣", "2♦"): continue       # les ouvertures fortes
         if part in ("2♣", "2♦") and len(partenaire) == 1 and b == "2♦" and part == "2♣" and not moi: continue   # le relais
-        if (part, b) in (("1SA", "2♣"), ("1SA", "2♦"), ("1SA", "2♥"), ("2SA", "3♣"), ("2SA", "3♦"), ("2SA", "3♥")): continue
-        if part == "2♣" and b in ("2♦", "2♥", "2♠") and "1SA" in moi: continue   # réponse au Stayman
-        if part == "3♣" and b in ("3♦", "3♥", "3♠") and "2SA" in moi: continue
+        # Stayman et texas : seulement sur le 1SA ou le 2SA qui est la première enchère du partenaire, quand on n'a
+        # pas encore parlé (ouverture ou intervention) ; dans 1♠ – 1SA – 2♥, le 2♥ de l'ouvreur est naturel
+        sur_sa = not moi and partenaire == [part]
+        if sur_sa and (part, b) in (("1SA", "2♣"), ("1SA", "2♦"), ("1SA", "2♥"), ("2SA", "3♣"), ("2SA", "3♦"), ("2SA", "3♥")): continue
+        if partenaire == ["2♣"] and moi == ["1SA"] and b in ("2♦", "2♥", "2♠"): continue   # réponse au Stayman
+        if partenaire == ["3♣"] and moi == ["2SA"] and b in ("3♦", "3♥", "3♠"): continue
         adverses = [c for x in ROT if x not in camp_de(qui) for c in out[x]]
         if m[2] in adverses: continue                      # cue-bid
         nous = {c for x in camp_de(qui) for c in out[x]}

@@ -46,6 +46,9 @@ assert nom("1SA", "2♣", "2♦", "2SA")["N"] == [] and nom("1SA", "2♣", "2♦
 assert nom("1SA", "2♦", "2♥")["S"] == []                                                             # texas
 assert nom("2♣", "2♦", "2♥")["N"] == ["♥"] and nom("2♣", "2♦", "2♥")["S"] == []                      # 2♣ fort et relais
 assert nom("1♦", "1♥", "1♠", "2♣")["S"] == ["♥"]                                                     # quatrième couleur
+assert nom("1♠", "1SA", "2♥")["N"] == ["♠", "♥"]              # 1SA est une réponse : le 2♥ de l'ouvreur est naturel
+assert nom("1♥", "1SA", "2♣", "2♦")["S"] == ["♦"]             # 2♣ de l'ouvreur n'est pas un Stayman
+assert jeu.couleurs_nommees(["1♦", "1SA", "passe", "2♥"], "N")["O"] == []        # texas sur une intervention à 1SA
 # une impasse exige une petite carte pour jouer vers la fourchette ; pas de 3-0 coûteux sans raison
 assert not jeu.impasses(("N", {"♥": "R"}), ("S", {"♥": "ADX863"}), "♥")
 # le nombre de processus : 8 Go laissent 5 processus au plus ; un petit PC reste à un cœur libre

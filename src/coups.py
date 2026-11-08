@@ -198,6 +198,23 @@ def _ligne(mains, den, decl, entame, rnd):
     return trouve
 
 
+def coups_a_venir(mains, den, decl, jouees):
+    """Depuis la position réelle (jouees : les cartes déjà jouées, « SA » « HT »…) dans une donne imaginée mains : la
+    suite au double mort passe-t-elle par un squeeze ou une mise en main ? [(type, joueur)] (le déclarant y pense)."""
+    lettre = dict(zip("SHDC", COULEURS))
+    pos = Position(mains, den, decl)
+    for j in jouees: pos.jouer(lettre[j[0]], j[1:])
+    vus = []
+    while any(pos.reste[pos.au_trait()].values()):
+        v = pos.valeurs(); s = pos.au_trait()
+        fin = (max if pos.camp(s) else min)(v.values())
+        if not pos.camp(s) and squeeze(pos, v): vus.append(("squeeze", s))
+        if mise_en_main(pos, fin): vus.append(("mise en main", s))
+        bons = [k for k, x in v.items() if x == fin]
+        pos.jouer(*(min(bons, key=lambda k: RANGS.index(k[1])) if pos.camp(s) else max(bons, key=lambda k: RANGS.index(k[1]))))
+    return sorted(set(vus))
+
+
 def analyser(mains, den, decl, entame=None, lignes=LIGNES, graine=1):
     """Coups trouvés sur quelques lignes du double mort : le premier de chaque type et joueur."""
     try:

@@ -162,7 +162,11 @@ def _un_declarant(arg):
     la réserve du déclarant avec ou sans le modèle. Les levées du déclarant et celles requises."""
     graine, avec = arg
     import carte as C
+    C.COUPS_A_VENIR = False                        # le banc ne lit pas les pensées
+    C.MONDES_DECLARANT = 12                        # un processus du Pool garde ses réglages d'une donne à l'autre
+    if isinstance(avec, int) and not isinstance(avec, bool): C.MONDES_DECLARANT, avec = avec, False
     C.MODELE_DECLARANT = avec
+    import modele as M
     rnd = random.Random(graine)
     while True:
         d = donne_au_hasard(rnd, rnd.randrange(10 ** 6))

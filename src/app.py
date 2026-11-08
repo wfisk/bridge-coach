@@ -931,6 +931,8 @@ def pensee_html(t, ouvert=True):
     """Une pensée (carte.texte_pensee) : qui joue quoi, pourquoi, et ce qu'il croit des mains cachées."""
     h = f"<div style='font-size:15px;font-weight:700'>{rouge(t['titre'])}</div>"
     if t["raison"]: h += f"<div style='font-size:14px;margin-top:2px'>{rouge(t['raison'])}</div>"
+    if t.get("plan"):
+        h += f"<div style='font-size:13px;margin-top:4px'><b>Son plan :</b> {rouge(t['plan'])}</div>"
     if t["croyance"]:
         h += ("<div style='font-size:13px;color:#555b66;margin-top:4px'><b>Ce qu'il croit :</b>"
               + "".join(f"<div>{rouge(x)}</div>" for x in t["croyance"]) + "</div>")

@@ -207,7 +207,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         defence 9.59 tricks / 54 sets, model + signals 9.52 / 53: kept for the commentary and for you (signals cost
                         nothing: only among equal cards), but carte.MODELE stays off. analyse_jeu reviews the play double-dummy (cost of each
                         card, squeeze / mise en main / laisser-passer found or missed); resume_donne writes the end-of-deal summary
-                        shown under the result. In defence the app draws dummy on the table at the side,
+                        shown under the result. The robot declarer announces its plan with its first card (jeu.plan_de_jeu,
+                        declarer's view, no simulation; pensee "plan", in the thoughts, replay and summary); at each trick it leads,
+                        it plays 8 of its imagined worlds on double-dummy from the real position (coups.coups_a_venir) and says when
+                        the rest passes through a squeeze or an endplay in a third of them or more (COUPS_A_VENIR). Its play already
+                        follows such lines when its worlds agree; 24 worlds a card instead of 12 (MONDES_DECLARANT) gave +0.02 trick
+                        and one contract in 120 deals, not kept. In defence the app draws dummy on the table at the side,
                         one row per suit, highest card toward dummy, trumps on dummy's right (mort_etale cote, table sur_table). Defence like lignes.py from the defender's
                         seat: 16 worlds of the two hidden hands true to the auction (lire_encheres), cards played and shown voids,
                         solved double-dummy, the card that sets the contract most often (then most tricks, then the lowest).

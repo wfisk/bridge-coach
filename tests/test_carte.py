@@ -54,4 +54,12 @@ res = carte.resume_donne(d, "6♦", "N", "N", tout, p.pensees, p.levees()[0])
 assert res[0].startswith("6♦ par Nord") and any(l.startswith("Vos cartes") for l in res)
 a = carte.analyse_jeu(d, "6♦", "N", tout)
 assert len(a["cartes"]) == 52 and all(z["perte"] >= 0 for z in a["cartes"])
+# le plan du déclarant, annoncé avec sa première carte ; les coups à venir dans ses donnes imaginées
+p = carte.Partie(d, "6♦", "N", seq, humain=G["N"])
+p.poser(p.legales()[0])
+while not p.au_joueur() and not p.fini(): p.poser(p.carte_robot())
+z = next(z for z in p.pensees if not z["humain"] and z["role"] == "declarant")
+assert z["plan"] and "Compte" in z["plan"] and carte.texte_pensee(z, "N")["plan"]
+from coups import coups_a_venir
+assert isinstance(coups_a_venir(d["mains"], "♦", "N", []), list)
 print("ok")

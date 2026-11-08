@@ -20,6 +20,8 @@ from jeu import COULEURS, LHO, RHO, PART, ROT, PTS, _donne_dds, lire_encheres, e
 LETTRE = dict(zip(COULEURS, "SHDC"))
 MONDES = 16                                               # mondes imaginés par carte de la défense
 MODELE = False                                            # vrai : les mondes viennent du modèle des mains cachées (modele.py)
+MONDES_DECLARANT = 12                                     # mondes imaginés par carte du déclarant simulé
+COUPS_A_VENIR = True                                      # le déclarant regarde si la suite passe par un squeeze, une mise en main
 SIGNAUX = True                                            # les défenseurs signalent (appel, parité) entre cartes équivalentes
 MODELE_DECLARANT = False                                  # vrai : la réserve du déclarant simulé vient aussi du modèle ;
                                                           # « suivi » : renouvelée à chaque carte par le modèle mis à jour
@@ -87,7 +89,13 @@ class Partie:
         """La pensée d'une carte : qui la joue, la carte, ce qu'il croyait et les scores des cartes qu'il avait (pour un
         robot : son dernier calcul). Tout en texte et nombres, pour être gardé avec la donne."""
         ch = self.dernier if self.dernier and self.dernier.get("siege") == s else None
-        return dict(n=len(self.pos.jouees), siege=s, carte=carte_fr(*x), humain=humain,
+        plan = ""
+        if not humain and self.camp(s) and getattr(self, "_plan_neuf", False):
+            plan = self.plan; self._plan_neuf = False      # le plan, avec la première carte du déclarant
+        cv = (ch or {}).get("coups") or {}
+        coups = [dict(type=t, joueur=j, n=v, sur=cv["n"]) for (t, j), v in
+                 ((k, v) for k, v in cv.items() if k != "n") if v * 3 >= cv.get("n", 99)]   # au moins un tiers des donnes
+        return dict(n=len(self.pos.jouees), siege=s, carte=carte_fr(*x), humain=humain, plan=plan, coups=coups,
                     signal=(ch.get("signal") if ch and ch.get("role") == "defense" else None),
                     role="declarant" if self.camp(s) else "defense",
                     croyance=[] if humain else self.croyance(s), mondes=ch["mondes"] if ch else 0,
@@ -274,11 +282,37 @@ class Partie:
             if not self._pool:
                 self._pool = donnes_du_declarant(self.d, self.decl, self.encheres, carte_fr(*(self.premiere() or self.entame)), 40)
         vides = {x: set(LETTRE[c] for c in self.vides[x]) for x in (LHO[self.decl], RHO[self.decl])}
+        if not hasattr(self, "plan"):                     # sa première carte : le déclarant fait son plan (jeu.plan_de_jeu)
+            try:
+                from jeu import plan_de_jeu
+                e = self.premiere() or self.entame
+                self.plan = plan_de_jeu(self.d, self.contrat, self.decl, {"joueur": LHO[self.decl], "carte": carte_fr(*e)},
+                                        self.encheres, simuler=False, verdict=False)
+            except Exception:
+                self.plan = ""
+            self._plan_neuf = True
         details = {}
-        x = lignes._carte(self.pos, self._pool, vides, self.besoin, 12, random.Random(len(self.pos.jouees)), details)
+        x = lignes._carte(self.pos, self._pool, vides, self.besoin, MONDES_DECLARANT, random.Random(len(self.pos.jouees)), details)
         self.dernier = dict(role="declarant", siege=self.au_trait(), mondes=details.get("mondes", 0),
                             scores=details.get("scores", {}), force=len(self.legales()) == 1)
+        if not self.pos.pli and COUPS_A_VENIR:          # en tête d'un pli : la suite passe-t-elle par un coup ?
+            self.dernier["coups"] = self.coups_a_venir(vides)
         return x
+
+    def coups_a_venir(self, vides, k=8):
+        """Dans k donnes imaginées par le déclarant, la suite au double mort passe-t-elle par un squeeze ou une mise en
+        main ? {"n": k, (type, joueur): nombre de donnes}. Seulement ce que le déclarant peut imaginer."""
+        import lignes
+        from coups import coups_a_venir
+        mondes = lignes._mondes(self.pos, self._pool, vides, k, random.Random(len(self.pos.jouees) + 7))
+        out = {"n": len(mondes)}
+        for m in mondes:
+            try:
+                for c in coups_a_venir(m, self.den, self.decl, self.pos.jouees):
+                    out[c] = out.get(c, 0) + 1
+            except Exception:
+                pass
+        return out
 
     def reclamer(self):
         """True si le déclarant fait toutes les levées qui restent, quoi que fasse la défense (double mort)."""
@@ -349,6 +383,10 @@ def _texte_pensee(pz, decl):
             raison = f"Pour {but} : cette carte réussit dans {a} mondes sur {m}"
             raison += f" ({alt})" if alt else ""
             raison += ", et donne le plus de levées." if moins_lev else "."
+    for c in pz.get("coups") or []:
+        quoi = "un squeeze sur" if c["type"] == "squeeze" else "une mise en main de"
+        raison = (raison + " " if raison else "") + (f"Dans {c['n']} de ses {c['sur']} donnes imaginées, la suite passe par "
+                                                     f"{quoi} {NOMS[c['joueur']]} : il garde ses menaces et ses communications.")
     sig = pz.get("signal")
     if sig:
         c = pz["carte"][0]
@@ -356,7 +394,7 @@ def _texte_pensee(pz, decl):
                 "parité paire": f"la parité à {c} : un nombre pair de cartes (grosse puis petite)",
                 "parité impaire": f"la parité à {c} : un nombre impair de cartes (la plus petite)"}.get(sig, sig)
         raison = (raison + " " if raison else "") + f"Ses cartes se valant, il choisit celle qui signale : {sens}."
-    return dict(titre=titre, raison=raison, croyance=list(pz.get("croyance") or []))
+    return dict(titre=titre, raison=raison, croyance=list(pz.get("croyance") or []), plan=pz.get("plan") or "")
 
 
 def avis_programme(d, contrat, decl, encheres, humain, cartes, k):
@@ -442,6 +480,10 @@ def resume_donne(d, contrat, decl, humain, cartes, pensees, levees):
             g = f"{c['gain']} levée{'s' if c['gain'] > 1 else ''}"
             vus.append(f"{c['type']} à {c['couleur']} au pli {c['pli']} : " + ("trouvé" if c["joue"] else f"manqué, il rapportait {g}"))
     out.append(("Les coups : " + " ; ".join(vus) + ".") if vus else "Pas de squeeze ni de mise en main dans cette donne.")
+    plan = next((z["plan"] for z in pensees if z.get("plan")), "")
+    if plan:
+        import re as _re
+        out.insert(1, "Le plan du déclarant, à sa première carte : " + _re.sub(r"<[^>]+>", " ", plan).replace("  ", " ").strip())
     sig = [f"{NOMS[z['siege']]} : {z['signal']} à {z['carte'][0]} ({z['carte']})" for z in pensees if z.get("signal")]
     if sig: out.append("Les signaux de la défense : " + " ; ".join(sig[:8]) + ".")
     cr = []                                                # ce qu'ils croyaient, face aux vraies mains

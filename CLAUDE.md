@@ -54,7 +54,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         "exemple_analyse", "documents" (the system files); Claude returns seance-du-…-expert.json; importer_expert
                         checks it (four-column grids; each lead from the declarer's left, a card of that hand: rapport.entame_valide)
                         and merges it deal by deal into the .bc.json (the file before goes to versions/); "Aller aux rapports"
-                        switches to the Rapports tab), then each deal's analysis, the Expert's when it exists (toggle
+                        switches to the Rapports tab), then each deal's analysis laid out like its PDF page (page_analyse: title, diagramme_html with the lead marks of build_pdf.marques_entame and the vulnerability compass, Résultats à la table as the rank line, the recommended contract's double-dummy line and the full table folded in a ui.expansion (tableau_resultats, shared with Donnes; hearts and diamonds red through a v-html slot), the recommended auction beside its notes, expert text in the green ✦ block, plan, lead and defence, comment, cartes vues), the Expert's when it exists (toggle
                         Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: options (« Vous êtes », played order, the
                         names page), "Créer les rapports" (rapport.py --rapports: the PDFs from the saved analyses; T.genre says which
                         tab shows the progress), then the session's PDFs and the bilan as links with file name and date (lien_pdf); Réglages.

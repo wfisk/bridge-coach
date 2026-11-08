@@ -528,23 +528,35 @@ def page_donne(d, mes=frozenset(), tour="", reco=None):
         ui.label("Aux tables").classes("text-base font-bold mt-2")
         rang = moi.votre_rang(d["tables"], mes, lambda t: f"{t['contrat']} {SIEGE.get(t['declarant'], t['declarant'])} {t['resultat']}".strip())
         if rang: ui.html(f"<div style='font-size:15px;background:{moi.SURLIGNE};padding:2px 6px;border-radius:4px'>{rouge(rang)}</div>", sanitize=False)
-        rows = [{"k": str(i), "table": str(x.get("table", "")), "ns": x.get("nom_ns") or x.get("paire_ns", ""),
-                 "eo": x.get("nom_eo") or x.get("paire_eo", ""), "contrat": x.get("contrat", ""),
-                 "decl": SIEGE.get(x.get("declarant"), x.get("declarant") or ""), "res": x.get("resultat", ""),
-                 "entame": x.get("entame") or "", "score": f"{x['score_ns']:+d}" if isinstance(x.get("score_ns"), int) else "",
-                 "moi": moi.a_joue(x, mes), "reco": bool(x.get("recommande"))}
-                for i, x in enumerate(moi.ordre(d["tables"] + ([reco] if reco else []), mes))]   # le meilleur d'abord, vu de votre camp
-        for x in rows:
-            if x["reco"]: x.update(table="", ns="Recommandé", eo="au double mort")
-        cols = [("table", "Table"), ("ns", "Nord-Sud"), ("eo", "Est-Ouest"), ("contrat", "Contrat"), ("decl", "Déclarant"),
-                ("res", "Résultat"), ("entame", "Entame"), ("score", "Score N-S")]
-        ui.table(columns=[{"name": k, "label": l, "field": k, "align": "left"} for k, l in cols], rows=rows, row_key="k") \
-            .props(f"flat dense :table-row-style-fn=\"r => r.moi ? 'background:{moi.SURLIGNE}' : r.reco ? 'background:{FOND_RECO};font-style:italic' : ''\"").classes("w-full")   # votre table
+        tableau_resultats(d, mes, reco)
         if any(x.get("encheres") for x in d["tables"]):
             ui.label("Les enchères aux tables").classes("text-base font-bold mt-2")
-            with ui.row().classes("gap-6 items-start"):
-                for x in d["tables"]:
-                    if x.get("encheres"): ui.html(encheres_html(d, x), sanitize=False)
+            encheres_tables(d)
+
+
+def tableau_resultats(d, mes, reco):
+    """Les tables, du meilleur résultat au moins bon vu de votre camp ; votre ligne en jaune, le contrat recommandé
+    (reco) en vert pâle à sa place."""
+    rows = [{"k": str(i), "table": str(x.get("table", "")), "ns": x.get("nom_ns") or x.get("paire_ns", ""),
+             "eo": x.get("nom_eo") or x.get("paire_eo", ""), "contrat": rouge(x.get("contrat", "")),
+             "decl": SIEGE.get(x.get("declarant"), x.get("declarant") or ""), "res": x.get("resultat", ""),
+             "entame": rouge(x.get("entame") or ""), "score": f"{x['score_ns']:+d}" if isinstance(x.get("score_ns"), int) else "",
+             "moi": moi.a_joue(x, mes), "reco": bool(x.get("recommande"))}
+            for i, x in enumerate(moi.ordre(d["tables"] + ([reco] if reco else []), mes))]   # le meilleur d'abord, vu de votre camp
+    for x in rows:
+        if x["reco"]: x.update(table="", ns="Recommandé", eo="au double mort")
+    cols = [("table", "Table"), ("ns", "Nord-Sud"), ("eo", "Est-Ouest"), ("contrat", "Contrat"), ("decl", "Déclarant"),
+            ("res", "Résultat"), ("entame", "Entame"), ("score", "Score N-S")]
+    tb = ui.table(columns=[{"name": k, "label": l, "field": k, "align": "left"} for k, l in cols], rows=rows, row_key="k") \
+        .props(f"flat dense :table-row-style-fn=\"r => r.moi ? 'background:{moi.SURLIGNE}' : r.reco ? 'background:{FOND_RECO};font-style:italic' : ''\"").classes("w-full")   # votre table
+    for k in ("contrat", "entame"):                         # cœurs et carreaux en rouge, comme dans le PDF
+        tb.add_slot(f"body-cell-{k}", '<q-td :props="props"><span v-html="props.value"></span></q-td>')
+
+
+def encheres_tables(d):
+    with ui.row().classes("gap-6 items-start"):
+        for x in d["tables"]:
+            if x.get("encheres"): ui.html(encheres_html(d, x), sanitize=False)
 
 
 # ---------------------------------------------------------------- l'analyse, dans l'onglet Analyse
@@ -768,26 +780,114 @@ def grille_html(enc, vul=None):
     return f"<table style='border-collapse:collapse;font-size:15px{large}'><tr>{tete}</tr>{corps}</table>"
 
 
-def page_analyse(d, a, repli, version):
-    """L'analyse d'une donne : enchères recommandées, entame et défense, plan de jeu, commentaire, cartes vues."""
-    from build_pdf import txt                              # sièges en toutes lettres, cœurs et carreaux en rouge
-    texte = lambda x: ui.html(f"<div style='font-size:15px;line-height:1.5'>{txt(x)}</div>", sanitize=False)
-    mains_grille(d)                                        # le nom de la donne et la version sont dans la barre de droite
-    ui.label("Enchères recommandées").classes("text-base font-bold mt-2")
-    ui.html(grille_html(a["enc"]), sanitize=False)
-    if a.get("notes"): texte(a["notes"])
-    e = a.get("entame")
-    if isinstance(e, dict) and e.get("carte"):
-        ui.label("Entame et défense").classes("text-base font-bold mt-2")
-        texte(f"<b>{SIEGE.get(e.get('joueur'), e.get('joueur', ''))}</b> entame {e['carte']}." + (f"<br/>{a['defense']}" if a.get("defense") else ""))
+VERT, ROUGE_VUL, ENCRE = "#1f5f3a", "#c0141c", "#3b424f"      # les couleurs du PDF (build_pdf)
+STYLE_AVIS = f"background:#e6efe9;border-left:3px solid {VERT};padding:4px 8px;margin-top:4px"
+
+
+def titre_section(t):
+    """Un titre de section, comme dans le PDF : gras, vert."""
+    ui.html(f"<div style='font-size:16px;font-weight:700;color:{VERT};margin-top:14px'>{t}</div>", sanitize=False)
+
+
+def diagramme_html(d, a):
+    """Les quatre mains autour de la rose des vents (rouge vulnérable, vert sinon), avec les repères d'entame du PDF :
+    un rond par entame jouée à une table, deux à plusieurs tables, un fond gris pour l'entame recommandée."""
+    import contextlib, io
+    from build_pdf import marques_entame, SUITS
+    with contextlib.redirect_stdout(io.StringIO()):          # ses avertissements vont au PDF, pas ici
+        mk = marques_entame(d, a)
+    def carte(siege, s, x):
+        m = mk[siege].get((s, x)); txt = "10" if x == "X" else x
+        if not m: return f"<span style='display:inline-block;min-width:13px;text-align:center'>{txt}</span>"
+        bord = f"border:1.3px solid {ENCRE};" if m["tables"] else ""
+        double = f"box-shadow:0 0 0 2px #fff,0 0 0 3.3px {ENCRE};" if m["tables"] > 1 else ""
+        fond = "background:rgba(59,66,79,.28);" if m["reco"] else ""
+        return (f"<span style='display:inline-block;min-width:21px;height:21px;line-height:19px;text-align:center;border-radius:50%;"
+                f"margin:0 2px;{bord}{double}{fond}'>{txt}</span>")
+    def main(siege):
+        lignes = "".join(f"<div>{rouge(c)}&nbsp;" + ("—" if x == "-" else "".join(carte(siege, c, y) for y in x)) + "</div>"
+                         for c, x in zip(SUITS, d["mains"][siege].split()))
+        don = " · donneur" if d["donneur"] == siege else ""
+        return f"<div style='font-size:15px;line-height:1.5'><div style='color:#555;font-weight:600;white-space:nowrap'>{SIEGE[siege]} · {d['hcp'][siege]} H{don}</div>{lignes}</div>"
+    v = d.get("vul", "Personne")
+    c_ns = ROUGE_VUL if v in ("N-S", "Tous") else VERT; c_eo = ROUGE_VUL if v in ("E-O", "Tous") else VERT
+    case = lambda t, c: f"<div style='background:{c};color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center'>{t}</div>"
+    rose = (f"<div style='display:grid;grid-template:repeat(3,30px)/repeat(3,30px);border:1px solid #1d2430;width:92px'>"
+            f"<div></div>{case('N', c_ns)}<div></div>{case('O', c_eo)}<div></div>{case('E', c_eo)}<div></div>{case('S', c_ns)}<div></div></div>")
+    rond = lambda style: f"<span style='display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:8px;{style}'></span>"
+    legende = "<div style='font-size:14px;color:#555b66;line-height:1.9;white-space:nowrap'><div style='font-weight:700'>Entame</div>"
+    if d.get("tables"):
+        legende += (f"<div>{rond(f'border:1.3px solid {ENCRE}')}jouée à une table</div>"
+                    f"<div>{rond(f'border:1.3px solid {ENCRE};box-shadow:0 0 0 2px #fff,0 0 0 3.3px {ENCRE}')}jouée à plusieurs tables</div>")
+    legende += f"<div>{rond('background:rgba(59,66,79,.28)')}recommandée</div></div>"
+    return (f"<div style='display:grid;grid-template-columns:150px 100px 150px max-content;align-items:center;gap:6px 10px'>"
+            f"<div></div><div style='grid-column:2/4'>{main('N')}</div><div></div>"
+            f"<div style='justify-self:end'>{main('O')}</div><div style='justify-self:center'>{rose}</div><div>{main('E')}</div><div></div>"
+            f"<div></div><div style='grid-column:2/4;align-self:start'>{main('S')}</div><div style='align-self:start'>{legende}</div></div>")
+
+
+def avec_avis_html(texte):
+    """Le texte du programme, puis l'avis de l'expert (après MARQUE_AVIS) dans son bloc vert, comme le PDF."""
+    from build_pdf import txt, MARQUE_AVIS
+    prog, _, avis = texte.partition(MARQUE_AVIS)
+    h = f"<div>{txt(prog)}</div>"
+    if avis: h += f"<div style='{STYLE_AVIS}'><span style='color:{VERT}'>✦</span> <b>Avis de l'expert :</b> {txt(avis.strip())}</div>"
+    return h
+
+
+def page_analyse(d, a, repli, version, data=None, c=None):
+    """L'analyse d'une donne, dans l'ordre et l'allure de sa page du PDF : titre, mains et repères d'entame, résultats
+    à la table (votre rang et le contrat recommandé ; le tableau complet replié), enchères recommandées et leur avis,
+    plan de jeu, entame et défense, commentaire, cartes vues. Le double mort et le par sont dans la barre de droite."""
+    from build_pdf import txt
+    data = data or {}
+    html = lambda h, style="": ui.html(f"<div style='font-size:15px;line-height:1.5;{style}'>{h}</div>", sanitize=False).classes("w-full")
+    vul = {"Personne": "Personne", "Tous": "Tous", "N-S": "Nord-Sud", "E-O": "Est-Ouest"}.get(d.get("vul"), d.get("vul", ""))
+    ui.label(f"Donne n° {d['n']}").classes("text-lg font-bold")
+    sous = f"Donneur : <b>{SIEGE[d['donneur']]}</b> · Vulnérable : <b>{vul}</b>" + (f" · Thème : <b>{d['theme']}</b>" if d.get("theme") else "")
+    tour = moi.tour_de(data, d["n"]) if data else ""
+    html(sous + (f"<br/>{tour}" if tour else ""), "color:#555b66;margin-top:-6px")
+    ui.html(diagramme_html(d, a), sanitize=False).classes("mt-2")
+    if d.get("tables"):                                     # les résultats : l'essentiel en vue, le tableau replié
+        titre_section("Résultats à la table")
+        mes = moi.paires(data) if data else set()
+        rang = moi.votre_rang(d["tables"], mes, lambda t: f"{t['contrat']} {SIEGE.get(t['declarant'], t['declarant'])} {t['resultat']}".strip())
+        if rang: html(rouge(rang), f"background:{moi.SURLIGNE};padding:2px 6px;border-radius:4px")
+        import comparer
+        reco = comparer.table_recommandee(d, a)
+        if reco and reco["contrat"] != "passe":
+            camp, _ = moi.mon_camp(d["tables"], mes); signe = -1 if camp == "EO" else 1
+            sc = lambda t: signe * t["score_ns"]
+            mieux = sum(1 for t in d["tables"] if sc(t) > sc(reco)); pareil = sum(1 for t in d["tables"] if sc(t) == sc(reco))
+            vu = "vu de votre camp" if camp else "vu de Nord-Sud"
+            html(f"Contrat recommandé, au double mort : <b>{rouge(reco['contrat'])} {SIEGE[reco['declarant']]} {reco['resultat']}</b>, "
+                 f"{reco['score_ns']:+d} pour Nord-Sud · {mieux} table{'s' if mieux > 1 else ''} ont fait mieux, {pareil} autant, "
+                 f"{len(d['tables']) - mieux - pareil} moins bien ({vu})", f"background:{FOND_RECO};padding:2px 6px;border-radius:4px;margin-top:4px")
+        with ui.expansion(f"Les {len(d['tables'])} tables", icon="table_rows").classes("w-full text-base").props("dense"):
+            tableau_resultats(d, mes, reco)
+        if any(x.get("encheres") for x in d["tables"]):
+            with ui.expansion("Enchères aux tables", icon="view_list").classes("w-full text-base").props("dense"):
+                encheres_tables(d)
+    titre_section("Enchères recommandées (SEF)")
+    notes = a.get("notes", "")
+    with ui.row().classes("w-full no-wrap items-start gap-6"):
+        ui.html(grille_html(a["enc"]), sanitize=False).classes("shrink-0")
+        if notes:
+            if a.get("auto") or version == "Standard": html(txt(notes))
+            else: html(f"<span style='color:{VERT}'>✦</span> <b>Avis de l'expert :</b> {txt(notes)}", STYLE_AVIS)
     if a.get("plan"):
-        ui.label("Plan de jeu").classes("text-base font-bold mt-2"); texte(a["plan"])
+        titre_section("Plan de jeu"); html(avec_avis_html(a["plan"]))
+    e = a.get("entame")
+    if (isinstance(e, dict) and e.get("carte")) or a.get("defense"):
+        titre_section("Entame et défense")
+        h = f"<b>Entame recommandée :</b> {txt(e['carte'])} ({SIEGE.get(e.get('joueur'), e.get('joueur', ''))})." if isinstance(e, dict) and e.get("carte") else ""
+        html(h + (avec_avis_html(a["defense"]) if a.get("defense") else ""))
     comm = a.get("comm") or repli.get("comm")
     if comm:
-        ui.label("Commentaire").classes("text-base font-bold mt-2"); texte(comm)
+        titre_section("Commentaire sur les contrats joués" if d.get("tables") else "Commentaire"); html(txt(comm))
     vues = a.get("vues") or repli.get("vues")
     if vues:
-        ui.label("Cartes vues").classes("text-base font-bold mt-2"); texte(vues)
+        titre_section("Cartes vues (après coup)"); html(txt(vues))
 
 
 def encheres_html(d, x):
@@ -870,7 +970,7 @@ def page():
         a = (exp if vue["version"] == "Expert" else std)["donnes"][n]
         repli = (std or {}).get("donnes", {}).get(n, {})   # l'expert reprend du programme ce qu'il n'écrit pas (cartes vues…)
         with ui.column().classes("w-full gap-3").style(f"padding-right:{LARGEUR_PANNEAU}px"):
-            page_analyse(d, a, repli, vue["version"])
+            page_analyse(d, a, repli, vue["version"], data, c)
         with panneau_droit(d, par=False):
             if len(versions) > 1:                           # Standard | Expert, deux moitiés égales
                 ui.toggle(versions, value=vue["version"], on_change=lambda ev: (vue.update(version=ev.value), vue_analyse.refresh())) \

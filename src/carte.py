@@ -19,6 +19,7 @@ from jeu import COULEURS, LHO, RHO, PART, ROT, PTS, _donne_dds, lire_encheres, e
 
 LETTRE = dict(zip(COULEURS, "SHDC"))
 MONDES = 16                                               # mondes imaginés par carte de la défense
+MODELE = False                                            # vrai : les mondes viennent du modèle des mains cachées (modele.py)
 
 
 def carte_fr(c, r):
@@ -58,8 +59,25 @@ class Partie:
         self.pos.sieges.append(s); self.pos.jouer(c, r)
         if not self.pos.pli: self.plis.append((en_cours, self.pos.tete))
 
+    def _mondes_modele(self, s, k):
+        """k donnes tirées, selon leur poids, dans le modèle des mains cachées vu du défenseur s (modele.py) :
+        les enchères refaites par le moteur, l'entame, les cartes jouées, les chicanes. Le modèle de chaque défenseur
+        est gardé d'une carte à l'autre et seulement mis à jour."""
+        import modele
+        lettre = dict(zip("SHDC", COULEURS))
+        jouees = [(x, lettre[j[0]] + j[1:].translate(FR)) for x, j in zip(self.pos.sieges, self.pos.jouees)]
+        if not hasattr(self, "_modeles"): self._modeles = {}
+        m = self._modeles.get(s)
+        m = m.suite(jouees) if m else modele.Modele(self.d, s, self.encheres, jouees, mort=self.mort(),
+                                                     graine=self.rnd.random())
+        self._modeles[s] = m
+        ms = m.mondes(); ws = m.poids()
+        if not ms: return []
+        return [mains for mains in self.rnd.choices([x for x, _ in ms], weights=ws, k=k)]
+
     # ---------------------------------------------------------------- la défense
     def _mondes(self, s, k):
+        if MODELE: return self._mondes_modele(s, k)
         """k donnes complètes imaginées par le défenseur s : sa main et le mort tels quels, les deux autres mains
         réparties au hasard, fidèles aux cartes jouées, aux chicanes montrées et, autant que possible, aux enchères."""
         caches = [x for x in ROT if x not in (s, self.mort())]

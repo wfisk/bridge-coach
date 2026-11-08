@@ -174,6 +174,7 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
     i0 = ROT.index(donne["donneur"])
     seq, expl, hist = [], [], []         # hist : [(siège, Appel)] de toutes les enchères autres que passe
     alertes = []                         # les rangs des enchères à alerter (alerte: oui dans regles.yaml)
+    ecarts = []                          # les rangs où l'enchère imposée n'est pas celle du système (modele.py)
     infos = {s: Info() for s in ROT}
     etat = dict(dernier=None, par=None, dbl=0)   # plus haute enchère, son auteur, contre / surcontre
     ouvreur = None; statut = "complète"
@@ -202,9 +203,10 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
         if not legal(a.enchere, s, etat):
             a = Appel("passe", f"({a.enchere} n'est plus possible)")
         if k >= len(imposees) and s == arret:               # au joueur de parler : on s'arrête, avec l'avis du système
-            return dict(encheres=seq, explications=expl, contrat=None, declarant=None, statut=statut, notes=[], alertes=alertes,
+            return dict(encheres=seq, explications=expl, contrat=None, declarant=None, statut=statut, notes=[], alertes=alertes, ecarts=ecarts,
                         a_vous=True, conseil=dict(enchere=a.enchere, texte=a.texte))
         if k < len(imposees) and imposees[k] != a.enchere:   # l'enchère faite à la table, pas celle du moteur
+            ecarts.append(k)
             if not legal(imposees[k], s, etat): raise ValueError(f"{imposees[k]} n'est pas possible ici")
             a = interpreter("ouverture" if ouvreur is None else cle_regles(seq, i0, s), imposees[k])
         seq.append(a.enchere); expl.append((s, a.enchere, a.texte))
@@ -220,7 +222,7 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
     d = etat["dernier"]
     decl = next(x for x, a in hist if camp(x) == camp(etat["par"]) and a.enchere[1:] == d[1:]) if d else None
     return dict(encheres=seq, explications=expl, contrat=(d + "X" * etat["dbl"]) if d else "passe",
-                declarant=decl, statut=statut, notes=[], a_vous=False, alertes=alertes)
+                declarant=decl, statut=statut, notes=[], a_vous=False, alertes=alertes, ecarts=ecarts)
 
 
 # ---------------------------------------------------------------- vulnérabilité (placer)

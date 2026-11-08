@@ -206,6 +206,17 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         PARALLELE is switched on only by rapport.py (spawn re-reads the running script:
                         keep a __main__ guard); one Pool per run, falls back to plain play if it fails. Each worker
                         takes about 0.7 GB (the solver): nb_processus() leaves one core and 4 GB free
+      modele.py         the model of the hidden hands, from one seat (declarer or a defender): Modele(d, seat, calls, cards played,
+                        dummy). Imagined deals (known cards in place, shown voids respected, loose prefilter jeu.lire_encheres),
+                        each weighted: the engine re-bids it with the real calls imposed (encherir returns "ecarts")
+                        and every hidden player's call our system would not have made, passes included, multiplies the weight by
+                        EPS_ENCHERE; the lead rule must give the card led (EPS_ENTAME). Draws until EFFICACE deals count. Tried
+                        and dropped: a milder penalty for calls the system named as possible too, softening the weights. prediction(): H range, length distribution per suit, place of each A R D V X 9; pensees(): the same in
+                        French; suite(cards): updated card by card from the same pool (0.07 s a card). carte.MODELE switches the
+                        defence's imagined worlds to it (off: 160 deals against a double-dummy declarer, 0.03 trick a deal better, same sets)
+      essai_modele.py   bench of modele.py: random deals (engine auctions, random play) and the real 23/10 auctions (banc_reel),
+                        Brier score of honour places, error on lengths and H, against no information and the old filter;
+                        banc_defense: the same deals defended with and without the model against a double-dummy declarer
       essai_jeu.py      bench: the simulated declarer on the real deal against double-dummy
                         (rerun after changing lignes.py; two sessions: 45 of the 52 makeable contracts; --aleatoire N for
                         fresh deals: 89 of 107, and the announced rate against the real result)

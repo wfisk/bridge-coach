@@ -1,0 +1,233 @@
+# -*- coding: utf-8 -*-
+"""Ce qu'un joueur peut savoir des mains qu'il ne voit pas : le modèle des mains cachées.
+
+Depuis une place (le déclarant ou un défenseur), avec les enchères, les cartes jouées et les chicanes montrées,
+on imagine des donnes complètes et on les pondère :
+  - les cartes connues sont à leur place (sa main, le mort une fois étalé, les cartes jouées) ;
+  - une couleur où un joueur n'a pas fourni est vide chez lui ;
+  - les enchères : le moteur (encheres.encherir) refait la séquence de chaque donne imaginée ; chaque enchère d'un
+    joueur caché que notre système n'aurait pas faite avec cette main (un passe aussi : ne pas parler dit quelque
+    chose) divise le poids ;
+  - l'entame : la règle d'entame (entames.yaml) appliquée à la main imaginée de l'entameur doit donner la carte jouée.
+On en tire, pour chaque joueur caché, ses points H, la longueur de chaque couleur et la place des honneurs (A R D V X 9).
+Mesure : src/essai_modele.py, sur des donnes tirées au hasard."""
+import os, random, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import encheres, jeu, jouer
+from jeu import COULEURS, ORDRE, ROT, PTS, PART, LHO
+
+SUIVIS = "ARDVX9"                                          # les cartes dont on prédit la place
+EPS_ENCHERE = 0.05                                         # une enchère que notre système n'aurait pas faite
+EFFICACE = 150                                             # on imagine des donnes jusqu'à en avoir autant qui comptent
+EPS_ENTAME = 0.05                                           # une entame que la règle n'aurait pas choisie
+
+
+def _cartes(main):
+    """« AR5 D83 - 762 » -> {(couleur, rang)}"""
+    return {(c, r) for c, x in zip(COULEURS, main.split()) if x != "-" for r in x}
+
+
+def _main(cartes):
+    return " ".join("".join(sorted((r for c, r in cartes if c == k), key=ORDRE.index)) or "-" for k in COULEURS)
+
+
+def carte_fr(c):
+    """« ♠10 » ou « ♠X » -> (« ♠ », « X »)"""
+    return c[0], c[1:].replace("10", "X")
+
+
+def chicanes(jouees):
+    """{siège: couleurs où il n'a pas fourni}, d'après les cartes jouées [(siège, « ♠A »)] dans l'ordre."""
+    out = {x: set() for x in ROT}
+    for i in range(0, len(jouees), 4):
+        pli = jouees[i:i + 4]
+        if not pli: continue
+        demandee = pli[0][1][0]
+        for x, c in pli[1:]:
+            if c[0] != demandee: out[x].add(demandee)
+    return out
+
+
+class Modele:
+    """Le modèle vu de la place observateur. d : la donne (seules sont lues la main de l'observateur, celle du mort
+    si mort est donné, le donneur et la vulnérabilité) ; seq : les enchères depuis le donneur ; jouees : les cartes
+    jouées dans l'ordre, [(siège, « ♠A »)], l'entame d'abord."""
+
+    def __init__(self, d, observateur, seq, jouees=(), mort=None, n=300, graine=0,
+                 eps_enchere=EPS_ENCHERE, eps_entame=EPS_ENTAME, prefiltre=True,
+                 efficace=EFFICACE, n_max=2000):
+        self.d, self.obs, self.seq, self.mort = d, observateur, list(seq), mort
+        self.jouees = [(x, c[0] + c[1:].replace("10", "X")) for x, c in jouees]
+        self.n, self.rnd, self.cible, self.n_max = n, random.Random(graine), efficace, n_max
+        self.eps_enchere, self.eps_entame, self.prefiltre = eps_enchere, eps_entame, prefiltre
+        self.vus = {observateur} | ({mort} if mort else set())
+        self.caches = [x for x in ROT if x not in self.vus]
+        self.connues = {x: _cartes(d["mains"][x]) for x in self.vus}
+        self.jouees_par = {x: {carte_fr(c) for y, c in self.jouees if y == x} for x in ROT}
+        self.vides = chicanes(self.jouees)
+        fini = jouer.fin(self.seq)
+        self.contrat, self.decl = jouer.contrat(self.seq, d["donneur"]) if fini else ("passe", None)
+        self.cx = jeu.lire_encheres(self.seq, d["donneur"])
+        self._mondes = None
+
+    # ---------------------------------------------------------------- les donnes imaginées
+    def _tirer(self):
+        """Une répartition des cartes inconnues entre les mains cachées (cartes déjà jouées comprises), ou None."""
+        connues = set().union(*self.connues.values()) | {k for x in self.caches for k in self.jouees_par[x]}
+        libres = [(c, r) for c in COULEURS for r in ORDRE if (c, r) not in connues]
+        self.rnd.shuffle(libres)
+        mains, i = {}, 0
+        for x in self.caches:
+            k = 13 - len(self.jouees_par[x])
+            lot = libres[i:i + k]; i += k
+            if any(c in self.vides[x] for c, _ in lot): return None
+            mains[x] = set(lot) | self.jouees_par[x]
+        return mains
+
+    def _plausible(self, mains):
+        """Préfiltre lâche : les points et les longueurs lus simplement dans les enchères (jeu.lire_encheres)."""
+        for x, cartes in mains.items():
+            h = sum(PTS.get(r, 0) for _, r in cartes)
+            lo, hi = self.cx[x]["pts"]
+            if not lo - 3 <= h <= hi + 3: return False
+            for c, v in self.cx[x]["L"].items():
+                if sum(1 for k, _ in cartes if k == c) < v - 1: return False
+        return True
+
+    def _poids(self, mains):
+        """Le poids d'une donne imaginée : ses enchères refaites par le moteur, puis l'entame."""
+        m = {x: _main(mains[x]) if x in mains else self.d["mains"][x] for x in ROT}
+        dd = dict(n=self.d.get("n", 0), donneur=self.d["donneur"], vul=self.d.get("vul", "Personne"), mains=m)
+        w = 1.0
+        if self.eps_enchere < 1 and self.seq:
+            try:
+                r = encheres.encherir(dd, imposees=self.seq)
+                i0 = ROT.index(self.d["donneur"])
+                faux = sum(1 for k in r.get("ecarts", []) if k < len(self.seq) and ROT[(i0 + k) % 4] in mains)
+                w *= self.eps_enchere ** faux
+            except Exception:
+                w *= self.eps_enchere ** 3
+        if self.jouees and self.decl and LHO[self.decl] in mains: w *= self._facteur_entame(m)
+        return w, m
+
+    def mondes(self):
+        """[(mains, poids)] : n donnes imaginées et leur poids."""
+        if self._mondes is not None: return self._mondes
+        self._mondes = []
+        self._completer()                                  # assez de donnes qui comptent (efficace) : on s'arrête
+        return self._mondes
+
+    def suite(self, jouees, mort=None):
+        """Le modèle après d'autres cartes jouées : les donnes imaginées encore possibles (chaque carte jouée par un
+        joueur caché est dans sa main, ses chicanes sont respectées, le mort étalé est le vrai) gardent leur poids ;
+        de nouvelles donnes complètent la réserve s'il en reste trop peu. Bien plus rapide qu'un nouveau modèle."""
+        m = Modele(self.d, self.obs, self.seq, jouees, mort=mort or self.mort, n=self.n, graine=self.rnd.random(),
+                   eps_enchere=self.eps_enchere, eps_entame=self.eps_entame,
+                   prefiltre=self.prefiltre, efficace=self.cible, n_max=self.n_max)
+        garde = []
+        for mains, w in self.mondes():
+            if any(mains[x] != self.d["mains"][x] for x in m.vus): continue          # le mort réel, désormais vu
+            ok = True
+            for x in m.caches:
+                cartes = _cartes(mains[x])
+                if not m.jouees_par[x] <= cartes or any((c, r) in cartes and (c, r) not in m.jouees_par[x]
+                                                       for c in m.vides[x] for r in ORDRE):
+                    ok = False; break
+            if ok: garde.append((mains, w))
+        if m.jouees and not self.jouees and m.decl and LHO[m.decl] in m.caches:    # l'entame vient d'être vue
+            garde = [(mains, w * m._facteur_entame(mains)) for mains, w in garde]
+        m._mondes = garde
+        if len(garde) < m.n: m._completer()
+        return m
+
+    def _completer(self):
+        """Ajoute des donnes tirées à neuf jusqu'à n (et assez de donnes efficaces)."""
+        out = self._mondes or []
+        sw = sum(w for _, w in out); sw2 = sum(w * w for _, w in out)
+        for _ in range(self.n_max * 60):
+            if len(out) >= self.n and (len(out) >= self.n_max or sw * sw >= self.cible * sw2): break
+            mains = self._tirer()
+            if mains is None or (self.prefiltre and not self._plausible(mains)): continue
+            w, mm = self._poids(mains)
+            out.append((mm, w)); sw += w; sw2 += w * w
+        self._mondes = out
+
+    def _facteur_entame(self, m):
+        """Le poids de l'entame dans une donne imaginée m (mains complètes) : la règle choisit-elle la carte jouée ?"""
+        if self.eps_entame >= 1: return 1.0
+        dd = dict(n=self.d.get("n", 0), donneur=self.d["donneur"], vul=self.d.get("vul", "Personne"), mains=m)
+        try:
+            e = jeu.entame_et_defense(dd, self.contrat, self.decl, self.seq)["entame"]["carte"]
+            return 1.0 if e.replace("10", "X") == self.jouees[0][1] else self.eps_entame
+        except Exception:
+            return 1.0
+
+    # ---------------------------------------------------------------- ce qu'on en tire
+    def poids(self):
+        """Les poids des donnes imaginées. (Les adoucir quand peu de donnes comptent a été essayé : moins juste sur
+        les vraies enchères comme sur les donnes tirées au hasard, essai_modele.py, 2026-11-08.)"""
+        return [w for _, w in self.mondes()]
+
+    def prediction(self):
+        """{siège caché: {"H": (moyenne, bas, haut), "L": {couleur: (moyenne, {n: proba})}, "cartes": {(c, r): proba}}}
+        et "efficace" : le nombre de donnes qui comptent vraiment (somme des poids au carré)."""
+        ms = [(m, w) for (m, _), w in zip(self.mondes(), self.poids())]
+        tot = sum(w for _, w in ms) or 1.0
+        out = {}
+        for x in self.caches:
+            hs, L, cartes = [], {c: {} for c in COULEURS}, {}
+            for m, w in ms:
+                s = jeu.suites(m[x])
+                hs.append((sum(PTS.get(r, 0) for c in COULEURS for r in s[c]), w))
+                for c in COULEURS:
+                    L[c][len(s[c])] = L[c].get(len(s[c]), 0) + w / tot
+                    for r in s[c]:
+                        if r in SUIVIS: cartes[(c, r)] = cartes.get((c, r), 0) + w / tot
+            hs.sort()
+            cumul, bas, haut = 0, None, None
+            for h, w in hs:
+                cumul += w / tot
+                if bas is None and cumul >= .1: bas = h
+                if haut is None and cumul >= .9: haut = h
+            moy = sum(h * w for h, w in hs) / tot
+            out[x] = {"H": (moy, bas, haut), "L": {c: (sum(k * p for k, p in L[c].items()), L[c]) for c in COULEURS},
+                      "cartes": cartes}
+        out["efficace"] = tot ** 2 / (sum(w * w for _, w in ms) or 1)
+        return out
+
+    def pensees(self):
+        """Ce que pense le joueur de chaque main cachée, en français : ses points, sa forme la plus probable et les
+        honneurs qu'il croit y voir (sûr à 85 %+, probable à 60 %+), ou qu'il croit absents (moins de 10 %)."""
+        p = self.prediction(); out = []
+        for x in self.caches:
+            moy, bas, haut = p[x]["H"]
+            pts = f"{moy:.0f} H" if bas == haut else f"{bas}–{haut} H (vers {moy:.0f})"
+            forme = []
+            for c in COULEURS:                              # la plus courte plage de longueurs qui fait 70 %
+                dist = p[x]["L"][c][1]; ks = sorted(dist)
+                a_, b_ = min(((i, j) for i in ks for j in ks if j >= i and sum(dist[k] for k in ks if i <= k <= j) >= .7),
+                             key=lambda ij: (ij[1] - ij[0], -sum(dist[k] for k in ks if ij[0] <= k <= ij[1])))
+                forme.append(f"{c}{a_}" if a_ == b_ else f"{c}{a_}–{b_}")
+            rang = lambda kv: (COULEURS.index(kv[0][0]), SUIVIS.index(kv[0][1]))
+            sur = [f"{c}{r}" for (c, r), q in sorted(p[x]["cartes"].items(), key=rang) if q >= .85]
+            prob = [f"{c}{r}" for (c, r), q in sorted(p[x]["cartes"].items(), key=rang) if .6 <= q < .85]
+            t = f"{NOMS[x]} : {pts} ; {' '.join(forme)}"
+            if sur: t += " ; a " + ", ".join(sur)
+            if prob: t += " ; sans doute " + ", ".join(prob)
+            out.append(t)
+        return out
+
+
+NOMS = {"N": "Nord", "S": "Sud", "E": "Est", "O": "Ouest"}
+
+
+if __name__ == "__main__":
+    import json
+    d = json.load(open(sys.argv[1], encoding="utf-8"))["donnes"][int(sys.argv[2]) - 1]
+    r = encheres.encherir(d)
+    m = Modele(d, sys.argv[3] if len(sys.argv) > 3 else "S", r["encheres"])
+    p = m.prediction()
+    for t in m.pensees(): print(t)
+    for x in m.caches:
+        print(x, d["mains"][x], {k: round(v, 1) if isinstance(v, float) else v for k, v in zip(("moy", "bas", "haut"), p[x]["H"])},
+              {c: round(p[x]["L"][c][0], 1) for c in COULEURS})

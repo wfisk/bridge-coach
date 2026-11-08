@@ -36,7 +36,7 @@ class Partie:
         self.plis = []                                     # [(cartes [(siège, couleur, rang)], gagnant)]
         self.rnd = random.Random(graine if graine is not None else d.get("n", 0))
         self.cx = lire_encheres(self.encheres, d["donneur"])
-        self._pool = None; self.reclame = False
+        self._pool = None; self.reclame = False; self.difficile = False
         e = entame_et_defense(d, contrat, decl, self.encheres)["entame"]["carte"]   # « ♠V » : les règles d'entame
         self.entame = (e[0], e[1:].translate(EN))
         self.poser(self.entame)
@@ -98,7 +98,7 @@ class Partie:
         """La carte du défenseur au trait : celle qui fait chuter le contrat dans le plus de mondes imaginés."""
         from endplay.dds import solve_all_boards
         from endplay.types import Card
-        s = self.au_trait(); leg = self.legales()
+        s = self.au_trait(); leg = self.legales(); self.difficile = False
         if len(leg) == 1: return leg[0]
         dd = []
         for m in self._mondes(s, MONDES):
@@ -115,7 +115,13 @@ class Partie:
                 t = v.get((c, r), prec.get(c, 0)); prec[c] = t
                 decl_final = self.pos.gagnes + (reste - t)  # t : levées de la défense à partir d'ici
                 chute[(c, r)] += decl_final < self.besoin; total[(c, r)] += t
-        return max(leg, key=lambda x: (chute[x], total[x], RANGS.index(x[1])))
+        cle = lambda x: (chute[x], total[x])
+        meilleure = max(leg, key=lambda x: (chute[x], total[x], RANGS.index(x[1])))
+        # difficile : la meilleure carte ne fait chuter que dans un ou deux mondes de plus qu'une autre (l'application
+        # réfléchit plus longtemps) ; si toutes chutent aussi souvent, rien ne se décide ici
+        moins = [chute[x] for x in leg if chute[x] < chute[meilleure]]
+        self.difficile = bool(moins) and chute[meilleure] - max(moins) <= max(1, len(dd) // 16)
+        return meilleure
 
     def defendre(self, sur_carte=None):
         """Joue les cartes de la défense jusqu'au tour du déclarant (ou du mort), ou jusqu'à la fin."""

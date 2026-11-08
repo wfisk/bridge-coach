@@ -317,9 +317,18 @@ def annexe(d, expliquer=True):
         rows.append([Paragraph(suits(f"<b>{lab}</b>"), S_cellc)] +
                     [Paragraph(str(d["dm"][lab][p]), S_cellc) for p in "NSEO"])
     dd = Table(rows, colWidths=[1.0*cm] + [1.6*cm]*4)
+    marques = []                        # fond vert : une manche ; vert soutenu : un chelem ; cadre : le contrat du par
+    p_ = d.get("par") or {}
+    par = (p_["contrat"][1:].rstrip("X"), p_.get("declarant")) if p_.get("contrat") and p_["contrat"] != "passe" else None
+    for i, lab in enumerate(("SA", "♠", "♥", "♦", "♣"), 1):
+        for j, x in enumerate("NSEO", 1):
+            n = d["dm"][lab][x]
+            if n >= 12 or n >= MANCHE[lab]:
+                marques.append(("BACKGROUND", (j, i), (j, i), colors.HexColor("#9fd1a8" if n >= 12 else "#d7ecd9")))
+            if par == (lab, x): marques.append(("BOX", (j, i), (j, i), 1.4, colors.HexColor(GREEN)))
     dd.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e6efe9")),
         ("BACKGROUND", (1, 1), (2, -1), colors.HexColor("#f6f8fb")), ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#9fb5a8")),
-        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]))
+        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 1)] + marques))
     p = d.get("par")
     if p is None:
         ptxt = "<b>Par :</b> passe générale (0)."
@@ -328,7 +337,8 @@ def annexe(d, expliquer=True):
         ptxt = (f"<b>Par :</b> {p['contrat']}{' contré' if p['contre'] else ''} par {SEAT[p['declarant']]} ({camp}), "
                 f"{p['resultat']}, soit <b>{p['score_ns']:+d}</b> pour Nord-Sud.")
     expl = ("Le tableau donne le nombre de levées que chaque joueur réalise comme déclarant, cartes vues "
-            "(double mort). Le par est le résultat obtenu si les deux camps enchérissent parfaitement.")
+            "(double mort). Fond vert : une manche se gagne ; vert soutenu : un chelem ; cadre : le contrat du par. "
+            "Le par est le résultat obtenu si les deux camps enchérissent parfaitement.")
     droite = [Paragraph(suits(ptxt), S_notes)] + ([Spacer(1, 6), Paragraph(expl, S_notes)] if expliquer else [])
     duo = Table([[dd, droite]], colWidths=[7.6*cm, 10.0*cm])
     duo.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
@@ -373,7 +383,8 @@ def annexe(d, expliquer=True):
 
 
 EXPLICATIONS = ("<b>Double mort et par</b> (en fin de chaque donne). Le tableau donne le nombre de levées que "
-                "chaque joueur réalise comme déclarant, cartes vues (double mort). Le par est le résultat obtenu "
+                "chaque joueur réalise comme déclarant, cartes vues (double mort). Fond vert : une manche se gagne ; vert soutenu : un "
+                "chelem ; cadre : le contrat du par. Le par est le résultat obtenu "
                 "si les deux camps enchérissent parfaitement. « Écart » : levées faites moins levées au double "
                 "mort (+ : gagnée par le déclarant ou donnée par la défense). « Écart au par » (« Par » quand il y a "
                 "plusieurs tables) : ce que la table a gagné (+) ou perdu (−) pour Nord-Sud par rapport au par, "
@@ -452,6 +463,7 @@ def page(d, a, date, expliquer=True):
     return el
 
 ROUGE = "#c0392b"
+MANCHE = {"SA": 9, "♠": 10, "♥": 10, "♦": 11, "♣": 11}       # les levées d'une manche, par dénomination
 # contrats de la synthèse : (fond, encre de la légende, légende)
 SENS = {"plus": ("#f4a3a3", "contrat plus élevé que le recommandé"), "moins": ("#bcd7f3", "contrat plus bas")}
 FOND_ENTAME = "#fbefb8"

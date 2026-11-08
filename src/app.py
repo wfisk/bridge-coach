@@ -502,19 +502,32 @@ def par_html(d):
                              f"{SIEGE.get(p['declarant'], p['declarant'])} {p.get('resultat', '')}, {p['score_ns']:+d} pour Nord-Sud")
 
 
+MANCHE = {"SA": 9, "♠": 10, "♥": 10, "♦": 11, "♣": 11}       # les levées d'une manche, par dénomination
+FOND_MANCHE, FOND_CHELEM = "#d7ecd9", "#9fd1a8"
+
+
 def dm_html(d):
     """Le double mort pour la barre de droite, sur toute sa largeur, comme la grille du PDF : levées par dénomination
-    et par déclarant, en-tête vert pâle, colonnes Nord-Sud sur fond gris clair."""
+    et par déclarant. Fond vert : une manche se gagne ; vert soutenu : un chelem ; cadre : le contrat du par."""
     if not d.get("dm"): return ""
+    p = d.get("par") or {}
+    par = (p["contrat"][1:].rstrip("X"), p.get("declarant")) if p.get("contrat") and p["contrat"] != "passe" else None
     cell = "padding:5px 0;text-align:center;border-top:1px solid #e3e7ea"
+    def case(x, s):
+        n = d["dm"][x][s]
+        fond = FOND_CHELEM if n >= 12 else FOND_MANCHE if n >= MANCHE[x] else "#f6f8fb" if s in "NS" else ""
+        cadre = ";box-shadow:inset 0 0 0 2px #1f5f3a;font-weight:700" if par == (x, s) else ""
+        return f"<td style='{cell}{';background:' + fond if fond else ''}{cadre}'>{n}</td>"
     tete = "".join(f"<th style='padding:5px 0;text-align:center;font-weight:700'>{s}</th>" for s in ("Nord", "Sud", "Est", "Ouest"))
-    corps = "".join(f"<tr><td style='{cell};font-weight:700'>{rouge(x)}</td>" +
-                    "".join(f"<td style='{cell}{';background:#f6f8fb' if s in 'NS' else ''}'>{d['dm'][x][s]}</td>" for s in "NSEO") + "</tr>"
+    corps = "".join(f"<tr><td style='{cell};font-weight:700'>{rouge(x)}</td>" + "".join(case(x, s) for s in "NSEO") + "</tr>"
                     for x in ("SA", "♠", "♥", "♦", "♣"))
+    carre = lambda style: f"<span style='display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin:0 4px 0 0;{style}'></span>"
+    legende = (f"<div style='font-size:13px;color:#555b66;margin-top:4px;line-height:1.6'>{carre(f'background:{FOND_MANCHE}')}manche "
+               f"&nbsp;{carre(f'background:{FOND_CHELEM}')}chelem &nbsp;{carre('box-shadow:inset 0 0 0 2px #1f5f3a')}par</div>")
     return (f"<div style='font-size:15px;width:100%'><div style='font-weight:700;margin-bottom:4px'>Double mort</div>"
             f"<table style='width:100%;table-layout:fixed;border-collapse:collapse;background:#fff;border:1px solid #9fb5a8;"
             f"border-radius:6px;overflow:hidden'><colgroup><col style='width:16%'/></colgroup>"
-            f"<tr style='background:#e6efe9'><th></th>{tete}</tr>{corps}</table></div>")
+            f"<tr style='background:#e6efe9'><th></th>{tete}</tr>{corps}</table>{legende}</div>")
 
 
 def page_dm_par(d, par=True):
@@ -1072,6 +1085,16 @@ def page():
     def jeu_recommencer_encheres(c, d):
         jeu_depart(c, d, jeu["siege"], reprendre=False); vue_jouer.refresh()
 
+    def reflexion(ex, k):
+        """Le temps de réflexion d'un joueur avant son enchère : 0,9 s d'ordinaire, plus long plus on monte (1,5 s au
+        palier de 3 et pour un contre, 1,9 s à la manche, 2,6 s au chelem) ; 1,3 s de plus quand une autre enchère
+        convenait aussi (le texte de la règle le dit)."""
+        b, t_ = (ex[k][1], ex[k][2] or "") if k < len(ex) else ("passe", "")
+        serree = "convenait aussi" in t_ or "était possible" in t_ or "Décision serrée" in t_
+        palier = int(b[0]) if b[:1].isdigit() else 0
+        pause = 2.6 if palier >= 6 else 1.9 if palier >= 4 else 1.5 if palier == 3 or b in ("contre", "surcontre") else 0.9
+        return pause + (1.3 if serree else 0)               # une décision serrée : encore un peu plus
+
     async def reveler():
         """Les enchères du programme apparaissent une à une, avec un temps de réflexion."""
         if jeu["revele"]: return
@@ -1081,7 +1104,7 @@ def page():
                 if jeu["seq"][jeu["affiche"]] is not None and siege_de(jeu["d"], jeu["affiche"]) == jeu["siege"]:
                     jeu["affiche"] += 1; continue             # la vôtre : tout de suite
                 jeu["pense"] = siege_de(jeu["d"], jeu["affiche"]); vue_jouer.refresh()
-                await asyncio.sleep(0.9)
+                await asyncio.sleep(reflexion(jeu["ex"], jeu["affiche"]))
                 jeu["affiche"] += 1; jeu["pense"] = None; vue_jouer.refresh()
         finally:
             jeu["revele"] = False
@@ -1174,7 +1197,9 @@ def page():
         p = jeu["partie"]
         while p and not p.fini() and not p.camp(p.au_trait()) and jeu["partie"] is p:
             jeu["pense"] = p.au_trait(); vue_jouer.refresh()
-            x, _ = await asyncio.gather(run.io_bound(p.carte_defense), asyncio.sleep(0.8))
+            pause = 0.4 if len(p.legales()) == 1 else 1.3 if not p.pos.pli else 0.8   # forcée : vite ; une entame : on réfléchit
+            x, _ = await asyncio.gather(run.io_bound(p.carte_defense), asyncio.sleep(pause))
+            if getattr(p, "difficile", False): await asyncio.sleep(1.4)   # la bonne carte ne s'imposait pas : il hésite
             jeu["pense"] = None
             await carte_poser(x)
 
@@ -1471,18 +1496,19 @@ def page():
                                 ui.html(f"<div style='font-size:14px'>Pli {k} : " + " · ".join(f"{SIEGE[x][0]} {rouge(carte.carte_fr(cc, r))}" for x, cc, r in pli)
                                         + f" — {SIEGE[g]}</div>", sanitize=False)
                 elif not fini and not attente:
-                    ui.button("Indice", icon="lightbulb", on_click=lambda: (jeu.update(voir_indice=True), vue_jouer.refresh())) \
-                        .props("outline dense no-caps").classes("self-end")      # au-dessus de la boîte, à part
                     boite_encheres(d)
+                    ui.button("Masquer l'indice" if jeu["voir_indice"] else "Indice", icon="lightbulb",
+                              on_click=lambda: (jeu.update(voir_indice=not jeu["voir_indice"]), vue_jouer.refresh())) \
+                        .props(("unelevated" if jeu["voir_indice"] else "outline") + " dense no-caps")   # sous la boîte, juste au-dessus de son texte
+                    if jeu["voir_indice"]:
+                        ui.html(f"<div style='font-size:15px'>Le système dirait <b>{rouge(jeu['indice']['enchere'])}</b> : "
+                                f"{rouge(jeu['indice']['texte'])}</div>", sanitize=False)
                     a = alerte_due(d)
                     if a and jeu.get("alerte_faite") == a[0]:
                         ui.html(f"<div style='font-size:15px'><b>Alerte</b> : {rouge(a[1])} de votre partenaire"
                                 + (f" — {rouge(a[2])}" if a[2] else "") + "</div>", sanitize=False)
                     if jeu.get("note"):
                         ui.html(f"<div style='font-size:15px;color:#8a5a00'>{rouge(jeu['note'])}</div>", sanitize=False)
-                    if jeu["voir_indice"]:
-                        ui.html(f"<div style='font-size:15px'>Le système dirait <b>{rouge(jeu['indice']['enchere'])}</b> : "
-                                f"{rouge(jeu['indice']['texte'])}</div>", sanitize=False)
                 elif a_jouer:
                     ui.button(f"Jouer {c_} par {SIEGE[decl]}", icon="style", on_click=lambda: carte_demarrer(d)).classes("w-full")
                     ui.button("Voir les mains sans jouer", on_click=lambda: (jeu.update(sans_jouer=True), jeu_garder(), vue_jouer.refresh())).props("flat no-caps dense")

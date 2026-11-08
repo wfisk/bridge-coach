@@ -1463,6 +1463,27 @@ def page():
 
     vue_aide = {"k": 0}                                   # la section de l'aide montrée
 
+    PAGES = {"Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance"), ("bilan", "Toutes les séances")],
+             "Réglages": [("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
+    vue_page = {"Rapports": "creer", "Réglages": "dossiers"}
+
+    def onglet_a_pages():
+        """« Rapports » ou « Réglages » quand l'un d'eux est ouvert, sinon None."""
+        for nom, o in (("Rapports", o_rapports), ("Réglages", o_reglages)):
+            if onglets.value in (o, nom): return nom
+        return None
+
+    def montrer_pages():
+        """Chaque onglet à pages montre la page choisie dans sa barre."""
+        try: pages_ui
+        except NameError: return                           # la page se construit encore
+        for nom, cles in PAGES.items():
+            for cle, _ in cles: pages_ui[cle].set_visibility(vue_page[nom] == cle)
+
+    def voir_page(nom, cle):
+        vue_page[nom] = cle; montrer_pages(); barre_seance.refresh()
+        if cle == "seance": resultats.refresh()
+
     def voir_aide(k):
         vue_aide["k"] = k; page_aide.refresh(); barre_seance.refresh()
         ui.run_javascript("window.scrollTo(0, 0)")
@@ -1568,6 +1589,12 @@ def page():
 
     @ui.refreshable
     def barre_seance():
+        if onglet_a_pages():                              # Rapports, Réglages : une entrée par page
+            nom = onglet_a_pages()
+            for cle, titre in PAGES[nom]:
+                ui.button(titre, on_click=lambda c=cle: voir_page(nom, c)).props("flat no-caps align=left dense color=grey-10") \
+                    .classes("entree-barre text-left" + (" choisie" if vue_page[nom] == cle else ""))
+            return
         if sur_aide():                                    # l'aide : une entrée par section
             for k, (titre, _) in enumerate(sections_aide()):
                 ui.button(titre, on_click=lambda k=k: voir_aide(k)).props("flat no-caps align=left dense color=grey-10") \
@@ -1590,8 +1617,9 @@ def page():
                 .classes("entree-barre mt-2 text-primary")
 
     def montrer_barre():
-        """La barre latérale : sur les onglets Donnes, Jouer et Analyse quand une séance est ouverte, et sur l'aide."""
-        tiroir.set_value(sur_aide() or (onglets.value in (o_donnes, "Donnes", o_jouer, "Jouer", o_analyse, "Analyse")
+        """La barre latérale : sur les onglets Donnes, Jouer et Analyse quand une séance est ouverte ; toujours sur
+        Rapports, Réglages et l'aide."""
+        tiroir.set_value(sur_aide() or bool(onglet_a_pages()) or (onglets.value in (o_donnes, "Donnes", o_jouer, "Jouer", o_analyse, "Analyse")
                                         and lire_seance(choix["chemin"]) is not None))   # l'aide a toujours sa barre
     vu = {"fini": None}; vu_d = {"fini": None}; vu_i = {"fini": None}
 
@@ -1655,9 +1683,10 @@ def page():
                     fait_a = ui.label("").classes("text-base text-primary")
                 vue_analyse()
 
+            pages_ui = {}
             with ui.tab_panel(o_rapports).classes("px-0 gap-4 max-w-xl mx-auto"):
-                with ui.column().classes("w-full gap-2 pb-4 border-b border-gray-200"):   # les options, puis « Créer les rapports »
-                    ui.label("Options des rapports").classes("text-lg font-bold")
+                with ui.column().classes("w-full gap-2") as pages_ui["creer"]:   # les options, puis « Créer les rapports »
+                    ui.label("Créer les rapports").classes("text-lg font-bold")
                     ui.label("Vous êtes").classes("text-base")
                     noms_ = moi.tous_les_noms(rapport.glob_seances("*" + rapport.BC))
                     actuel = moi.nom()
@@ -1684,19 +1713,32 @@ def page():
                     prets = rapports_de(c)
                     ui.label(f"Rapports de la séance du {infos_seance(c)[0]}").classes("text-lg font-bold")
                     if not prets:
-                        ui.label("Pas encore de rapport : « Créer les rapports » ci-dessus.").classes("text-base text-gray-600")
+                        ui.label("Pas encore de rapport : « Créer les rapports », dans la barre de gauche.").classes("text-base text-gray-600")
                     for quoi, nom, detail in RAPPORTS:
                         if quoi in prets: lien_pdf(prets[quoi], nom, detail)
-                    bilan = os.path.join(rapport.RAPPORTS, "bilan-encheres.pdf")
-                    if os.path.exists(bilan):
-                        ui.label("Toutes les séances").classes("text-base font-bold mt-4")
-                        lien_pdf(bilan, "Bilan des enchères", "où le programme perd des IMP face à l'expert")
                     if prets:
                         ui.button("Ouvrir le dossier des rapports", on_click=lambda p=prets[next(iter(prets))]: ouvrir(os.path.dirname(p))) \
                             .props("flat no-caps").classes("mt-2 px-0")
-                resultats()
+
+                @ui.refreshable
+                def toutes():
+                    ui.label("Toutes les séances").classes("text-lg font-bold")
+                    bilan = os.path.join(rapport.RAPPORTS, "bilan-encheres.pdf")
+                    if os.path.exists(bilan):
+                        lien_pdf(bilan, "Bilan des enchères", "où le programme perd des IMP face à l'expert")
+                    else:
+                        ui.label("Pas encore de bilan : il se fait avec les rapports d'une séance qui a une analyse de "
+                                 "l'expert.").classes("text-base text-gray-600")
+                    ui.button("Ouvrir le dossier des rapports", on_click=lambda: ouvrir(rapport.RAPPORTS)).props("flat no-caps").classes("mt-2 px-0")
+
+                with ui.column().classes("w-full gap-2") as pages_ui["seance"]:
+                    resultats()
+                with ui.column().classes("w-full gap-2") as pages_ui["bilan"]:
+                    toutes()
 
             with ui.tab_panel(o_reglages).classes("px-0 gap-5 max-w-xl mx-auto"):
+              with ui.column().classes("w-full gap-5") as pages_ui["dossiers"]:
+                ui.label("Dossiers").classes("text-lg font-bold")
                 for titre, chemin in (("Dossier de Bridgemate : les fichiers .bws, lus sans être modifiés", dossier),
                                       ("Dossier de travail : vos séances et vos rapports", rapport.DONNEES),
                                       ("Programme Bridge Coach : là où il est installé", rapport.RACINE)):
@@ -1711,7 +1753,8 @@ def page():
                 ui.button("Modifier les réglages", on_click=ouvrir_reglages).classes("w-full text-base py-3")
                 ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-sm text-gray-600")
 
-                ui.separator().classes("my-2")
+              with ui.column().classes("w-full gap-3") as pages_ui["maj"]:
+                ui.label("Mise à jour du programme").classes("text-lg font-bold")
                 ui.label(f"Bridge Coach, version {maj.version_locale()}").classes("text-base font-bold")
                 with ui.row().classes("items-center gap-3"):
                     ui.button("Rechercher une mise à jour", on_click=lambda: chercher_maj()).props("outline")
@@ -1724,6 +1767,8 @@ def page():
                     if lignes_j:
                         le = datetime.datetime.fromtimestamp(os.path.getmtime(journal)).strftime("%d/%m/%Y")   # pas « quand » : la fonction
                         ui.label(f"Dernière mise à jour, le {le} : {lignes_j[0]} — {lignes_j[-1]}").classes("text-sm text-gray-600")
+
+            montrer_pages()                                # chaque onglet à pages s'ouvre sur sa première page
 
             with ui.tab_panel(o_aide).classes("px-0 max-w-xl mx-auto"):   # une page comme les autres : un onglet la quitte
                 page_aide()                                    # une section à la fois, choisie dans la barre de gauche
@@ -1952,7 +1997,8 @@ def page():
         creer.set_enabled(not occupe and not D.actif and bool(choix["chemin"])); stop.set_visibility(analyse_)
         standard_ = bool(choix["chemin"]) and bool(lire_analyses(choix["chemin"])[0])
         creer_r.set_enabled(not occupe and not D.actif and standard_); stop_r.set_visibility(rapports_)
-        besoin_r.text = "" if standard_ or not choix["chemin"] else "Lancez d'abord l'analyse, dans l'onglet Analyse."
+        besoin_r.text = ("Aucune séance ouverte : Fichier, Ouvrir une séance…" if not choix["chemin"] else
+                         "" if standard_ else "Lancez d'abord l'analyse, dans l'onglet Analyse.")
         actif_d = D.actif
         creer_d.set_enabled(not occupe and not actif_d and total() > 0); stop_d.set_visibility(actif_d)
         barre_d.set_visibility(actif_d); texte_d.set_visibility(actif_d)
@@ -1975,7 +2021,10 @@ def page():
             if T.genre == "analyse":
                 faute.text = erreur
                 fait_a.text = "" if erreur or T.annule else "Analyse faite : lisez-la donne par donne. Les rapports PDF se font dans l'onglet Rapports."
-            else: faute_r.text = erreur
+            else:
+                faute_r.text = erreur
+                if not erreur and not T.annule: voir_page("Rapports", "seance")   # les rapports prêts : leur liste
+                toutes.refresh()
             resultats.refresh(); vue_analyse.refresh(); montrer_controles()
 
     ui.timer(.4, rafraichir)

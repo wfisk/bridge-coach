@@ -58,7 +58,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: options (« Vous êtes », played order, the
                         names page), "Créer les rapports" (rapport.py --rapports: the PDFs from the saved analyses; T.genre says which
                         tab shows the progress), then the session's PDFs and the bilan as links with file name and date (lien_pdf); Réglages.
-                        The left sidebar is LARGEUR_BARRE wide. Jouer (between Donnes and Analyse; Contrôle was removed): the player
+                        Rapports and Réglages have a left sidebar of pages too (PAGES, vue_page, voir_page, pages_ui shown or hidden):
+                        Créer les rapports | Rapports de la séance | Toutes les séances (the bilan); Dossiers | Mise à jour du programme.
+                        Finished reports open the Rapports de la séance page. The left sidebar is LARGEUR_BARRE wide. Jouer (between Donnes and Analyse; Contrôle was removed): the player
                         bids one seat, the engine the three others (vue_jouer, boite_encheres; logic in jouer.py), then the
                         contract against Expert and Standard. Layout: the table on the left, a large warm-neutral rounded square sized to the window (COTE_TABLE: what the width and height leave, 440px at least; below that the whole table, hands and all, scales down to fit the window instead of scrolling: JS_AJUSTE, .ajuste) (no name plates: the board case in the centre, bidding
                         cards, trick cards and dummy on it, the players' hands outside; the thinking player's name blinks on the case; hands as overlapping

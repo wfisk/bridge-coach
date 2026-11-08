@@ -100,7 +100,7 @@ GRIS_BARRE = "#f3f3f1"
 LARGEUR_PANNEAU = 300                                     # la barre de droite de l'onglet Jouer
 # le côté de la table de l'onglet Jouer : ce que laissent la largeur (barres, mains des côtés) et la hauteur (mains du
 # haut et du bas), 420px au moins : en dessous, toute la table rétrécit (JS_AJUSTE)
-COTE_TABLE = "clamp(420px, min(100vw - 740px, 100vh - 412px), 640px)"   # 412 : une main cachée en haut et la vôtre en bas
+COTE_TABLE = "clamp(420px, min(100vw - 740px, 100vh - 420px), 640px)"   # 420 : une main cachée en haut et la vôtre en bas
 # pendant le jeu de la carte, avec le mort sur un côté (en défense) : une table rectangulaire, de la même hauteur, plus
 # large de la colonne de la main du mort (vide : ses cartes sont sur la table). Les cartes gardent leur taille.
 LARGEUR_TABLE_LARGE = f"calc({COTE_TABLE} + 84px)"
@@ -175,7 +175,21 @@ CSS_CARTES = """
 .plis-gardes.colonne .dos + .dos { margin-left: 0; margin-top: -9px; }
 .main-grande .carte { width: 55px; height: 79px; font-size: 20px; margin-right: -22px; }
 .main-grande .groupe { margin-right: 30px; }
-.main-grande.a-vous { filter: drop-shadow(0 0 6px rgba(242, 183, 5, .9)); }
+.main-grande .groupe:last-child { margin-right: 22px; }   /* juste ce que dépasse la dernière carte : le trait s'arrête avec elle */
+/* à vous d'enchérir ou de jouer : les cartes à jouer soulignées, comme l'onglet choisi du menu ; le trait est toujours là,
+   transparent, pour que rien ne bouge quand il apparaît */
+.main-grande, .mort-table { border-bottom: 3px solid transparent; padding-bottom: 4px; }
+.main-grande.a-vous, .mort-table.a-vous { border-bottom-color: var(--q-primary); }
+/* à qui le tour (vous ou un joueur du programme) : un petit triangle sur le bord de la table, tourné vers ce joueur */
+.fleche-tour { position: absolute; width: 0; height: 0; z-index: 4; pointer-events: none; }
+.fleche-tour.bas { bottom: -10px; left: 50%; transform: translateX(-50%); border: 9px solid transparent; border-bottom: 0;
+  border-top: 10px solid var(--q-primary); }
+.fleche-tour.haut { top: -10px; left: 50%; transform: translateX(-50%); border: 9px solid transparent; border-top: 0;
+  border-bottom: 10px solid var(--q-primary); }
+.fleche-tour.gauche { left: -10px; top: 50%; transform: translateY(-50%); border: 9px solid transparent; border-left: 0;
+  border-right: 10px solid var(--q-primary); }
+.fleche-tour.droite { right: -10px; top: 50%; transform: translateY(-50%); border: 9px solid transparent; border-right: 0;
+  border-left: 10px solid var(--q-primary); }
 .onglet.eteint { background: #d9d9d6 !important; color: #9a9a96 !important; }
 .onglet.indice { background: #fff; color: #1f6b45; display: flex; align-items: center; gap: 2px; }
 .sa { color: #2b2b2b; background: #eceff1; } .pique { color: #1f3fa0; background: #e3eaf8; }
@@ -188,12 +202,6 @@ CSS_CARTES = """
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
-/* la place du prochain carton : « À vous » quand c'est à vous d'enchérir, « … » pendant qu'un joueur du programme réfléchit */
-.carton.attente { background: rgba(255, 250, 230, .95); border: 2px dashed #d39e00; box-shadow: none; color: #7a5a00;
-  font-size: 14px; white-space: nowrap; align-items: center; justify-content: center; animation: pense 1.2s ease-in-out infinite; }
-.carton.attente.robot { background: rgba(255, 255, 255, .9); border-color: #9aa3ad; color: #5f6b77; font-size: 20px; }
-.pile.vers-droite .carton + .carton.attente { padding-left: 24px; }   /* le texte dans la partie qui se voit */
-.pile.vers-bas .carton + .carton.attente { padding-top: 19px; }
 .carton.arrive-bas, .carte.arrive-bas { animation: arrive-bas .5s ease-out; }
 .carton.arrive-haut, .carte.arrive-haut { animation: arrive-haut .5s ease-out; }
 .carton.arrive-gauche, .carte.arrive-gauche { animation: arrive-gauche .5s ease-out; }
@@ -1369,19 +1377,12 @@ def page():
                 cls += f" arrive-{cote[x]}"; retard = f";animation-delay:-{ecoule:.2f}s"
             texte = {"passe": "Passe", "contre": "X", "surcontre": "XX"}.get(b, b)
             return f"<div class='carton{cls}{' recent' if recent else ''}' style='z-index:{k + 1}{retard}'>{texte}</div>"
-        attente = jeu["affiche"] < len(jeu["seq"])
-        a_vous = jeu["indice"] is not None and not attente      # les enchères attendent la vôtre
         def pile(x, sens, ou):
             """Les cartons d'un joueur empilés, le dernier dessus : on voit encore le haut des précédents. Chaque pile part
             d'un point fixe près du milieu de son bord, à la même distance du bord pour les quatre joueurs : un carton
-            de plus s'ajoute au bout, les autres ne bougent pas. Au bout, la place du prochain carton dit qui doit
-            enchérir : « À vous », ou « … » pendant qu'un joueur du programme réfléchit."""
+            de plus s'ajoute au bout, les autres ne bougent pas."""
             bs = devant[x]
             cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1, x) for k, b in enumerate(bs))
-            if a_vous and x == jeu["siege"]:
-                cartons += f"<div class='carton derniere attente' style='z-index:{len(bs) + 1}'>À vous</div>"
-            elif jeu.get("pense") == x:
-                cartons += f"<div class='carton derniere attente robot' style='z-index:{len(bs) + 1}'>…</div>"
             return f"<div class='pile {sens}' style='position:absolute;{ou}'>{cartons}</div>"
         haut, gauche, droite, bas = places
         bord = 18                                          # la distance au bord de la table
@@ -1403,18 +1404,19 @@ def page():
                      sanitize=False)
         if ok: el.on("click", lambda x=(coul, r): sur_clic(x))
 
-    def mort_etale(cartes, jouables, sur_clic, atout, cote="haut", posee=""):
+    def mort_etale(cartes, jouables, sur_clic, atout, cote="haut", posee="", a_vous=False):
         """Le mort étalé comme à la table : une colonne par couleur, la plus forte carte en haut, l'atout à gauche
         (à la droite du mort), puis les couleurs en alternant noir et rouge. Sur un côté (cote « gauche » ou « droite »),
         une ligne par couleur, la plus forte carte vers le mort, l'atout toujours à sa droite. posee : la carte que le
-        mort vient de jouer, juste à côté de ses cartes, du côté du centre."""
+        mort vient de jouer, juste à côté de ses cartes, du côté du centre ; a_vous : c'est à vous de jouer du mort (souligné)."""
         autres = [c for c in ORDRE_MAIN if c != atout]
         ordre = ([atout] if atout in ORDRE_MAIN else []) + autres
         if cote in ("gauche", "droite"):
             if cote == "gauche": ordre = ordre[::-1]          # le mort à gauche regarde vers la droite : sa droite est en bas
             with ui.row().classes("no-wrap items-center gap-3"):
                 if cote == "droite" and posee: ui.html(posee, sanitize=False)
-                with ui.column().classes("gap-1 mort-table mort-cote " + ("items-start" if cote == "gauche" else "items-end")):
+                with ui.column().classes("gap-1 mort-table mort-cote " + ("items-start" if cote == "gauche" else "items-end")
+                                         + " a-vous" * a_vous):
                     for coul in ordre:
                         with ui.row().classes("no-wrap gap-0 ligne-mort"):
                             rangs = list(cartes.get(coul, "")) or [None]
@@ -1425,7 +1427,7 @@ def page():
                 if cote == "gauche" and posee: ui.html(posee, sanitize=False)
             return
         with ui.column().classes("items-center gap-3"):
-            with ui.row().classes("no-wrap items-start gap-3 mort-table"):
+            with ui.row().classes("no-wrap items-start gap-3 mort-table" + " a-vous" * a_vous):
                 for coul in ordre:
                     with ui.column().classes("gap-0 colonne-mort"):
                         if not cartes.get(coul):
@@ -1444,6 +1446,7 @@ def page():
                 rangs = cartes.get(coul, "")
                 if colonnes and not rangs:
                     ui.html(f"<div class='carte vide'>{rouge(coul)}</div>", sanitize=False); continue
+                if not rangs: continue                         # une chicane en ligne : rien, pas même une marge
                 with ui.row().classes("no-wrap gap-0 groupe" + (" colonne" if colonnes else "")):
                     for r in rangs: carte_el(coul, r, jouables, sur_clic)
 
@@ -1459,9 +1462,10 @@ def page():
         ui.html(f"<div style='position:relative;width:{l}px;height:{h}px'><div style='position:absolute;left:50%;top:50%;"
                 f"width:70px;height:60px;transform:translate(-50%,-50%) rotate({tour}deg)'>{cartes}</div></div>", sanitize=False)
 
-    def table(d, places, contenu, centre=None, sur_table=()):
+    def table(d, places, contenu, centre=None, sur_table=(), tour=None):
         """La table, une grande surface vert clair : l'étui, les cartons, le pli et le mort posé dessus ; les mains des
-        joueurs autour. contenu(siège, position) dessine une place ; sur_table : les positions posées sur la table (le mort)."""
+        joueurs autour. contenu(siège, position) dessine une place ; sur_table : les positions posées sur la table (le mort) ;
+        tour : le siège qui doit enchérir ou jouer, montré par un petit triangle sur le bord de la table, de son côté."""
         haut, gauche, droite, bas = places
         large = "gauche" in sur_table or "droite" in sur_table          # le mort sur un côté : la table en 16:9
         forme = (f"width:{LARGEUR_TABLE_LARGE};height:{COTE_TABLE};" if large else f"width:{COTE_TABLE};aspect-ratio:1 / 1;")
@@ -1483,6 +1487,9 @@ def page():
                                                          "top:50%;transform:translateY(-50%);z-index:2"):
                                 contenu(x, ou)
                     if centre: centre()
+                    if tour in places:
+                        ui.html(f"<div class='fleche-tour {dict(zip(places, ('haut', 'gauche', 'droite', 'bas')))[tour]}'></div>",
+                                sanitize=False)
                     if "bas" in sur_table: contenu(bas, "bas")
                 with ui.column().classes("items-start"):
                     if "droite" not in sur_table: contenu(droite, "droite")
@@ -1511,12 +1518,15 @@ def page():
                             posees, derniere, ecoule = pli_en_cours(p)
                             cr = posees.get(x)
                             mort_etale(cartes, jouables, clic, p.den, ou,
-                                       carte_posee(*cr, ou if x == derniere else None, ecoule) if cr else "")
-                        else: eventail(cartes, jouables, clic, colonnes=ou in ("gauche", "droite"), grande=x == s)   # les cartes jouables ont déjà leur bord
+                                       carte_posee(*cr, ou if x == derniere else None, ecoule) if cr else "",
+                                       a_vous=cliquable and tour == x)
+                        else: eventail(cartes, jouables, clic, colonnes=ou in ("gauche", "droite"), grande=x == s,
+                                       a_vous=cliquable and tour == x)   # les cartes jouables ont déjà leur bord
             elif not p.fini():                               # un adversaire : sa main cachée, en éventail fermé
                 dos(ou, sum(len(v) for v in p.pos.reste[x].values()))
         table(d, places, contenu, lambda: ui.html(pli_html(p, places, None if p.fini() else p.mort()), sanitize=False),
-              sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == p.mort() and not p.fini()])
+              sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == p.mort() and not p.fini()],
+              tour=None if p.fini() or jeu["pli_vu"] else tour)
 
     @ui.refreshable
     def vue_jouer():
@@ -1565,7 +1575,8 @@ def page():
                             eventail(mains_fr(d, x), colonnes=ou in ("gauche", "droite"), grande=x == s,
                                      a_vous=x == s and not fini and not attente)
                         else: dos(ou, 13)
-                    table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False))
+                    table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False),
+                          tour=jeu["pense"] if attente else (s if not fini else None))
             with panneau_droit():                                                         # la barre de droite : l'essentiel
                 ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
                 ui.label(f"Vous jouez {SIEGE[s]}").classes("text-sm text-gray-600")

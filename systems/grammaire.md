@@ -196,6 +196,8 @@ ouverture:                       # les ouvertures
     `SA` (emprunté au Standard American, faute de détail SEF) ;
   - `apres: 1P` réserve la règle à une séquence d'une clé générique ;
   - `nature` : `forcing`, `invite`, `conclusion`, `relais` (Stayman, texas), `barrage`…
+  - `alerte` : `oui` pour une enchère que le partenaire alerte (4e couleur forcing, Spoutnik, Drury, 2SA bicolore… ;
+    la liste est en tête de `regles.yaml`). L'onglet Jouer propose alors le bouton Alerte.
     Le moteur s'en sert pour la suite des enchères (par exemple, l'ouvreur de SA
     accepte ou refuse une invitation) ;
   - `note`, `nom`, `voir` : commentaires, nom d'une convention, renvoi vers

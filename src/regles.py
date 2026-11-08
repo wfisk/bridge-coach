@@ -396,7 +396,7 @@ class Regle:
     def __init__(self, enchere, condition, montre, source, note, ligne):
         self.enchere, self.condition, self.montre = enchere, condition, montre
         self.source, self.note, self.ligne = source, note, ligne
-        self.nature = ""; self.atout = None
+        self.nature = ""; self.atout = None; self.alerte = False
 
 
 def palier_libre(d, dernier):
@@ -524,7 +524,7 @@ def charger(chemin):
                                         ligne=lj))
                     continue
                 v = v or {}
-                inconnues = set(v) - {"si", "montre", "source", "note", "voir", "nom", "apres", "nature", "atout"}
+                inconnues = set(v) - {"si", "montre", "source", "note", "voir", "nom", "apres", "nature", "atout", "alerte"}
                 if inconnues: raise ErreurRegles(f"ligne {ligne} : clé inconnue « {', '.join(inconnues)} »")
                 if "apres" in v and seq not in [sequence(x, ligne) for x in str(v["apres"]).split("|")]:
                     continue                              # règle réservée à d'autres séquences (« apres: 1P »)
@@ -536,6 +536,7 @@ def charger(chemin):
                 r = Regle(e, Condition(si, defs or {}, ligne, atout, dernier), v.get("montre", ""),
                           v.get("source", "SEF"), v.get("note"), ligne)
                 r.nature = v.get("nature", "")
+                r.alerte = v.get("alerte") in (True, "oui")         # une enchère que le partenaire alerte
                 r.atout = _couleur(remplacer_joueurs(v["atout"], roles, ligne, cle_reelle)) if v.get("atout") else None
                 regles.append(r)
             sequences[seq] = regles

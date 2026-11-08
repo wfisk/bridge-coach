@@ -105,9 +105,16 @@ def siege_choisi(mode, d, analyses, rnd=random):
 
 def avancer(d, seq, siege):
     """Le moteur parle jusqu'au tour du joueur ou jusqu'à la fin : (séquence, explications, indice ou None)."""
-    if fin(seq): return list(seq), encherir(d, imposees=seq)["explications"][:len(seq)], None
+    return avancer_alertes(d, seq, siege)[:3]
+
+
+def avancer_alertes(d, seq, siege):
+    """Comme avancer, plus les rangs des enchères à alerter (alerte: oui dans regles.yaml)."""
+    if fin(seq):
+        r = encherir(d, imposees=seq)
+        return list(seq), r["explications"][:len(seq)], None, [k for k in r.get("alertes", []) if k < len(seq)]
     r = encherir(d, imposees=seq, arret=siege)
-    return r["encheres"], r["explications"], (r.get("conseil") if r.get("a_vous") else None)
+    return r["encheres"], r["explications"], (r.get("conseil") if r.get("a_vous") else None), list(r.get("alertes", []))
 
 
 def resultat(d, c, decl):
@@ -161,6 +168,21 @@ def enregistrer(base, n, siege, seq, donneur):
     x["donnes"].setdefault(str(n), []).append(dict(date=datetime.datetime.now().isoformat(timespec="seconds"),
                                                  siege=siege, encheres=list(seq), contrat=c, declarant=decl))
     json.dump(x, open(fichier_jeu(base), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
+def garder_en_cours(base, n, etat):
+    """La donne n telle que le joueur l'a laissée (place, enchères, cartes jouées), pour la retrouver en revenant ;
+    etat None l'efface. Rangée dans <nom>-jeu.json, à côté des essais ("en_cours")."""
+    x = lire_essais(base); ec = x.setdefault("en_cours", {})
+    if etat is None: ec.pop(str(n), None)
+    else: ec[str(n)] = etat
+    json.dump(x, open(fichier_jeu(base), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
+def en_cours(base, n=None):
+    """L'état gardé de la donne n (ou de toutes : {n: état}), ou None."""
+    ec = lire_essais(base).get("en_cours") or {}
+    return ec if n is None else ec.get(str(n))
 
 
 def completer_jeu(base, n, cartes, levees):

@@ -11,6 +11,10 @@
 #   Virgule = et ; || = ou ; parenthèses pour grouper ; non ... ; reg / irreg
 #   Première règle vraie dans l'ordre ; - exemples : en fin de liste, vérifiés à chaque lecture.
 #   source : SEF (par défaut), à confirmer, SA (emprunté au Standard American).
+#   alerte : oui pour une enchère que le partenaire alerte. On alerte : cue-bid Michaels, 4e couleur forcing,
+#   3e couleur forcing artificielle, Roudi, Drury, splinter, Jacoby 2SA, soutiens Bergen, Lebensohl, 2SA bicolore,
+#   contres artificiels (Spoutnik…), ouvertures artificielles (Multi 2♦, forts non standard). Le moteur ne joue
+#   encore ni Michaels, ni Roudi, ni splinter, ni Jacoby, ni Bergen, ni Lebensohl, ni Multi.
 
 systeme: sef-2024
 
@@ -142,7 +146,7 @@ ouverture:
   - passe: { si: "U 3+, HLD(U) 5-", montre: "moins de 6 points" }
   - 4U:  { si: "U 5+, H 5-10, (T 1- || K 1- || C 1- || P 1-)", montre: "fermeture : 5+ atouts, moins de 11 H, un singleton ou une chicane" }
   # Drury : main passée (siège 1 ou 2), l'ouverture en 3e ou 4e ; 2♣ artificiel (conventions/drury.md)
-  - 2T:  { si: "S 1-2, U 3+, HLD(U) 10-12", montre: "Drury : main passée, 3+ atouts, 10–12 points", nature: drury, nom: Drury, source: à confirmer, apres: 1C | 1P }
+  - 2T:  { si: "S 1-2, U 3+, HLD(U) 10-12", montre: "Drury : main passée, 3+ atouts, 10–12 points", nature: drury, nom: Drury, source: à confirmer, apres: 1C | 1P, alerte: oui }
   - 2U:  { si: "U 3+, HLD 6-10", montre: "soutien simple, 6–10 points, 3+ cartes" }
   - 3U:  { si: "U 3+, HLD 11-12, (U 4+ || non P 5+)", montre: "soutien limite, 11–12 points ; avec trois atouts et cinq piques, 1♠ d'abord", source: à confirmer }
   - 2C:  { si: "U 3+, HLD 13+, C 5+, C > K, C > T", montre: "13+ points, fit différé", apres: 1P }
@@ -412,8 +416,8 @@ ouverture:
 "1C - 1P - 2T | 1C - 1P - 2K":
   - 4C:  { si: "C 3+, HLD(C) 12-18", montre: "fit cœur, manche", nature: conclusion }
   - 4P:  { si: "P 6+, H 13-18", montre: "6+ piques, manche", nature: conclusion }
-  - 2K:  { si: "H 11+, non arret K, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1C - 1P - 2T }
-  - 3T:  { si: "H 11+, non arret T, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1C - 1P - 2K }
+  - 2K:  { si: "H 11+, non arret K, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1C - 1P - 2T, alerte: oui }
+  - 3T:  { si: "H 11+, non arret T, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1C - 1P - 2K, alerte: oui }
   - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
   - 3C:  { si: "C 3+, HLD(C) 10-11", montre: "fit cœur, invitation", nature: invite }
   - 3P:  { si: "P 6+, H 11-12", montre: "6+ piques, invitation", nature: invite }
@@ -488,7 +492,7 @@ ouverture:
 
 "(1C)":
   - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt cœur" }
-  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer }
+  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui }
   - 1P:  { si: "P 5+, (H 8-16, bonne P || H 10-16)", montre: "5+ piques, 8–16 H" }
   - 2K:  { si: "K 5+, K >= T, H 11-18, bonne K, non vul nous || K 5+, K >= T, H 12-18, bonne K", montre: "5+ carreaux, 11–18 H" }
   - 2T:  { si: "T 5+, H 11-18, bonne T, non vul nous || T 5+, H 12-18, bonne T", montre: "5+ trèfles, 11–18 H" }
@@ -500,7 +504,7 @@ ouverture:
 
 "(1P)":
   - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt pique" }
-  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer }
+  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui }
   - 2C:  { si: "C 5+, C >= K, C >= T, H 11-18, bonne C, non vul nous || C 5+, C >= K, C >= T, H 12-18, bonne C", montre: "5+ cœurs, 11–18 H" }
   - 2K:  { si: "K 5+, K >= T, H 11-18, bonne K, non vul nous || K 5+, K >= T, H 12-18, bonne K", montre: "5+ carreaux, 11–18 H" }
   - 2T:  { si: "T 5+, H 11-18, bonne T, non vul nous || T 5+, H 12-18, bonne T", montre: "5+ trèfles, 11–18 H" }
@@ -534,7 +538,7 @@ ouverture:
   - "*U": { si: "U 3+, HLD 11-12, palier(U) 3", montre: "soutien, 11–12 points (le saut est trop haut)", nature: invite }
   - passe: { si: "U 3+", montre: "fit, mais trop faible pour monter" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
-  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui }
   - "*P": { si: "P 5+, non U est P, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
   - "*C": { si: "C 5+, non U est C, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
@@ -555,7 +559,7 @@ ouverture:
   - "*U": { si: "U 3+, HLD 11-12, palier(U) 3", montre: "soutien, 11–12 points (le saut est trop haut)", nature: invite }
   - passe: { si: "U 3+", montre: "fit, mais trop faible pour monter" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
-  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui }
   - "*P": { si: "P 5+, non U est P, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
   - "*C": { si: "C 5+, non U est C, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
@@ -575,7 +579,7 @@ ouverture:
   - "*U": { si: "U 4+, HLD 11+, palier(U) 3", montre: "soutien, 11+ points (le saut est trop haut)", nature: invite }
   - passe: { si: "U 4+", montre: "fit, mais trop faible pour monter" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
-  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui }
   - "*P": { si: "P 5+, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
   - "*C": { si: "C 5+, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
@@ -599,7 +603,7 @@ ouverture:
   - "*U": { si: "U 4+, HLD 11+, palier(U) 3", montre: "soutien, 11+ points (le saut est trop haut)", nature: invite }
   - passe: { si: "U 4+", montre: "fit, mais trop faible pour monter" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
-  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui }
   - "*P": { si: "P 5+, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
   - "*C": { si: "C 5+, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
@@ -911,9 +915,9 @@ ouverture:
   - 2UM: { si: "UM 4+, HLD(UM) 6-10", montre: "fit : soutien simple", nature: limite }
   - 1P:  { si: "P 4+, H 6+", montre: "4+ piques", nature: forcing, apres: 1T - 1K - 1C }
   - 3W:  { si: "W 6+, H 11-12", montre: "6+ cartes : invitation", nature: invite }
-  - 2K:  { si: "H 11+, non arret K", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1T - 1C - 1P }
-  - 2T:  { si: "H 11+, non arret T", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1K - 1C - 1P }
-  - 2C:  { si: "H 11+, non arret C", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1T - 1K - 1P }
+  - 2K:  { si: "H 11+, non arret K", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1T - 1C - 1P, alerte: oui }
+  - 2T:  { si: "H 11+, non arret T", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1K - 1C - 1P, alerte: oui }
+  - 2C:  { si: "H 11+, non arret C", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1T - 1K - 1P, alerte: oui }
   - 3SA: { si: "H 13-18", montre: "13+ H : manche", nature: conclusion }
   - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
   - 2W:  { si: "W 6+, H 6-10", montre: "6+ cartes : pour jouer", nature: conclusion }
@@ -1030,7 +1034,7 @@ ouverture:
   - "*C": { si: "C 6+, non U est C, non W est C, palier(C) 3, H 11-16", montre: "6+ cœurs" }
   - "*K": { si: "K 6+, K >= T, non U est K, non W est K, palier(K) 3, H 11-16", montre: "6+ carreaux" }
   - "*T": { si: "T 6+, non U est T, non W est T, palier(T) 3, H 11-16", montre: "6+ trèfles" }
-  - 2SA: { si: "K 5+, T 5+, H 10-18, (U est C || U est P), (W est C || W est P)", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer }
+  - 2SA: { si: "K 5+, T 5+, H 10-18, (U est C || U est P), (W est C || W est P)", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui }
   - contre: { si: "H 12+, (T 4+ || U est T || W est T), (K 4+ || U est K || W est K), (C 4+ || U est C || W est C), (P 4+ || U est P || W est P)", montre: "contre : 4+ cartes dans les deux couleurs restantes", nature: appel }
   - passe: { montre: "pas d'intervention" }
 "(1x) passe (1SA)":
@@ -1057,8 +1061,8 @@ ouverture:
 
 # ------------------------------------------------------------------ 1.3 (suite) répondant après la deuxième couleur de l'ouvreur
 "1K - 1M - 2T":
-  - 2P:  { si: "H 11+, non arret P, P 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, apres: 1K - 1C - 2T }
-  - 2C:  { si: "H 11+, non arret C, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1K - 1P - 2T }
+  - 2P:  { si: "H 11+, non arret P, P 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, apres: 1K - 1C - 2T, alerte: oui }
+  - 2C:  { si: "H 11+, non arret C, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1K - 1P - 2T, alerte: oui }
   - 3SA: { si: "H 13-18", montre: "13+ H : manche", nature: conclusion }
   - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
   - 3T:  { si: "T 4+, H 10-12", montre: "soutien trèfle : invitation", nature: invite }

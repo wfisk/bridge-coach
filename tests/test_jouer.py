@@ -35,4 +35,12 @@ assert jouer.siege_choisi("declarant", d, (None, None), r) == decl
 assert all(jouer.siege_choisi("camp", d, (None, None), r) in (decl, jouer.PART[decl]) for _ in range(10))
 assert all(jouer.camp(jouer.siege_choisi("defense", d, (None, None), r)) != jouer.camp(decl) for _ in range(10))
 assert {jouer.siege_choisi("hasard", d, (None, None), r) for _ in range(40)} == set("NESO")
+# les enchères à alerter viennent des règles (alerte: oui) : le texas ne s'alerte pas, le Spoutnik oui
+d = dict(n=1, donneur="N", vul="Personne", mains=dict(N="AR5 D83 A92 D862", S="RV752 D84 X63 92", E="D43 R52 RD84 753", O="V98 AV976 V75 AX"))
+seq, ex, ind, al = jouer.avancer_alertes(d, [], "S")
+seq, ex, ind, al = jouer.avancer_alertes(d, seq + [ind["enchere"]], "N")
+assert seq[:3] == ["1SA", "passe", "2♥"] and al == []
+d = dict(n=1, donneur="N", vul="Personne", mains=dict(N="A5 R2 AD982 R532", E="RDV96 A85 R4 V96", S="X87 DV64 X53 A84", O="432 X973 V76 DX7"))
+seq, ex, ind, al = jouer.avancer_alertes(d, ["1♦", "1♠", "contre"], "N")
+assert seq[2] == "contre" and 2 in al, (seq, al)
 print("ok")

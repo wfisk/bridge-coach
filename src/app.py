@@ -8,7 +8,7 @@ lignes que rapport.py écrit (« Donne 3 sur 24 », « Rapport prêt : … »).
     --navigateur   ouvre dans le navigateur plutôt que dans une fenêtre
     --sans-ouvrir  ne fait que servir la page (essais)
 """
-import asyncio, datetime, glob, json, os, re, shutil, signal, subprocess, sys, tempfile, threading
+import asyncio, datetime, glob, json, os, re, shutil, signal, subprocess, sys, tempfile, threading, time
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
@@ -181,9 +181,15 @@ CSS_CARTES = """
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
+.carton.arrive-bas { animation: arrive-bas .5s ease-out; } .carton.arrive-haut { animation: arrive-haut .5s ease-out; }
+.carton.arrive-gauche { animation: arrive-gauche .5s ease-out; } .carton.arrive-droite { animation: arrive-droite .5s ease-out; }
+@keyframes arrive-bas { from { transform: translateY(110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
+@keyframes arrive-haut { from { transform: translateY(-110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
+@keyframes arrive-gauche { from { transform: translateX(-110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
+@keyframes arrive-droite { from { transform: translateX(110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
 .carton:not(.derniere)::after { content: ""; position: absolute; inset: -1px; border-radius: 5px;
   background: rgba(255, 255, 255, .4); }   /* la dernière enchère de chacun en clair, les précédentes voilées */
-.pile { display: flex; align-items: center; justify-content: center; min-height: 46px; min-width: 78px; }
+.pile { display: flex; align-items: flex-start; justify-content: flex-start; min-height: 46px; min-width: 78px; }
 .pile.vers-bas { flex-direction: column; } .pile.vers-bas .carton + .carton { margin-top: -19px; }
 .pile.vers-haut { flex-direction: column-reverse; } .pile.vers-haut .carton { align-items: flex-end; }
 .pile.vers-haut .carton + .carton { margin-bottom: -17px; }
@@ -202,6 +208,9 @@ CSS_CARTES = """
   text-align: center; cursor: pointer; }
 .onglet.passe { background: #2e7d32; } .onglet.contre { background: #e53935; } .onglet.surcontre { background: #1565c0; }
 .onglet.eteint { cursor: default; }
+.onglet.stop { background: #fff; color: #c62828; border: 2px solid #c62828; padding: 2px 6px; }
+.onglet.stop.pose { background: #c62828; color: #fff; }
+.onglet.alerte { background: #f2b705; color: #3b2a00; animation: pense 1.2s ease-in-out infinite; }
 @keyframes pense { 50% { opacity: .35; } }
 .pense { animation: pense 1s ease-in-out infinite; }
 """
@@ -1020,12 +1029,48 @@ def page():
     def siege_de(d, k):
         return jouer.ROT[(jouer.ROT.index(d["donneur"]) + k) % 4]
 
-    def jeu_depart(c, d, siege=None):
+    def jeu_depart(c, d, siege=None, reprendre=True):
+        """Ouvre la donne d : là où vous l'aviez laissée (enchères, cartes jouées : jouer.en_cours), sinon au début."""
+        x = jouer.en_cours(base_seance(c), d["n"]) if reprendre else None
+        if x:
+            try:
+                return jeu_reprendre(c, d, x)
+            except Exception:
+                pass                                       # un état illisible : la donne repart du début
         siege = siege or jouer.siege_choisi(place_jouer(), d, lire_analyses(c))   # l'option choisie dans Options
-        seq, ex, ind = jouer.avancer(d, [], siege)
-        jeu.update(cle=(c, d["n"]), siege=siege, seq=seq, ex=ex, indice=ind, voir_indice=False, garde=False, d=d,
-                   affiche=0, revele=False, pense=None, partie=None, pli_vu=None, msg="", garde_jeu=False, sans_jouer=False)
+        seq, ex, ind, al = jouer.avancer_alertes(d, [], siege)
+        jeu.update(cle=(c, d["n"]), siege=siege, seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, garde=False, d=d,
+                   affiche=0, vus=0, revele=False, pense=None, partie=None, pli_vu=None, msg="", garde_jeu=False, sans_jouer=False)
+        jeu_garder()
         background_tasks.create(reveler())
+
+    def jeu_reprendre(c, d, x):
+        """La donne telle qu'elle était : enchères refaites par le moteur, puis les cartes reposées une à une."""
+        seq, ex, ind, al = jouer.avancer_alertes(d, x["seq"], x["siege"])
+        p = None
+        if x.get("cartes"):
+            c_, decl = jouer.contrat(seq, d["donneur"])
+            p = carte.Partie(d, c_, decl, seq)
+            for k in x["cartes"][1:]: p.poser((k[0], k[1:]))   # la première est l'entame, déjà posée
+            if x.get("reclame"): p.reclame = True; p.pos.gagnes = x.get("gagnes", p.pos.gagnes)
+        jeu.update(cle=(c, d["n"]), siege=x["siege"], seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, garde=ind is None, d=d,
+                   affiche=len(seq), vus=len(seq), revele=False, pense=None, partie=p, pli_vu=None, msg="", garde_jeu=bool(p and p.fini()),
+                   sans_jouer=bool(x.get("sans_jouer")))
+        if p and not p.fini(): background_tasks.create(carte_defense())   # si la défense avait la main
+
+    def jeu_garder():
+        """Garde la donne en cours telle quelle (jouer.garder_en_cours) : on la retrouve en revenant, même plus tard."""
+        if not jeu.get("cle"): return
+        c, n = jeu["cle"]; p = jeu.get("partie")
+        cartes = [cc + r for pli, _ in p.plis for _x, cc, r in pli] + [cc + r for _x, cc, r in p.pos.pli] if p else []
+        try:
+            jouer.garder_en_cours(base_seance(c), n, dict(siege=jeu["siege"], seq=list(jeu["seq"]), cartes=cartes,
+                                  reclame=bool(p and p.reclame), gagnes=p.pos.gagnes if p else 0, sans_jouer=bool(jeu.get("sans_jouer"))))
+        except OSError:
+            pass
+
+    def jeu_recommencer_encheres(c, d):
+        jeu_depart(c, d, jeu["siege"], reprendre=False); vue_jouer.refresh()
 
     async def reveler():
         """Les enchères du programme apparaissent une à une, avec un temps de réflexion."""
@@ -1041,10 +1086,33 @@ def page():
         finally:
             jeu["revele"] = False
 
+    def alerte_due(d):
+        """(rang, enchère, sens) de la dernière enchère du partenaire si elle s'alerte (« alerte: oui » dans regles.yaml :
+        4e couleur forcing, Spoutnik, Drury, 2SA bicolore…), sinon None."""
+        seq = jeu["seq"]; part = jouer.PART[jeu["siege"]]
+        ks = [k for k in range(len(seq)) if siege_de(d, k) == part]
+        if not ks or ks[-1] not in (jeu.get("alertes") or []): return None
+        k = ks[-1]
+        return k, seq[k], next((t_ for x, bb, t_ in jeu["ex"][k:k + 1] if t_), "")
+
+    def saut(d, b):
+        """L'enchère b saute-t-elle un palier ? (plus haut que le plus bas possible dans sa dénomination)"""
+        if not b[:1].isdigit(): return False
+        possibles = [int(x[0]) for x in jouer.legales(jeu["seq"], d["donneur"]) if x[1:] == b[1:]]
+        return bool(possibles) and int(b[0]) > min(possibles)
+
     async def jeu_annonce(d, b):
         if jeu["affiche"] < len(jeu["seq"]) or b not in jouer.legales(jeu["seq"], d["donneur"]): return
-        seq, ex, ind = await run.io_bound(jouer.avancer, d, jeu["seq"] + [b], jeu["siege"])
-        jeu.update(seq=seq, ex=ex, indice=ind, voir_indice=False, tout_voir=False, affiche=jeu["affiche"] + 1); vue_jouer.refresh()
+        notes = []                                          # l'entraînement à l'alerte et au Stop
+        a = alerte_due(d)
+        if a and jeu.get("alerte_faite") != a[0]:
+            notes.append(f"Votre partenaire a dit {a[1]} : une enchère artificielle, à alerter" + (f" ({a[2]})" if a[2] else "") + ".")
+        if saut(d, b) and not jeu.get("stop"): notes.append(f"{b} est un saut : on pose d'abord le Stop.")
+        elif jeu.get("stop") and not saut(d, b): notes.append("Le Stop annonce un saut ; cette enchère n'en est pas un.")
+        jeu.update(note=" ".join(notes), stop=False)
+        seq, ex, ind, al = await run.io_bound(jouer.avancer_alertes, d, jeu["seq"] + [b], jeu["siege"])
+        jeu.update(seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, tout_voir=False, affiche=jeu["affiche"] + 1); vue_jouer.refresh()
+        jeu_garder()
         await reveler()
 
     def jeu_suivante(data, d):
@@ -1074,24 +1142,27 @@ def page():
                 if not tout:
                     ui.html("<div class='tirette autres'>… les autres enchères</div>", sanitize=False) \
                         .on("click", lambda: (jeu.update(tout_voir=True), vue_jouer.refresh()))
-            with ui.row().classes("gap-1 no-wrap compartiment"):         # devant : Passe, X, XX
+            with ui.row().classes("gap-1 no-wrap compartiment"):         # devant : Passe, X, XX, Stop (et Alerte)
                 for b, nom in (("passe", "Passe"), ("contre", "X"), ("surcontre", "XX")):
                     el = ui.html(f"<div class='onglet {b}{'' if b in ok else ' eteint'}'>{nom}</div>", sanitize=False)
                     if b in ok: el.on("click", lambda b=b: jeu_annonce(d, b))
-                ui.html("<div class='onglet indice' title='Ce que dirait le système'><span class='material-icons' "
-                        "style='font-size:16px'>lightbulb</span>Indice</div>", sanitize=False) \
-                    .on("click", lambda: (jeu.update(voir_indice=True), vue_jouer.refresh()))
+                ui.html(f"<div class='onglet stop{' pose' if jeu.get('stop') else ''}' title='Avant un saut'>Stop</div>", sanitize=False) \
+                    .on("click", lambda: (jeu.update(stop=not jeu.get("stop")), vue_jouer.refresh()))
+                a = alerte_due(d)
+                if a and jeu.get("alerte_faite") != a[0]:          # seulement quand l'enchère du partenaire s'alerte
+                    ui.html("<div class='onglet alerte' title='Votre partenaire a fait une enchère artificielle'>Alerte</div>", sanitize=False) \
+                        .on("click", lambda k=a[0]: (jeu.update(alerte_faite=k), vue_jouer.refresh()))
 
     # ---------------------------------------------------------------- le jeu de la carte
     def carte_demarrer(d):
         c_, decl = jouer.contrat(jeu["seq"], d["donneur"])
-        jeu.update(partie=carte.Partie(d, c_, decl, jeu["seq"]), pli_vu=None, msg="", garde_jeu=False)
-        vue_jouer.refresh(); background_tasks.create(carte_defense())
+        jeu.update(partie=carte.Partie(d, c_, decl, jeu["seq"]), pli_vu=None, msg="", garde_jeu=False, sans_jouer=False)
+        jeu_garder(); vue_jouer.refresh(); background_tasks.create(carte_defense())
 
     async def carte_poser(x):
         """Pose une carte ; si elle termine le pli, le pli reste un instant sous les yeux."""
         p = jeu["partie"]; avant = len(p.plis)
-        p.poser(x); jeu["msg"] = ""
+        p.poser(x); jeu["msg"] = ""; jeu_garder()
         if len(p.plis) > avant:
             jeu["pli_vu"] = p.plis[-1]; vue_jouer.refresh()
             await asyncio.sleep(1.3)
@@ -1124,6 +1195,7 @@ def page():
         p = jeu["partie"]
         if not p or p.fini(): return
         ok = await run.io_bound(p.reclamer)
+        if ok: jeu_garder()
         jeu["msg"] = "" if ok else "Pas encore : la défense peut faire au moins une levée de plus."
         vue_jouer.refresh()
 
@@ -1196,24 +1268,34 @@ def page():
         devant = {x: [] for x in "NESO"}
         for k, b in enumerate(vues): devant[siege_de(d, k)].append(b)
         dernier = siege_de(d, len(vues) - 1) if vues else None
-        def carton(b, recent, k, derniere=False):
+        if len(vues) > jeu.get("vus", 0): jeu["arrive"] = (len(vues), time.monotonic())   # un carton vient d'être posé
+        jeu["vus"] = len(vues)
+        n_, t_ = jeu.get("arrive") or (0, 0)
+        ecoule = time.monotonic() - t_                       # la table se redessine souvent : le glissement reprend où il en était
+        nouveau = n_ == len(vues) and ecoule < .5
+        cote = {places[0]: "haut", places[1]: "gauche", places[2]: "droite", places[3]: "bas"}
+        def carton(b, recent, k, derniere=False, x=None):
             cls = {"passe": " passe", "contre": " contre", "surcontre": " surcontre"}.get(b) or " " + COUL_BOITE.get(b[1:], "sa")
             cls += " derniere" * derniere
+            retard = ""
+            if recent and nouveau:                           # depuis le bord du joueur, comme posé sur la table
+                cls += f" arrive-{cote[x]}"; retard = f";animation-delay:-{ecoule:.2f}s"
             texte = {"passe": "Passe", "contre": "X", "surcontre": "XX"}.get(b, b)
-            return f"<div class='carton{cls}{' recent' if recent else ''}' style='z-index:{k + 1}'>{texte}</div>"
+            return f"<div class='carton{cls}{' recent' if recent else ''}' style='z-index:{k + 1}{retard}'>{texte}</div>"
         def pile(x, sens, ou):
-            """Les cartons d'un joueur empilés, le dernier dessus : on voit encore le haut des précédents. Chaque pile est
-            au milieu de son bord de la table, à la même distance du bord pour les quatre joueurs."""
+            """Les cartons d'un joueur empilés, le dernier dessus : on voit encore le haut des précédents. Chaque pile part
+            d'un point fixe près du milieu de son bord, à la même distance du bord pour les quatre joueurs : un carton
+            de plus s'ajoute au bout, les autres ne bougent pas."""
             bs = devant[x]
-            cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1) for k, b in enumerate(bs))
+            cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1, x) for k, b in enumerate(bs))
             return f"<div class='pile {sens}' style='position:absolute;{ou}'>{cartons}</div>"
         haut, gauche, droite, bas = places
         bord = 18                                          # la distance au bord de la table
         return (f"<div style='position:absolute;inset:0'>"
-                f"{pile(haut, 'vers-droite', f'top:{bord}px;left:50%;transform:translateX(-50%)')}"
-                f"{pile(bas, 'vers-droite', f'bottom:{bord}px;left:50%;transform:translateX(-50%)')}"
-                f"{pile(gauche, 'vers-bas', f'left:{bord}px;top:50%;transform:translateY(-50%)')}"
-                f"{pile(droite, 'vers-bas', f'right:{bord}px;top:50%;transform:translateY(-50%)')}"
+                f"{pile(haut, 'vers-droite', f'top:{bord}px;left:calc(50% - 110px)')}"
+                f"{pile(bas, 'vers-droite', f'bottom:{bord}px;left:calc(50% - 110px)')}"
+                f"{pile(gauche, 'vers-bas', f'left:{bord}px;top:calc(50% - 60px)')}"
+                f"{pile(droite, 'vers-bas', f'right:{bord}px;top:calc(50% - 60px)')}"
                 f"<div style='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)'>{etui(d, places)}</div></div>")
 
     ORDRE_MAIN = "♠♥♣♦"                                    # noir, rouge, noir, rouge
@@ -1324,7 +1406,10 @@ def page():
                      "les enchères du programme). Le choix vaut pour toutes les donnes et reste d'une fois sur l'autre.") \
                 .classes("text-base text-gray-600 max-w-2xl")
             def changer(ev):
-                ecrire_etat(place_jouer=ev.value); jeu["cle"] = None   # la prochaine donne ouverte prend la nouvelle place
+                ecrire_etat(place_jouer=ev.value); jeu["cle"] = None   # les donnes repartent du début, à la nouvelle place
+                x = jouer.lire_essais(base_seance(c))
+                if x.pop("en_cours", None) is not None:
+                    json.dump(x, open(jouer.fichier_jeu(base_seance(c)), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
             ui.radio(dict(jouer.PLACES), value=place_jouer(), on_change=changer).classes("text-base")
             ui.label("En défense, vous enchérissez ; le jeu de la carte en défense viendra plus tard.").classes("text-sm text-gray-600")
             return
@@ -1386,15 +1471,30 @@ def page():
                                 ui.html(f"<div style='font-size:14px'>Pli {k} : " + " · ".join(f"{SIEGE[x][0]} {rouge(carte.carte_fr(cc, r))}" for x, cc, r in pli)
                                         + f" — {SIEGE[g]}</div>", sanitize=False)
                 elif not fini and not attente:
+                    ui.button("Indice", icon="lightbulb", on_click=lambda: (jeu.update(voir_indice=True), vue_jouer.refresh())) \
+                        .props("outline dense no-caps").classes("self-end")      # au-dessus de la boîte, à part
                     boite_encheres(d)
+                    a = alerte_due(d)
+                    if a and jeu.get("alerte_faite") == a[0]:
+                        ui.html(f"<div style='font-size:15px'><b>Alerte</b> : {rouge(a[1])} de votre partenaire"
+                                + (f" — {rouge(a[2])}" if a[2] else "") + "</div>", sanitize=False)
+                    if jeu.get("note"):
+                        ui.html(f"<div style='font-size:15px;color:#8a5a00'>{rouge(jeu['note'])}</div>", sanitize=False)
                     if jeu["voir_indice"]:
                         ui.html(f"<div style='font-size:15px'>Le système dirait <b>{rouge(jeu['indice']['enchere'])}</b> : "
                                 f"{rouge(jeu['indice']['texte'])}</div>", sanitize=False)
                 elif a_jouer:
                     ui.button(f"Jouer {c_} par {SIEGE[decl]}", icon="style", on_click=lambda: carte_demarrer(d)).classes("w-full")
-                    ui.button("Voir les mains sans jouer", on_click=lambda: (jeu.update(sans_jouer=True), vue_jouer.refresh())).props("flat no-caps dense")
+                    ui.button("Voir les mains sans jouer", on_click=lambda: (jeu.update(sans_jouer=True), jeu_garder(), vue_jouer.refresh())).props("flat no-caps dense")
                 elif fini and c_ != "passe" and jouer.camp(decl) != jouer.camp(s):
                     ui.label("Votre camp défend : le jeu en défense viendra plus tard.").classes("text-sm text-gray-600")
+                if (p and not p.fini()) or (not p and not fini and any(siege_de(d, k) == s for k in range(len(jeu["seq"])))):   # revenir au début, en cours de route
+                    with ui.column().classes("w-full gap-1 mt-3"):
+                        if p:
+                            ui.button("Reprendre le jeu de la carte", icon="replay", on_click=lambda: carte_demarrer(d)) \
+                                .props("flat no-caps dense align=left").classes("text-sm")
+                        ui.button("Recommencer les enchères", icon="restart_alt", on_click=lambda: jeu_recommencer_encheres(c, d)) \
+                            .props("flat no-caps dense align=left").classes("text-sm")
 
         if fini and not jeu["garde"]:
             jouer.enregistrer(base_seance(c), d["n"], s, jeu["seq"], d["donneur"]); jeu["garde"] = True; barre_seance.refresh()
@@ -1409,7 +1509,7 @@ def page():
                     jeu["garde_jeu"] = True
                 with ui.row().classes("gap-3 mt-2"):
                     ui.button("Rejouer la carte", icon="replay", on_click=lambda: carte_demarrer(d)).props("outline")
-                    ui.button("Recommencer les enchères", icon="restart_alt", on_click=lambda: (jeu_depart(c, d, s), vue_jouer.refresh())).props("outline")
+                    ui.button("Recommencer les enchères", icon="restart_alt", on_click=lambda: jeu_recommencer_encheres(c, d)).props("outline")
                     ui.button("Donne suivante", icon="arrow_forward", on_click=lambda: jeu_suivante(data, d))
                 mains_grille(d)
                 comparaison(c, d, data, s)
@@ -1443,7 +1543,7 @@ def page():
         page_dm_par(d)
         if jeu["partie"]: return                         # après le jeu, les boutons sont au-dessus
         with ui.row().classes("gap-3 mt-3"):
-            ui.button("Recommencer", icon="replay", on_click=lambda: (jeu_depart(c, d, s), vue_jouer.refresh())).props("outline")
+            ui.button("Recommencer les enchères", icon="replay", on_click=lambda: jeu_recommencer_encheres(c, d)).props("outline")
             ui.button("Donne suivante", icon="arrow_forward", on_click=lambda: jeu_suivante(data, d))
 
     def page_versions(c):

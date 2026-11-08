@@ -32,6 +32,7 @@ class Appel:
     def __init__(self, enchere, texte, pts=None, L=None, reguliere=None, nature="", atout=None):
         self.enchere, self.texte, self.nature, self.atout = enchere, texte, nature, atout
         self.pts, self.L, self.reguliere = pts, L, reguliere
+        self.alerte = False                                  # vrai pour une enchère que le partenaire alerte (regles.yaml)
 
 
 def rang(enchere):

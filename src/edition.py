@@ -6,7 +6,7 @@ les 20 dernières), pour revenir en arrière.
 Une donne en cours de saisie est enregistrée telle quelle, marquée "a_completer" ; quand ses 52 cartes sont posées,
 le double mort, les points et le par sont calculés (donnes.donne_complete). Seules les séances faites dans
 Bridge Coach (entraînement, donnes saisies) se modifient. Une donne changée perd son analyse standard, et son
-analyse de l'expert est mise de côté (copie datée) : les autres donnes gardent les leurs.
+analyse de l'expert est retirée, après une copie du fichier dans versions/ : les autres donnes gardent les leurs.
 """
 import datetime, glob, json, os, random, re, shutil
 
@@ -54,11 +54,7 @@ def modifiable(c):
 
 def a_analyse_expert(c, n):
     """La donne n a-t-elle une analyse de l'expert ?"""
-    f = c[:-len(rapport.BC)] + "-expert.json"
-    try:
-        return str(n) in json.load(open(f, encoding="utf-8")).get("donnes", {})
-    except (OSError, ValueError):
-        return False
+    return str(n) in (rapport.analyse_de(c, "expert") or {}).get("donnes", {})
 
 
 # ---------------------------------------------------------------- enregistrer, et garder les versions
@@ -151,22 +147,17 @@ def finir(d):
 
 
 def oublier_analyse(c, nums, renumeroter=None):
-    """Les analyses des donnes changées ne sont plus justes (renumeroter : {ancien: nouveau}) : la standard est retirée ;
-    celle de l'expert aussi, après une copie datée du fichier (-expert-avant-<date-heure>.json), puisqu'elle ne se
-    refait pas toute seule."""
-    base = c[:-len(rapport.BC)]
-    for suite, garder in (("-standard.json", False), ("-expert.json", True)):
-        f = base + suite
-        if not os.path.exists(f): continue
-        an = json.load(open(f, encoding="utf-8"))
+    """Les analyses des donnes changées ne sont plus justes (renumeroter : {ancien: nouveau}) : retirées de la standard
+    et de celle de l'expert ; pour l'expert, qui ne se refait pas toute seule, le fichier d'avant est d'abord copié
+    dans versions/ (rapport.ecrire_analyse)."""
+    for quoi in rapport.ANALYSES:
+        an = rapport.analyse_de(c, quoi)
+        if not an: continue
         avant = an.get("donnes", {})
         d = {k: v for k, v in avant.items() if int(k) not in nums}
         if renumeroter: d = {str(renumeroter[int(k)]): v for k, v in d.items() if int(k) in renumeroter}
-        if d == avant: continue                            # rien ne change pour ce fichier
-        if garder:
-            shutil.copy(f, base + f"-expert-avant-{datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S')}.json")
-        an["donnes"] = d
-        json.dump(an, open(f, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        if d == avant: continue                            # rien ne change pour cette analyse
+        rapport.ecrire_analyse(c, quoi, dict(an, donnes=d), dater=False)
 
 
 def ajouter_donne(c):

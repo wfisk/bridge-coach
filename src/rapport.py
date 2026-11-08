@@ -18,8 +18,8 @@ les plus récents d'abord, dix à la fois ; on tape le numéro (Entrée = 1, le 
 Rangement, un dossier par mois (date de la séance), sans sous-dossier par séance ; pas
 d'espace dans les noms (remplacés par des tirets) :
   seances/AAAA-MM/   le nom d'origine (Bridgemate porte déjà la date) : <nom>.bws (copie),
-                     <nom>.bc.json (la séance), <nom>-standard.json (analyse du programme,
-                     régénérée à chaque fois), <nom>-expert.json (analyse rédigée par Claude)
+                     <nom>.bc.json (la séance et ses analyses : "analyses" {"standard" : celle du programme,
+                     refaite à chaque fois ; "expert" : celle rédigée par Claude}), versions/ (copies datées)
   rapports/AAAA-MM/  seulement les PDF, précédés de la date (l'ordre alphabétique suit les niveaux,
                      diff entre les deux analyses qu'il compare) :
                      <date>-<nom>-archive.pdf (ce qui a été joué, sans recommandation),
@@ -143,7 +143,8 @@ def preparer_donnees():
 
 def migrer():
     """Une fois : reports/ devient rapports/ (les PDF y passent) et chaque <nom>-donnes.json devient <nom>.bc.json,
-    avec sa source et ses joueurs (<nom>-paires.json y est fondu puis retiré)."""
+    avec sa source et ses joueurs (<nom>-paires.json y est fondu puis retiré) ; les analyses rangées à part entrent
+    dans leur .bc.json (fondre_analyses)."""
     ancien = os.path.join(DONNEES, "reports")
     if os.path.isdir(ancien):
         for r, _, fs in os.walk(ancien):
@@ -164,6 +165,7 @@ def migrer():
         ecrire_bc(data, base + BC)
         os.remove(f)
         if os.path.exists(paires): os.remove(paires)
+    fondre_analyses()
 
 
 def source_d_origine(base):
@@ -197,10 +199,72 @@ def entete(data, source, fichier):
 
 
 def ecrire_bc(data, chemin):
-    """Le fichier Bridge Coach, champs d'en-tête en premier."""
+    """Le fichier Bridge Coach, champs d'en-tête en premier, les analyses à la fin. Écrit sous un nom provisoire puis
+    mis à sa place d'un coup : une coupure en cours d'écriture ne laisse jamais un fichier à moitié écrit."""
     tete = {k: data[k] for k in ("format", "version", "source", "session", "joueurs") if k in data}
-    json.dump(dict(tete, **{k: v for k, v in data.items() if k not in tete}), open(chemin, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=1)
+    corps = dict(tete, **{k: v for k, v in data.items() if k not in tete and k != "analyses"})
+    if data.get("analyses"): corps["analyses"] = data["analyses"]
+    provisoire = chemin + ".provisoire"
+    with open(provisoire, "w", encoding="utf-8") as f: json.dump(corps, f, ensure_ascii=False, indent=1)
+    os.replace(provisoire, chemin)
+
+
+# ---------------------------------------------------------------- les analyses, rangées dans le .bc.json
+ANALYSES = ("standard", "expert")       # "standard" : celle du programme, refaite à chaque fois ; "expert" : celle de Claude
+
+
+def lire_bc(chemin):
+    return json.load(open(chemin, encoding="utf-8"))
+
+
+def analyse_de(chemin, quoi):
+    """L'analyse "standard" ou "expert" de la séance ({"systeme", "donnes": {…}, "fait_le"…}), ou None."""
+    try:
+        return (lire_bc(chemin).get("analyses") or {}).get(quoi)
+    except (OSError, ValueError):
+        return None
+
+
+def ecrire_analyse(chemin, quoi, an, dater=True):
+    """Range l'analyse dans le .bc.json (None la retire). Le fichier d'avant est d'abord copié dans versions/ :
+    toujours pour l'analyse de l'expert, qui ne se refait pas ; au plus toutes les 10 minutes sinon. dater : "fait_le"
+    devient maintenant (False quand on retire seulement des donnes, comme après une donne modifiée)."""
+    import datetime, edition
+    edition.garder_version(chemin, force=quoi == "expert")
+    data = lire_bc(chemin); ans = data.setdefault("analyses", {})
+    if an is None:
+        ans.pop(quoi, None)
+    else:
+        an = dict(an)
+        if dater or "fait_le" not in an: an["fait_le"] = datetime.datetime.now().isoformat(timespec="seconds")
+        ans[quoi] = an
+    ecrire_bc(data, chemin)
+
+
+def fondre_analyses():
+    """Une fois : les anciens <nom>-standard.json et <nom>-expert.json entrent dans leur .bc.json ; eux et les copies
+    -expert-avant-<date>.json vont dans versions/, sous leur nom (rien n'est effacé)."""
+    import datetime, glob
+    for c in glob_seances("*" + BC):
+        base = c[:-len(BC)]
+        vieux = [(q, base + f"-{q}.json") for q in ANALYSES if os.path.exists(base + f"-{q}.json")]
+        avant = glob.glob(glob.escape(base) + "-expert-avant-*.json")
+        if not vieux and not avant: continue
+        data = lire_bc(c); ans = data.setdefault("analyses", {})
+        for q, f in vieux:
+            if q in ans: continue
+            try:
+                an = json.load(open(f, encoding="utf-8"))
+            except ValueError:
+                continue                                    # illisible : il part dans versions/ tel quel
+            an.setdefault("fait_le", datetime.datetime.fromtimestamp(os.path.getmtime(f)).isoformat(timespec="seconds"))
+            ans[q] = an
+        if not ans: data.pop("analyses")
+        ecrire_bc(data, c)
+        rangement = os.path.join(os.path.dirname(c), "versions")
+        os.makedirs(rangement, exist_ok=True)
+        for f in [f for _, f in vieux] + avant:
+            os.replace(f, os.path.join(rangement, os.path.basename(f)))
 
 
 def noms_complets(data):
@@ -399,7 +463,7 @@ def main():
         DATA = os.path.dirname(bws); nom = os.path.basename(bws)[:-len(BC)]   # déjà rangée : elle reste où elle est, sous son nom
     os.makedirs(DATA, exist_ok=True); os.makedirs(SORTIE, exist_ok=True)
     fichier = lambda suite: os.path.join(DATA, nom + suite)   # seances : le nom d'origine, sans date
-    donnes = fichier(BC)
+    donnes = seance = fichier(BC)                          # donnes peut devenir une copie provisoire ; seance reste le fichier
     if not pret:                                           # importée : le fichier Bridge Coach se fait ici
         data["joueurs"] = joueurs_bws(data, {str(k): v for k, v in JOUEURS.items()})
         entete(data, source, origine)
@@ -408,6 +472,8 @@ def main():
             for k, v in data["joueurs"].items():
                 for j, w in zip(v, avant.get(k, [])):
                     if w.get("nom") and not j.get("nom"): j["nom"] = w["nom"]
+            ans = json.load(open(donnes, encoding="utf-8")).get("analyses")
+            if ans: data["analyses"] = ans                 # réimport : les analyses restent
     else:
         entete(data, "inconnue", origine)
     if os.path.exists(fichier("-paires.json")):           # feuille de route : initiales (et noms) à part
@@ -441,19 +507,18 @@ def main():
 
     # analyse automatique (enchères SEF + commentaire), toujours régénérée et enregistrée
     # vues : tout ce qui demande de voir les cartes, en dernière section (jamais dans le plan)
-    fauto = fichier("-standard.json")
     chrono = Chrono()
     tables = {str(d["n"]): coups_tables(d) for d in data["donnes"]}
     chrono.etape("coups des tables (cartes vues)")
     if rapports_seuls:                                     # --rapports : les PDF depuis les analyses enregistrées
-        if not os.path.exists(fauto):
+        auto = analyse_de(seance, "standard")
+        if not auto:
             raise SystemExit("Pas encore d'analyse standard pour cette séance : lancez d'abord l'analyse.")
-        auto = json.load(open(fauto, encoding="utf-8"))
         manquent = [str(d["n"]) for d in data["donnes"] if str(d["n"]) not in auto.get("donnes", {})]
         if manquent:
             raise SystemExit(f"L'analyse standard manque pour {'la donne' if len(manquent) == 1 else 'les donnes'} "
                              f"{', '.join(manquent)} : relancez l'analyse standard.")
-        print(f"Analyse standard reprise : {os.path.basename(fauto)}")
+        print("Analyse standard reprise")
     else:
         auto = {"systeme": "sef-2024", "automatique": True, "donnes": {}}
         for k, d in enumerate(data["donnes"], 1):
@@ -462,12 +527,12 @@ def main():
             x["vues"] = joindre(x.get("vues"), tables[n])
             auto["donnes"][n] = dict(x, comm=commentaire(d))
             chrono.etape(f"donne {n}")
-        json.dump(auto, open(fauto, "w"), ensure_ascii=False, indent=1)
-        print(f"Analyse automatique : {os.path.basename(fauto)}")
+        ecrire_analyse(seance, "standard", auto)
+        print(f"Analyse automatique rangée dans {os.path.basename(seance)}")
 
     pdf = lambda quoi: os.path.join(SORTIE, f"{date}-{nom_court(nom)}-{quoi}.pdf")
-    analyse = fichier("-expert.json")
-    redigee = os.path.exists(analyse)
+    an = analyse_de(seance, "expert")
+    redigee = bool(an and an.get("donnes"))
     # archive : ce qui a été joué, sans recommandation (le commentaire factuel reste)
     joue = {"titre_pied": f"Relevé des donnes – séance du {data['session']['date']}",
                "donnes": {n: {"comm": x["comm"], "vues": tables[n]} for n, x in auto["donnes"].items()}}
@@ -475,13 +540,12 @@ def main():
         construire_pdf(donnes, joue, {"donnes": {}}, pdf("archive"))
     if sans or not redigee:
         print("--sans-analyse : analyse rédigée ignorée" if sans and redigee
-              else f"Pas d'analyse rédigée ({os.path.basename(analyse)})", ": analyse automatique seulement.")
+              else "Pas d'analyse rédigée", ": analyse automatique seulement.")
         construire_pdf(donnes, {}, auto, pdf("standard"))
         chrono.etape("rapports PDF"); chrono.ecrire(len(data["donnes"]))
         return
     construire_pdf(donnes, {}, auto, pdf("standard"))
     chrono.etape("rapport standard"); atexit.register(chrono.ecrire, len(data["donnes"]))
-    an = json.load(open(analyse))
     from comparer import final
     for d in data["donnes"]:                               # les cartes vues du contrat de l'expert
         a = an["donnes"].get(str(d["n"]), {})
@@ -492,10 +556,18 @@ def main():
     construire_pdf(donnes, an, auto, pdf("expert"))
     sys.stdout.flush()
     provisoire = pdf("diff")[:-4] + ".provisoire.pdf"
-    subprocess.run([sys.executable, "-I", "-X", "utf8", os.path.join(ICI, "comparer.py"), donnes, fauto, analyse,
+    fauto, fexpert = (provisoire_json(analyse_de(seance, q)) for q in ANALYSES)   # comparer.py lit deux fichiers
+    subprocess.run([sys.executable, "-I", "-X", "utf8", os.path.join(ICI, "comparer.py"), donnes, fauto, fexpert,
                     provisoire] + FICHIER_NOMS, check=True)
     remplacer(provisoire, pdf("diff"))
     subprocess.run([sys.executable, "-I", "-X", "utf8", os.path.join(ICI, "bilan.py")])   # toutes les séances : pas bloquant
+
+
+def provisoire_json(x):
+    """Un fichier JSON provisoire, effacé à la sortie du programme ; renvoie son chemin."""
+    tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+    json.dump(x, tmp, ensure_ascii=False); tmp.close(); atexit.register(os.unlink, tmp.name)
+    return tmp.name
 
 
 def construire_pdf(donnes, an, auto, pdf):

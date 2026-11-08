@@ -3,8 +3,8 @@
 
 Usage : .venv/bin/python -I src/bilan.py [sortie.pdf]      (par défaut rapports/bilan-encheres.pdf)
 
-Lit chaque séance de seances/ (<nom>.bc.json) qui a une analyse experte (<nom>-expert.json) et une
-analyse du programme (<nom>-standard.json). Pour chaque donne où les contrats diffèrent : les IMP du Standard
+Lit chaque séance de seances/ (<nom>.bc.json) qui a, rangées dedans, une analyse experte et une analyse du
+programme ("analyses" : "expert" et "standard"). Pour chaque donne où les contrats diffèrent : les IMP du Standard
 face à l'Expert au double mort (comme le -diff), le genre d'écart (chelem manqué, manche de trop…)
 et l'étape où les enchères se séparent (ouverture, réponse, redemande…). Les totaux par genre et
 par étape disent quoi travailler en premier ; la liste des donnes suit, les plus coûteuses d'abord.
@@ -59,14 +59,15 @@ def etape(d, enc, k, s):
 def seances():
     """[(date, nom, données, standard, expert)] des séances qui ont les deux analyses."""
     out = []
-    for f in sorted(glob.glob(os.path.join(SEANCES, "*", "*-expert.json"))):
-        base = f[:-len("-expert.json")]
-        seance = next((base + x for x in (BC, ANCIEN) if os.path.exists(base + x)), None)
-        if not seance or not os.path.exists(base + "-standard.json"): continue
-        data = json.load(open(seance))
+    for f in sorted(glob.glob(os.path.join(glob.escape(SEANCES), "*", "*" + BC))):
+        try:
+            data = json.load(open(f, encoding="utf-8"))
+        except ValueError:
+            continue
+        ans = data.get("analyses") or {}
+        if not (ans.get("standard") or {}).get("donnes") or not (ans.get("expert") or {}).get("donnes"): continue
         j, m, a = data["session"]["date"].split("/")
-        out.append((f"{a}-{m}-{j}", os.path.basename(base), data, json.load(open(base + "-standard.json"))["donnes"],
-                    json.load(open(f))["donnes"]))
+        out.append((f"{a}-{m}-{j}", os.path.basename(f)[:-len(BC)], data, ans["standard"]["donnes"], ans["expert"]["donnes"]))
     return sorted(out)
 
 

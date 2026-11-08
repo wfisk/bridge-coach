@@ -9,7 +9,8 @@ import app, rapport
 # les fichiers de l'utilisateur sont hors du programme, créés au premier lancement
 assert rapport.SEANCES.startswith(ESSAI) and rapport.RAPPORTS.startswith(ESSAI) and rapport.CONFIG.startswith(ESSAI)
 assert not os.path.abspath(rapport.DONNEES).startswith(rapport.RACINE)
-# l'ancien rangement : reports/ devient rapports/, <nom>-donnes.json devient <nom>.bc.json avec ses joueurs
+# l'ancien rangement : reports/ devient rapports/, <nom>-donnes.json devient <nom>.bc.json avec ses joueurs ;
+# les analyses à part (-standard.json, -expert.json) entrent dans le .bc.json, les anciens fichiers vont dans versions/
 import json
 os.makedirs(os.path.join(ESSAI, "reports", "2026-10")); open(os.path.join(ESSAI, "reports", "2026-10", "a-diff.pdf"), "w").close()
 os.makedirs(os.path.join(ESSAI, "seances", "2026-10"))
@@ -18,6 +19,9 @@ json.dump({"session": {"date": "30/10/2026"}, "paires": {"6": {"nom": "?"}},
            "donnes": [{"n": 1, "tables": [{"paire_ns": 6, "paire_eo": 7, "nom_ns": "?", "nom_eo": "?"}]}]}, open(vieux + "-donnes.json", "w"))
 json.dump({"6": "AM/BD", "noms": {"6": ["Anne Martin", "Bruno Durand"]}}, open(vieux + "-paires.json", "w"))
 open(vieux + ".pdf", "w").close()
+json.dump({"donnes": {"1": {"enc": []}}}, open(vieux + "-standard.json", "w"))
+json.dump({"donnes": {"1": {"enc": [["x"]]}}}, open(vieux + "-expert.json", "w"))
+json.dump({"donnes": {}}, open(vieux + "-expert-avant-2026-10-30-120000.json", "w"))
 rapport.preparer_donnees()
 assert all(os.path.exists(x) for x in (rapport.SEANCES, rapport.RAPPORTS, rapport.CONFIG))
 assert os.path.exists(os.path.join(rapport.RAPPORTS, "2026-10", "a-diff.pdf")) and not os.path.exists(os.path.join(ESSAI, "reports"))
@@ -26,6 +30,11 @@ bc = json.load(open(vieux + ".bc.json"))
 assert list(bc)[:5] == ["format", "version", "source", "session", "joueurs"] and bc["source"]["type"] == "feuille-de-route"
 assert bc["joueurs"]["6"] == [{"initiales": "AM", "nom": "Anne Martin"}, {"initiales": "BD", "nom": "Bruno Durand"}]
 assert bc["donnes"][0]["tables"][0]["nom_ns"] == "AM/BD" and rapport.noms_complets(bc) == {"6": ["Anne Martin", "Bruno Durand"]}
+assert bc["analyses"]["standard"]["donnes"] == {"1": {"enc": []}} and bc["analyses"]["expert"]["donnes"] == {"1": {"enc": [["x"]]}}
+assert list(bc)[-1] == "analyses" and "fait_le" in bc["analyses"]["expert"]
+rangement = os.path.join(os.path.dirname(vieux), "versions")
+assert sorted(os.listdir(rangement)) == ["tournoi-expert-avant-2026-10-30-120000.json", "tournoi-expert.json", "tournoi-standard.json"]
+assert not glob.glob(vieux + "-*.json")
 assert rapport.joueurs_bws({"paires": {"3": {"nom": "AB/CD"}}}, {"3": ["Anne B", "Carl D"]}) == \
     {"3": [{"initiales": "AB", "nom": "Anne B"}, {"initiales": "CD", "nom": "Carl D"}]}
 assert rapport.noms_complets({"joueurs": {"3": [{"initiales": "AB"}, {"initiales": "CD"}]}}) == {}
@@ -52,17 +61,31 @@ os.remove(f); assert app.seance_active() is None             # fichier disparu :
 assert app.titre_fenetre("/a/b/s.bc.json") == "Bridge Coach – s.bc.json" and app.titre_fenetre(None) == "Bridge Coach"
 # l'analyse de l'expert par Claude sur le web : le dossier préparé, puis l'import vérifié et fondu donne par donne
 sc = os.path.join(rapport.SEANCES, "2026-10", "club.bc.json")
-json.dump({"format": "bridge-coach", "session": {"date": "23/10/2026"}, "donnes": [{"n": 1}, {"n": 2}]}, open(sc, "w"))
+json.dump({"format": "bridge-coach", "source": {"type": "bws", "fichier": "6000010CLUB23102026A.bws"},
+           "session": {"date": "23/10/2026", "titre": "Club des Lilas"},
+           "joueurs": {"1": [{"initiales": "AM", "nom": "Anne Martin"}, {"initiales": "BD", "nom": "Bruno Durand"}]},
+           "donnes": [{"n": 1}, {"n": 2}],
+           "analyses": {"standard": {"systeme": "sef-2024", "donnes": {"1": {"enc": []}}, "fait_le": "2026-10-23T20:00:00"}}},
+          open(sc, "w"))
 dossier, consigne = app.preparer_pour_claude(sc)
-assert os.path.isfile(os.path.join(dossier, "club.bc.json")) and os.path.isfile(os.path.join(dossier, "systeme.md"))
-assert "club-expert.json" in consigne and "Décision serrée" in consigne and open(os.path.join(dossier, "CONSIGNE.txt")).read() == consigne
+assert os.listdir(dossier) == ["seance-du-2026-10-23-pour-claude.json"]           # un seul fichier à donner à Claude
+tout = json.load(open(os.path.join(dossier, "seance-du-2026-10-23-pour-claude.json")))
+assert tout["consigne"] == consigne and "seance-du-2026-10-23-expert.json" in consigne and "Décision serrée" in consigne
+assert "systeme.md" in tout["documents"] and tout["analyse_standard"]["donnes"] == {"1": {"enc": []}}
+texte = json.dumps(tout, ensure_ascii=False)                                        # ni noms, ni club, ni fichier d'origine
+assert "Anne" not in texte and "Durand" not in texte and "Lilas" not in texte and "6000010" not in texte
+assert tout["seance"]["joueurs"] == {"1": [{"initiales": "AM"}, {"initiales": "BD"}]} and "analyses" not in tout["seance"]
 grille = [["–", "1♠", "passe", "passe"], ["passe", "", "", ""]]
 x = os.path.join(ESSAI, "x-expert.json")
 json.dump({"donnes": {"1": {"enc": grille, "notes": "a"}}}, open(x, "w"))
 assert "1 donne importée" in app.importer_expert(sc, x) and "1 donnes sur 2" in app.importer_expert(sc, x)
 json.dump({"donnes": {"2": {"enc": grille}}}, open(x, "w"))
 assert "2 donnes sur 2" in app.importer_expert(sc, x)                 # la donne 1 reste
-assert len(glob.glob(os.path.join(rapport.SEANCES, "2026-10", "club-expert-avant-*.json"))) >= 1   # l'ancienne version gardée
+bc = json.load(open(sc))
+assert set(bc["analyses"]["expert"]["donnes"]) == {"1", "2"} and bc["analyses"]["standard"]["donnes"] == {"1": {"enc": []}}
+assert app.lire_analyses(sc)[1]["donnes"]["1"]["notes"] == "a"
+assert len(glob.glob(os.path.join(rapport.SEANCES, "2026-10", "versions", "club-v-*.bc.json"))) >= 1   # le fichier d'avant gardé
+assert not glob.glob(os.path.join(rapport.SEANCES, "2026-10", "club-*.json"))                     # plus de fichiers à part
 for mauvais, mot in (('{"donnes": {"9": {"enc": []}}}', "pas dans cette séance"), ('{"donnes": {"1": {"enc": [["1♠"]]}}}', "quatre colonnes"),
                      ("pas du json", "lisible"), ('{"autre": 1}', "donnes")):
     open(x, "w").write(mauvais)

@@ -57,7 +57,8 @@ Il faut Python 3.9 ou plus récent (`python3 --version` pour vérifier).
 | Les réglages | `~/Library/Application Support/Bridge Coach/bridge-coach.ini` |
 
 Vos fichiers ne vont jamais sur GitHub. Pour les sauvegarder, copiez `bridge-coach-files` : c'est le seul
-dossier à garder, en particulier les fichiers `-expert.json`, que le programme ne peut pas recréer. Si le
+dossier à garder, en particulier les séances (`.bc.json`) : elles contiennent l'analyse de l'expert, que le programme
+ne peut pas recréer. Si le
 dossier du programme change de place, relancez `./raccourci-mac.sh`.
 
 ## Installation sur Windows 10 ou 11
@@ -237,8 +238,9 @@ Le fichier de réglages reste à une place fixe, créé au premier lancement : s
 Le rapport `expert` est rédigé par Claude (Claude Code, d'Anthropic), ouvert dans le dossier
 du projet. Il suffit de lui demander d'analyser la séance : le fichier `CLAUDE.md` lui donne
 les consignes (système SEF, enchères choisies à la table sans regarder le double mort,
-décisions serrées signalées). L'analyse est enregistrée dans
-`~/Documents/bridge-coach-files/seances/AAAA-MM/<séance>-expert.json` ; `./rapport.sh` produit ensuite `expert` et `diff`.
+décisions serrées signalées). L'analyse est rangée dans la séance elle-même,
+`~/Documents/bridge-coach-files/seances/AAAA-MM/<séance>.bc.json` (« analyses », « expert ») ; `./rapport.sh` produit
+ensuite `expert` et `diff`.
 
 ## Le système d'enchères
 

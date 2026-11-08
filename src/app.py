@@ -537,17 +537,23 @@ def base_seance(c):
 
 
 def lire_analyses(c):
-    """(analyse du programme, analyse de l'expert) de la séance : les fichiers -standard.json et -expert.json, ou None."""
-    base = base_seance(c); out = []
-    for suite in ("-standard.json", "-expert.json"):
-        f = base + suite
-        try:
-            cle = (f, os.path.getmtime(f))
-            if cle not in _ANALYSES: _ANALYSES[cle] = json.load(open(f, encoding="utf-8"))
-            out.append(_ANALYSES[cle])
-        except (OSError, ValueError):
-            out.append(None)
-    return tuple(out)
+    """(analyse du programme, analyse de l'expert) de la séance, rangées dans son .bc.json ("analyses"), ou None."""
+    try:
+        cle = (c, os.path.getmtime(c))
+        if cle not in _ANALYSES:
+            ans = json.load(open(c, encoding="utf-8")).get("analyses") or {}
+            _ANALYSES.clear(); _ANALYSES[cle] = tuple(ans.get(q) for q in rapport.ANALYSES)
+        return _ANALYSES[cle]
+    except (OSError, ValueError, TypeError):
+        return None, None
+
+
+def fait_le(an):
+    """« 02/11/2026 à 20:49 » : quand l'analyse a été faite (ou importée), ou « – »."""
+    try:
+        return datetime.datetime.fromisoformat(an["fait_le"]).strftime("%d/%m/%Y à %H:%M")
+    except (KeyError, TypeError, ValueError):
+        return "–"
 
 
 def quand(f):
@@ -563,7 +569,7 @@ def lien_pdf(f, nom, detail):
                 f"<span style='white-space:nowrap'>{quand(f)}</span></div>", sanitize=False)
 
 
-def page_analyse_resume(data, an, fichier, expert):
+def page_analyse_resume(data, an, expert):
     """La page « Analyse standard » ou « Analyse expert » : ce qui existe, sur combien de donnes, et de quand."""
     n = len(data["donnes"])
     k = sum(1 for x in (an or {}).get("donnes", {}).values() if x.get("enc"))
@@ -573,7 +579,7 @@ def page_analyse_resume(data, an, fichier, expert):
     else:
         lignes = [("État", f"{k} donnes sur {n}" if an else "pas encore faite : « Lancer l'analyse »")]
     if an:
-        lignes += [("Faite le", quand(fichier)), ("Système", an.get("systeme", "sef-2024")), ("Fichier", os.path.basename(fichier))]
+        lignes += [("Faite le", fait_le(an)), ("Système", an.get("systeme", "sef-2024"))]
     with ui.grid(columns="auto 1fr").classes("gap-x-6 gap-y-1 text-base"):
         for a, b in lignes:
             ui.label(a).classes("text-gray-600"); ui.label(b).classes("break-all")
@@ -592,15 +598,18 @@ POUR_CLAUDE = [("systems/sef-2024/systeme.md", "systeme.md"), ("systems/sef-2024
                ("systems/sef-2024/entames.yaml", "entames.yaml"), ("systems/technique/jeu-de-la-carte.md", "jeu-de-la-carte.md")]
 
 CONSIGNE = """Tu es l'expert de Bridge Coach, un programme qui analyse les séances de bridge d'un club français.
-Écris l'analyse experte de la séance jointe, {nom}.bc.json, et rends-la dans un seul fichier JSON à télécharger,
-nommé {nom}-expert.json. Réponds en français.
+Écris l'analyse experte de la séance du fichier joint, {nom}-pour-claude.json, et rends-la dans un seul fichier
+JSON à télécharger, nommé {nom}-expert.json. Réponds en français.
 
-Les fichiers joints :
-- {nom}.bc.json : la séance (mains, donneur, vulnérabilité, résultats et enchères de chaque table, double mort « dm », par) ;
-- {nom}-standard.json : l'analyse du programme, ton point de départ (même format que celui à rendre) ;
-- exemple_analyse.json : une analyse experte complète d'une autre séance, le style et le niveau de détail attendus ;
-- systeme.md et les conventions (blackwood-3041.md, stayman.md, texas.md, drury.md) : le système SEF 2024 joué ;
-- entames.md et entames.yaml : les règles d'entame et de défense ; jeu-de-la-carte.md : la technique du déclarant.
+Le fichier joint rassemble tout :
+- « seance » : la séance (mains, donneur, vulnérabilité, résultats et enchères de chaque table, double mort « dm », par) ;
+  les joueurs n'y sont que par leurs initiales ;
+- « analyse_standard » : l'analyse du programme, ton point de départ (même format que celui à rendre) ;
+- « exemple_analyse » : une analyse experte complète d'une autre séance, le style et le niveau de détail attendus ;
+- « documents » : systeme.md et les conventions (blackwood-3041.md, stayman.md, texas.md, drury.md), le système
+  SEF 2024 joué ; entames.md et entames.yaml, les règles d'entame et de défense ; jeu-de-la-carte.md, la technique
+  du déclarant ;
+- « consigne » : ce texte.
 
 Les règles, à suivre strictement :
 1. Les enchères recommandées (« enc ») se choisissent à la table : chaque enchère d'après la main du joueur et les
@@ -613,7 +622,7 @@ Les règles, à suivre strictement :
 3. L'entame et la défense (« entame », « defense ») viennent de la main de l'entameur et des enchères seulement,
    d'après entames.yaml et entames.md : jamais d'une simulation au double mort.
 4. Le plan de jeu (« plan ») ne voit que les mains du déclarant et du mort, l'entame et les enchères.
-5. Dans « plan » et « defense », garde le texte du programme (le {nom}-standard.json) puis ajoute
+5. Dans « plan » et « defense », garde le texte du programme (« analyse_standard ») puis ajoute
    <br/><b>Avis de l'expert :</b> et trois ou quatre phrases de jugement que le programme n'a pas : pourquoi le plan
    marche, la main dangereuse, l'ordre de jeu ; cherche un laisser-passer, une élimination, un squeeze ou un coup.
 6. « notes » : l'avis de l'expert sur les enchères. « comm » : le commentaire après coup ; le double mort y est
@@ -621,7 +630,7 @@ Les règles, à suivre strictement :
 7. Les joueurs : par leurs initiales seulement (« AB/CD »), jamais leur nom ; aucun nom de club. Les cartes en
    français : A R D V X ; les couleurs ♠ ♥ ♦ ♣ ; les sièges N, S, E, O.
 
-Le format du fichier rendu (celui de exemple_analyse.json) :
+Le format du fichier rendu (celui de « exemple_analyse ») :
 {{"titre_pied": "Analyse des donnes – séance du {date} – Système SEF, marque IMP",
  "systeme": "sef-2024",
  "note_encheres": "Enchères recommandées choisies à la table (sans double mort).",
@@ -638,28 +647,51 @@ chaque groupe dans un fichier JSON complet au même format : ils s'importent l'u
 """
 
 
+def nom_pour_claude(data):
+    """Le nom donné à la séance chez Claude : « seance-du-2026-11-07 ». Rien du nom d'origine, qui peut contenir le
+    numéro du club (les fichiers Bridgemate le portent)."""
+    try:
+        j, m, a = (data or {})["session"]["date"].split("/")
+        return f"seance-du-{a}-{m}-{j}"
+    except (KeyError, ValueError):
+        return "seance"
+
+
+def seance_pour_claude(data):
+    """La séance telle qu'elle part chez Claude : sans les analyses, sans la source (nom du fichier d'origine), sans
+    titre ; les joueurs par leurs initiales seulement (les noms complets restent sur l'ordinateur)."""
+    out = {k: v for k, v in data.items() if k not in ("analyses", "source", "joueurs", "session")}
+    out["session"] = {k: v for k, v in data.get("session", {}).items() if k in ("date", "tables", "sections", "mitchell")}
+    out["joueurs"] = {k: [{"initiales": j.get("initiales", "")} for j in v] for k, v in data.get("joueurs", {}).items()}
+    return out
+
+
 def preparer_pour_claude(c):
-    """Le dossier pour-claude/<nom>/ du dossier de travail : la séance, l'analyse du programme, le système, l'exemple et
-    la consigne (CONSIGNE.txt). Renvoie (dossier, consigne)."""
-    nom = rapport.nom_seance(c); base = base_seance(c)
-    dossier = os.path.join(rapport.DONNEES, "pour-claude", nom)
+    """Un seul fichier à donner à Claude, <dossier de travail>/pour-claude/<nom>/<seance-du-…>-pour-claude.json : la
+    séance sans les noms (seance_pour_claude), l'analyse standard, l'exemple, les documents du système et la consigne.
+    Renvoie (dossier, consigne)."""
+    data = lire_seance(c) or {}
+    nom = nom_pour_claude(data)
+    dossier = os.path.join(rapport.DONNEES, "pour-claude", rapport.nom_seance(c))
     shutil.rmtree(dossier, ignore_errors=True); os.makedirs(dossier)
-    shutil.copy(c, os.path.join(dossier, nom + rapport.BC))
-    if os.path.exists(base + "-standard.json"): shutil.copy(base + "-standard.json", os.path.join(dossier, nom + "-standard.json"))
+    consigne = CONSIGNE.format(nom=nom, date=data.get("session", {}).get("date", ""))
+    documents = {}
     for src, dst in POUR_CLAUDE:
         f = os.path.join(rapport.RACINE, src)
-        if os.path.exists(f): shutil.copy(f, os.path.join(dossier, dst))
+        if os.path.exists(f): documents[dst] = open(f, encoding="utf-8").read()
     ex = os.path.join(rapport.DONNEES, "documents", "exemple_analyse_2026-10-23.json")
-    if os.path.exists(ex): shutil.copy(ex, os.path.join(dossier, "exemple_analyse.json"))
-    date = (lire_seance(c) or {}).get("session", {}).get("date", "")
-    consigne = CONSIGNE.format(nom=nom, date=date)
-    with open(os.path.join(dossier, "CONSIGNE.txt"), "w", encoding="utf-8") as f: f.write(consigne)
+    tout = {"consigne": consigne, "seance": seance_pour_claude(data),
+            "analyse_standard": {k: v for k, v in (lire_analyses(c)[0] or {}).items() if k != "fait_le"},
+            "exemple_analyse": json.load(open(ex, encoding="utf-8")) if os.path.exists(ex) else None,
+            "documents": documents}
+    with open(os.path.join(dossier, nom + "-pour-claude.json"), "w", encoding="utf-8") as f:
+        json.dump(tout, f, ensure_ascii=False, indent=1)
     return dossier, consigne
 
 
 def importer_expert(c, chemin):
-    """Range l'analyse de l'expert rendue par Claude : vérifiée, fondue donne par donne dans <nom>-expert.json (l'ancienne
-    version est gardée, datée). Renvoie le message à montrer ; ValueError avec un message en français si elle ne va pas."""
+    """Range l'analyse de l'expert rendue par Claude : vérifiée, fondue donne par donne dans le .bc.json de la séance
+    (la version d'avant du fichier est gardée dans versions/). Renvoie le message à montrer ; ValueError avec un message en français si elle ne va pas."""
     try:
         neuf = json.load(open(chemin, encoding="utf-8"))
     except (OSError, ValueError):
@@ -683,21 +715,17 @@ def importer_expert(c, chemin):
                 raise ValueError(f"Donne {k} : d'après les enchères, {contrat} est joué par {SIEGE[decl]} et c'est "
                                  f"{SIEGE[bon]} qui entame, avec une carte de sa main ; l'analyse donne l'entame "
                                  f"{e.get('carte')} à {SIEGE.get(e.get('joueur'), e.get('joueur'))}. Demandez à Claude de corriger cette donne.")
-    cible = base_seance(c) + "-expert.json"
-    ancien = {}
-    if os.path.exists(cible):
-        ancien = json.load(open(cible, encoding="utf-8"))
-        shutil.copy(cible, base_seance(c) + f"-expert-avant-{datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S')}.json")
+    ancien = rapport.analyse_de(c, "expert") or {}
     fusion = dict(ancien, **{k: v for k, v in neuf.items() if k != "donnes"})
     fusion["donnes"] = dict(ancien.get("donnes", {}), **donnes_)
     fusion.setdefault("systeme", "sef-2024")
-    with open(cible, "w", encoding="utf-8") as f: json.dump(fusion, f, ensure_ascii=False, indent=1)
+    rapport.ecrire_analyse(c, "expert", fusion)              # le fichier d'avant est gardé dans versions/
     return (f"{len(donnes_)} donne{'s' if len(donnes_) > 1 else ''} importée{'s' if len(donnes_) > 1 else ''} ; l'analyse de "
             f"l'expert couvre maintenant {len(fusion['donnes'])} donnes sur {len(nums)}.")
 
 
 def grille_html(enc, vul=None):
-    """Une grille d'enchères Ouest Nord Est Sud (lignes du -standard.json ou du -expert.json). vul : la vulnérabilité de
+    """Une grille d'enchères Ouest Nord Est Sud (lignes d'une analyse, standard ou expert). vul : la vulnérabilité de
     la donne ; chaque place est alors soulignée d'un trait épais, rouge si vulnérable, vert sinon."""
     trait = lambda s: "" if vul is None else \
         f";width:25%;border-bottom:6px solid {'#c0141c' if vul == 'Tous' or vul == ('N-S' if s in 'NS' else 'E-O') else '#2e7d32'}"
@@ -793,10 +821,10 @@ def page():
         e = entree_effective(data)
         if e == "standard":
             ui.label(f"Analyse standard · séance du {data['session']['date']}").classes("text-lg font-bold")
-            page_analyse_resume(data, std, base_seance(c) + "-standard.json", False); return
+            page_analyse_resume(data, std, False); return
         if e == "expert":
             ui.label(f"Analyse expert · séance du {data['session']['date']}").classes("text-lg font-bold")
-            page_analyse_resume(data, exp, base_seance(c) + "-expert.json", True)
+            page_analyse_resume(data, exp, True)
             etapes_expert(c); return
         d = next((x for x in data["donnes"] if f"d{x['n']}" == e), None)
         if d is None: return
@@ -1427,24 +1455,25 @@ def page():
 
     def etapes_expert(c):
         """Les étapes pour obtenir l'analyse de l'expert de Claude, sur le web (claude.ai)."""
-        nom = rapport.nom_seance(c)
+        nom = nom_pour_claude(lire_seance(c))
         ui.label("Obtenir l'analyse de l'expert avec Claude").classes("text-base font-bold mt-4")
         ui.label("L'analyse de l'expert est écrite par Claude (claude.ai, dans votre navigateur). Comptez une "
                  "conversation par séance ; pour 24 donnes, Claude peut répondre en plusieurs fois.").classes("text-sm text-gray-600")
         etape = lambda k, texte: ui.html(f"<div style='font-size:16px'><b>{k}.</b> {texte}</div>", sanitize=False)
         with ui.column().classes("gap-3 max-w-2xl"):
-            etape(1, "Préparez les fichiers : Bridge Coach met dans un dossier tout ce dont Claude a besoin (la séance, "
-                     "l'analyse standard, le système, un exemple et la consigne), puis ouvre ce dossier.")
-            ui.button("Préparer les fichiers pour Claude", icon="folder_open", on_click=lambda: preparer_expert(c)).props("outline")
+            etape(1, "Préparez le fichier : Bridge Coach met dans un seul fichier tout ce dont Claude a besoin (la séance, "
+                     "l'analyse standard, le système, un exemple et la consigne), puis ouvre son dossier. Les joueurs n'y "
+                     "sont que par leurs initiales : les noms complets ne quittent pas l'ordinateur.")
+            ui.button("Préparer le fichier pour Claude", icon="folder_open", on_click=lambda: preparer_expert(c)).props("outline")
             etape(2, "Ouvrez <b>claude.ai</b> dans votre navigateur et commencez une nouvelle conversation.")
             ui.button("Ouvrir claude.ai", icon="open_in_new", on_click=lambda: ouvrir("https://claude.ai/new")).props("outline")
-            etape(3, "Glissez tous les fichiers du dossier dans la conversation.")
+            etape(3, f"Glissez le fichier <code>{nom}-pour-claude.json</code> dans la conversation.")
             etape(4, "Copiez la consigne, collez-la dans la conversation, puis envoyez.")
             ui.button("Copier la consigne", icon="content_copy", on_click=lambda: copier_consigne(c)).props("outline")
             etape(5, f"Claude écrit le fichier <code>{nom}-expert.json</code> : téléchargez-le avec le bouton sous sa réponse. "
                      "S'il répond en plusieurs fois, téléchargez chaque fichier.")
-            etape(6, "Importez le fichier téléchargé (un par un s'il y en a plusieurs). L'analyse précédente de l'expert "
-                     "est gardée, datée, et les donnes s'ajoutent.")
+            etape(6, "Importez le fichier téléchargé (un par un s'il y en a plusieurs). Les donnes s'ajoutent à l'analyse "
+                     "de l'expert, rangée dans la séance ; la version d'avant est gardée dans versions/.")
             ui.button("Importer l'analyse de l'expert…", icon="file_download", on_click=lambda: choisir_expert()).props("outline")
             etape(7, "Mettez les rapports PDF à jour : ils reprennent l'analyse de l'expert, sans refaire l'analyse standard.")
             ui.button("Mettre à jour les rapports", icon="picture_as_pdf", on_click=lambda: maj_rapports()).props("outline")
@@ -1460,14 +1489,14 @@ def page():
     def preparer_expert(c):
         try:
             dossier, _ = preparer_pour_claude(c)
-            expert_msg.update(texte=f"Fichiers prêts dans {dossier}", faute=False); ouvrir(dossier)
+            expert_msg.update(texte=f"Fichier prêt dans {dossier}", faute=False); ouvrir(dossier)
         except Exception:
-            expert_msg.update(texte="Les fichiers n'ont pas pu être préparés.", faute=True)
+            expert_msg.update(texte="Le fichier n'a pas pu être préparé.", faute=True)
         vue_analyse.refresh()
 
     def copier_consigne(c):
         date = (lire_seance(c) or {}).get("session", {}).get("date", "")
-        ui.clipboard.write(CONSIGNE.format(nom=rapport.nom_seance(c), date=date))
+        ui.clipboard.write(CONSIGNE.format(nom=nom_pour_claude(lire_seance(c)), date=date))
         ui.notify("Consigne copiée : collez-la dans la conversation avec Claude.")
 
     def importer_expert_de(chemin):

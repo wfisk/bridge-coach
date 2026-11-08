@@ -78,12 +78,12 @@
 <h2>L'analyse de l'expert, avec Claude</h2>
 <p>L'analyse de l'expert est écrite par Claude, sur le site <b>claude.ai</b>, dans votre navigateur. Dans l'onglet <b>Analyse</b>, choisissez <b>Analyse expert</b> et suivez les étapes :</p>
 <ol>
-  <li><b>Préparer les fichiers pour Claude</b> : Bridge Coach met dans le dossier <code>pour-claude</code> de votre dossier de travail tout ce dont Claude a besoin (la séance, l'analyse standard, le système, un exemple et la consigne), puis ouvre ce dossier.</li>
+  <li><b>Préparer le fichier pour Claude</b> : Bridge Coach met dans un seul fichier, <code>seance-du-AAAA-MM-JJ-pour-claude.json</code>, tout ce dont Claude a besoin (la séance, l'analyse standard, le système, un exemple et la consigne), puis ouvre son dossier (<code>pour-claude</code>, dans votre dossier de travail). Les joueurs n'y sont que par leurs initiales : les noms complets, le nom du club et le nom du fichier d'origine ne quittent pas l'ordinateur.</li>
   <li><b>Ouvrir claude.ai</b> et commencer une nouvelle conversation.</li>
-  <li>Glisser tous les fichiers du dossier dans la conversation.</li>
+  <li>Glisser ce fichier dans la conversation.</li>
   <li><b>Copier la consigne</b>, la coller dans la conversation et l'envoyer.</li>
   <li>Claude écrit le fichier <code>…-expert.json</code> : le télécharger. Pour une longue séance, il peut répondre en plusieurs fichiers.</li>
-  <li><b>Importer l'analyse de l'expert…</b> : choisir le fichier téléchargé (un par un s'il y en a plusieurs). Bridge Coach vérifie qu'il correspond à la séance, garde l'analyse précédente sous un nom daté et ajoute les donnes.</li>
+  <li><b>Importer l'analyse de l'expert…</b> : choisir le fichier téléchargé (un par un s'il y en a plusieurs). Bridge Coach vérifie qu'il correspond à la séance et ajoute les donnes à l'analyse de l'expert, rangée dans la séance ; la version d'avant est gardée dans <code>versions/</code>.</li>
   <li><b>Mettre à jour les rapports</b> : les rapports PDF reprennent l'analyse de l'expert en quelques secondes, sans refaire l'analyse standard.</li>
 </ol>
 

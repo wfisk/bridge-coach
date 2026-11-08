@@ -47,11 +47,14 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         .bc.json with a sidebar (ui.left_drawer, light warm grey GRIS_BARRE like Claude's sidebar, the chosen entry a rounded darker pill, full height, Donnes tab only: Séance (alerts at its foot), Joueurs, a divider, one entry per deal (every tab has two entries then a divider, so Donne 1 stays in place): hands, each table's auction (encheres_html),
                         table results; vue_seance, page_donne…), view only so far. A deal page in Donnes, Analyse and Jouer has the same right sidebar (panneau_droit: fixed, LARGEUR_PANNEAU, the deal's name, a small board case, theme and par; Analyse adds the Standard | Expert toggle, the recommended contract, the lead and the double-dummy table (dm_html); Donnes the « Modifier la donne » button); Analyse: sidebar Analyse standard (status, date, "Lancer
                         l'analyse": rapport.py, analysis and PDFs; the run block stays visible while it runs), Analyse expert
-                        (status, date, and the steps to get it from Claude on the web: preparer_pour_claude copies the session,
-                        the standard analysis, the system files, the example and CONSIGNE.txt (the rules for the expert
-                        analysis, in French) into <working folder>/pour-claude/<name>/; importer_expert checks the returned
-                        JSON (four-column grids; each lead from the declarer's left, a card of that hand: rapport.entame_valide), keeps the old file as -expert-avant-<date-time>.json and merges deal by deal; "Mettre à jour les rapports"
-                        runs rapport.py --rapports: the PDFs from the saved -standard.json, no new analysis), then each deal's analysis, the Expert's when it exists (toggle
+                        (status, date, and the steps to get it from Claude on the web: preparer_pour_claude writes ONE file,
+                        <working folder>/pour-claude/<name>/seance-du-AAAA-MM-JJ-pour-claude.json: "consigne" (CONSIGNE, the rules for
+                        the expert analysis, in French), "seance" (seance_pour_claude: no analyses, no source, no title, players
+                        by initials only: full names, club and original file name never leave the computer), "analyse_standard",
+                        "exemple_analyse", "documents" (the system files); Claude returns seance-du-…-expert.json; importer_expert
+                        checks it (four-column grids; each lead from the declarer's left, a card of that hand: rapport.entame_valide)
+                        and merges it deal by deal into the .bc.json (the file before goes to versions/); "Mettre à jour les rapports"
+                        runs rapport.py --rapports: the PDFs from the saved standard analysis, no new analysis), then each deal's analysis, the Expert's when it exists (toggle
                         Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: the session's PDFs and the bilan as links with
                         file name and date (lien_pdf); Réglages. Jouer (between Donnes and Analyse; Contrôle was removed): the player
                         bids one seat, the engine the three others (vue_jouer, boite_encheres; logic in jouer.py), then the
@@ -166,7 +169,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
       edition.py        sessions made in Bridge Coach (source "saisie"/"entrainement") are edited in the Donnes tab, deal by
                         deal: a deal shows as a page with "Modifier la donne" (editor; "Terminer" goes back), new or unfinished
                         deals open in the editor; a deal with an expert analysis asks first (a_analyse_expert), and changing it
-                        sets that deal's expert entry aside (oublier_analyse: dated -expert-avant- copy, the other deals keep theirs).
+                        sets that deal's expert entry aside (oublier_analyse: the file is first copied to versions/, the other deals keep theirs).
                         nouvelle_seance ("Entraînement AAAA-MM-JJ", file entrainement-AAAA-MM-JJ.bc.json, time
                         added only if taken: donnes.nom_entrainement), ajouter_donne, poser_couleur (one suit, typed A R D V X
                         or K Q J T, saved at once), completer_au_hasard, regler (dealer, vulnerability), supprimer_donne
@@ -254,11 +257,13 @@ Its `[dossiers]` section gives `bridgemate`, where the .bws are read, never writ
     seances/AAAA-MM/    session data by month of the session (no folder per session), ignored
                         by git; the original name, no date prefix (Bridgemate names already hold
                         it: 1234567MULTI23102026S = 23/10/2026): <name>.bc.json (the session: everything the
-                        reports need), the original beside it (<name>.bws, the FFB .pdf…), -standard.json (the program's analysis:
-                        engine auctions + automatic comments; overwritten each run, copy it to
-                        -expert.json to edit by hand), -expert.json (written by hand or by
-                        Claude: the only file that can't be recreated; wins deal by deal).
-                        Each analysis JSON has the same suffix as its PDF (-standard, -expert)
+                        reports need, and its analyses at the end, "analyses": {"standard": the program's analysis (engine
+                        auctions + automatic comments; rewritten each run), "expert": written by Claude, the only part that
+                        can't be recreated; wins deal by deal}, each with "fait_le"; rapport.analyse_de / ecrire_analyse;
+                        written atomically, the file before copied to versions/, always before an expert change),
+                        the original beside it (<name>.bws, the FFB .pdf…), versions/ (dated copies; also the old separate
+                        -standard.json / -expert.json / -expert-avant-*.json, folded in once by rapport.fondre_analyses),
+                        <name>-jeu.json (the Jouer tab's attempts)
     rapports/AAAA-MM/   only the PDFs, ignored by git, with the date first: <date>-<name>-archive.pdf,
                         -standard.pdf, -diff.pdf, -expert.pdf (no spaces in names: dashes; a date already in the
                         name is not repeated and its time comes first, rapport.nom_court: 2026-11-01-224232-entrainement-diff.pdf)
@@ -269,13 +274,13 @@ report: the PDF is in French, uses SEF / IMP, and has fixed layout rules.
 `~/Documents/bridge-coach-files/documents/exemple_analyse_2026-10-23.json` is the style reference.
 
 For the recommended auctions, use the session's system in `systems/`
-(`"systeme"` in the `-expert.json`, default `sef-2024`) rather than the short
+(`"systeme"` in the expert analysis, default `sef-2024`) rather than the short
 system notes in the earlier instructions. Read its `systeme.md`, the conventions
 it lists, its `entames.md` for leads and defence, and the official documents in its `ffb/` folder when present. Never
 rely on a line marked **(à confirmer)** without saying the treatment is uncertain.
 
 **The recommended auction is bid at the table, without hindsight.** When writing `enc`
-and `notes` in an `-expert.json`, choose each call from that player's own hand and the
+and `notes` in an expert analysis, choose each call from that player's own hand and the
 auction so far only, as a player at the table would. Do not look at the other hands, the
 double-dummy table (`dm`), the par or the table results while choosing it, and do not pick
 between two sound bids because one of them works double-dummy. When two calls were both
@@ -294,7 +299,7 @@ contract, look for a hold-up, an elimination, a squeeze or a coup; if one fits, 
 holds textbook positions for `coups.py`.
 All three sessions now follow these rules: the 23/10 and 6-table auctions were rebid on
 2026-10-30 and their card play redone on 2026-10-31 (earlier versions kept as
-`-expert-avant-<date>.json`).
+`-expert-avant-<date>.json`, now in `versions/`).
 
 ## Running on this Mac
 

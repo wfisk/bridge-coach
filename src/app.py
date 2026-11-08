@@ -494,14 +494,18 @@ def par_html(d):
 
 
 def dm_html(d):
-    """Le double mort en petit tableau, pour la barre de droite : levées par dénomination et par déclarant."""
+    """Le double mort pour la barre de droite, sur toute sa largeur, comme la grille du PDF : levées par dénomination
+    et par déclarant, en-tête vert pâle, colonnes Nord-Sud sur fond gris clair."""
     if not d.get("dm"): return ""
-    tete = "".join(f"<th style='padding:1px 6px;text-align:center'>{s}</th>" for s in "NSEO")
-    corps = "".join(f"<tr><td style='padding:1px 6px;font-weight:600'>{rouge(x)}</td>" +
-                    "".join(f"<td style='padding:1px 6px;text-align:center'>{d['dm'][x][s]}</td>" for s in "NSEO") + "</tr>"
+    cell = "padding:5px 0;text-align:center;border-top:1px solid #e3e7ea"
+    tete = "".join(f"<th style='padding:5px 0;text-align:center;font-weight:700'>{s}</th>" for s in ("Nord", "Sud", "Est", "Ouest"))
+    corps = "".join(f"<tr><td style='{cell};font-weight:700'>{rouge(x)}</td>" +
+                    "".join(f"<td style='{cell}{';background:#f6f8fb' if s in 'NS' else ''}'>{d['dm'][x][s]}</td>" for s in "NSEO") + "</tr>"
                     for x in ("SA", "♠", "♥", "♦", "♣"))
-    return (f"<div style='font-size:15px'><div style='font-weight:700;margin-bottom:2px'>Double mort</div>"
-            f"<table style='border-collapse:collapse;background:#fff;border-radius:8px'><tr><th></th>{tete}</tr>{corps}</table></div>")
+    return (f"<div style='font-size:15px;width:100%'><div style='font-weight:700;margin-bottom:4px'>Double mort</div>"
+            f"<table style='width:100%;table-layout:fixed;border-collapse:collapse;background:#fff;border:1px solid #9fb5a8;"
+            f"border-radius:6px;overflow:hidden'><colgroup><col style='width:16%'/></colgroup>"
+            f"<tr style='background:#e6efe9'><th></th>{tete}</tr>{corps}</table></div>")
 
 
 def page_dm_par(d, par=True):
@@ -820,10 +824,11 @@ def diagramme_html(d, a):
         legende += (f"<div>{rond(f'border:1.3px solid {ENCRE}')}jouée à une table</div>"
                     f"<div>{rond(f'border:1.3px solid {ENCRE};box-shadow:0 0 0 2px #fff,0 0 0 3.3px {ENCRE}')}jouée à plusieurs tables</div>")
     legende += f"<div>{rond('background:rgba(59,66,79,.28)')}recommandée</div></div>"
-    return (f"<div style='display:grid;grid-template-columns:150px 100px 150px max-content;align-items:center;gap:6px 10px'>"
-            f"<div></div><div style='grid-column:2/4'>{main('N')}</div><div></div>"
-            f"<div style='justify-self:end'>{main('O')}</div><div style='justify-self:center'>{rose}</div><div>{main('E')}</div><div></div>"
-            f"<div></div><div style='grid-column:2/4;align-self:start'>{main('S')}</div><div style='align-self:start'>{legende}</div></div>")
+    grille = (f"<div style='display:grid;grid-template-columns:150px 100px 150px;align-items:center;gap:6px 10px'>"
+              f"<div></div><div style='grid-column:2/4'>{main('N')}</div>"
+              f"<div style='justify-self:end'>{main('O')}</div><div style='justify-self:center'>{rose}</div><div>{main('E')}</div>"
+              f"<div></div><div style='grid-column:2/4'>{main('S')}</div></div>")
+    return f"<div style='display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 24px'>{grille}{legende}</div>"   # la légende passe dessous si la place manque
 
 
 def avec_avis_html(texte):
@@ -835,10 +840,16 @@ def avec_avis_html(texte):
     return h
 
 
-def page_analyse(d, a, repli, version, data=None, c=None):
+def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=lambda: None):
     """L'analyse d'une donne, dans l'ordre et l'allure de sa page du PDF : titre, mains et repères d'entame, résultats
     à la table (votre rang et le contrat recommandé ; le tableau complet replié), enchères recommandées et leur avis,
-    plan de jeu, entame et défense, commentaire, cartes vues. Le double mort et le par sont dans la barre de droite."""
+    plan de jeu, entame et défense, commentaire, cartes vues. Le double mort et le par sont dans la barre de droite.
+    replis : {"tables": ouvert ?, "encheres": ouvert ?}, gardé d'une donne à l'autre ; retenir() l'enregistre."""
+    replis = replis if replis is not None else {}
+    def repli_(cle, titre, icone):
+        def change(e): replis[cle] = e.value; retenir()
+        return ui.expansion(titre, icon=icone, value=bool(replis.get(cle)), on_value_change=change) \
+            .classes("w-full text-base").props("dense")
     from build_pdf import txt
     data = data or {}
     html = lambda h, style="": ui.html(f"<div style='font-size:15px;line-height:1.5;{style}'>{h}</div>", sanitize=False).classes("w-full")
@@ -863,10 +874,10 @@ def page_analyse(d, a, repli, version, data=None, c=None):
             html(f"Contrat recommandé, au double mort : <b>{rouge(reco['contrat'])} {SIEGE[reco['declarant']]} {reco['resultat']}</b>, "
                  f"{reco['score_ns']:+d} pour Nord-Sud · {mieux} table{'s' if mieux > 1 else ''} ont fait mieux, {pareil} autant, "
                  f"{len(d['tables']) - mieux - pareil} moins bien ({vu})", f"background:{FOND_RECO};padding:2px 6px;border-radius:4px;margin-top:4px")
-        with ui.expansion(f"Les {len(d['tables'])} tables", icon="table_rows").classes("w-full text-base").props("dense"):
+        with repli_("tables", f"Les {len(d['tables'])} tables", "table_rows"):
             tableau_resultats(d, mes, reco)
         if any(x.get("encheres") for x in d["tables"]):
-            with ui.expansion("Enchères aux tables", icon="view_list").classes("w-full text-base").props("dense"):
+            with repli_("encheres", "Enchères aux tables", "view_list"):
                 encheres_tables(d)
     titre_section("Enchères recommandées (SEF)")
     notes = a.get("notes", "")
@@ -916,7 +927,10 @@ def page():
     deja = seances_bc()
     choix = {"chemin": T.seance or seance_active() or (deja[0] if deja else None)}
     ui.page_title(titre_fenetre(choix["chemin"]))
-    vue = {"entree": "seance"}                             # l'entrée choisie dans la barre latérale de l'onglet Donnes
+    PAGE = lire_etat().get("page") or {}                    # la page ouverte à la dernière fermeture (retenir_page)
+    vue = {"entree": PAGE.get("entree") or "seance"}       # l'entrée choisie dans la barre latérale de l'onglet Donnes
+    if PAGE.get("version"): vue["version"] = PAGE["version"]   # Standard | Expert, dans l'onglet Analyse
+    replis = dict(PAGE.get("replis") or {})                # Analyse : « Les … tables » et « Enchères aux tables » ouverts ou non
 
     @ui.refreshable
     def vue_seance():
@@ -970,10 +984,10 @@ def page():
         a = (exp if vue["version"] == "Expert" else std)["donnes"][n]
         repli = (std or {}).get("donnes", {}).get(n, {})   # l'expert reprend du programme ce qu'il n'écrit pas (cartes vues…)
         with ui.column().classes("w-full gap-3").style(f"padding-right:{LARGEUR_PANNEAU}px"):
-            page_analyse(d, a, repli, vue["version"], data, c)
+            page_analyse(d, a, repli, vue["version"], data, c, replis, retenir_page)
         with panneau_droit(d, par=False):
             if len(versions) > 1:                           # Standard | Expert, deux moitiés égales
-                ui.toggle(versions, value=vue["version"], on_change=lambda ev: (vue.update(version=ev.value), vue_analyse.refresh())) \
+                ui.toggle(versions, value=vue["version"], on_change=lambda ev: (vue.update(version=ev.value), vue_analyse.refresh(), retenir_page())) \
                     .props("no-caps spread toggle-color=primary").classes("w-full")
             else:
                 ui.label(f"Analyse {vue['version'].lower()}").classes("text-base font-bold")
@@ -984,7 +998,7 @@ def page():
                 lignes.append(f"<b>Entame</b> : {rouge(e_['carte'])} ({SIEGE.get(e_.get('joueur'), e_.get('joueur', ''))})")
             if d.get("par"): lignes.append(par_html(d))
             ui.html("<div style='font-size:15px;line-height:1.6'>" + "<br/>".join(lignes) + "</div>", sanitize=False)
-            if d.get("dm"): ui.html(dm_html(d), sanitize=False)
+            if d.get("dm"): ui.html(dm_html(d), sanitize=False).classes("w-full")
 
     def panneau_droit(d=None, par=True):
         """La barre de droite d'une donne, la même dans Donnes, Jouer et Analyse : même largeur, même gris, le nom de la
@@ -1563,11 +1577,19 @@ def page():
     def sur_aide():
         return onglets.value in (o_aide, "Aide")
 
-    vue_aide = {"k": 0}                                   # la section de l'aide montrée
+    vue_aide = {"k": int(PAGE.get("aide") or 0)}          # la section de l'aide montrée
 
     PAGES = {"Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance"), ("bilan", "Toutes les séances")],
              "Réglages": [("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
-    vue_page = {"Rapports": "creer", "Réglages": "dossiers"}
+    vue_page = {"Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance", "bilan") else "creer",
+                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("dossiers", "maj") else "dossiers"}
+
+    def retenir_page():
+        """La page ouverte (onglet, entrée de la barre, version de l'analyse, page de l'aide) : rouverte au prochain lancement."""
+        o = onglets.value; nom = o if isinstance(o, str) else o.props.get("name", "Donnes")
+        ecrire_etat(page={"onglet": nom, "entree": vue.get("entree"), "version": vue.get("version"), "aide": vue_aide["k"],
+                          "rapports": vue_page["Rapports"], "reglages": vue_page["Réglages"],
+                          "replis": replis})
 
     def onglet_a_pages():
         """« Rapports » ou « Réglages » quand l'un d'eux est ouvert, sinon None."""
@@ -1583,11 +1605,11 @@ def page():
             for cle, _ in cles: pages_ui[cle].set_visibility(vue_page[nom] == cle)
 
     def voir_page(nom, cle):
-        vue_page[nom] = cle; montrer_pages(); barre_seance.refresh()
+        vue_page[nom] = cle; montrer_pages(); barre_seance.refresh(); retenir_page()
         if cle == "seance": resultats.refresh()
 
     def voir_aide(k):
-        vue_aide["k"] = k; page_aide.refresh(); barre_seance.refresh()
+        vue_aide["k"] = k; page_aide.refresh(); barre_seance.refresh(); retenir_page()
         ui.run_javascript("window.scrollTo(0, 0)")
 
     @ui.refreshable
@@ -1688,6 +1710,7 @@ def page():
 
     def aller(k):
         vue["entree"] = k; vue["edition"] = None; barre_seance.refresh(); vue_seance.refresh(); vue_analyse.refresh(); vue_jouer.refresh(); montrer_controles()
+        retenir_page()
 
     @ui.refreshable
     def barre_seance():
@@ -1746,7 +1769,7 @@ def page():
             aide = ui.button("Aide", on_click=lambda: onglets.set_value(o_aide)).props("flat no-caps dense").classes("px-3")
             onglets.on_value_change(lambda e: (aide.classes(add="bg-green-50 font-bold") if e.value in (o_aide, "Aide")
                                                else aide.classes(remove="bg-green-50 font-bold"), montrer_barre(), barre_seance.refresh(),
-                                               vue_analyse.refresh(), vue_jouer.refresh(), montrer_controles()))
+                                               vue_analyse.refresh(), vue_jouer.refresh(), montrer_controles(), retenir_page()))
 
     with ui.left_drawer(value=False, fixed=True, bordered=True).props(f"width={LARGEUR_BARRE} behavior=desktop") \
             .classes("p-2 gap-0").style(f"background:{GRIS_BARRE}") as tiroir:      # la barre latérale de des onglets Donnes et Analyse : bord gauche, toute la hauteur
@@ -1876,7 +1899,9 @@ def page():
                 page_aide()                                    # une section à la fois, choisie dans la barre de gauche
 
             with ui.tab_panel(o_nouveau).classes("px-0 pt-0 max-w-xl"):   # Fichier, Nouveau… : une page, comme l'aide
-                ui.label("Nouvelle séance").classes("text-lg font-bold")
+                with ui.row().classes("w-full items-center justify-between no-wrap"):
+                    ui.label("Nouvelle séance").classes("text-lg font-bold")
+                    ui.button("Annuler", icon="close", on_click=lambda: annuler_nouveau()).props("outline")
                 ui.label("Une séance vide, « Entraînement » et la date du jour, à remplir donne par donne : vous tapez les mains "
                          "dans l'onglet Donnes, et le programme peut compléter au hasard ce qui manque.").classes("text-base text-gray-600")
                 ui.button("Créer une séance vide", icon="add", on_click=lambda: creer_vide()).classes("text-base mb-4")
@@ -1988,11 +2013,24 @@ def page():
             try: app.native.main_window.set_title(t_)
             except Exception: pass
 
+    avant_nouveau = {}                                     # la séance et la page d'avant Fichier, Nouveau… (« Annuler »)
+
     def nouveau_fichier():
         """Fichier, Nouveau… : plus de séance ouverte (la séance retenue ne change qu'à la création de la nouvelle)."""
+        if onglets.value not in (o_nouveau, "Nouveau"):
+            avant_nouveau.clear(); avant_nouveau.update(chemin=choix["chemin"], onglet=onglets.value, entree=vue.get("entree"))
         choix["chemin"] = None; montrer_titre(); expert_msg.update(texte="", faute=False)
         vue_seance.refresh(); barre_seance.refresh(); vue_analyse.refresh(); resultats.refresh()
         onglets.set_value(o_nouveau); montrer_barre(); montrer_controles()
+
+    def annuler_nouveau():
+        """« Annuler » sur la page Nouveau : la séance d'avant se rouvre, à la page où vous étiez."""
+        c = avant_nouveau.get("chemin")
+        choix["chemin"] = c if c and os.path.isfile(c) else seance_active()
+        montrer_titre(); vue["entree"] = avant_nouveau.get("entree") or "seance"
+        onglets.set_value(avant_nouveau.get("onglet") or o_donnes)
+        vue_seance.refresh(); barre_seance.refresh(); vue_analyse.refresh(); vue_jouer.refresh(); resultats.refresh()
+        montrer_barre(); montrer_controles(); retenir_page()
 
     maj_vue = {"version": None}
 
@@ -2131,6 +2169,8 @@ def page():
 
     ui.timer(.4, rafraichir)
     ui.timer(.5, lambda: montrer_titre(), once=True)
+    depart = {"Jouer": o_jouer, "Analyse": o_analyse, "Rapports": o_rapports, "Réglages": o_reglages, "Aide": o_aide}.get(PAGE.get("onglet"))
+    if depart: ui.timer(.05, lambda: onglets.set_value(depart), once=True)   # l'onglet de la dernière fois
     montrer_barre(); montrer_controles()       # la fenêtre naît avec le titre du programme seul
     rafraichir()
 

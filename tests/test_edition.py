@@ -65,4 +65,11 @@ E.poser_couleur(c, 1, "N", 0, "AR")                          # plus rien à reti
 assert len(E.versions(c)) == avant + 1
 E.supprimer_donne(c, 1)                                       # la donne 2 devient la 1, son analyse de l'expert suit
 assert rapport.analyse_de(c, "expert")["donnes"] == {"1": {"enc": [["b"]]}}
+# les thèmes : chacun a sa famille et son niveau ; ceux d'enchères et de jeu de la carte sont réunis dans les mêmes donnes
+import donnes as Dn
+assert set(Dn.META) == set(Dn.THEMES) - {Dn.ALEATOIRE}
+assert Dn.combiner([("Stayman", 2), ("L'impasse", 1), ("Squeeze", 2), (Dn.ALEATOIRE, 1)]) == \
+    [("Stayman + L'impasse", 1), ("Stayman + Squeeze", 1), ("Squeeze", 1), (Dn.ALEATOIRE, 1)]
+assert Dn.lire_quotas(["Stayman + L'impasse=2", "Inconnu=1"]) == [("Stayman + L'impasse", 2)]
+assert "Évaluer sa main" in Dn.themes_de("encheres", 1) and "Squeeze" in Dn.themes_de("carte", 3)
 print("ok")

@@ -379,7 +379,7 @@ def titre_fenetre(c):
 def lancer_donnes(quotas):
     """quotas : [(thème, nombre de donnes)]."""
     D.__init__(1.0, "Création de la donne"); D.texte = "Préparation"
-    demarrer_travail(D, [os.path.join(ICI, "donnes.py")] + [f"{t}={k}" for t, k in quotas if k])
+    demarrer_travail(D, [os.path.join(ICI, "donnes.py"), "--combiner"] + [f"{t}={k}" for t, k in quotas if k])
 
 
 def entrainements():
@@ -2142,39 +2142,81 @@ def page():
             with ui.tab_panel(o_aide).classes("px-0 pt-0 max-w-xl"):   # une page comme les autres : un onglet la quitte
                 page_aide()                                    # une section à la fois, choisie dans la barre de gauche
 
-            with ui.tab_panel(o_nouveau).classes("px-0 pt-0 max-w-xl"):   # Fichier, Nouveau… : une page, comme l'aide
+            with ui.tab_panel(o_nouveau).classes("px-0 pt-0 max-w-3xl"):   # Fichier, Nouveau… : une page, comme l'aide
                 with ui.row().classes("w-full items-center justify-between no-wrap"):
                     ui.label("Nouvelle séance").classes("text-lg font-bold")
                     ui.button("Annuler", icon="close", on_click=lambda: annuler_nouveau()).props("outline")
-                ui.label("Une séance vide, « Entraînement » et la date du jour, à remplir donne par donne : vous tapez les mains "
-                         "dans l'onglet Donnes, et le programme peut compléter au hasard ce qui manque.").classes("text-base text-gray-600")
-                ui.button("Créer une séance vide", icon="add", on_click=lambda: creer_vide()).classes("text-base mb-4")
-                ui.separator()
-                ui.label("Ou tirer des donnes au hasard, par sorte de main").classes("text-base font-bold mt-4")
-                ui.label("Choisissez combien de donnes de chaque sorte avec − et +, 36 en tout au plus. Le programme les cherche, "
-                         "les mélange et en fait une séance.").classes("text-base text-gray-600")
+                ui.label("Choisissez des thèmes et combien de donnes de chacun ; sans thème, la séance est vide et vous tapez "
+                         "les mains dans l'onglet Donnes. Les thèmes d'enchères et de jeu de la carte choisis ensemble sont "
+                         "réunis dans les mêmes donnes.").classes("text-base text-gray-600")
                 quotas = {x: 0 for x in donnes.themes_tries()}
-                total = lambda: sum(quotas.values())
+                niveaux = set(lire_etat().get("niveaux") or [1])   # les niveaux montrés, gardés d'une fois sur l'autre
+                total = lambda: sum(k for _, k in donnes.combiner([(t, k) for t, k in quotas.items() if k]))
 
                 def changer(x, k):
-                    quotas[x] = max(0, quotas[x] + k) if total() + k <= 36 else quotas[x]
-                    liste_themes.refresh(); creer_d.set_enabled(total() > 0 and not (T.actif or D.actif or I.actif))
+                    avant = quotas[x]; quotas[x] = max(0, quotas[x] + k)
+                    if total() > 36: quotas[x] = avant          # 36 donnes au plus
+                    liste_themes.refresh(); bouton_creer()
+
+                def basculer(n):
+                    niveaux.symmetric_difference_update({n})
+                    if not niveaux: niveaux.add(n)
+                    ecrire_etat(niveaux=sorted(niveaux)); liste_themes.refresh()
+
+                def theme_ligne(x):
+                    k = quotas[x]
+                    with ui.row().classes("w-full items-center justify-between no-wrap"):
+                        ui.label(x).classes("text-base" + (" font-bold text-primary" if k else ""))
+                        with ui.row().classes("items-center no-wrap gap-0"):
+                            ui.button(icon="remove", on_click=lambda x=x: changer(x, -1)).props("flat round dense").set_enabled(k > 0)
+                            ui.label(str(k)).classes("w-7 text-center text-base" + (" font-bold" if k else " text-gray-400"))
+                            ui.button(icon="add", on_click=lambda x=x: changer(x, 1)).props("flat round dense")
 
                 @ui.refreshable
                 def liste_themes():
-                    with ui.grid(columns=2).classes("w-full gap-x-8 gap-y-0 mt-2"):
-                        for x, k in quotas.items():
-                            with ui.row().classes("items-center justify-between no-wrap"):
-                                ui.label(x).classes("text-base" + (" font-bold text-primary" if k else ""))
-                                with ui.row().classes("items-center no-wrap gap-0"):
-                                    ui.button(icon="remove", on_click=lambda x=x: changer(x, -1)).props("flat round dense").set_enabled(k > 0)
-                                    ui.label(str(k)).classes("w-7 text-center text-base" + (" font-bold" if k else " text-gray-400"))
-                                    ui.button(icon="add", on_click=lambda x=x: changer(x, 1)).props("flat round dense").set_enabled(total() < 36)
+                    with ui.row().classes("gap-2 mt-2"):            # les niveaux montrés
+                        for n, nom in donnes.NIVEAUX.items():
+                            ui.button(nom, on_click=lambda n=n: basculer(n)) \
+                                .props(("unelevated" if n in niveaux else "outline") + " dense no-caps rounded").classes("px-3")
+                    with ui.row().classes("w-full no-wrap items-start gap-4 mt-2"):
+                        for f, titre in donnes.FAMILLES.items():
+                            with ui.column().classes("gap-0 grow basis-0 p-3").style(
+                                    "background:#fff;border:1px solid #e3e7ea;border-radius:10px"):
+                                ui.label(titre).classes("text-base font-bold mb-1")
+                                caches = []
+                                for n, nom in donnes.NIVEAUX.items():
+                                    ts = donnes.themes_de(f, n)
+                                    vus = ts if n in niveaux else [t for t in ts if quotas[t]]   # un thème choisi reste visible
+                                    if n not in niveaux and len(vus) < len(ts):
+                                        m = len(ts) - len(vus)
+                                        caches.append(f"{m} " + {1: "de 1re année", 2: "intermédiaire" + "s" * (m > 1),
+                                                                 3: "avancé" + "s" * (m > 1)}[n])
+                                    if not vus: continue
+                                    ui.label(nom).classes("text-sm text-gray-600 mt-2")
+                                    for t in vus: theme_ligne(t)
+                                if caches: ui.label("Autres thèmes : " + ", ".join(caches)).classes("text-sm text-gray-500 mt-2")
+                    with ui.row().classes("w-full items-center justify-between no-wrap mt-2").style("max-width:50%"):
+                        ui.label("Donnes au hasard").classes("text-base")
+                        with ui.row().classes("items-center no-wrap gap-0"):
+                            k = quotas[donnes.ALEATOIRE]
+                            ui.button(icon="remove", on_click=lambda: changer(donnes.ALEATOIRE, -1)).props("flat round dense").set_enabled(k > 0)
+                            ui.label(str(k)).classes("w-7 text-center text-base" + (" font-bold" if k else " text-gray-400"))
+                            ui.button(icon="add", on_click=lambda: changer(donnes.ALEATOIRE, 1)).props("flat round dense")
+                    choisis = donnes.combiner([(t, k) for t, k in quotas.items() if k])
                     n = total()
-                    ui.label(f"Total : {n} donne{'s' if n > 1 else ''}" if n else "Total : aucune donne pour l'instant").classes("text-base mt-2")
+                    resume = " ; ".join(f"{t} {k}" for t, k in choisis)
+                    ui.label(f"{n} donne{'s' if n > 1 else ''} : {resume}" if n else "Aucun thème choisi : la séance sera vide.") \
+                        .classes("text-base mt-3 pt-2 w-full").style("border-top:1px solid #e3e7ea")
                 liste_themes()
+
+                def bouton_creer():
+                    n = total()
+                    creer_d.text = f"Créer {n} donne{'s' if n > 1 else ''}" if n else "Créer une séance vide"
+                    creer_d.set_enabled(not (T.actif or D.actif or I.actif))
+
                 with ui.column().classes("w-full gap-4"):
-                    creer_d = ui.button("Créer le fichier Bridge Coach", icon="casino", on_click=lambda: demarrer_donnes()).classes("text-base")
+                    creer_d = ui.button("Créer une séance vide", icon="add", on_click=lambda: demarrer_donnes() if total() else creer_vide()) \
+                        .props("unelevated").classes("text-base self-start")
                     barre_d = ui.linear_progress(value=0, show_value=False).props("size=16px rounded")
                     texte_d = ui.label("").classes("text-base")
                     stop_d = ui.button("Annuler", on_click=lambda: annuler(D)).props("outline")
@@ -2355,7 +2397,7 @@ def page():
     def demarrer_donnes():
         if T.actif or D.actif or I.actif or not 1 <= total() <= 36: return
         vu_d["fini"] = None; faute_d.text = ""
-        lancer_donnes(list(quotas.items()))
+        lancer_donnes([(t, k) for t, k in quotas.items() if k])
         fichier_cree.refresh()
 
     def analyser_donnes():
@@ -2384,7 +2426,7 @@ def page():
         besoin_r.text = ("Aucune séance ouverte : Fichier, Ouvrir une séance…" if not choix["chemin"] else
                          "" if standard_ else "Lancez d'abord l'analyse, dans l'onglet Analyse.")
         actif_d = D.actif
-        creer_d.set_enabled(not occupe and not actif_d and total() > 0); stop_d.set_visibility(actif_d)
+        creer_d.set_enabled(not occupe and not actif_d); stop_d.set_visibility(actif_d)
         barre_d.set_visibility(actif_d); texte_d.set_visibility(actif_d)
         if actif_d: barre_d.set_value(round(D.fraction, 3)); texte_d.text = D.texte
         if D.fini and vu_d["fini"] is not D.proc:

@@ -229,6 +229,34 @@ def plan_court(e):
     return (reste, fin) if reste == 1 else None
 
 
+def evaluer(e):
+    """1re année : décider d'ouvrir ou de passer. Un joueur qui parle avant l'ouverture (ou l'ouvreur) a 10 à 12 H."""
+    i, s, o = premier_actif(e)
+    if i is None: return any(10 <= e.h(x) <= 12 for x in SIEGES)
+    k = SIEGES.index(e.d["donneur"])
+    return any(10 <= e.h(SIEGES[(k + j) % 4]) <= 12 for j in range(i + 1))
+
+
+def soutien_majeure(e):
+    """1re année : 1♥ ou 1♠ d'ouverture, et le partenaire soutient la majeure à sa première enchère (2, 3 ou 4)."""
+    i, s, o = premier_actif(e)
+    if o not in ("1♥", "1♠") or i + 2 >= len(e.seq): return False
+    b = e.seq[i + 2]
+    return b in (f"2{o[1]}", f"3{o[1]}", f"4{o[1]}")
+
+
+def plan_compte(e, mot=None):
+    """Le contrat (manche ou partielle) gagne juste au double mort et le plan à la table compte assez de levées
+    (avec les partages normaux) ; mot : un mot que le plan doit contenir (« impasse »)."""
+    if not (e.fait() and int(e.contrat[0]) >= 2): return False
+    den = e.contrat[1:].rstrip("X")
+    if e.dm[den][e.decl] != int(e.contrat[0]) + 6: return False
+    entame = entame_et_defense(e.d, e.contrat, e.decl, e.seq)["entame"]
+    compte, etapes, fin, reste = compter_plan(e.d, e.contrat, e.decl, entame, e.seq)
+    if mot: return reste <= 0 and mot in (str(etapes) + str(fin)).lower()
+    return reste <= 0
+
+
 THEMES = {
     ALEATOIRE: lambda e: True,
     "Barrage": barrage,
@@ -258,7 +286,52 @@ THEMES = {
     "Squeeze": lambda e: coup(e, "squeeze"),
     "Stayman": stayman,
     "Texas": texas,
+    "Évaluer sa main": evaluer,
+    "Soutien de la majeure": soutien_majeure,
+    "Compter ses levées": lambda e: plan_compte(e),
+    "L'impasse": lambda e: plan_compte(e, "impasse"),
 }
+
+# la famille (enchères ou jeu de la carte) et le niveau (1 : 1re année, 2 : intermédiaire, 3 : avancé) de chaque thème
+FAMILLES = {"encheres": "Enchères", "carte": "Jeu de la carte"}
+NIVEAUX = {1: "1re année", 2: "Intermédiaire", 3: "Avancé"}
+META = {
+    "Évaluer sa main": ("encheres", 1), "Soutien de la majeure": ("encheres", 1), "Enchères à SA": ("encheres", 1),
+    "Manche à SA": ("encheres", 1), "Manche en majeure": ("encheres", 1), "Manche en mineure": ("encheres", 1),
+    "Stayman": ("encheres", 1), "Texas": ("encheres", 1), "Barrage": ("encheres", 1), "Intervention": ("encheres", 1),
+    "Contre d'appel": ("encheres", 2), "Contre Spoutnik": ("encheres", 2), "Réveil": ("encheres", 2), "Bicolore": ("encheres", 2),
+    "Quatrième couleur forcing": ("encheres", 2), "Partielle disputée": ("encheres", 2), "Blackwood": ("encheres", 2),
+    "Petit chelem": ("encheres", 2), "Drury": ("encheres", 2),
+    "Chelem": ("encheres", 3), "Grand chelem": ("encheres", 3), "Roudi": ("encheres", 3), "Sacrifice": ("encheres", 3),
+    "Compter ses levées": ("carte", 1), "L'impasse": ("carte", 1), "Entame décisive": ("carte", 1), "Jeu de la carte": ("carte", 1),
+    "Hold-up": ("carte", 2),
+    "Jeu de la carte avancé": ("carte", 3), "Mise en main": ("carte", 3), "Squeeze": ("carte", 3),
+}
+COMBINE = " + "                                           # « Stayman + L'impasse » : une donne pour les deux thèmes
+
+
+def test_theme(theme):
+    """Le test d'un thème, ou de deux combinés (« A + B ») : la donne doit satisfaire les deux."""
+    parts = theme.split(COMBINE)
+    tests = [THEMES[x] for x in parts]
+    return (lambda e: all(t(e) for t in tests)) if len(tests) > 1 else tests[0]
+
+
+def themes_de(famille, niveau):
+    return sorted((t for t, (f, n) in META.items() if f == famille and n == niveau),
+                  key=lambda x: unicodedata.normalize("NFD", x).lower())
+
+
+def combiner(quotas):
+    """[(thème, k)] -> les mêmes, les thèmes d'enchères et de jeu de la carte appariés dans les mêmes donnes : autant de
+    donnes que la plus longue des deux listes ; ce qui reste d'une famille garde ses propres donnes."""
+    enc = [t for t, k in quotas if META.get(t, ("", 0))[0] == "encheres" for _ in range(k)]
+    jeu = [t for t, k in quotas if META.get(t, ("", 0))[0] == "carte" for _ in range(k)]
+    autres = [(t, k) for t, k in quotas if META.get(t, ("", 0))[0] not in ("encheres", "carte")]
+    paires = [f"{a}{COMBINE}{b}" for a, b in zip(enc, jeu)] + enc[len(jeu):] + jeu[len(enc):]
+    out = {}
+    for t in paires: out[t] = out.get(t, 0) + 1
+    return list(out.items()) + autres
 
 
 def themes_tries():
@@ -270,7 +343,7 @@ def lire_quotas(args):
     out = []
     for a in args:
         t, _, k = a.rpartition("=")
-        if t in THEMES and k.isdigit() and int(k) > 0: out.append((t, int(k)))
+        if all(x in THEMES for x in t.split(COMBINE)) and k.isdigit() and int(k) > 0: out.append((t, int(k)))
     return out
 
 
@@ -284,12 +357,15 @@ def tirer(rnd):
 def chercher(arg):
     """(n, thème, mains, trouvé) : une donne du thème pour le n° de donne, dans le délai."""
     n, theme, graine, delai = arg
-    rnd = random.Random(graine); test = THEMES[theme]
+    rnd = random.Random(graine); test = test_theme(theme)
     d = dict(n=n, donneur=SIEGES[(n - 1) % 4], vul=VUL16[(n - 1) % 16], mains=None)
-    fin = time.time() + delai; essais = 0
+    debut = time.time(); fin = debut + delai; essais = 0
+    seul = theme.split(COMBINE)[0] if COMBINE in theme else None   # deux thèmes : à mi-temps, le premier suffit
     while True:
         d["mains"] = tirer(rnd); essais += 1
-        if test(Essai(d)): return n, theme, d["mains"], True, essais
+        e = Essai(d)
+        if test(e): return n, theme, d["mains"], True, essais
+        if seul and time.time() > debut + delai / 2 and THEMES[seul](e): return n, seul, d["mains"], True, essais
         if time.time() > fin: return n, theme, tirer(rnd), False, essais
 
 
@@ -352,7 +428,7 @@ def donne_complete(n, theme, mains, trouve, donneur=None, vul=None):
 def creer(quotas, graine=None, delai=DELAI, dossier=None):
     """quotas : [(thème, nombre de donnes)]. Écrit le fichier et le renvoie. Dit l'avancement ligne par ligne, comme rapport.py."""
     rnd = random.Random(graine)
-    themes = [t for t, k in quotas if k > 0]
+    themes = list(dict.fromkeys(x for t, k in quotas if k > 0 for x in t.split(COMBINE)))
     tirage = [t for t, k in quotas for _ in range(k)]
     nombre = len(tirage)
     rnd.shuffle(tirage)
@@ -363,6 +439,9 @@ def creer(quotas, graine=None, delai=DELAI, dossier=None):
             res.append(x); print(f"Donne {k} sur {nombre}", flush=True)
     res.sort()
     manquees = [x[1] for x in res if not x[3]]
+    voulus = {i: t for i, t, _, _ in args}
+    for n, t, m, ok, _ in res:                             # deux thèmes voulus, un seul trouvé : on le dit
+        if ok and voulus.get(n) != t: print(f"Thème non trouvé : {voulus[n]}, la donne {n} ne garde que {t}", flush=True)
     donnes = [donne_complete(n, t, m, ok) for n, t, m, ok, _ in res]
     chemin = ecrire(donnes, themes, dossier)
     for t in dict.fromkeys(manquees):
@@ -402,4 +481,5 @@ if __name__ == "__main__":
         print(f"Fichier prêt : {creer_saisies(open(sys.argv[2], encoding='utf-8').read().splitlines())}", flush=True)
         sys.exit()
     graine = next((int(a.split("=", 1)[1]) for a in sys.argv[1:] if a.startswith("--graine=")), None)
-    creer(lire_quotas([a for a in sys.argv[1:] if not a.startswith("--")]), graine)   # donnes.py "Squeeze=4" "Aléatoire=8"
+    q = lire_quotas([a for a in sys.argv[1:] if not a.startswith("--")])
+    creer(combiner(q) if "--combiner" in sys.argv else q, graine)   # donnes.py "Squeeze=4" "Aléatoire=8"

@@ -110,6 +110,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         deal (THEMES: engine auction, double-dummy, coups.py or the plan's count), DELAI seconds per deal, then
                         random and says so. Writes entrainement-<date>-<HHMMSS>.bc.json (source "entrainement" or "saisie") and a .pbn for Bridgemate
                         (Control Software 3.1.2+: File, Import). Deals have no tables: reports skip the archive
+                        Each theme has a family and a level (META: encheres / carte, 1 = 1re année, 2 = intermédiaire,
+                        3 = avancé; new first-year themes Évaluer sa main, Soutien de la majeure, Compter ses levées, L'impasse);
+                        a bidding theme and a card-play theme chosen together are combined in the same deals ("A + B",
+                        combiner, test_theme; halfway through the delay the bidding theme alone is accepted, and said).
+                        The app's New page: level buttons (etat "niveaux"), the two families side by side, Donnes au hasard,
+                        a summary line and one button, « Créer N donnes » or « Créer une séance vide » with no theme.
                         Deals typed by hand (lire_texte / texte_de: "PRDX76C32K…T…" × 4 from North, then vulnerability
                         N-S, E-O as V/N and the dealer, "VVN"; West may be left out): donnes.py --texte only (the app types deals in the Donnes tab)
       bws_extract.py    .bws -> donnes-AAAA-MM-JJ.json (prints ALERTES for broken auctions)

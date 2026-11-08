@@ -65,9 +65,10 @@ def _mondes(pos, pool, vides, k, rnd):
     return bons
 
 
-def _carte(pos, pool, vides, need, k, rnd):
+def _carte(pos, pool, vides, need, k, rnd, details=None):
     """La carte du déclarant ou du mort qui gagne le contrat dans le plus de mondes ; à égalité, la plus
-    prudente, puis celle qui fait le plus de levées, puis la plus petite."""
+    prudente, puis celle qui fait le plus de levées, puis la plus petite. details (un dict) reçoit le nombre de
+    mondes et, pour chaque carte, (mondes où le contrat gagne, levées au total) : les pensées du déclarant."""
     from endplay.dds import solve_all_boards
     from endplay.types import Card
     leg = pos.legales()
@@ -93,6 +94,7 @@ def _carte(pos, pool, vides, need, k, rnd):
             return x[0] == pos.den and any(LETTRES[pos.den] + y not in pos.jouees and LETTRES[pos.den] + y not in nous for y in RANGS)
         return x[0] != pos.den
     nous = _ensemble(pos.mains[pos.decl]) | _ensemble(pos.mains[PART[pos.decl]])
+    if details is not None: details.update(mondes=len(dd), scores={x: (gains[x], total[x]) for x in leg})
     return max(reversed(leg), key=lambda x: (gains[x], prudence(x), total[x]))
 
 

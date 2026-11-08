@@ -35,4 +35,15 @@ while not p.fini() and not p.au_joueur(): p.poser(p.carte_robot())
 assert p.fini() or p.au_trait() == G["N"]
 p = carte.Partie(d, "6♦", "N", seq, humain=D_["N"])
 assert len(p.pos.jouees) == 1 and not p.au_joueur("E" if D_["N"] == "O" else "O")
+# les pensées : chaque carte d'un robot garde ses scores et ce qu'il croit ; le texte se lit ; l'avis sur votre carte
+p = carte.Partie(d, "6♦", "N", seq, humain=G["N"])
+x = p.legales()[0]; p.pensees.append(p.pensee(p.au_trait(), x, humain=True)); p.poser(x)
+while not p.au_joueur() and not p.fini(): p.poser(p.carte_robot())
+robot = [z for z in p.pensees if not z["humain"]]
+assert robot and all(z["carte"] and isinstance(z["scores"], dict) for z in robot)
+t = carte.texte_pensee(robot[0], "N"); assert t["titre"] and (t["raison"] or robot[0]["force"])
+cartes = [(c, r) for c, r in [(j[0], j[1:]) for j in []]]
+tout = [(cc, rr) for pli, _ in p.plis for _x, cc, rr in pli] + [(cc, rr) for _x, cc, rr in p.pos.pli]
+a = carte.avis_programme(d, "6♦", "N", seq, G["N"], tout, 0)
+assert a["carte"] and carte.texte_pensee(dict(p.pensees[0], avis=a), "N")["raison"]
 print("ok")

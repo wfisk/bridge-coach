@@ -927,6 +927,16 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
         titre_section("Cartes vues (après coup)"); html(txt(vues))
 
 
+def pensee_html(t, ouvert=True):
+    """Une pensée (carte.texte_pensee) : qui joue quoi, pourquoi, et ce qu'il croit des mains cachées."""
+    h = f"<div style='font-size:15px;font-weight:700'>{rouge(t['titre'])}</div>"
+    if t["raison"]: h += f"<div style='font-size:14px;margin-top:2px'>{rouge(t['raison'])}</div>"
+    if t["croyance"]:
+        h += ("<div style='font-size:13px;color:#555b66;margin-top:4px'><b>Ce qu'il croit :</b>"
+              + "".join(f"<div>{rouge(x)}</div>" for x in t["croyance"]) + "</div>")
+    return f"<div style='background:#e6efe9;border-left:3px solid #1f5f3a;padding:6px 8px;border-radius:4px'>{h}</div>"
+
+
 def encheres_html(d, x):
     """Les enchères d'une table, en grille Ouest Nord Est Sud à partir du donneur, avec le contrat et l'entame."""
     k = "ONES".index(d["donneur"])
@@ -1057,7 +1067,7 @@ def page():
         siege = siege or jouer.siege_choisi(place_jouer(), d, lire_analyses(c))   # l'option choisie dans Options
         seq, ex, ind, al = jouer.avancer_alertes(d, [], siege)
         jeu.update(cle=(c, d["n"]), siege=siege, seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, garde=False, d=d,
-                   affiche=0, vus=0, revele=False, pense=None, partie=None, pli_vu=None, msg="", garde_jeu=False, sans_jouer=False)
+                   affiche=0, vus=0, revele=False, pense=None, partie=None, pli_vu=None, revoir=None, msg="", garde_jeu=False, sans_jouer=False)
         jeu_garder()
         background_tasks.create(reveler())
 
@@ -1070,8 +1080,9 @@ def page():
             p = carte.Partie(d, c_, decl, seq, humain=x["siege"])
             for k in x["cartes"][1 if p.pos.jouees else 0:]: p.poser((k[0], k[1:]))   # l'entame du programme est déjà posée
             if x.get("reclame"): p.reclame = True; p.pos.gagnes = x.get("gagnes", p.pos.gagnes)
+            p.pensees = list(x.get("pensees") or [])       # ce que pensaient les joueurs, gardé avec la donne
         jeu.update(cle=(c, d["n"]), siege=x["siege"], seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, garde=ind is None, d=d,
-                   affiche=len(seq), vus=len(seq), revele=False, pense=None, partie=p, pli_vu=None, msg="", garde_jeu=bool(p and p.fini()),
+                   affiche=len(seq), vus=len(seq), revele=False, pense=None, partie=p, pli_vu=None, revoir=None, msg="", garde_jeu=bool(p and p.fini()),
                    sans_jouer=bool(x.get("sans_jouer")))
         if p and not p.fini(): background_tasks.create(carte_defense())   # si le programme avait la main
 
@@ -1082,7 +1093,8 @@ def page():
         cartes = [cc + r for pli, _ in p.plis for _x, cc, r in pli] + [cc + r for _x, cc, r in p.pos.pli] if p else []
         try:
             jouer.garder_en_cours(base_seance(c), n, dict(siege=jeu["siege"], seq=list(jeu["seq"]), cartes=cartes,
-                                  reclame=bool(p and p.reclame), gagnes=p.pos.gagnes if p else 0, sans_jouer=bool(jeu.get("sans_jouer"))))
+                                  reclame=bool(p and p.reclame), gagnes=p.pos.gagnes if p else 0, sans_jouer=bool(jeu.get("sans_jouer")),
+                                  pensees=list(p.pensees) if p else []))
         except OSError:
             pass
 
@@ -1183,7 +1195,7 @@ def page():
     # ---------------------------------------------------------------- le jeu de la carte
     def carte_demarrer(d):
         c_, decl = jouer.contrat(jeu["seq"], d["donneur"])
-        jeu.update(partie=carte.Partie(d, c_, decl, jeu["seq"], humain=jeu["siege"]), pli_vu=None, msg="", garde_jeu=False, sans_jouer=False)
+        jeu.update(partie=carte.Partie(d, c_, decl, jeu["seq"], humain=jeu["siege"]), pli_vu=None, revoir=None, msg="", garde_jeu=False, sans_jouer=False)
         jeu_garder(); vue_jouer.refresh(); background_tasks.create(carte_defense())
 
     async def carte_poser(x):
@@ -1211,6 +1223,7 @@ def page():
     async def carte_jouer(x):
         p = jeu["partie"]
         if not p or jeu["pense"] or jeu["pli_vu"] or p.fini() or not p.au_joueur() or x not in p.legales(): return
+        p.pensees.append(p.pensee(p.au_trait(), x, humain=True))   # votre carte, pour la relecture
         await carte_poser(x)
         await carte_defense()
 
@@ -1481,6 +1494,8 @@ def page():
         attente = jeu["affiche"] < len(jeu["seq"])
         fini = jeu["indice"] is None and not attente
         p = jeu["partie"]
+        if p and p.fini() and jeu.get("revoir") is not None:   # la relecture, carte par carte, avec les pensées
+            vue_revoir(c, d, data, places, p); return
         c_, decl = jouer.contrat(jeu["seq"], d["donneur"]) if fini else ("passe", None)
         a_jouer = fini and not p and c_ != "passe" and not jeu.get("sans_jouer")   # au déclarant ou en défense
         montrer = (fini and not a_jouer and not p) or (p and p.fini())
@@ -1527,6 +1542,9 @@ def page():
                             if not p.en_defense():
                                 ui.button("Réclamer", icon="done_all", on_click=lambda: carte_reclamer()).props("outline dense no-caps")
                         if jeu["msg"]: ui.label(jeu["msg"]).classes("text-sm")
+                    robots = [z for z in p.pensees if not z["humain"]]
+                    if robots and not p.fini():                 # ce que pense le dernier joueur du programme
+                        ui.html(pensee_html(carte.texte_pensee(robots[-1], p.decl)), sanitize=False).classes("w-full")
                     if p.plis:
                         with ui.expansion(f"Plis joués ({len(p.plis)})", icon="list").props("dense").classes("w-full text-sm"):
                             for k, (pli, g) in enumerate(p.plis, 1):
@@ -1570,6 +1588,8 @@ def page():
                     jouer.completer_jeu(base_seance(c), d["n"], [carte.carte_fr(cc, r) for pli, _ in p.plis for _x, cc, r in pli], g)
                     jeu["garde_jeu"] = True
                 with ui.row().classes("gap-3 mt-2"):
+                    ui.button("Revoir la donne avec les pensées", icon="psychology",
+                              on_click=lambda: (jeu.update(revoir=0), vue_jouer.refresh())).props("unelevated")
                     ui.button("Rejouer la carte", icon="replay", on_click=lambda: carte_demarrer(d)).props("outline")
                     ui.button("Recommencer les enchères", icon="restart_alt", on_click=lambda: jeu_recommencer_encheres(c, d)).props("outline")
                     ui.button("Donne suivante", icon="arrow_forward", on_click=lambda: jeu_suivante(data, d))
@@ -1577,6 +1597,52 @@ def page():
                 comparaison(c, d, data, s)
             return
         if montrer: comparaison(c, d, data, s)
+
+    def vue_revoir(c, d, data, places, p):
+        """La donne rejouée carte par carte : les quatre mains telles qu'elles étaient, le pli en cours, et ce que
+        pensait le joueur de la carte montrée (◀ ▶). Votre carte : ce que le programme aurait joué à votre place."""
+        cartes = [(cc, r_) for pli, _ in p.plis for _x, cc, r_ in pli]
+        k = max(0, min(jeu["revoir"], len(cartes) - 1)); jeu["revoir"] = k
+        q = carte.Partie(d, p.contrat, p.decl, p.encheres, humain=p.humain)
+        for x in cartes[len(q.pos.jouees):k + 1]: q.poser(x)
+        pli = q.pos.pli or (q.plis[-1][0] if q.plis else [])
+        posees = {x: (cc, r_.translate(carte.FR)) for x, cc, r_ in pli}
+        def centre():
+            D = 62; haut, gauche, droite, bas = places
+            def case(x, dx, dy):
+                if x not in posees: return ""
+                cc, r_ = posees[x]
+                return (f"<div style='position:absolute;left:calc(50% + {dx}px);top:calc(50% + {dy}px);transform:translate(-50%,-50%);"
+                        f"z-index:3'><div class='carte{' r' if cc in '♥♦' else ''}' style='margin:0'>{face(r_)}<br/>{cc}</div></div>")
+            ui.html(f"<div style='position:absolute;inset:0;pointer-events:none'>{case(haut, 0, -D)}{case(bas, 0, D)}"
+                    f"{case(gauche, -D, 0)}{case(droite, D, 0)}</div>", sanitize=False)
+        def contenu(x, ou):
+            reste = {kk: "".join(r_.translate(carte.FR) for r_ in v) for kk, v in q.pos.reste[x].items()}
+            if x == q.mort(): mort_etale(reste, None, None, q.den, ou)
+            else: eventail(reste, colonnes=ou in ("gauche", "droite"), grande=x == jeu["siege"])
+        with ui.row().classes("w-full no-wrap items-start gap-4").style(f"padding-right:{LARGEUR_PANNEAU}px"):
+            with ui.column().classes("grow min-w-0 gap-2"):
+                table(d, places, contenu, centre,
+                      sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == q.mort()])
+            with panneau_droit():
+                ui.label(f"Donne {d['n']} · relecture").classes("text-lg font-bold")
+                ui.label(f"{p.contrat} par {SIEGE[p.decl]} · carte {k + 1} sur {len(cartes)} · pli {k // 4 + 1}").classes("text-sm text-gray-600")
+                with ui.row().classes("gap-2"):
+                    ui.button(icon="chevron_left", on_click=lambda: (jeu.update(revoir=k - 1), vue_jouer.refresh())).props("outline dense").set_enabled(k > 0)
+                    ui.button(icon="chevron_right", on_click=lambda: (jeu.update(revoir=k + 1), vue_jouer.refresh())).props("unelevated dense").set_enabled(k < len(cartes) - 1)
+                    ui.button("Fermer", on_click=lambda: (jeu.update(revoir=None), vue_jouer.refresh())).props("flat dense no-caps")
+                z = next((z for z in p.pensees if z["n"] == k), None)
+                if z: ui.html(pensee_html(carte.texte_pensee(z, p.decl)), sanitize=False).classes("w-full")
+                if z and z["humain"] and not z.get("avis"):     # votre carte : ce que le programme aurait fait
+                    async def avis(z=z):
+                        jeu["msg"] = "Le programme réfléchit…"; vue_jouer.refresh()
+                        z["avis"] = await run.io_bound(carte.avis_programme, d, p.contrat, p.decl, p.encheres, p.humain, cartes, k)
+                        jeu["msg"] = ""; jeu_garder(); vue_jouer.refresh()
+                    ui.button("Qu'aurait joué le programme ?", icon="psychology", on_click=avis).props("outline dense no-caps")
+                    if jeu.get("msg"): ui.label(jeu["msg"]).classes("text-sm")
+                elif k == 0: ui.html(pensee_html(dict(titre=f"{SIEGE[carte.LHO[p.decl]]} entame {carte.carte_fr(*cartes[0])}",
+                                                      raison="L'entame suit les règles du système (entames.yaml).", croyance=[])),
+                                     sanitize=False).classes("w-full")
 
     def comparaison(c, d, data, s):
         """Le contrat du joueur face aux analyses, les séquences, le double mort."""

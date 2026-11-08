@@ -40,6 +40,8 @@ class Partie:
         self.rnd = random.Random(graine if graine is not None else d.get("n", 0))
         self.cx = lire_encheres(self.encheres, d["donneur"])
         self._pool = None; self.reclame = False; self.difficile = False
+        self.dernier = None                                # le dernier choix calculé : rôle, mondes, scores de chaque carte
+        self.pensees = []                                  # une par carte jouée : qui, quoi, ce qu'il croyait, pourquoi
         e = entame_et_defense(d, contrat, decl, self.encheres)["entame"]["carte"]   # « ♠V » : les règles d'entame
         self.entame = (e[0], e[1:].translate(EN))
         self.humain = humain if humain is not None else decl   # la place du joueur : le déclarant (et le mort) ou un défenseur
@@ -56,8 +58,39 @@ class Partie:
 
     def carte_robot(self):
         """La carte de la place au trait jouée par le programme : le déclarant simulé (lignes.py) pour le camp du
-        déclarant, la défense (carte_defense) sinon."""
-        return self.indice() if self.camp(self.au_trait()) else self.carte_defense()
+        déclarant, la défense (carte_defense) sinon. Ce qu'il pensait en la choisissant est gardé (self.pensees)."""
+        s = self.au_trait()
+        x = self.indice() if self.camp(s) else self.carte_defense()
+        self.pensees.append(self.pensee(s, x))
+        return x
+
+    def croyance(self, s):
+        """Ce que croit le joueur s (le déclarant pour le mort) des mains qu'il ne voit pas : modele.Modele.pensees,
+        le modèle de chaque place gardé et mis à jour carte après carte."""
+        import modele
+        vue = self.decl if s == self.mort() else s
+        lettre = dict(zip("SHDC", COULEURS))
+        jouees = [(x, lettre[j[0]] + j[1:].translate(FR)) for x, j in zip(self.pos.sieges, self.pos.jouees)]
+        if not hasattr(self, "_croyances"): self._croyances = {}
+        try:
+            m = self._croyances.get(vue)
+            mort = self.mort() if jouees else None
+            m = m.suite(jouees, mort) if m and mort else modele.Modele(self.d, vue, self.encheres, jouees, mort=mort,
+                                                                       graine=len(jouees), n=200, efficace=80, n_max=800)
+            self._croyances[vue] = m
+            return m.pensees()
+        except Exception:
+            return []
+
+    def pensee(self, s, x, humain=False):
+        """La pensée d'une carte : qui la joue, la carte, ce qu'il croyait et les scores des cartes qu'il avait (pour un
+        robot : son dernier calcul). Tout en texte et nombres, pour être gardé avec la donne."""
+        ch = self.dernier if self.dernier and self.dernier.get("siege") == s else None
+        return dict(n=len(self.pos.jouees), siege=s, carte=carte_fr(*x), humain=humain,
+                    role="declarant" if self.camp(s) else "defense",
+                    croyance=[] if humain else self.croyance(s), mondes=ch["mondes"] if ch else 0,
+                    force=bool(ch and ch["force"]),
+                    scores={carte_fr(*k): list(v) for k, v in (ch["scores"].items() if ch else [])})
 
     def premiere(self):
         """La carte d'entame jouée (couleur, rang anglais), ou None."""
@@ -140,6 +173,7 @@ class Partie:
         from endplay.dds import solve_all_boards
         from endplay.types import Card
         s = self.au_trait(); leg = self.legales(); self.difficile = False
+        self.dernier = dict(role="defense", siege=s, mondes=0, scores={}, force=len(leg) == 1)
         if len(leg) == 1: return leg[0]
         dd = []
         for m in self._mondes(s, MONDES):
@@ -156,6 +190,7 @@ class Partie:
                 t = v.get((c, r), prec.get(c, 0)); prec[c] = t
                 decl_final = self.pos.gagnes + (reste - t)  # t : levées de la défense à partir d'ici
                 chute[(c, r)] += decl_final < self.besoin; total[(c, r)] += t
+        self.dernier.update(mondes=len(dd), scores={x: (chute[x], total[x]) for x in leg})
         cle = lambda x: (chute[x], total[x])
         meilleure = max(leg, key=lambda x: (chute[x], total[x], RANGS.index(x[1])))
         # difficile : la meilleure carte ne fait chuter que dans un ou deux mondes de plus qu'une autre (l'application
@@ -196,7 +231,11 @@ class Partie:
             if not self._pool:
                 self._pool = donnes_du_declarant(self.d, self.decl, self.encheres, carte_fr(*(self.premiere() or self.entame)), 40)
         vides = {x: set(LETTRE[c] for c in self.vides[x]) for x in (LHO[self.decl], RHO[self.decl])}
-        return lignes._carte(self.pos, self._pool, vides, self.besoin, 12, random.Random(len(self.pos.jouees)))
+        details = {}
+        x = lignes._carte(self.pos, self._pool, vides, self.besoin, 12, random.Random(len(self.pos.jouees)), details)
+        self.dernier = dict(role="declarant", siege=self.au_trait(), mondes=details.get("mondes", 0),
+                            scores=details.get("scores", {}), force=len(self.legales()) == 1)
+        return x
 
     def reclamer(self):
         """True si le déclarant fait toutes les levées qui restent, quoi que fasse la défense (double mort)."""
@@ -211,3 +250,71 @@ class Partie:
         """(levées du déclarant, écart au contrat, levées au double mort au départ)."""
         g = self.pos.gagnes
         return g, g - self.besoin, self.d["dm"][self.den][self.decl]
+
+
+NOMS = {"N": "Nord", "S": "Sud", "E": "Est", "O": "Ouest"}
+
+
+def texte_pensee(pz, decl):
+    """La pensée d'une carte en français : {"titre", "raison", "croyance": [lignes]}. pz : Partie.pensee."""
+    import re
+    t = _texte_pensee(pz, decl)
+    t["raison"] = re.sub(r"\b([01]) mondes\b", r"\1 monde", t["raison"])   # 0 ou 1 monde, au singulier
+    return t
+
+
+def _texte_pensee(pz, decl):
+    mort = PART[decl]
+    qui = "Le déclarant, au mort," if pz["siege"] == mort else NOMS[pz["siege"]]
+    titre = f"{qui} joue {pz['carte']}"
+    if pz["humain"]:
+        titre = f"Vous jouez {pz['carte']}" + (" au mort" if pz["siege"] == mort else "")
+        a = pz.get("avis")
+        if not a: return dict(titre=titre, raison="", croyance=[])
+        m = a.get("mondes") or 0; sc = a.get("scores") or {}
+        but = "faire chuter le contrat" if pz["role"] == "defense" else "gagner le contrat"
+        if a["carte"] == pz["carte"] or (m and sc.get(a["carte"]) == sc.get(pz["carte"])):
+            raison = "Le programme aurait joué la même carte (ou une carte équivalente)."
+        elif not m: raison = f"Le programme aurait joué {a['carte']}."
+        else:
+            v, w = sc.get(pz["carte"], [0, 0]), sc.get(a["carte"], [0, 0])
+            raison = (f"À votre place, le programme aurait joué {a['carte']} : pour {but}, elle réussit dans {w[0]} mondes sur {m}, "
+                      f"la vôtre dans {v[0]}.")
+            if v[0] == w[0]: raison = (f"À votre place, le programme aurait joué {a['carte']} : autant de chances de {but} "
+                                       f"({w[0]} sur {m}), mais plus de levées en moyenne.")
+        return dict(titre=titre, raison=raison, croyance=list(a.get("croyance") or []))
+    sc, m = pz.get("scores") or {}, pz.get("mondes") or 0
+    virgule = lambda x: f"{x:.1f}".replace(".", ",")
+    camp = "la défense" if pz["role"] == "defense" else "le déclarant"
+    if pz.get("force") or len(sc) <= 1: raison = "Carte forcée."
+    elif not m: raison = ""
+    else:
+        a, t = sc.get(pz["carte"], [0, 0])
+        but = "faire chuter le contrat" if pz["role"] == "defense" else "gagner le contrat"
+        moins = {}                                     # les cartes qui réussissent moins souvent, une par résultat
+        for k, (x, y) in sc.items():
+            if x < a: moins.setdefault(x, k)
+        alt = ", ".join(f"{k} : {x} sur {m}" for x, k in sorted(moins.items(), reverse=True)[:2])
+        moins_lev = any(x == a and y < t for k, (x, y) in sc.items() if k != pz["carte"])
+        if (a == 0 or a == m) and not moins:           # rien ne se décide sur le contrat : on joue pour les levées
+            etat = ("le contrat est gagné" if (pz["role"] == "defense") == (a == 0) else "le contrat chute")
+            raison = f"Dans toutes les donnes qu'il imagine, {etat} ; il cherche le plus de levées pour {camp}"
+            raison += f" : {virgule(t / m)} en moyenne avec cette carte" + (" (moins avec les autres)." if moins_lev else ".")
+        elif not moins and not moins_lev:
+            raison = f"Ses cartes se valent : chacune peut {but} dans {a} mondes sur {m} ; il joue la plus petite."
+        else:
+            raison = f"Pour {but} : cette carte réussit dans {a} mondes sur {m}"
+            raison += f" ({alt})" if alt else ""
+            raison += ", et donne le plus de levées." if moins_lev else "."
+    return dict(titre=titre, raison=raison, croyance=list(pz.get("croyance") or []))
+
+
+def avis_programme(d, contrat, decl, encheres, humain, cartes, k):
+    """Ce que le programme aurait joué à la place du joueur pour la carte k (cartes : toutes les cartes jouées,
+    (couleur, rang anglais)) : sa carte, les scores de chaque carte possible, ce qu'il croyait. Pour la relecture."""
+    q = Partie(d, contrat, decl, encheres, humain=humain)
+    for x in cartes[len(q.pos.jouees):k]: q.poser(x)
+    s = q.au_trait(); x = q.indice()
+    ch = q.dernier or {}
+    return dict(carte=carte_fr(*x), mondes=ch.get("mondes", 0),
+                scores={carte_fr(*kk): list(v) for kk, v in (ch.get("scores") or {}).items()}, croyance=q.croyance(s))

@@ -1,290 +1,225 @@
 # Bridge Coach
 
-Analyse des donnes d'un tournoi de bridge à partir du fichier `.bws` de Bridgemate :
-rapports PDF en français, système SEF, marque IMP.
+Un entraîneur de bridge pour le club, en français, système SEF, marque IMP :
 
-Pour chaque séance, le programme produit, dans `rapports/AAAA-MM/` :
+- **Analyser un tournoi** joué avec Bridgemate (le fichier `.bws`, ou la feuille de route PDF de FFBClubNet) : pour
+  chaque donne, les enchères recommandées, l'entame, le plan de jeu, le double mort, et les résultats de toutes les
+  tables ; puis des rapports PDF.
+- **Jouer chaque donne contre le programme** : enchérir à sa place, puis jouer la carte comme déclarant ou en
+  défense. Les trois autres joueurs sont des robots qui expliquent ce qu'ils pensent : pourquoi telle carte, ce
+  qu'ils croient des mains cachées, leurs signaux ; à la fin, un résumé de la donne et ce que le programme aurait
+  joué à votre place.
+- **Créer des donnes d'entraînement** par thème (enchères ou jeu de la carte, trois niveaux), ou les taper à la
+  main, avec un `.pbn` à importer dans Bridgemate pour les jouer au club.
+- **L'analyse de l'expert** (facultatif) : la séance préparée pour Claude, qui rédige un avis sur chaque donne.
 
 | Rapport | Contenu |
 |---|---|
 | `…-archive.pdf` | ce qui a été joué : mains, enchères et résultats des tables, double mort et par |
 | `…-standard.pdf` | l'analyse du programme : enchères recommandées, entame, plan de jeu |
-| `…-expert.pdf` | la même analyse, avec l'« Avis de l'expert » rédigé par Claude (seulement s'il existe, voir plus bas) |
+| `…-expert.pdf` | la même analyse, avec l'« Avis de l'expert » rédigé par Claude (seulement s'il existe) |
 | `…-diff.pdf` | le programme et l'expert comparés, donne par donne |
 
-Les rapports `standard` et `expert` commencent par une page de synthèse : contrat et entame
-recommandés face à ce qui a été joué aux tables.
+Les rapports finissent par votre parcours dans la séance et une synthèse : une ligne par donne, le contrat
+recommandé face à ce qui a été joué aux tables.
 
-## Installation (le plus simple)
+## Installer
 
-Sur la page des versions, https://github.com/wfisk/bridge-coach/releases/latest, téléchargez l'installateur :
+Sur la page des versions, **https://github.com/wfisk/bridge-coach/releases/latest**, téléchargez l'installateur :
 
 - **Windows 10 ou 11 (64 bits) :** `Bridge-Coach-Setup.exe`
 - **Mac :** `Bridge-Coach.pkg`
 
-Ouvrez-le et suivez les étapes. Il ne contient pas le programme : il télécharge sa dernière version, avec un Python
-qui lui est propre (il ne touche pas à un autre Python de l'ordinateur) et ses bibliothèques, et vérifie l'empreinte
-SHA-256 de chaque fichier avant de s'en servir. Comptez quelques minutes et une connexion à Internet. Ensuite, les
-mises à jour se font dans l'application (voir plus bas).
+Ouvrez-le et suivez les étapes. Comptez quelques minutes et une connexion à Internet : l'installateur ne contient
+pas le programme, il télécharge sa dernière version, un Python qui lui est propre (il ne touche pas à un autre
+Python de l'ordinateur) et ses bibliothèques, en vérifiant chaque fichier (voir **Sécurité**). Il faut 8 Go de
+mémoire au minimum : le calcul des donnes peut occuper environ 4 Go.
 
-- **Windows** affiche d'abord « Windows a protégé votre ordinateur » (l'installateur n'est pas signé) :
-  **Informations complémentaires**, puis **Exécuter quand même**. Le programme va dans
-  `%LOCALAPPDATA%\Programs\Bridge Coach`, sans droits d'administrateur ; un raccourci sur le Bureau et dans le menu
-  Démarrer (pour l'épingler à la barre des tâches : clic droit, **Plus**, **Épingler à la barre des tâches**).
-- **Mac** refuse d'abord de l'ouvrir : **Réglages Système**, **Confidentialité et sécurité**, **Ouvrir quand même**.
-  Le programme va dans `~/Library/Application Support/Bridge Coach/programme` ; l'application **Bridge Coach** dans
-  Applications, avec un lien sur le Bureau. Au premier lancement, acceptez l'accès au dossier Documents.
+- **Windows** affiche d'abord « Windows a protégé votre ordinateur » : cliquez sur **Informations
+  complémentaires**, puis **Exécuter quand même** (pourquoi : voir **Sécurité**). Pas besoin de droits
+  d'administrateur. Bridge Coach arrive sur le Bureau et dans le menu Démarrer ; pour l'épingler à la barre des
+  tâches : menu Démarrer, clic droit sur **Bridge Coach**, **Plus**, **Épingler à la barre des tâches**.
+- **Mac** refuse d'abord de l'ouvrir : **Réglages Système**, **Confidentialité et sécurité**, en bas **Ouvrir quand
+  même**. Bridge Coach arrive dans Applications, avec un lien sur le Bureau. Au premier lancement, macOS demande
+  l'accès au dossier Documents : **OK** (vos séances et rapports y sont).
 
-Les installations à la main ci-dessous restent possibles (et nécessaires pour travailler sur le code).
-
-## Installation sur Mac, à la main
-
-Il faut Python 3.9 ou plus récent (`python3 --version` pour vérifier).
-
-1. Téléchargez le programme, par exemple dans vos Documents. Le dépôt est public : aucun compte GitHub n'est nécessaire.
-
-   ```
-   cd ~/Documents
-   git clone https://github.com/wfisk/bridge-coach.git
-   cd bridge-coach
-   ```
-
-2. Installez-le :
-
-   ```
-   ./installer.sh
-   ```
-
-   `installer.sh` crée un environnement Python dans `.venv/`, installe les bibliothèques
-   (`requirements.txt`) et vérifie que les règles se lisent.
-
-3. À la fin, `installer.sh` propose de créer l'application (réponse **O**, ou Entrée) : **Bridge Coach**
-   apparaît dans le dossier Applications, avec un lien sur le Bureau. Il demande ensuite s'il faut aussi
-   l'ajouter au **Dock** (réponse **o**). Plus tard, ou si le dossier du programme change de place :
-
-   ```
-   ./raccourci-mac.sh          (l'application et le Bureau, puis la question du Dock)
-   ./raccourci-mac.sh --dock   (le Dock sans question)
-   ```
-
-   Au premier lancement, macOS peut demander l'accès au dossier Documents : cliquez sur OK.
-
-### Où sont les fichiers sur Mac
-
-| Quoi | Où |
-|---|---|
-| Le programme | `~/Documents/bridge-coach` : il va sur GitHub |
-| Dossier de travail : vos séances et rapports | `~/Documents/bridge-coach-files` : `seances/`, `rapports/`, `documents/` |
-| Les fichiers de Bridgemate | `~/Documents/bridgemate-files`, ou le dossier indiqué dans les réglages |
-| Les réglages | `~/Library/Application Support/Bridge Coach/bridge-coach.ini` |
-
-Vos fichiers ne vont jamais sur GitHub. Pour les sauvegarder, copiez `bridge-coach-files` : c'est le seul
-dossier à garder, en particulier les séances (`.bc.json`) : elles contiennent l'analyse de l'expert, que le programme
-ne peut pas recréer. Si le
-dossier du programme change de place, relancez `./raccourci-mac.sh`.
-
-## Installation sur Windows 10 ou 11, à la main
-
-**Pas encore essayée sur un vrai PC Windows :** ces étapes sont écrites à partir du code. Il faut un PC
-64 bits, et 8 Go de mémoire au minimum : le calcul peut occuper environ 4 Go en plus de Windows et de Bridgemate.
-
-1. Python 3.12 : le solveur de donnes (endplay) existe pour Python 3.9 à 3.13, pas encore pour 3.14.
-   `installer.bat` cherche lui-même une version qui convient, même si une autre, comme 3.14, est déjà
-   installée : les deux vivent côte à côte. S'il n'en trouve pas, il propose d'installer Python 3.12 avec
-   `winget` (réponse **O**). Sinon, installez-le depuis [python.org](https://www.python.org/downloads/windows/),
-   version « Windows installer (64-bit) ».
-2. Téléchargez le programme : sur la page GitHub du dépôt, **Code**, **Download ZIP**. Décompressez-le
-   dans `Documents`, et renommez le dossier `bridge-coach`. Un dossier synchronisé par OneDrive peut gêner : si
-   c'est le cas, placez-le directement dans `C:\bridge-coach`.
-3. Double-cliquez sur `installer.bat` : il crée `.venv` et installe les bibliothèques, en quelques minutes.
-   Windows peut d'abord afficher un avertissement : **Informations complémentaires**, puis **Exécuter quand même**.
-   À la fin, il crée le raccourci **Bridge Coach** sur le Bureau, avec son icône.
-4. Il propose aussi de l'ajouter au menu Démarrer (réponse **O**), pour l'épingler à la **barre des tâches** :
-   Windows ne laisse pas un programme s'y épingler seul, il faut un clic. Menu Démarrer, **Toutes les
-   applications**, clic droit sur **Bridge Coach**, **Plus**, **Épingler à la barre des tâches**.
-5. Double-cliquez sur **Bridge Coach** sur le Bureau. Une fenêtre noire s'ouvre, réduite dans la barre des
-   tâches : c'est le programme qui tourne, ne la fermez pas.
-6. Dans l'onglet **Réglages**, cliquez sur **Modifier les réglages**, indiquez le dossier où Bridgemate
-   enregistre ses fichiers, enregistrez, puis fermez et rouvrez l'application :
-
-   ```ini
-   bridgemate = C:\Bridgemate
-   ```
-
-   Ce chemin est un exemple : vérifiez le vrai dossier dans Bridgemate Control Software.
-
-### Où sont les fichiers sur Windows
-
-| Quoi | Où |
-|---|---|
-| Dossier de travail : vos séances et rapports | `Documents\bridge-coach-files` |
-| Les réglages | `%APPDATA%\Bridge Coach\bridge-coach.ini` |
-
-### Si quelque chose ne marche pas sous Windows
-
-- **`python` n'est pas reconnu :** relancez l'installation de Python en cochant **Add python.exe to PATH**.
-- **Python 3.14 seulement :** relancez `installer.bat` et acceptez l'installation de Python 3.12 ; un `.venv`
-  créé avec 3.14 est supprimé et refait avec 3.12.
-- **La fenêtre ne s'ouvre pas :** lancez `bridge-coach.bat --navigateur` depuis l'invite de commandes.
-  L'application s'ouvre alors dans le navigateur. La fenêtre a besoin du composant Microsoft WebView2,
-  présent sur Windows 11, et parfois absent de Windows 10.
-- **Le rapport est très long :** branchez le chargeur et choisissez le mode d'alimentation **Meilleures
-  performances**. Chaque analyse écrit `derniere-analyse.txt` dans `Documents\bridge-coach-files\rapports` : le temps
-  de chaque donne, le nombre de cœurs, la mémoire et le nombre de processus du solveur. Envoyez ce fichier pour
-  savoir ce qui ralentit.
+Au premier lancement, onglet **Réglages**, page **Dossiers** : indiquez le dossier où Bridgemate enregistre ses
+`.bws` (à vérifier dans Bridgemate Control Software), puis fermez et rouvrez Bridge Coach.
 
 ## Mettre à jour
 
-Une mise à jour ne remplace que le programme. Vos séances, rapports, analyses expertes (`bridge-coach-files`) et
-vos réglages restent où ils sont, sans changement.
+Onglet **Réglages**, page **Mise à jour du programme**, **Rechercher une mise à jour**. S'il y en a une, **Mettre à
+jour vers …** : Bridge Coach se ferme, télécharge la version nouvelle, vérifie son empreinte, la met en place et se
+rouvre, en une minute environ. Les bibliothèques ne sont réinstallées que si la version nouvelle en demande
+d'autres. Si quelque chose se passe mal, l'ancienne version est remise en place ; le compte rendu est dans
+`bridge-coach-files/rapports/derniere-mise-a-jour.txt`.
 
-**Depuis l'application (le plus simple)**
-
-1. Onglet **Réglages**, en bas : la version installée, et le bouton **Rechercher une mise à jour**.
-2. S'il y a une version nouvelle : **Mettre à jour vers 1.4**. Bridge Coach se ferme, télécharge le programme
-   (environ 1 Mo), le remplace, et se rouvre tout seul, en une minute environ.
-3. Les bibliothèques (`.venv`, 216 Mo) ne sont réinstallées que si la version nouvelle en demande d'autres
-   (`requirements.txt` a changé). Si quelque chose se passe mal, l'ancien programme est remis en place.
-   Le compte rendu est dans `bridge-coach-files/rapports/derniere-mise-a-jour.txt`.
-
-Bridge Coach ne contacte GitHub que quand on clique sur ce bouton, et n'envoie rien. Il ne propose que les versions
-publiées (étiquettes `v1.4` du dépôt), jamais le travail en cours.
-
-**À la main** (une installation d'avant ce bouton, ou si GitHub ne répond pas)
-
-1. Fermez Bridge Coach (et sa fenêtre noire sous Windows).
-2. Renommez le dossier du programme `bridge-coach` en `bridge-coach-ancien`.
-3. Sur la page GitHub, **Code**, **Download ZIP** ; décompressez au même endroit, renommez le dossier `bridge-coach`.
-4. Lancez `installer.bat` (Windows) ou `./installer.sh` (Mac) : il refait `.venv` et les raccourcis.
-5. Si tout va bien, supprimez `bridge-coach-ancien`.
-
-Un dossier installé avec `git clone` se met à jour par `git pull` puis `./installer.sh` ; le bouton le signale.
-
-**Publier une version** (pour le responsable du programme) : `./publier.sh 1.4 "Ce qui change"`. Le script vérifie
-les tests, écrit `VERSION`, crée l'étiquette `v1.4` et l'envoie sur GitHub ; les membres la voient aussitôt. GitHub
-Actions (`.github/workflows/installateurs.yml`) fait alors l'archive du programme et les deux installateurs, les
-essaie sur une machine Windows et un Mac, et les met sur la page des versions avec leurs empreintes (`SHA256SUMS`)
-et une attestation de provenance. Les installateurs ne sont jamais dans le dépôt Git.
-
-## Désinstaller
-
-**Installé avec l'installateur**
-
-- Windows : **Paramètres**, **Applications**, **Applications installées**, **Bridge Coach**, **Désinstaller**. Le
-  programme, son Python et ses raccourcis partent ; restent vos réglages (`%APPDATA%\Bridge Coach`) et vos fichiers
-  (`Documents\bridge-coach-files`), à supprimer vous-même si vous le voulez.
-- Mac : mettez à la corbeille **Bridge Coach** dans Applications, son lien sur le Bureau, et le dossier
-  `~/Library/Application Support/Bridge Coach` (le programme, son Python et vos réglages). Vos fichiers
-  (`~/Documents/bridge-coach-files`) restent.
-
-**Installé à la main** : Bridge Coach ne s'inscrit pas dans le système, on le désinstalle en supprimant ses dossiers.
-
-**Windows**
-
-1. Le dossier du programme, `bridge-coach` (dans `Documents` ou `C:\bridge-coach`) : le programme et ses
-   bibliothèques, environ 220 Mo.
-2. Les réglages : le dossier `%APPDATA%\Bridge Coach` (à taper dans la barre d'adresse de l'Explorateur).
-3. Le raccourci du Bureau et, s'il existe, celui du menu Démarrer (`%APPDATA%\Microsoft\Windows\Start Menu\Programs`) ;
-   une icône épinglée : clic droit, **Détacher de la barre des tâches**.
-4. Facultatif, vos fichiers : `Documents\bridge-coach-files` (tournois, donnes, rapports, analyses expertes).
-   Les analyses expertes ne se recréent pas : gardez une copie si vous en avez besoin.
-5. Facultatif, Python 3.12, si rien d'autre ne s'en sert : **Paramètres**, **Applications**, **Applications
-   installées**. Ne touchez pas à une autre version, comme 3.14.
-6. Facultatif, le cache des téléchargements : `%LOCALAPPDATA%\pip\Cache`, quelques dizaines de Mo.
-
-**Mac**
-
-1. `Bridge Coach` dans Applications, son alias sur le Bureau et, s'il y est, son icône du Dock (la glisser hors du Dock).
-2. Le dossier du programme, `bridge-coach`.
-3. Les réglages : `~/Library/Application Support/Bridge Coach`.
-4. Facultatif, vos fichiers : `~/Documents/bridge-coach-files`, avec la même prudence.
+Vos séances, rapports, analyses de l'expert et réglages ne changent pas. Seules les versions publiées sont
+proposées (1.1.0, 1.2.0…), jamais le travail en cours. Inutile de retélécharger l'installateur.
 
 ## Sécurité
 
-- **Téléchargez Bridge Coach seulement sur sa page GitHub,** https://github.com/wfisk/bridge-coach : jamais une
-  pièce jointe d'e-mail ni un autre site. Le code y est public : chacun peut lire ce qu'il fait.
-- **Vos données restent sur votre ordinateur.** Bridge Coach n'envoie rien sur Internet. L'application est une
-  petite page web servie par l'ordinateur lui-même (adresse 127.0.0.1) : un autre appareil du réseau, même au
-  club, ne peut pas l'ouvrir. Les fichiers ne partent que si vous les envoyez vous-même à Claude pour l'analyse
-  experte.
-- **L'installation, elle, télécharge :** Python (python.org ou Microsoft, par `winget`) et les bibliothèques de
-  `requirements.txt` depuis PyPI, le site officiel des bibliothèques Python. Leurs versions sont fixées : tout le
-  monde reçoit celles qui ont été essayées, et une version nouvelle, abîmée ou piratée, n'arrive pas toute seule.
-- **Les avertissements de Windows sont normaux :** « Windows a protégé votre ordinateur » (SmartScreen) vient de ce
-  que le programme n'est pas signé par un certificat payant ; **Informations complémentaires**, puis **Exécuter
-  quand même**. L'antivirus peut beaucoup travailler pendant la première analyse. Sur Mac, la première ouverture
-  demande l'accès au dossier Documents : OK.
-- **Pour le responsable du dépôt :** la double authentification du compte GitHub protège tous ceux qui
-  téléchargent le programme.
+**Ce qui reste chez vous.** Vos séances, les noms des joueurs et vos rapports ne quittent jamais l'ordinateur :
+Bridge Coach n'envoie rien sur Internet. L'application est une petite page web servie par l'ordinateur lui-même
+(adresse 127.0.0.1) : un autre appareil du réseau, même au club, ne peut pas l'ouvrir. Pour l'analyse de l'expert,
+c'est vous qui envoyez un fichier à Claude, et il ne contient que les donnes, les enchères, les résultats et les
+initiales des joueurs : ni noms complets, ni club, ni le fichier d'origine de Bridgemate.
+
+**Quand Bridge Coach se connecte.** Seulement pendant l'installation, et quand vous cliquez sur **Rechercher une
+mise à jour** : il lit alors la page des versions sur GitHub, sans rien envoyer.
+
+**Où télécharger.** Seulement sur la page des versions ci-dessus : jamais une pièce jointe d'e-mail, une clé USB
+qui circule ou un autre site. Le code est public : chacun peut lire ce qu'il fait.
+
+**Ce qui est vérifié.** Chaque fichier téléchargé est comparé à son empreinte SHA-256 (une sorte d'empreinte
+digitale : un seul octet changé la change entièrement) ; un fichier qui ne correspond pas est refusé avant
+d'être utilisé, et rien n'est installé :
+
+| Téléchargé | Vérifié contre |
+|---|---|
+| le programme (`bridge-coach-1.1.0.zip`), à l'installation et à chaque mise à jour | le fichier `SHA256SUMS` publié avec la version |
+| Python (version complète de python-build-standalone) | l'empreinte écrite dans le programme vérifié (`installer/python.txt`) |
+| les bibliothèques (depuis PyPI, leur site officiel) | les empreintes de `requirements.txt`, pour chaque bibliothèque et celles qu'elles appellent |
+
+Les versions de Python et des bibliothèques sont fixées : tout le monde reçoit celles qui ont été essayées. Une
+version nouvelle, abîmée ou piratée n'arrive donc pas toute seule ; changer de version est une décision, essayée
+avant d'être publiée.
+
+**D'où viennent les installateurs.** Ils sont faits par GitHub Actions, à partir du code public, sur des machines de
+GitHub, puis essayés par une installation complète sur Windows et sur Mac avant d'être publiés. Personne ne les
+fabrique sur son ordinateur. Pour le vérifier soi-même (facultatif) :
+
+- l'empreinte : `Get-FileHash Bridge-Coach-Setup.exe` dans PowerShell, `shasum -a 256 Bridge-Coach.pkg` dans le
+  Terminal du Mac, à comparer avec la page de la version ;
+- la provenance : `gh attestation verify Bridge-Coach.pkg --repo wfisk/bridge-coach` (l'outil `gh` de GitHub)
+  confirme que le fichier a été fait par GitHub Actions à partir de ce dépôt.
+
+L'empreinte de la page protège d'un téléchargement abîmé ou d'une copie venue d'ailleurs ; la provenance va plus
+loin : signée par GitHub au moment de la fabrication, elle relie le fichier à ce dépôt et à la version exacte du
+code.
+
+**Pourquoi Windows et le Mac avertissent.** Les installateurs ne sont pas signés : la signature demande un
+certificat payant (Windows) ou un compte de développeur Apple, qui ne se justifient pas pour un club. L'avertissement
+dit seulement « éditeur inconnu », pas « programme dangereux ». L'antivirus peut beaucoup travailler pendant la
+première analyse : c'est normal.
+
+**Un doute, un problème ?** Ne lancez pas le fichier, et prévenez la personne qui s'occupe du programme.
+
+## Désinstaller
+
+- **Windows :** **Paramètres**, **Applications**, **Applications installées**, **Bridge Coach**, **Désinstaller**.
+  Le programme, son Python et ses raccourcis partent.
+- **Mac :** mettez à la corbeille **Bridge Coach** dans Applications, son lien sur le Bureau, et le dossier
+  `~/Library/Application Support/Bridge Coach` (le programme, son Python et vos réglages).
+
+Vos fichiers restent : `bridge-coach-files` dans vos Documents (séances, rapports, analyses de l'expert), et sous
+Windows vos réglages (`%APPDATA%\Bridge Coach`). Supprimez-les vous-même si vous le voulez ; les analyses de
+l'expert ne se recréent pas.
+
+## Où sont les fichiers
+
+| Quoi | Mac | Windows |
+|---|---|---|
+| Vos séances et rapports : **le dossier à sauvegarder** | `~/Documents/bridge-coach-files` | `Documents\bridge-coach-files` |
+| Les fichiers de Bridgemate (lus, jamais modifiés) | le dossier des réglages | le dossier des réglages |
+| Les réglages (`bridge-coach.ini`, `etat.json`) | `~/Library/Application Support/Bridge Coach` | `%APPDATA%\Bridge Coach` |
+| Le programme et son Python | `~/Library/Application Support/Bridge Coach/programme` | `%LOCALAPPDATA%\Programs\Bridge Coach` |
+
+Dans `bridge-coach-files` : `seances/AAAA-MM/` (chaque séance, `<séance>.bc.json`, avec une copie de l'original et
+ses analyses ; `versions/` garde les états précédents), `rapports/AAAA-MM/` (les PDF), `documents/`. Les séances
+(`.bc.json`) sont le plus précieux : elles contiennent l'analyse de l'expert, que le programme ne peut pas recréer.
 
 ## L'application
 
+- **Fichier :** ouvrir une séance, importer un `.bws` ou une feuille de route, **Nouveau…** (une séance vide à
+  remplir, ou des donnes d'entraînement par thème), exporter en PBN.
+- **Donnes :** la séance, les joueurs, puis chaque donne : mains, enchères des tables, résultats ; modifier les
+  donnes d'une séance d'entraînement.
+- **Jouer :** enchérir à une place choisie (déclarant, défense, donneur…), le programme tenant les trois autres,
+  puis jouer la carte ; l'**Indice** donne l'enchère ou la carte du système. Les pensées des robots sont dans la
+  barre de droite, et **Revoir la donne avec les pensées** la rejoue carte par carte.
+- **Analyse :** l'analyse du programme, et les étapes pour obtenir celle de l'expert ; chaque donne présentée
+  comme dans le PDF.
+- **Rapports :** les options (qui vous êtes, ordre joué, page des noms), **Créer les rapports**, puis les PDF.
+- **Réglages :** les dossiers, la mise à jour.
+- **Aide :** le mode d'emploi, en cinq parties.
+
+Bridge Coach se rouvre sur la séance et la page où vous étiez, et sur une donne en cours de jeu.
+
+## L'analyse de l'expert (facultatif)
+
+Onglet **Analyse**, **Analyse expert** : Bridge Coach prépare un seul fichier,
+`pour-claude/<séance>/…-pour-claude.json` dans votre dossier de travail (les consignes, la séance avec les
+initiales seulement, l'analyse du programme, un exemple et les documents du système). Donnez-le à Claude sur
+claude.ai ; il renvoie `…-expert.json`, que **Importer** vérifie avant de l'ajouter à la séance. Les enchères de
+l'expert sont choisies à la table, sans regarder les autres mains ni le double mort ; les décisions serrées sont
+signalées.
+
+---
+
+## Pour qui travaille sur le programme
+
+### Installer depuis le code
+
+Il faut Python 3.9 à 3.13 (le solveur de donnes, endplay, n'existe pas pour 3.14).
+
 ```
-./bridge-coach.sh
+git clone https://github.com/wfisk/bridge-coach.git
+cd bridge-coach
+./installer.sh          # Mac ou Linux : .venv, bibliothèques, vérification des règles, application Bridge Coach
+./bridge-coach.sh       # ouvre l'application
 ```
 
-Une fenêtre : elle propose le dernier tournoi du dossier de Bridgemate réglé dans `bridge-coach.ini`, un bouton crée les
-rapports, une barre suit la progression, puis des boutons ouvrent les PDF. « Autre tournoi… » permet
-de choisir un autre fichier. L'onglet Donnes montre et modifie les donnes ; l'onglet Jouer fait enchérir une donne à un joueur, le programme
-tenant les trois autres places, puis compare son contrat aux analyses. Fichier, Nouveau… crée des donnes
-d'entraînement par thème, avec un `.pbn` à importer dans Bridgemate. Elle n'a été essayée que sur Mac.
+Sous Windows : `installer.bat` (il cherche Python 3.12, sinon propose `winget`), puis `bridge-coach.bat`
+(`--navigateur` si la fenêtre ne s'ouvre pas : il manque alors le composant WebView2 de Microsoft). Une copie faite
+avec `git clone` se met à jour par `git pull`, pas par le bouton des Réglages. Sur Mac, `./raccourci-mac.sh` refait
+l'application dans Applications si le dossier change de place (`--dock` l'ajoute au Dock).
 
-Pour l'ouvrir d'un clic : sur Mac, `./raccourci-mac.sh` crée l'application dans le dossier Applications, un lien
-sur le Bureau, et l'ajoute au Dock si on le veut ; sur Windows, `installer.bat` crée le raccourci du Bureau et,
-si on le veut, l'entrée du menu Démarrer à épingler à la barre des tâches.
-
-## Utilisation en ligne de commande
+### En ligne de commande
 
 ```
-./rapport.sh                  choisir parmi les .bws du dossier de Bridgemate
-./rapport.sh séance.bws       un fichier précis
-./rapport.sh séance.bws --avec-noms   ajoute une page avec le nom des joueurs
+./rapport.sh                          choisir parmi les .bws du dossier de Bridgemate (Entrée : le dernier)
+./rapport.sh séance.bws               un fichier précis
+./rapport.sh séance.bc.json           refaire les rapports d'une séance déjà importée
+./rapport.sh séance.bws --avec-noms   avec une page du nom des joueurs
 ```
 
-Une feuille de route PDF de FFBClubNet est acceptée aussi (`./rapport.sh "feuille.pdf"`) : elle
-donne les mains, les contrats, les entames et les résultats, mais pas les enchères ; le double
-mort est calculé par le programme. Les sauvegardes FFBClubNet nommées `.bws` sont des archives
-protégées par un mot de passe : il faut le vrai `.bws` de Bridgemate.
+Une feuille de route PDF de FFBClubNet est acceptée aussi : elle donne les mains, les contrats, les entames et les
+résultats, pas les enchères ; le double mort est calculé. Les sauvegardes FFBClubNet nommées `.bws` sont des
+archives protégées par un mot de passe : il faut le vrai `.bws` de Bridgemate.
 
-Chaque séance devient d'abord un fichier Bridge Coach, `<séance>.bc.json`, rangé dans `seances/AAAA-MM/` :
-la séance, les joueurs (initiales, et nom complet quand la source le donne), les donnes et les résultats
-de chaque table. C'est tout ce qu'il faut aux rapports : `./rapport.sh <séance>.bc.json` les refait sans
-le `.bws`. Le `.bws`, la feuille de route et les donnes de l'onglet Donnes ne sont que des sources qu'on importe.
-
-Sans fichier, le programme liste les `.bws` du dossier de Bridgemate, les plus récents d'abord ;
-Entrée choisit le dernier.
-
-## Les dossiers
-
-`bridge-coach.ini` indique deux dossiers ; le bouton Réglages de l'application l'ouvre :
-
-- `bridgemate` (par défaut `~/Documents/bridgemate-files`) : où Bridgemate enregistre ses `.bws`.
-  Le programme ne fait qu'y lire ;
-- `fichiers`, le dossier de travail (par défaut `~/Documents/bridge-coach-files`, à part du programme) : les séances (`.bc.json`, avec l'original
-  copié et les analyses) dans `seances/AAAA-MM/`, les PDF dans `rapports/AAAA-MM/`. Rien de tout cela ne va dans git.
-  L'ancien rangement (`reports/`, `-donnes.json`) est mis à jour tout seul au premier lancement.
-
-Le fichier de réglages reste à une place fixe, créé au premier lancement : sur Mac
-`~/Library/Application Support/Bridge Coach/`, sous Windows `%APPDATA%\Bridge Coach\`.
-
-## L'analyse experte (facultatif)
-
-Le rapport `expert` est rédigé par Claude (Claude Code, d'Anthropic), ouvert dans le dossier
-du projet. Il suffit de lui demander d'analyser la séance : le fichier `CLAUDE.md` lui donne
-les consignes (système SEF, enchères choisies à la table sans regarder le double mort,
-décisions serrées signalées). L'analyse est rangée dans la séance elle-même,
-`~/Documents/bridge-coach-files/seances/AAAA-MM/<séance>.bc.json` (« analyses », « expert ») ; `./rapport.sh` produit
-ensuite `expert` et `diff`.
-
-## Le système d'enchères
+### Le système d'enchères
 
 Les enchères, les entames et le jeu de la carte sont décrits dans `systems/` :
 
-- `systems/sef-2024/regles.yaml` : les règles d'enchères que lit le programme (en français,
-  couleurs T K C P) ; la grammaire est dans `systems/grammaire.md` ;
-- `systems/sef-2024/entames.yaml` : le choix de l'entame ;
-- `systems/sef-2024/systeme.md`, `entames.md`, `systems/technique/jeu-de-la-carte.md` :
-  les explications.
+- `systems/sef-2024/regles.yaml` : les règles d'enchères que lit le programme (en français, couleurs T K C P,
+  alertes comprises) ; la grammaire est dans `systems/grammaire.md` ;
+- `systems/sef-2024/entames.yaml` : le choix de l'entame ; les signaux sont dans `entames.md` ;
+- `systems/sef-2024/systeme.md`, `systems/technique/jeu-de-la-carte.md` : les explications.
 
-Ces fichiers se modifient à la main ; leurs exemples sont vérifiés à chaque lecture, et une
-erreur est signalée avec son numéro de ligne.
+Ces fichiers se modifient à la main ; leurs exemples sont vérifiés à chaque lecture, et une erreur est signalée
+avec son numéro de ligne. Une règle n'est gardée que si elle gagne sur des donnes tirées au hasard, pas seulement
+sur les séances du club.
+
+### Publier une version
+
+Le travail se fait sur `main` ; une version est une étiquette, numérotée X.Y.Z (1.1.0 : nouveautés ; 1.1.1 :
+corrections).
+
+```
+./publier.sh 1.2.0 "Ce qui change, en une phrase"
+```
+
+Le script vérifie les tests, écrit `VERSION`, crée l'étiquette `v1.2.0` et l'envoie sur GitHub. GitHub Actions
+(`.github/workflows/installateurs.yml`) fait alors l'archive du programme et les deux installateurs, les essaie par
+une installation complète sur Windows et sur Mac, puis crée la version sur la page des versions avec `SHA256SUMS`
+et l'attestation de provenance (environ dix minutes). Les mêmes essais tournent, sans rien publier, à chaque envoi
+sur `main` qui touche `installer/` ou `requirements.txt`.
+
+- **Les installateurs ne sont jamais dans le dépôt** : `.gitignore` écarte `dist/`, `*.exe`, `*.pkg`, `*.dmg`. Leurs
+  sources sont dans `installer/` ; ils n'ont pas à être refaits pour une nouvelle version du programme.
+- **Les bibliothèques :** la liste écrite à la main est `requirements.in` ; `requirements.txt` en est produit, avec
+  les empreintes (la commande est en tête du fichier). **Python :** `installer/python.txt`.
+- **Jamais dans le dépôt, qui est public :** les `.bws`, les séances, les rapports, `bridge-coach.ini`, ni aucun nom
+  de joueur ou de club.
+- **Le compte GitHub du responsable** doit avoir la double authentification : il protège tous ceux qui téléchargent.

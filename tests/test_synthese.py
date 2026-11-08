@@ -15,4 +15,12 @@ assert sens_contrat(E("4♣"), N("3♥")) is None                               
 assert sens_contrat("passe", N("1♣")) == "moins"
 assert sens_contrat(N("1♣"), "passe") == "plus"
 assert sorted(["3SA", "4♠X", "passe", "3♣", "4♥", "1♦"], key=rang_contrat) == ["passe", "1♦", "3♣", "3SA", "4♥", "4♠X"]
+# le contrat recommandé, comme une ligne du tableau des résultats : son résultat et son score au double mort
+from comparer import table_recommandee
+dm = {x: {s: 9 for s in "NSEO"} for x in ("SA", "♠", "♥", "♦", "♣")}; dm["♠"] = dict(N=11, S=11, E=2, O=2)
+d = dict(n=1, donneur="N", vul="Personne", dm=dm)
+r = table_recommandee(d, {"enc": [["–", "1♠", "passe", "3♠"], ["passe", "4♠", "passe", "passe"], ["passe", "", "", ""]],
+                          "entame": {"joueur": "E", "carte": "♥R"}})
+assert (r["contrat"], r["declarant"], r["resultat"], r["score_ns"], r["entame"], r["recommande"]) == ("4♠", "N", "+1", 450, "♥R", True)
+assert table_recommandee(d, {}) is None
 print("ok")

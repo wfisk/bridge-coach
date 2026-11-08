@@ -24,6 +24,7 @@ if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son 
 
 TITRE = "Bridge Coach"
 PORT = 8123
+LARGEUR_BARRE = 220                                        # la barre de gauche (Donnes, Jouer, Analyse) : « Donne 24 » et la barre de défilement
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
 NB_PDF = 4
 RAPPORTS = (("archive", "Relevé des donnes", "ce qui a été joué"), ("standard", "Analyse", "enchères, entame et plan de jeu"),
@@ -45,6 +46,7 @@ class Travail:
         self.part = part; self.mot = mot                   # la part de la barre pour les donnes, le mot affiché
         self.proc = None; self.fraction = 0.0; self.texte = ""; self.erreur = ""; self.fini = False; self.annule = False
         self.prets = []; self.seance = None; self.fichier = None; self.notes = []
+        self.genre = ""                                    # T : "analyse" (onglet Analyse) ou "rapports" (onglet Rapports)
 
     @property
     def actif(self): return self.proc is not None and not self.fini
@@ -262,14 +264,15 @@ def demarrer_travail(t, args):
     threading.Thread(target=suivre, args=(t.proc, t), daemon=True).start()
 
 
-def lancer(chemin, noms):
-    T.__init__(); T.seance = chemin; T.texte = "Lecture du fichier"
-    demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin] + (["--avec-noms"] if noms else []))
+def lancer(chemin):
+    """L'analyse standard seulement (rapport.py --analyse-seule) : les PDF se font dans l'onglet Rapports."""
+    T.__init__(1.0); T.genre = "analyse"; T.seance = chemin; T.texte = "Lecture du fichier"
+    demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--analyse-seule"])
 
 
 def lancer_rapports(chemin, noms):
     """Les PDF seulement, depuis les analyses enregistrées (rapport.py --rapports) : la barre avance rapport par rapport."""
-    T.__init__(0.0, "Écriture des rapports"); T.seance = chemin; T.texte = "Écriture des rapports"
+    T.__init__(0.0, "Écriture des rapports"); T.genre = "rapports"; T.seance = chemin; T.texte = "Écriture des rapports"
     demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--rapports"] + (["--avec-noms"] if noms else []))
 
 
@@ -438,6 +441,13 @@ def page_seance(data, c):
         for k, v in lignes:
             if v:
                 ui.label(k).classes("text-gray-600"); ui.label(v).classes("break-all")
+    tours = moi.parcours(data)
+    if tours:                                              # le mouvement : vos tours, tables et adversaires
+        ui.label(f"Parcours de {moi.qui_parcourt(data)}").classes("text-base font-bold mt-4")
+        ui.table(columns=[{"name": k, "label": l, "field": k, "align": a} for k, l, a in
+                          (("tour", "Tour", "right"), ("table", "Table", "right"), ("donnes", "Donnes", "left"),
+                           ("adversaires", "Adversaires", "left"), ("pct", "Votre %", "right"))],
+                 rows=tours, row_key="tour").props("flat dense").classes("text-base")
 
 
 def page_joueurs(data):
@@ -505,11 +515,13 @@ def page_dm_par(d, par=True):
         ui.html(sanitize=False, content=f"<div style='font-size:15px'>{par_html(d)}</div>")
 
 
-def page_donne(d, mes=frozenset()):
+def page_donne(d, mes=frozenset(), tour="", reco=None):
     """Une donne dans l'onglet Donnes : les mains et les tables ; le nom, le donneur, la vulnérabilité et le par sont
     dans la barre de droite. Le double mort est dans l'onglet Analyse. mes : vos paires (moi.paires), dont la ligne est
-    surlignée."""
+    surlignée. tour : « Tour 1 · table 4 · … » (moi.tour_de) quand la séance décrit son mouvement. reco : le contrat
+    recommandé (comparer.table_recommandee), rangé parmi les tables sur fond vert pâle."""
     mains_grille(d)
+    if tour: ui.label(tour).classes("text-base text-gray-700 mt-2")
     if d.get("tables"):
         ui.label("Aux tables").classes("text-base font-bold mt-2")
         rang = moi.votre_rang(d["tables"], mes, lambda t: f"{t['contrat']} {SIEGE.get(t['declarant'], t['declarant'])} {t['resultat']}".strip())
@@ -518,12 +530,14 @@ def page_donne(d, mes=frozenset()):
                  "eo": x.get("nom_eo") or x.get("paire_eo", ""), "contrat": x.get("contrat", ""),
                  "decl": SIEGE.get(x.get("declarant"), x.get("declarant") or ""), "res": x.get("resultat", ""),
                  "entame": x.get("entame") or "", "score": f"{x['score_ns']:+d}" if isinstance(x.get("score_ns"), int) else "",
-                 "moi": moi.a_joue(x, mes)}
-                for i, x in enumerate(moi.ordre(d["tables"], mes))]   # le meilleur résultat d'abord, vu de votre camp
+                 "moi": moi.a_joue(x, mes), "reco": bool(x.get("recommande"))}
+                for i, x in enumerate(moi.ordre(d["tables"] + ([reco] if reco else []), mes))]   # le meilleur d'abord, vu de votre camp
+        for x in rows:
+            if x["reco"]: x.update(table="", ns="Recommandé", eo="au double mort")
         cols = [("table", "Table"), ("ns", "Nord-Sud"), ("eo", "Est-Ouest"), ("contrat", "Contrat"), ("decl", "Déclarant"),
                 ("res", "Résultat"), ("entame", "Entame"), ("score", "Score N-S")]
         ui.table(columns=[{"name": k, "label": l, "field": k, "align": "left"} for k, l in cols], rows=rows, row_key="k") \
-            .props(f"flat dense :table-row-style-fn=\"r => r.moi ? 'background:{moi.SURLIGNE}' : ''\"").classes("w-full")   # votre table
+            .props(f"flat dense :table-row-style-fn=\"r => r.moi ? 'background:{moi.SURLIGNE}' : r.reco ? 'background:{FOND_RECO};font-style:italic' : ''\"").classes("w-full")   # votre table
         if any(x.get("encheres") for x in d["tables"]):
             ui.label("Les enchères aux tables").classes("text-base font-bold mt-2")
             with ui.row().classes("gap-6 items-start"):
@@ -533,6 +547,18 @@ def page_donne(d, mes=frozenset()):
 
 # ---------------------------------------------------------------- l'analyse, dans l'onglet Analyse
 _ANALYSES = {}
+FOND_RECO = "#e6efe9"                                      # la ligne du contrat recommandé (comme dans les PDF)
+
+
+def recommandee(c, d):
+    """Le contrat recommandé de la donne d comme une ligne des résultats : l'expert s'il l'a analysée, sinon le
+    programme ; None sans analyse."""
+    import comparer                                        # tardif : comparer charge reportlab
+    std, exp = lire_analyses(c)
+    for an in (exp, std):
+        a = (an or {}).get("donnes", {}).get(str(d["n"]))
+        if a and a.get("enc"): return comparer.table_recommandee(d, a)
+    return None
 
 
 def base_seance(c):
@@ -591,7 +617,8 @@ def page_analyse_resume(data, an, expert):
         ui.label("L'analyse de l'expert est rédigée par Claude, d'après les règles du projet ; le programme ne la modifie "
                  "jamais.").classes("text-sm text-gray-600")
     else:
-        ui.label("« Lancer l'analyse » refait l'analyse standard et les rapports PDF (onglet Rapports).").classes("text-sm text-gray-600")
+        ui.label("« Lancer l'analyse » refait l'analyse standard ; vous la lisez ici, donne par donne. Les rapports PDF "
+                 "se font ensuite dans l'onglet Rapports.").classes("text-sm text-gray-600")
 
 
 # ---------------------------------------------------------------- l'analyse de l'expert, demandée à Claude sur le web
@@ -813,7 +840,7 @@ def page():
                     editeur_donne(c, d)                    # une donne à compléter s'ouvre déjà en modification
                 else:
                     with ui.column().classes("w-full gap-3").style(f"padding-right:{LARGEUR_PANNEAU}px"):
-                        page_donne(d, moi.paires(data))
+                        page_donne(d, moi.paires(data), moi.tour_de(data, d["n"]), recommandee(choix["chemin"], d))
                     with panneau_droit(d):
                         if ok: ui.button("Modifier la donne", icon="edit", on_click=lambda n=d["n"]: modifier(c, n)).props("outline").classes("w-full")
 
@@ -1479,14 +1506,14 @@ def page():
             etape(6, "Importez le fichier téléchargé (un par un s'il y en a plusieurs). Les donnes s'ajoutent à l'analyse "
                      "de l'expert, rangée dans la séance ; la version d'avant est gardée dans versions/.")
             ui.button("Importer l'analyse de l'expert…", icon="file_download", on_click=lambda: choisir_expert()).props("outline")
-            etape(7, "Mettez les rapports PDF à jour : ils reprennent l'analyse de l'expert, sans refaire l'analyse standard.")
-            ui.button("Mettre à jour les rapports", icon="picture_as_pdf", on_click=lambda: maj_rapports()).props("outline")
+            etape(7, "Lisez-la ici, donne par donne. Pour les rapports PDF : l'onglet Rapports, « Créer les rapports ».")
+            ui.button("Aller aux rapports", icon="picture_as_pdf", on_click=lambda: onglets.set_value(o_rapports)).props("outline")
             if expert_msg["texte"]:
                 ui.label(expert_msg["texte"]).classes("text-base " + ("text-red-800" if expert_msg["faute"] else "text-primary") + " break-all")
 
     def maj_rapports():
         if T.actif or D.actif or I.actif or not choix["chemin"]: return
-        vu["fini"] = None; faute.text = ""
+        vu["fini"] = None; faute.text = ""; faute_r.text = ""; fait_a.text = ""
         lancer_rapports(choix["chemin"], noms.value)
         resultats.refresh(); montrer_controles()
 
@@ -1534,7 +1561,7 @@ def page():
         try: controles
         except NameError: return                           # la page se construit encore : l'onglet change avant la barre
         data = lire_seance(choix["chemin"])
-        controles.set_visibility(bool(data) and (T.actif or (sur_analyse() and entree_effective(data) == "standard")))
+        controles.set_visibility(bool(data) and ((T.actif and T.genre == "analyse") or (sur_analyse() and entree_effective(data) == "standard")))
 
     def aller(k):
         vue["entree"] = k; vue["edition"] = None; barre_seance.refresh(); vue_seance.refresh(); vue_analyse.refresh(); vue_jouer.refresh(); montrer_controles()
@@ -1591,7 +1618,7 @@ def page():
                                                else aide.classes(remove="bg-green-50 font-bold"), montrer_barre(), barre_seance.refresh(),
                                                vue_analyse.refresh(), vue_jouer.refresh(), montrer_controles()))
 
-    with ui.left_drawer(value=False, fixed=True, bordered=True).props("width=200 behavior=desktop") \
+    with ui.left_drawer(value=False, fixed=True, bordered=True).props(f"width={LARGEUR_BARRE} behavior=desktop") \
             .classes("p-2 gap-0").style(f"background:{GRIS_BARRE}") as tiroir:      # la barre latérale de des onglets Donnes et Analyse : bord gauche, toute la hauteur
         barre_seance()
 
@@ -1621,23 +1648,43 @@ def page():
                 with ui.column().classes("w-full gap-3 pb-3 border-b border-gray-200") as controles:   # fixe : la barre y avance
                     with ui.row().classes("w-full items-center gap-4 no-wrap"):
                         creer = ui.button("Lancer l'analyse", icon="play_arrow", on_click=lambda: demarrer()).classes("text-base px-6")
-                        noms = ui.checkbox("Ajouter une page avec le nom des joueurs aux rapports")
                     barre = ui.linear_progress(value=0, show_value=False).props("size=16px rounded").classes("max-w-xl")
                     texte = ui.label("").classes("text-base")
                     stop = ui.button("Annuler", on_click=annuler).props("outline")
                     faute = ui.label("").classes("text-base text-red-800")
+                    fait_a = ui.label("").classes("text-base text-primary")
                 vue_analyse()
 
             with ui.tab_panel(o_rapports).classes("px-0 gap-4 max-w-xl mx-auto"):
+                with ui.column().classes("w-full gap-2 pb-4 border-b border-gray-200"):   # les options, puis « Créer les rapports »
+                    ui.label("Options des rapports").classes("text-lg font-bold")
+                    ui.label("Vous êtes").classes("text-base")
+                    noms_ = moi.tous_les_noms(rapport.glob_seances("*" + rapport.BC))
+                    actuel = moi.nom()
+                    if actuel and actuel not in noms_: noms_ = [actuel] + noms_
+                    ui.select({"": "—"} | {x: x for x in noms_}, value=actuel or "", with_input=True,
+                              on_change=lambda e: (ecrire_etat(moi=e.value or None), vue_seance.refresh())).classes("w-full").props("outlined dense")
+                    ui.label("Votre table est surlignée dans les tableaux des résultats : dans l'onglet Donnes tout de suite, dans les "
+                             "rapports quand ils sont refaits.").classes("text-sm text-gray-600")
+                    ui.checkbox("Les donnes dans l'ordre où vous les avez jouées", value=moi.ordre_joue(),
+                                on_change=lambda e: ecrire_etat(ordre_joue=e.value)).classes("text-base")
+                    ui.label("Quand la séance décrit votre parcours (tour, table, adversaires) ; sinon par numéro.").classes("text-sm text-gray-600 -mt-2")
+                    noms = ui.checkbox("Ajouter une page avec le nom des joueurs").classes("text-base")
+                    creer_r = ui.button("Créer les rapports", icon="picture_as_pdf", on_click=lambda: maj_rapports()).classes("text-base px-6 mt-2")
+                    besoin_r = ui.label("").classes("text-sm text-gray-600")
+                    barre_r = ui.linear_progress(value=0, show_value=False).props("size=16px rounded")
+                    texte_r = ui.label("").classes("text-base")
+                    stop_r = ui.button("Annuler", on_click=annuler).props("outline")
+                    faute_r = ui.label("").classes("text-base text-red-800")
+
                 @ui.refreshable
                 def resultats():
                     c = choix["chemin"]
                     if not c: ui.label("Aucune séance ouverte.").classes("text-base"); return
-                    if T.actif: ui.label("Analyse en cours : les rapports arrivent à la fin.").classes("text-base text-gray-600"); return
                     prets = rapports_de(c)
                     ui.label(f"Rapports de la séance du {infos_seance(c)[0]}").classes("text-lg font-bold")
                     if not prets:
-                        ui.label("Pas encore de rapport : lancez l'analyse dans l'onglet Analyse.").classes("text-base text-gray-600")
+                        ui.label("Pas encore de rapport : « Créer les rapports » ci-dessus.").classes("text-base text-gray-600")
                     for quoi, nom, detail in RAPPORTS:
                         if quoi in prets: lien_pdf(prets[quoi], nom, detail)
                     bilan = os.path.join(rapport.RAPPORTS, "bilan-encheres.pdf")
@@ -1661,15 +1708,6 @@ def page():
                             ui.button("Ouvrir", on_click=lambda c=chemin: ouvrir(c)).props("outline").classes("shrink-0")
                         else:
                             ui.label("Dossier introuvable").classes("text-sm text-red-800 shrink-0")
-                with ui.column().classes("w-full gap-1"):
-                    ui.label("Vous êtes").classes("text-base")
-                    noms_ = moi.tous_les_noms(rapport.glob_seances("*" + rapport.BC))
-                    actuel = moi.nom()
-                    if actuel and actuel not in noms_: noms_ = [actuel] + noms_
-                    ui.select({"": "—"} | {x: x for x in noms_}, value=actuel or "", with_input=True,
-                              on_change=lambda e: ecrire_etat(moi=e.value or None)).classes("w-full").props("outlined dense")
-                    ui.label("Votre ligne est surlignée dans les tableaux des résultats (onglet Donnes et rapports PDF, "
-                             "une fois les rapports refaits).").classes("text-sm text-gray-600")
                 ui.button("Modifier les réglages", on_click=ouvrir_reglages).classes("w-full text-base py-3")
                 ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-sm text-gray-600")
 
@@ -1896,8 +1934,8 @@ def page():
 
     def demarrer():
         if T.actif or D.actif or I.actif or not choix["chemin"]: return
-        vu["fini"] = None; faute.text = ""
-        lancer(choix["chemin"], noms.value)
+        vu["fini"] = None; faute.text = ""; faute_r.text = ""; fait_a.text = ""
+        lancer(choix["chemin"])
         resultats.refresh(); montrer_controles()
 
     def rafraichir():
@@ -1910,7 +1948,11 @@ def page():
             if I.fichier and not I.erreur: choisir(I.fichier)
             nouveau.refresh()
         actif = T.actif; occupe = actif or actif_i         # un travail à la fois
-        creer.set_enabled(not occupe and not D.actif and bool(choix["chemin"])); stop.set_visibility(actif)
+        analyse_ = actif and T.genre == "analyse"; rapports_ = actif and T.genre == "rapports"
+        creer.set_enabled(not occupe and not D.actif and bool(choix["chemin"])); stop.set_visibility(analyse_)
+        standard_ = bool(choix["chemin"]) and bool(lire_analyses(choix["chemin"])[0])
+        creer_r.set_enabled(not occupe and not D.actif and standard_); stop_r.set_visibility(rapports_)
+        besoin_r.text = "" if standard_ or not choix["chemin"] else "Lancez d'abord l'analyse, dans l'onglet Analyse."
         actif_d = D.actif
         creer_d.set_enabled(not occupe and not actif_d and total() > 0); stop_d.set_visibility(actif_d)
         barre_d.set_visibility(actif_d); texte_d.set_visibility(actif_d)
@@ -1922,12 +1964,18 @@ def page():
             if D.fichier and not D.erreur and not D.annule:   # la nouvelle séance s'ouvre, comme une séance vide
                 choisir(D.fichier); onglets.set_value(o_donnes)
                 if D.notes: ui.notify("Tirées au hasard faute de temps : " + " ; ".join(D.notes) + ".", multi_line=True, timeout=10000)
-        barre.set_visibility(actif); texte.set_visibility(actif)
-        if actif: barre.set_value(round(T.fraction, 3)); texte.text = f"{T.texte} · {int(T.fraction * 100)} %"
+        barre.set_visibility(analyse_); texte.set_visibility(analyse_)
+        barre_r.set_visibility(rapports_); texte_r.set_visibility(rapports_)
+        if actif:
+            b, t_ = (barre, texte) if analyse_ else (barre_r, texte_r)
+            b.set_value(round(T.fraction, 3)); t_.text = f"{T.texte} · {int(T.fraction * 100)} %"
         if T.fini and vu["fini"] is not T.proc:            # le travail vient de finir : une seule fois
             vu["fini"] = T.proc
-            faute.text = T.erreur
-            if T.annule: faute.text = ""
+            erreur = "" if T.annule else T.erreur
+            if T.genre == "analyse":
+                faute.text = erreur
+                fait_a.text = "" if erreur or T.annule else "Analyse faite : lisez-la donne par donne. Les rapports PDF se font dans l'onglet Rapports."
+            else: faute_r.text = erreur
             resultats.refresh(); vue_analyse.refresh(); montrer_controles()
 
     ui.timer(.4, rafraichir)

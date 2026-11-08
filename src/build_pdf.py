@@ -28,6 +28,7 @@ tailles de police fixes (ne jamais réduire).
 import sys, os, re, json, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import moi
+TOURS = {}                       # donne -> « Tour 1 · table 4 · … » quand la séance décrit son mouvement (moi.tour_de)
 MES = set()                     # les paires de l'utilisateur dans cette séance (moi.py) : leurs lignes sont surlignées
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
@@ -239,16 +240,28 @@ def nom(t, camp):
     """Initiales de la paire ('AB/CD') ou, à défaut, son numéro."""
     return t.get(f"nom_{camp}") or str(t[f"paire_{camp}"])
 
-def results_table(d):
+FOND_RECO = "#e6efe9"                 # la ligne du contrat recommandé : le vert pâle de l'avis de l'expert
+
+def results_table(d, a=None):
+    """Les tables, du meilleur résultat au moins bon vu de votre camp ; le contrat recommandé de l'analyse a y prend
+    sa place (vert pâle, son résultat au double mort)."""
+    from comparer import table_recommandee                 # import tardif : comparer importe ce module
     P = lambda x: Paragraph(x, S_cell)
     beaucoup = len(d["tables"]) > 2
     entete = ["<b>Paires</b>", "<b>Contrat</b>", "<b>Entame</b>", "<b>Nord-Sud</b>", "<b>IMP N-S</b>"]
     if beaucoup: entete = ["<b>Table</b>"] + entete + ["<b>% N-S</b>"]
     rows = [[P(x) for x in entete]]; vous = []
-    for t in moi.ordre(d["tables"], MES):  # du meilleur résultat au moins bon, vu de votre camp (moi.ordre)
+    reco = table_recommandee(d, a)
+    for t in moi.ordre(d["tables"] + ([reco] if reco else []), MES):   # du meilleur au moins bon, vu de votre camp
         res = "=" if t["resultat"] in ("=", "") else t["resultat"]
         passe = t["contrat"] == "passe"
         jeu = "passe générale" if passe else f"<b>{t['contrat']} {SEAT[t['declarant']]}</b> {res}"
+        if t.get("recommande"):
+            row = [P("<i>Recommandé" + (", au DM" if not passe else "") + "</i>"), P(suits(jeu)), P(suits(t["entame"])),
+                   P(f"{t['score_ns']:+d}"), P("")]
+            if beaucoup: row = [P("")] + row + [P("")]
+            rows.append(row); vous.append(("BACKGROUND", (0, len(rows) - 1), (-1, len(rows) - 1), colors.HexColor(FOND_RECO)))
+            continue
         row = [P(_paires(t, None if passe else "NS" if t["declarant"] in "NS" else "EO")), P(suits(jeu)),
                P(suits(t["entame"])), P(f"{t['score_ns']:+d}"), P(f"{t['imp_ns']:+d}" if t["imp_ns"] else "0")]
         if beaucoup: row = [P(str(t["table"]))] + row + [P(f"{t['pct_ns']:.0f} %" if t.get("pct_ns") is not None else "")]
@@ -372,6 +385,7 @@ class Marque(Flowable):
     def draw(self):
         doc = self.canv._doctemplate
         doc._donne, doc._debut = self.n, self.canv.getPageNumber()
+        if self.n is None: doc._donne = None; return     # Marque(None) : fin des donnes, plus de « (suite) »
         doc._spans[self.n] = [self.canv.getPageNumber(), self.canv.getPageNumber()]
 
 def page(d, a, date, expliquer=True):
@@ -379,11 +393,12 @@ def page(d, a, date, expliquer=True):
           Paragraph(f"Donneur : <b>{SEAT[d['donneur']]}</b> &nbsp;·&nbsp; Vulnérable : <b>{seats(d['vul'])}</b> "
                     + (f"&nbsp;·&nbsp; Thème : <b>{d['theme']}</b> – marque IMP" if d.get("theme") else f"&nbsp;·&nbsp; Séance du {date} – marque IMP"), S_sub),
           Spacer(1, 2), diagram_legende(d, a)]
+    if TOURS.get(d["n"]): el[3:3] = [Paragraph(suits(TOURS[d["n"]]), S_sub)]   # le tour, la table, les adversaires
     if d["tables"]:
         el += [Paragraph("Résultats à la table", S_h)]
         rang = moi.votre_rang(d["tables"], MES, lambda t: f"{t['contrat']} {SEAT[t['declarant']]} {t['resultat']}".strip())
         if rang: el += [Paragraph(f"<font backColor='{moi.SURLIGNE}'>{suits(rang)}</font>", S_body), Spacer(1, 3)]
-        el += [results_table(d), Paragraph("Enchères aux tables", S_h)]
+        el += [results_table(d, a), Paragraph("Enchères aux tables", S_h)]
     corr = a.get("encheres_corrigees", {})
     cells, notes = [], []
     groupes = {}                        # séquences identiques regroupées (utile à partir de 3 tables)
@@ -497,6 +512,18 @@ def page_noms(data, chemin):
     return [Paragraph("Joueurs", S_title), Paragraph(f"Séance du {data['session']['date']}", S_sub), Spacer(1, 8), tb, PageBreak()]
 
 
+def page_parcours(data):
+    """Le mouvement, quand la séance le décrit : une ligne par tour (table, donnes, adversaires, votre % moyen)."""
+    tours = moi.parcours(data)
+    if not tours: return []
+    rows = [[Paragraph(f"<b>{x}</b>", S_cell) for x in ("Tour", "Table", "Donnes", "Adversaires", "% du tour")]]
+    rows += [[Paragraph(str(t[k]), S_cell) for k in ("tour", "table", "donnes", "adversaires", "pct")] for t in tours]
+    tb = Table(rows, colWidths=[1.4*cm, 1.6*cm, 2*cm, 5*cm, 2.2*cm], hAlign="LEFT")
+    tb.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, 0), 0.8, colors.HexColor(INK)),
+                            ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.HexColor("#c4cbd3"))]))
+    return [Paragraph(f"Parcours de {moi.qui_parcourt(data)}", S_h), tb, Spacer(1, 10)]
+
+
 def _grille(rows, largeurs, style):
     """Une table de la page de synthèse : filet sous l'en-tête, serrée."""
     tb = Table(rows, colWidths=largeurs, repeatRows=1)
@@ -513,27 +540,25 @@ def _groupe(style, debut, fin, bande):
 
 
 def synthese(data, an):
-    """Page d'ouverture : les donnes où le contrat d'une table diffère du contrat recommandé. Une
-    ligne par table, du plus petit contrat au plus grand : ses paires, son contrat, en rouge s'il
-    est plus élevé et en bleu s'il est plus bas (SENS), son résultat. Dessous, les entames qui
-    diffèrent, comparées seulement aux tables qui jouent dans la même dénomination."""
+    """Page de fin : une ligne par donne. Le contrat recommandé, puis combien de tables l'ont joué, ont joué plus haut
+    (rouge) ou plus bas (bleu) dans le même camp, ou ont laissé jouer l'autre camp ; votre contrat (coloré de même) ;
+    l'entame recommandée et combien de tables de la même dénomination ont entamé autre chose (jaune). Le détail de
+    chaque table est sur la page de la donne, avec la ligne du contrat recommandé."""
     if not any(x.get("enc") for x in an.get("donnes", {}).values()): return []   # archive : rien à comparer
     if not any(d["tables"] for d in data["donnes"]): return []    # donnes créées : aucune table à comparer
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from comparer import final                       # import tardif : comparer importe ce module
     P = lambda x, s=S_cell: Paragraph(x, s)
-    S_centre = ParagraphStyle("centre", parent=S_cell, alignment=1)
-    larg = min(_larg_paires([tb for d in data["donnes"] for tb in d["tables"]]), 3.1*cm)
-    contrats = [[P("<b>N°</b>"), P("<b>Contrat recommandé</b>"), P("<b>Contrats aux tables</b>"), "", P("<b>Résultat</b>", S_centre)]]
-    entames = [[P("<b>N°</b>"), P("<b>Contrat recommandé</b>"), P("<b>Contrats aux tables</b>"), "",
-                P("<b>Entame recom.</b>", S_centre), P("<b>Entame jouée</b>", S_centre)]]
-    st_c = [("SPAN", (2, 0), (3, 0)), ("LEFTPADDING", (4, 1), (4, -1), 19)]
-    st_e = [("SPAN", (2, 0), (3, 0)), ("LEFTPADDING", (4, 1), (5, -1), 37)]
-    fonds_c, fonds_e = [], []                        # les couleurs passent après les bandes
-    n_sens = {k: 0 for k in SENS}; memes = []; N = 0; n_c = n_e = 0
+    C = lambda x: P(x, S_cellc)
+    vous_col = bool(MES)
+    tete = ["N°", "Contrat recommandé", "Même", "Plus haut", "Plus bas", "Autre camp"] + (["Vous"] if vous_col else []) + \
+           ["Entame recom.", "Autre entame"]
+    rows = [[P(f"<b>{x}</b>") if k < 2 else C(f"<b>{x}</b>") for k, x in enumerate(tete)]]
+    style = []; bandes = [("VALIGN", (0, 0), (-1, -1), "MIDDLE")]         # les couleurs passent après les bandes
+    tot = {"meme": 0, "plus": 0, "moins": 0, "autre": 0}; N = 0
     for d in data["donnes"]:
         a = an.get("donnes", {}).get(str(d["n"]), {})
-        if not a.get("enc"): continue
+        if not a.get("enc") or not d["tables"]: continue
         N += 1
         c, decl, dbl = final(a["enc"], d["donneur"])
         if c == "passe": reco = "passe générale"
@@ -543,52 +568,49 @@ def synthese(data, an):
             reco = f"{c}{'X' * dbl} {SEAT[decl]}{levees}"
         e = a.get("entame"); carte = e.get("carte") if isinstance(e, dict) else None
         meme = "passe" if c == "passe" else (c + "X" * dbl, decl)
-        autres, leads = [], []
+        n = {"meme": 0, "plus": 0, "moins": 0, "autre": 0}; leads = [0, 0]; vous = None
         for tb in d["tables"]:
             cle = "passe" if tb["contrat"] == "passe" else (tb["contrat"], tb["declarant"])
-            jeu = "passe générale" if cle == "passe" else f"<b>{cle[0]} {SEAT[cle[1]]}</b>"
-            camp = None if cle == "passe" else "NS" if cle[1] in "NS" else "EO"
-            ligne = (rang_contrat(tb["contrat"]), _paires(tb, camp), jeu)
-            if cle != meme:
-                sens = sens_contrat(cle, meme)
-                autres.append(ligne + (sens, "" if cle == "passe" else _resultat(tb["resultat"])))
-                if sens: n_sens[sens] += 1
-            # l'entame : seulement dans la même dénomination que le contrat recommandé
-            if carte and c != "passe" and cle != "passe" and tb["contrat"].rstrip("X")[1:] == c[1:] and tb.get("entame") != carte:
-                leads.append(ligne + (tb.get("entame"),))
-        if autres:
-            autres.sort(key=lambda x: x[0]); debut = len(contrats)      # du plus petit contrat au plus grand
-            for k, (_, paires, jeu, sens, res) in enumerate(autres):
-                i = len(contrats)
-                contrats.append([P(f"<b>{d['n']}</b>") if k == 0 else "", P(suits(reco)) if k == 0 else "",
-                                 P(paires), P(suits(jeu)), P(res) if res else ""])
-                if sens: fonds_c.append(("BACKGROUND", (2, i), (3, i), colors.HexColor(SENS[sens][0])))
-            _groupe(st_c, debut, len(contrats) - 1, n_c % 2); n_c += 1
-        else: memes.append(str(d["n"]))
-        if leads:
-            leads.sort(key=lambda x: x[0]); debut = len(entames)
-            for k, (_, paires, jeu, jouee) in enumerate(leads):
-                i = len(entames)
-                entames.append([P(str(d["n"])) if k == 0 else "", P(suits(reco)) if k == 0 else "", P(paires), P(suits(jeu)),
-                                P(suits(carte)) if k == 0 else "", P(suits(jouee))])
-                fonds_e.append(("BACKGROUND", (5, i), (5, i), colors.HexColor(FOND_ENTAME)))
-            _groupe(st_e, debut, len(entames) - 1, n_e % 2); n_e += 1
-    corps = []
-    if n_c: corps.append(_grille(contrats, [0.9*cm, 4.2*cm, larg, 10.6*cm - larg, 1.8*cm], st_c + fonds_c))
-    if memes: corps += [Spacer(1, 4), Paragraph(f"Même contrat à toutes les tables : donnes {', '.join(memes)}.", S_body)]
-    if n_e: corps += [Paragraph("Entames différentes, dans la même dénomination", S_h), Spacer(1, 2),
-                      _grille(entames, [0.9*cm, 4.2*cm, larg, 6.0*cm - larg, 3.2*cm, 3.2*cm], st_e + fonds_e)]
+            sens = None if cle == meme else sens_contrat(cle, meme)
+            if sens: genre = sens
+            elif cle == meme or "passe" in (cle, meme) or (cle[1] in "NS") == (meme[1] in "NS"): genre = "meme"
+            else: genre = "autre"
+            n[genre] += 1
+            if carte and c != "passe" and cle != "passe" and tb["contrat"].rstrip("X")[1:] == c[1:]:
+                leads[1] += 1; leads[0] += tb.get("entame") != carte
+            if moi.a_joue(tb, MES):
+                jeu = "passe" if cle == "passe" else f"{tb['contrat']} {SEAT[tb['declarant']][0]} {_resultat(tb['resultat'])}"
+                vous = (jeu, sens, tb.get("entame") if carte and leads[1] and tb.get("entame") != carte and cle != "passe"
+                        and tb["contrat"].rstrip("X")[1:] == c[1:] else None)
+        for k in tot: tot[k] += n[k]
+        i = len(rows)
+        ligne = [P(f"<b>{d['n']}</b>"), P(suits(reco)), C(str(n["meme"] or "–")), C(str(n["plus"] or "–")),
+                 C(str(n["moins"] or "–")), C(str(n["autre"] or "–"))]
+        if n["plus"]: style.append(("BACKGROUND", (3, i), (3, i), colors.HexColor(SENS["plus"][0])))
+        if n["moins"]: style.append(("BACKGROUND", (4, i), (4, i), colors.HexColor(SENS["moins"][0])))
+        if vous_col:
+            ligne.append(C(suits(vous[0])) if vous else C("–"))
+            if vous and vous[1]: style.append(("BACKGROUND", (6, i), (6, i), colors.HexColor(SENS[vous[1]][0])))
+        ligne += [C(suits(carte) if carte and c != "passe" else "–"),
+                  C(f"{leads[0]} sur {leads[1]}" + (f" (vous {suits(vous[2])})" if vous and vous[2] else "") if leads[0] else "–")]
+        if leads[0]: style.append(("BACKGROUND", (len(ligne) - 1, i), (len(ligne) - 1, i), colors.HexColor(FOND_ENTAME)))
+        rows.append(ligne)
+        _groupe(bandes, i, i, (i - 1) % 2)
+    larg = [0.9, 3.6, 1.5, 1.6, 1.5, 1.7] + ([2.4] if vous_col else []) + [2.0, 2.6]
+    larg = [x * 17.6 / sum(larg) for x in larg]
+    tb = _grille(rows, [x * cm for x in larg], bandes + style)
     return [Paragraph("Synthèse : recommandé vs joué", S_title),
-            Paragraph(f"{N} donnes · les contrats joués aux tables quand ils diffèrent du contrat recommandé", S_sub),
+            Paragraph(f"{N} donnes · combien de tables ont joué le contrat recommandé, plus haut, plus bas, ou l'ont laissé "
+                      f"à l'autre camp", S_sub),
             Spacer(1, 4),
             Paragraph("Même camp : " + " ; ".join(
-                          f"<font backColor='{SENS[k][0]}'> {SENS[k][1]} </font> ({n_sens[k]} tables)" for k in SENS) +
-                      ". Sans couleur : l'autre camp joue, ou le partenaire joue le même contrat. Résultat : ce que la "
-                      "table a fait. En gras : la paire qui joue le contrat. Contrat recommandé : ses levées au double "
-                      "mort seulement si elles diffèrent du contrat, en rouge s'il chute.", S_note),
-            Spacer(1, 4)] + corps + \
-           [Spacer(1, 4), Paragraph(EXPLICATIONS, S_body)] + \
-           [PageBreak()]
+                          f"<font backColor='{SENS[k][0]}'> {SENS[k][1]} </font> ({tot[k]} tables)" for k in SENS) +
+                      ". « Même » : le contrat recommandé, par le déclarant ou son partenaire. « Autre camp » : l'autre camp "
+                      "joue. Contrat recommandé : ses levées au double mort seulement si elles diffèrent du contrat, en rouge "
+                      "s'il chute. « Autre entame » : les tables de la même dénomination qui ont entamé autre chose. Le détail "
+                      "de chaque table est sur la page de la donne.", S_note),
+            Spacer(1, 4), tb,
+            Spacer(1, 6), Paragraph(EXPLICATIONS, S_body), PageBreak()]
 
 
 def _tables(tbs, total=None):
@@ -607,9 +629,10 @@ def _tables(tbs, total=None):
 
 
 def main():
-    global MES
+    global MES, TOURS
     data = json.load(open(sys.argv[1])); an = json.load(open(sys.argv[2])); out = sys.argv[3]
     MES = moi.paires(data)
+    TOURS = {d["n"]: moi.tour_de(data, d["n"]) for d in data["donnes"]}
     date = data["session"]["date"]
     pied = an.get("titre_pied", f"Analyse des donnes – séance du {date} – Système SEF, marque IMP")
     def footer(c, doc):
@@ -628,9 +651,14 @@ def main():
     doc._spans = {}
     doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
                                        onPage=footer, onPageEnd=suite)])
-    story = synthese(data, an)                     # avec la page de synthèse, les explications y sont
-    for d in data["donnes"]:
-        story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not story)
+    donnes = moi.ordre_des_donnes(data, MES) if moi.ordre_joue() else data["donnes"]   # Réglages : l'ordre joué
+    synth = synthese(dict(data, donnes=donnes), an)  # avec la page de synthèse, les explications y sont
+    story = []
+    for k, d in enumerate(donnes):
+        story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
+    parcours = page_parcours(data)                 # à la fin : votre parcours, puis la synthèse
+    fin = parcours + synth if synth else parcours + [PageBreak()] if parcours else []
+    if fin: story += [Marque(None)] + fin
     doc.build(page_noms(data, sys.argv[4] if len(sys.argv) > 4 else None) + story[:-1])
     longues = {n: s[1] - s[0] + 1 for n, s in doc._spans.items() if s[1] - s[0] + 1 > 2}
     manquantes = [d["n"] for d in data["donnes"] if str(d["n"]) not in an.get("donnes", {})]

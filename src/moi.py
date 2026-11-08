@@ -84,3 +84,69 @@ def votre_rang(tables, mes_paires, decrire=lambda t: ""):
     if s(meilleure) > s(t): texte += f" – meilleur : {s(meilleure):+d} ({decrire(meilleure)})"
     else: texte += " – le meilleur score de la donne"
     return texte
+
+
+# ---------------------------------------------------------------- le mouvement : vos tours, tables et adversaires
+def _paire(data, k):
+    """« AP/EK (NS4) » : les initiales d'une paire et sa position."""
+    p = (data.get("paires") or {}).get(str(k)) or {}
+    nom = p.get("nom") or "/".join(j.get("initiales", "") for j in (data.get("joueurs") or {}).get(str(k), []))
+    return f"{nom} ({p['position']})" if p.get("position") else nom
+
+
+def _etendue(donnes):
+    return f"{donnes[0]}–{donnes[-1]}" if len(donnes) > 1 else str(donnes[0]) if donnes else ""
+
+
+def parcours(data):
+    """Les tours d'une paire ("mouvement" de la séance) : tour, table, donnes, adversaires, % moyen du tour.
+    [] si la séance ne décrit pas son mouvement."""
+    m = (data.get("session") or {}).get("mouvement") or {}
+    k = str(m.get("paire", "")); out = []
+    for t in m.get("tours") or []:
+        pcts = []
+        for d in data.get("donnes", []):
+            if d["n"] not in t["donnes"]: continue
+            for x in d.get("tables", []):
+                if x.get("pct_ns") is None: continue
+                if str(x.get("paire_ns")) == k: pcts.append(x["pct_ns"])
+                elif str(x.get("paire_eo")) == k: pcts.append(100 - x["pct_ns"])
+        out.append(dict(tour=t["tour"], table=t["table"], donnes=_etendue(t["donnes"]),
+                        adversaires="relais : pas de jeu" if t.get("relais") or not t.get("adversaires") else _paire(data, t["adversaires"]),
+                        pct=f"{sum(pcts) / len(pcts):.0f} %" if pcts else ""))
+    return out
+
+
+def qui_parcourt(data):
+    """« WF/FR (EO4) » : la paire dont le mouvement décrit les tours."""
+    m = (data.get("session") or {}).get("mouvement") or {}
+    return _paire(data, m["paire"]) if m.get("paire") else ""
+
+
+def tour_de(data, n):
+    """« Tour 1 · table 4 · contre AP/EK (NS4) » pour la donne n, ou "" si le mouvement ne la place pas."""
+    m = (data.get("session") or {}).get("mouvement") or {}
+    for t in m.get("tours") or []:
+        if n in t["donnes"]:
+            if t.get("relais") or not t.get("adversaires"):
+                return f"Tour {t['tour']} · table {t['table']} : relais, donne non jouée par {qui_parcourt(data)}"
+            return f"Tour {t['tour']} · table {t['table']} · {qui_parcourt(data)} contre {_paire(data, t['adversaires'])}"
+    return ""
+
+
+def ordre_joue():
+    """L'option de Réglages : les rapports présentent les donnes dans l'ordre où vous les avez jouées."""
+    try:
+        return bool((json.load(open(ETAT, encoding="utf-8")) or {}).get("ordre_joue"))
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def ordre_des_donnes(data, mes_paires):
+    """Les donnes dans l'ordre où vos paires les ont jouées (tour après tour, le relais à sa place), puis les autres
+    par numéro ; par numéro si la séance ne décrit pas votre parcours."""
+    donnes = sorted(data.get("donnes", []), key=lambda d: d["n"])
+    m = (data.get("session") or {}).get("mouvement") or {}
+    if str(m.get("paire", "")) not in {str(x) for x in mes_paires}: return donnes
+    rang = {n: k for k, n in enumerate(n for t in m.get("tours") or [] for n in t["donnes"])}
+    return sorted(donnes, key=lambda d: (rang.get(d["n"], len(rang)), d["n"]))

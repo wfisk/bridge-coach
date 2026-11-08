@@ -46,17 +46,19 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         then the theme drawing (a − / + count per kind of hand, 36 at most); either new file opens in the Donnes tab. Tabs: Donnes (opens on it) views the open
                         .bc.json with a sidebar (ui.left_drawer, light warm grey GRIS_BARRE like Claude's sidebar, the chosen entry a rounded darker pill, full height, Donnes tab only: Séance (alerts at its foot), Joueurs, a divider, one entry per deal (every tab has two entries then a divider, so Donne 1 stays in place): hands, each table's auction (encheres_html),
                         table results; vue_seance, page_donne…), view only so far. A deal page in Donnes, Analyse and Jouer has the same right sidebar (panneau_droit: fixed, LARGEUR_PANNEAU, the deal's name, a small board case, theme and par; Analyse adds the Standard | Expert toggle, the recommended contract, the lead and the double-dummy table (dm_html); Donnes the « Modifier la donne » button); Analyse: sidebar Analyse standard (status, date, "Lancer
-                        l'analyse": rapport.py, analysis and PDFs; the run block stays visible while it runs), Analyse expert
+                        l'analyse": rapport.py --analyse-seule, the analysis only, no PDF; the run block stays visible while it runs), Analyse expert
                         (status, date, and the steps to get it from Claude on the web: preparer_pour_claude writes ONE file,
                         <working folder>/pour-claude/<name>/seance-du-AAAA-MM-JJ-pour-claude.json: "consigne" (CONSIGNE, the rules for
                         the expert analysis, in French), "seance" (seance_pour_claude: no analyses, no source, no title, players
                         by initials only: full names, club and original file name never leave the computer), "analyse_standard",
                         "exemple_analyse", "documents" (the system files); Claude returns seance-du-…-expert.json; importer_expert
                         checks it (four-column grids; each lead from the declarer's left, a card of that hand: rapport.entame_valide)
-                        and merges it deal by deal into the .bc.json (the file before goes to versions/); "Mettre à jour les rapports"
-                        runs rapport.py --rapports: the PDFs from the saved standard analysis, no new analysis), then each deal's analysis, the Expert's when it exists (toggle
-                        Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: the session's PDFs and the bilan as links with
-                        file name and date (lien_pdf); Réglages. Jouer (between Donnes and Analyse; Contrôle was removed): the player
+                        and merges it deal by deal into the .bc.json (the file before goes to versions/); "Aller aux rapports"
+                        switches to the Rapports tab), then each deal's analysis, the Expert's when it exists (toggle
+                        Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: options (« Vous êtes », played order, the
+                        names page), "Créer les rapports" (rapport.py --rapports: the PDFs from the saved analyses; T.genre says which
+                        tab shows the progress), then the session's PDFs and the bilan as links with file name and date (lien_pdf); Réglages.
+                        The left sidebar is LARGEUR_BARRE wide. Jouer (between Donnes and Analyse; Contrôle was removed): the player
                         bids one seat, the engine the three others (vue_jouer, boite_encheres; logic in jouer.py), then the
                         contract against Expert and Standard. Layout: the table on the left, a large warm-neutral rounded square sized to the window (COTE_TABLE: what the width and height leave, 440px at least; below that the whole table, hands and all, scales down to fit the window instead of scrolling: JS_AJUSTE, .ajuste) (no name plates: the board case in the centre, bidding
                         cards, trick cards and dummy on it, the players' hands outside; the thinking player's name blinks on the case; hands as overlapping
@@ -89,10 +91,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         where it is, under its own name (even with a date in it): no undated copy is made.
                         migrer(), on every start: reports/ → rapports/, <name>-donnes.json → <name>.bc.json with
                         its source and players (<name>-paires.json merged in, then removed)
-      moi.py            who the user is: « Vous êtes » in Réglages saves the full name in etat.json (moi.nom); moi.paires(data)
+      moi.py            who the user is: « Vous êtes » in the Rapports tab saves the full name in etat.json (moi.nom); moi.paires(data)
                         finds that player's pairs in a .bc.json's "joueurs"; their tables get a pale yellow row (SURLIGNE) in the
                         PDF results tables and summary (build_pdf.MES) and in the Donnes tab. Results tables are sorted best first from the user's side
-                        (N-S when they did not play the deal; moi.ordre), with a rank line above (moi.votre_rang). Also holds dossier_des_reglages
+                        (N-S when they did not play the deal; moi.ordre), with a rank line above (moi.votre_rang). The movement, when known, is
+                        session.mouvement in the .bc.json (type, tables, relais, paire, tours: tour, table, donnes, adversaires,
+                        relais) and paires[].position ("NS4", "EO4"); moi.parcours shows it on the Séance page and in the PDFs Also holds dossier_des_reglages
                         (light: build_pdf imports it without the rest of the program)
       maj.py            updates from GitHub, standard library only: derniere_version (tags API, only on the Réglages
                         button), then a separate process (--appliquer V --attendre <app pid>) waits for the app to close,
@@ -113,15 +117,15 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         endplay; the club name is not kept); rapport.sh accepts the PDF directly.
                         FFBClubNet backups named .bws are password-protected 7z archives: not
                         readable, rapport.py says so
-      build_pdf.py      donnes + analyse JSON -> PDF; -standard and -expert open with a summary page:
-                        the deals where a table's contract differs from the recommended one, one line
-                        per table, lowest contract first, with the pairs' initials (declaring pair in
-                        bold), the contract and the table's result (-1 = +2). Same side: red = higher than
-                        recommended, blue = lower; no colour for the other side or the same contract by
-                        partner. Then a sentence listing the deals where every table agreed, and a short
-                        list of different leads (same denomination only; yellow). No IMP here: this page
-                        shows where the contracts differ, not performance; results by table are on each
-                        deal's page. Pairs sit in a fixed-width column so contracts line up
+      build_pdf.py      donnes + analyse JSON -> PDF; deals first (in the order played when the Rapports tab asks: moi.ordre_joue,
+                        moi.ordre_des_donnes), each with its round line (moi.tour_de); each results table holds the
+                        recommended contract as a pale green row ranked among the tables (comparer.table_recommandee: its
+                        double-dummy result and score, no IMP or %; the app's Donnes tab shows it too, the expert's else the
+                        standard's). Then at the end the pair's rounds (page_parcours) and, in -standard and -expert, the summary
+                        page, one line per deal: recommended contract, how many tables played it (same side, partner included),
+                        higher (red), lower (blue), or let the other side play; your contract coloured the same way; the
+                        recommended lead and how many tables in the same denomination led something else (yellow). No IMP here;
+                        each table's detail is on the deal's page
       commentaires.py   automatic factual comment per deal (best contracts from double-dummy, a grand slam
                         noted as rarely bid, a small slam played not called a miss, missed games/slams, tricks vs double-dummy, IMP between tables);
                         rapport.py uses it for any deal without a written `comm`, so the

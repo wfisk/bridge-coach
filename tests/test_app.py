@@ -177,3 +177,16 @@ assert [t["score_ns"] for t in moi.ordre(T, set())] == [110, -100, -100, -200]  
 assert moi.votre_rang(T, {"2"}, lambda t: "3♠ S -2") == "Votre résultat : 2e ex aequo sur 4 (50 %) – meilleur : +200 (3♠ S -2)"
 assert moi.votre_rang(T, set()) == ""
 print("ok")
+# le mouvement : vos tours, la ligne de chaque donne, l'ordre joué (le relais à sa place, puis les autres donnes)
+M = dict(session=dict(mouvement=dict(paire="2", tours=[dict(tour=1, table=4, donnes=[4, 5], adversaires="3"),
+                                                        dict(tour=2, table=6, donnes=[1, 2], adversaires=None, relais=True),
+                                                        dict(tour=3, table=1, donnes=[3], adversaires="3")])),
+         paires={"2": dict(nom="AB/CD", position="EO4"), "3": dict(nom="EF/GH", position="NS4")},
+         donnes=[dict(n=k, tables=[dict(paire_ns="3", paire_eo="2", pct_ns=40)] if k in (3, 4, 5) else []) for k in range(1, 7)])
+assert moi.parcours(M)[0] == dict(tour=1, table=4, donnes="4–5", adversaires="EF/GH (NS4)", pct="60 %")
+assert moi.parcours(M)[1]["adversaires"] == "relais : pas de jeu" and moi.parcours(M)[2]["donnes"] == "3"
+assert moi.tour_de(M, 4) == "Tour 1 · table 4 · AB/CD (EO4) contre EF/GH (NS4)" and "relais" in moi.tour_de(M, 2) and moi.tour_de(M, 6) == ""
+assert [d["n"] for d in moi.ordre_des_donnes(M, {"2"})] == [4, 5, 1, 2, 3, 6]
+assert [d["n"] for d in moi.ordre_des_donnes(M, {"3"})] == [1, 2, 3, 4, 5, 6] and moi.parcours({"session": {}}) == []
+app.ecrire_etat(ordre_joue=True); assert moi.ordre_joue(); app.ecrire_etat(ordre_joue=False); assert not moi.ordre_joue()
+print("ok")

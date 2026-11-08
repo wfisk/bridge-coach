@@ -20,7 +20,7 @@
 <body>
 <h1>Aide de Bridge Coach</h1>
 <p>Bridge Coach lit le fichier d'un tournoi joué avec Bridgemate et en tire des rapports au format PDF.</p>
-<p>L'onglet <b>Donnes</b> montre la séance ouverte : à gauche, la liste de ce qu'elle contient (la séance, les joueurs, chaque donne), à droite le détail de l'entrée choisie. L'onglet <b>Jouer</b> vous fait enchérir une donne, le programme tenant les trois autres places. L'onglet <b>Analyse</b> lance l'analyse et la montre donne par donne ; l'onglet <b>Rapports</b> liste les rapports PDF. <b>Fichier</b>, <b>Nouveau…</b> crée des donnes d'entraînement. Une donne choisie dans un onglet reste choisie dans les autres.</p>
+<p>L'onglet <b>Donnes</b> montre la séance ouverte : à gauche, la liste de ce qu'elle contient (la séance, les joueurs, chaque donne), à droite le détail de l'entrée choisie. L'onglet <b>Jouer</b> vous fait enchérir une donne, le programme tenant les trois autres places. L'onglet <b>Analyse</b> lance l'analyse et la montre donne par donne ; l'onglet <b>Rapports</b> crée les rapports PDF, avec leurs options, et les liste. <b>Fichier</b>, <b>Nouveau…</b> crée des donnes d'entraînement. Une donne choisie dans un onglet reste choisie dans les autres.</p>
 
 <h2>Jouer : enchérir une donne</h2>
 <p>Choisissez une donne à gauche. Vous êtes en bas de la table, à la place choisie dans <b>Options</b>, en haut de la liste : toujours le déclarant (le choix de départ), le camp du déclarant (le déclarant ou le mort, au hasard), la défense, le donneur, une place fixe (Nord, Sud, Est ou Ouest), ou au hasard. Le déclarant est celui de la séquence recommandée (l'analyse de l'expert, sinon l'analyse standard, sinon les enchères du programme). Le choix vaut pour toutes les donnes et reste d'une fois sur l'autre. Le programme enchérit pour votre partenaire et pour les adversaires, selon le système ; leurs mains restent cachées jusqu'à la fin.</p>
@@ -71,7 +71,8 @@
   <li>Dans l'onglet <b>Analyse</b>, choisissez <b>Analyse standard</b> en haut de la liste de gauche, puis cliquez sur <b>Lancer l'analyse</b>. <b>Analyse expert</b>, juste en dessous, dit si une analyse de l'expert existe pour cette séance.</li>
   <li>Attendez la fin de la barre de progression, en général plusieurs minutes. Vous pouvez utiliser l'ordinateur pendant ce temps.</li>
   <li>L'analyse se lit donne par donne dans l'onglet <b>Analyse</b> : enchères recommandées, entame et défense, plan de jeu, commentaire. Quand une analyse de l'expert existe, c'est elle qui s'affiche ; le bouton <b>Standard</b> montre l'analyse standard.</li>
-  <li>Les rapports PDF sont dans l'onglet <b>Rapports</b>, avec la date de leur création : cliquez sur un nom pour l'ouvrir.</li>
+  <li>Pour les rapports PDF, allez dans l'onglet <b>Rapports</b>. Choisissez les options (votre nom, l'ordre des donnes, la page des noms des joueurs), puis cliquez sur <b>Créer les rapports</b> : ils reprennent l'analyse enregistrée, en une minute environ, sans la refaire.</li>
+  <li>Les rapports sont listés en dessous, avec la date de leur création : cliquez sur un nom pour l'ouvrir.</li>
 </ol>
 <p class="note">Lancez l'analyse une fois le tournoi terminé : le calcul occupe beaucoup l'ordinateur.</p>
 
@@ -84,7 +85,7 @@
   <li><b>Copier la consigne</b>, la coller dans la conversation et l'envoyer.</li>
   <li>Claude écrit le fichier <code>…-expert.json</code> : le télécharger. Pour une longue séance, il peut répondre en plusieurs fichiers.</li>
   <li><b>Importer l'analyse de l'expert…</b> : choisir le fichier téléchargé (un par un s'il y en a plusieurs). Bridge Coach vérifie qu'il correspond à la séance et ajoute les donnes à l'analyse de l'expert, rangée dans la séance ; la version d'avant est gardée dans <code>versions/</code>.</li>
-  <li><b>Mettre à jour les rapports</b> : les rapports PDF reprennent l'analyse de l'expert en quelques secondes, sans refaire l'analyse standard.</li>
+  <li>Lisez-la donne par donne dans l'onglet <b>Analyse</b>. Pour les rapports PDF : <b>Aller aux rapports</b>, puis <b>Créer les rapports</b>. Ils reprennent l'analyse de l'expert, sans refaire l'analyse standard.</li>
 </ol>
 
 
@@ -117,7 +118,15 @@
 <p>Les donnes créées n'ayant pas été jouées, leur rapport ne contient ni relevé des donnes, ni résultats des tables.</p>
 
 <h2>Afficher le nom des joueurs</h2>
-<p>Dans les rapports, les joueurs sont désignés par leurs initiales. Cochez <b>Ajouter une page avec le nom des joueurs</b> avant de créer les rapports pour ajouter une première page avec les noms complets.</p>
+<p>Dans les rapports, les joueurs sont désignés par leurs initiales. Dans l'onglet <b>Rapports</b>, cochez <b>Ajouter une page avec le nom des joueurs</b> avant de créer les rapports pour ajouter une première page avec les noms complets.</p>
+
+<h2>Votre parcours et l'ordre des donnes</h2>
+<p>Quand la séance décrit son mouvement (par exemple un Mitchell : Nord-Sud fixes, Est-Ouest qui montent d'une table, les étuis qui descendent, une table relais), la page <b>Séance</b> de l'onglet <b>Donnes</b> montre votre parcours : pour chaque tour, la table, les donnes, vos adversaires et votre pourcentage moyen du tour. Chaque donne rappelle son tour, sa table et vos adversaires, à l'écran et dans les rapports PDF.</p>
+<p>Dans l'onglet <b>Rapports</b>, cochez <b>Les donnes dans l'ordre où vous les avez jouées</b> : les rapports créés ensuite suivent vos tours (une donne passée au relais reste à sa place), puis les donnes que vous n'avez pas jouées, par numéro. Votre parcours et la synthèse sont à la fin, après les donnes.</p>
+
+<h2>Le contrat recommandé et la synthèse</h2>
+<p>Le tableau des résultats de chaque donne, à l'écran et dans les rapports, contient une ligne sur fond vert pâle : le contrat recommandé (celui de l'expert, sinon celui du programme), avec son résultat et son score au double mort. Elle est rangée parmi les tables : on voit d'un coup combien ont fait mieux ou moins bien.</p>
+<p>La synthèse, en fin de rapport, tient en une ligne par donne : le contrat recommandé, combien de tables l'ont joué (<b>Même</b>), plus haut (rouge) ou plus bas (bleu) dans le même camp, ou l'ont laissé à l'autre camp ; votre contrat, coloré de même ; l'entame recommandée et combien de tables de la même dénomination ont entamé autre chose (jaune). Le détail de chaque table est sur la page de la donne.</p>
 
 <h2>Taper ses propres donnes</h2>
 <ol>
@@ -141,8 +150,10 @@
 <p>Le dossier contient aussi un fichier <code>.pbn</code>. Il s'importe dans Bridgemate Control Software, version 3.1.2 ou plus récente : menu <b>Fichier</b>, <b>Importer</b>.</p>
 <p>Drury fait partie du système de Bridge Coach (à confirmer) : sur une ouverture de 1♥ ou 1♠ en 3e ou 4e, le partenaire qui a passé dit 2♣ avec un fit et 10 à 12 points. Roudi n'en fait pas partie : ces donnes sont choisies sur les mains, mais les enchères recommandées n'emploient pas cette convention.</p>
 
+<h2>Vous êtes</h2>
+<p>Dans l'onglet <b>Rapports</b>, <b>Vous êtes</b> : choisissez votre nom dans la liste (les joueurs de vos séances). Votre table est alors surlignée en jaune dans les tableaux des résultats : dans l'onglet <b>Donnes</b> tout de suite, et dans les rapports PDF quand ils sont refaits. Les tables y sont rangées du meilleur résultat au moins bon, vu de votre camp (de Nord-Sud pour une donne que vous n'avez pas jouée), et une ligne au-dessus du tableau donne votre rang, votre pourcentage et le meilleur score de la donne.</p>
+
 <h2>Réglages</h2>
-<p><b>Vous êtes</b> : choisissez votre nom dans la liste (les joueurs de vos séances). Votre table est alors surlignée en jaune dans les tableaux des résultats : dans l'onglet <b>Donnes</b> tout de suite, et dans les rapports PDF quand ils sont refaits. Les tables y sont rangées du meilleur résultat au moins bon, vu de votre camp (de Nord-Sud pour une donne que vous n'avez pas jouée), et une ligne au-dessus du tableau donne votre rang, votre pourcentage et le meilleur score de la donne.</p>
 <p>L'onglet <b>Réglages</b> montre les deux dossiers utilisés, et celui où le programme est installé, qui est à part. Le bouton <b>Modifier les réglages</b> ouvre un petit fichier de texte :</p>
 <dl>
   <dt><code>bridgemate</code></dt>

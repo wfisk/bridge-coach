@@ -4,6 +4,8 @@
 Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer]
 --importer : seulement le fichier Bridge Coach (.bc.json), sans analyse ni rapport.
 --rapports : seulement les PDF, depuis les analyses déjà enregistrées (après l'import d'une analyse de l'expert).
+--analyse-seule : l'analyse standard, enregistrée dans la séance, sans les PDF (l'onglet Analyse ; les PDF se font
+dans l'onglet Rapports, avec --rapports).
 Toute séance devient d'abord un fichier Bridge Coach, <nom>.bc.json : tout ce que les rapports demandent
 (la séance, les joueurs, les donnes, les résultats de chaque table). Il s'importe d'un .bws, d'une feuille
 de route PDF de FFBClubNet (feuille_route.py : mains, contrats, entames et résultats, sans enchères ; le
@@ -432,10 +434,10 @@ def main():
     preparer_donnees()
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     sans = "--sans-analyse" in sys.argv; avec_noms = "--avec-noms" in sys.argv; importer = "--importer" in sys.argv
-    rapports_seuls = "--rapports" in sys.argv
+    rapports_seuls = "--rapports" in sys.argv; analyse_seule = "--analyse-seule" in sys.argv
     if not args: args = [choisir_seance()]
     if len(args) != 1 or not os.path.isfile(args[0]):
-        raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer] [--rapports]")
+        raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer] [--rapports] [--analyse-seule]")
 
     bws = os.path.abspath(args[0])
     source = {".bws": "bws", ".pdf": "feuille-de-route", ".json": "simulation"}.get(os.path.splitext(bws)[1].lower(), "inconnue")
@@ -524,6 +526,9 @@ def main():
             chrono.etape(f"donne {n}")
         ecrire_analyse(seance, "standard", auto)
         print(f"Analyse automatique rangée dans {os.path.basename(seance)}")
+        if analyse_seule:                                  # --analyse-seule : l'analyse, sans les PDF (onglet Rapports)
+            chrono.ecrire(len(data["donnes"])); print("Analyse prête", flush=True)
+            return
 
     pdf = lambda quoi: os.path.join(SORTIE, f"{date}-{nom_court(nom)}-{quoi}.pdf")
     an = analyse_de(seance, "expert")

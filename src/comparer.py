@@ -47,6 +47,20 @@ def final(enc, donneur):
     return last[0] + last[1], first[(last[2], last[1])], dbl
 
 
+def table_recommandee(d, a):
+    """Le contrat recommandé de l'analyse a, comme une ligne du tableau des résultats : son résultat au double mort,
+    son score, l'entame recommandée ("recommande": True ; pas de paires, d'IMP ni de %). None sans enchères."""
+    if not (a or {}).get("enc") or not d.get("dm"): return None
+    c, decl, dbl = final(a["enc"], d["donneur"])
+    e = a.get("entame"); carte = e.get("carte") if isinstance(e, dict) else ""
+    t = dict(table="", paire_ns="", paire_eo="", recommande=True, entame=carte or "", imp_ns=None, pct_ns=None)
+    if c == "passe": return dict(t, contrat="passe", declarant="", resultat="", score_ns=0, entame="")
+    den = c[1:]; lev = d["dm"][den][decl]; camp = "NS" if decl in "NS" else "EW"
+    v = score(int(c[0]), EN[den], dbl, vul_of(d["vul"], camp), lev); ecart = lev - int(c[0]) - 6
+    return dict(t, contrat=c + "X" * dbl, declarant=decl, resultat="=" if ecart == 0 else f"{ecart:+d}",
+                score_ns=v if camp == "NS" else -v)
+
+
 def evaluer(d, a, cache):
     """Contrat, levées au double mort, score N-S, écart au par et entame d'une analyse."""
     c, decl, dbl = final(a["enc"], d["donneur"])

@@ -40,7 +40,7 @@ rm -f "$SCRIPT"
 rm -f "$APP/Contents/Resources/Assets.car"
 /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$APP/Contents/Info.plist" 2>/dev/null || true
 cp "$ICI/src/icone.icns" "$APP/Contents/Resources/applet.icns"
-plutil -replace NSDocumentsFolderUsageDescription -string "Le programme et les tournois sont dans le dossier Documents." "$APP/Contents/Info.plist"
+plutil -replace NSDocumentsFolderUsageDescription -string "Vos séances et vos rapports sont dans le dossier Documents." "$APP/Contents/Info.plist"
 codesign --force --deep --sign - "$APP"
 ln -sfn "$APP" "$HOME/Desktop/Bridge Coach"
 touch "$APP"

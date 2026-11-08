@@ -7,6 +7,13 @@ import maj
 
 assert maj.plus_recente(["v1.9", "v1.10", "essai", "v1.2"]) == "1.10" and maj.plus_recente(["essai"]) is None
 assert maj.cle("1.10") > maj.cle("1.9")
+sommes = "ab12  bridge-coach-1.5.zip\ncd34 *Bridge-Coach.pkg\n"
+assert maj.empreinte_de(sommes, "bridge-coach-1.5.zip") == "ab12" and maj.empreinte_de(sommes, "Bridge-Coach.pkg") == "cd34"
+assert maj.empreinte_de(sommes, "autre.zip") is None
+import hashlib
+maj.verifier(b"x", hashlib.sha256(b"x").hexdigest(), "x")
+try: maj.verifier(b"y", hashlib.sha256(b"x").hexdigest(), "y"); raise AssertionError("empreinte fausse acceptée")
+except ValueError: pass
 
 fichiers = subprocess.run(["git", "ls-files"], cwd=ICI, capture_output=True, text=True).stdout.split()
 python = os.path.join(ICI, ".venv", "bin", "python") if os.name != "nt" else os.path.join(ICI, ".venv", "Scripts", "python.exe")

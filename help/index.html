@@ -171,6 +171,14 @@
 
 <h2>Installation et réglages</h2>
 
+<h3>Installer Bridge Coach</h3>
+<p>Sur la page des versions du programme, <code>github.com/wfisk/bridge-coach/releases</code>, téléchargez <b>Bridge-Coach-Setup.exe</b> (Windows 10 ou 11) ou <b>Bridge-Coach.pkg</b> (Mac), ouvrez-le et suivez les étapes. Il télécharge la dernière version du programme, avec Python et ses bibliothèques, et vérifie chaque fichier : comptez quelques minutes et une connexion à Internet.</p>
+<ul>
+  <li>Windows affiche d'abord « Windows a protégé votre ordinateur » : <b>Informations complémentaires</b>, puis <b>Exécuter quand même</b>. Bridge Coach arrive sur le Bureau et dans le menu Démarrer.</li>
+  <li>Le Mac refuse d'abord de l'ouvrir : <b>Réglages Système</b>, <b>Confidentialité et sécurité</b>, <b>Ouvrir quand même</b>. Bridge Coach arrive dans Applications, avec un lien sur le Bureau ; au premier lancement, acceptez l'accès au dossier Documents.</li>
+</ul>
+<p>Ensuite, plus besoin de l'installateur : les mises à jour se font dans le programme (ci-dessous).</p>
+
 <h3>Réglages et mise à jour</h3>
 <p>L'onglet <b>Réglages</b>, page <b>Dossiers</b>, montre les deux dossiers utilisés, et celui où le programme est installé. <b>Modifier les réglages</b> ouvre un petit fichier de texte :</p>
 <dl>
@@ -186,12 +194,13 @@
 <ul>
   <li>Téléchargez Bridge Coach seulement sur sa page GitHub, <code>github.com/wfisk/bridge-coach</code> : jamais une pièce jointe d'e-mail ni un autre site.</li>
   <li>Vos séances et vos rapports restent sur votre ordinateur : Bridge Coach n'envoie rien sur Internet, et un autre appareil du réseau, même au club, ne peut pas ouvrir l'application. Les fichiers ne partent que si vous les envoyez vous-même à Claude pour l'analyse de l'expert.</li>
-  <li>Seule l'installation télécharge : Python et les bibliothèques du programme, depuis leurs sites officiels, dans des versions fixées et essayées.</li>
+  <li>Seules l'installation et la mise à jour téléchargent : le programme, Python et ses bibliothèques, dans des versions fixées et essayées. Chaque fichier est vérifié par son empreinte (SHA-256) avant d'être utilisé : un fichier abîmé ou modifié est refusé.</li>
   <li>« Windows a protégé votre ordinateur » est normal : le programme n'est pas signé par un certificat payant. Cliquez sur <b>Informations complémentaires</b>, puis <b>Exécuter quand même</b>.</li>
 </ul>
 
 <h3>Désinstaller Bridge Coach</h3>
-<p>Bridge Coach ne s'inscrit pas dans le système : on le désinstalle en supprimant ses dossiers.</p>
+<p><b>Installé avec l'installateur :</b> sous Windows, <b>Paramètres</b>, <b>Applications</b>, <b>Applications installées</b>, <b>Bridge Coach</b>, <b>Désinstaller</b>. Sur Mac, mettez à la corbeille <b>Bridge Coach</b> dans Applications, son lien sur le Bureau, et le dossier <code>~/Library/Application Support/Bridge Coach</code>. Vos fichiers (<code>bridge-coach-files</code>, dans Documents) restent : supprimez-les vous-même si vous le voulez ; les analyses expertes ne se recréent pas.</p>
+<p><b>Installé à la main :</b> Bridge Coach ne s'inscrit pas dans le système, on le désinstalle en supprimant ses dossiers.</p>
 <ol>
   <li>Le dossier du programme, <code>bridge-coach</code> : le programme et ses bibliothèques, environ 220 Mo.</li>
   <li>Les réglages : sous Windows <code>%APPDATA%\Bridge Coach</code> (à taper dans la barre d'adresse de l'Explorateur), sur Mac <code>~/Library/Application Support/Bridge Coach</code>.</li>

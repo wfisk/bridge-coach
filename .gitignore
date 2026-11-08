@@ -11,6 +11,11 @@ docs/**/*.json
 *.bws
 *.pdf
 *.zip
+# Les installateurs : faits par GitHub Actions, sur la page des versions, jamais dans le dépôt
+dist/
+*.exe
+*.pkg
+*.dmg
 
 # Official system documents (copyrighted)
 systems/*/ffb/

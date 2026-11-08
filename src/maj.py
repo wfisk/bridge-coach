@@ -7,18 +7,19 @@ Les versions publiées sont les étiquettes vX.Y du dépôt public (publier.sh).
     .venv/bin/python -I -X utf8 src/maj.py --appliquer 1.4 --attendre <pid de l'application>
 
 Il attend que l'application soit fermée (sous Windows, un programme ouvert garde ses fichiers), télécharge
-l'archive de la version, met l'ancien programme de côté dans .ancien-programme/, pose le nouveau, réinstalle les
-bibliothèques seulement si requirements.txt a changé, vérifie que le nouveau programme se charge, sinon remet
-l'ancien, puis rouvre Bridge Coach. Le dossier .venv/ et les fichiers de l'utilisateur (ailleurs) ne sont jamais
+l'archive de la version et vérifie son empreinte SHA-256 contre le SHA256SUMS publié avec elle (archive_verifiee ;
+les versions d'avant les installateurs n'en ont pas : l'archive de l'étiquette, sans empreinte), met l'ancien programme de côté dans .ancien-programme/, pose le nouveau, réinstalle les
+bibliothèques seulement si requirements.txt a changé (pip vérifie leurs empreintes, écrites dans ce fichier), vérifie que le nouveau programme se charge, sinon remet
+l'ancien, puis rouvre Bridge Coach. Les dossiers .venv/, .python/ (le Python des installateurs), .installeur/ et les fichiers de l'utilisateur (ailleurs) ne sont jamais
 touchés. Un dossier qui est un dépôt Git ne se met pas à jour ici : c'est git pull.
 
 Seulement la bibliothèque standard : ce module doit marcher même si le reste a changé.
 """
-import io, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.request, zipfile
+import hashlib, io, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.error, urllib.request, zipfile
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEPOT = "wfisk/bridge-coach"
-GARDER = {".venv", ".git", ".claude", ".ancien-programme"}   # jamais remplacés
+GARDER = {".venv", ".python", ".installeur", ".git", ".claude", ".ancien-programme"}   # jamais remplacés
 JOURNAL = "derniere-mise-a-jour.txt"
 
 
@@ -49,6 +50,40 @@ def lire(url, delai=20):
 def derniere_version():
     """La dernière version publiée sur GitHub, ou None. Lève OSError sans connexion."""
     return plus_recente([t["name"] for t in json.loads(lire(f"https://api.github.com/repos/{DEPOT}/tags?per_page=100"))])
+
+
+def empreinte_de(sommes, nom):
+    """L'empreinte de nom dans un texte SHA256SUMS (« empreinte  nom » par ligne), ou None."""
+    for ligne in sommes.splitlines():
+        x = ligne.split()
+        if len(x) == 2 and x[1].lstrip("*") == nom: return x[0].lower()
+    return None
+
+
+def verifier(donnees, attendu, nom):
+    if hashlib.sha256(donnees).hexdigest() != attendu:
+        raise ValueError(f"empreinte incorrecte pour {nom} : le fichier téléchargé n'est pas celui qui a été publié")
+
+
+def archive_verifiee(version, journal=print):
+    """L'archive de la version, vérifiée par son empreinte quand la version publiée en a une (bridge-coach-X.Y.zip et
+    SHA256SUMS joints par GitHub Actions) ; sinon l'archive de l'étiquette, comme avant les installateurs."""
+    try:
+        publiee = json.loads(lire(f"https://api.github.com/repos/{DEPOT}/releases/tags/v{version}"))
+    except urllib.error.HTTPError as ex:
+        if ex.code != 404: raise
+        publiee = {}
+    fichiers = {a["name"]: a["browser_download_url"] for a in publiee.get("assets", [])}
+    nom = f"bridge-coach-{version}.zip"
+    if nom in fichiers and "SHA256SUMS" in fichiers:
+        attendu = empreinte_de(lire(fichiers["SHA256SUMS"]).decode("utf-8", "replace"), nom)
+        if not attendu: raise ValueError(f"{nom} n'a pas d'empreinte publiée")
+        donnees = lire(fichiers[nom], 120)
+        verifier(donnees, attendu, nom)
+        journal("Empreinte de l'archive vérifiée.")
+        return donnees
+    journal("Cette version n'a pas d'empreinte publiée : archive de l'étiquette.")
+    return lire(f"https://github.com/{DEPOT}/archive/refs/tags/v{version}.zip", 120)
 
 
 def est_depot_git(racine=RACINE):
@@ -92,7 +127,7 @@ def poser(archive, racine=RACINE, python=None, journal=print):
             if x not in GARDER: shutil.move(os.path.join(source, x), os.path.join(racine, x))
         if exig(racine) != libs_avant:
             journal("Bibliothèques : installation des versions nouvelles…"); libs_changees = True
-            subprocess.run([python, "-m", "pip", "install", "-q", "-r", os.path.join(racine, "requirements.txt")], check=True)
+            subprocess.run([python, "-m", "pip", "install", "-q", "--disable-pip-version-check", "-r", os.path.join(racine, "requirements.txt")], check=True)
         subprocess.run([python, "-I", "-X", "utf8", "-c", "import sys; sys.path.insert(0, 'src'); import rapport, donnes, edition"],
                        cwd=racine, check=True, capture_output=True)
     except Exception as ex:
@@ -136,7 +171,7 @@ def main():
         if pid: attendre(pid)
         time.sleep(1)                                     # les derniers fichiers se ferment
         journal(f"Mise à jour de {version_locale()} vers {version}")
-        ok = poser(lire(f"https://github.com/{DEPOT}/archive/refs/tags/v{version}.zip", 120), journal=journal)
+        ok = poser(archive_verifiee(version, journal), journal=journal)
         journal("Terminé." if ok else "Rien n'a changé.")
     except Exception as ex:
         journal(f"Échec : {type(ex).__name__} : {ex}. Le programme n'a pas changé.")

@@ -1,0 +1,126 @@
+# Les installateurs, faits par GitHub (rien à faire à la main) :
+# - sur une étiquette vX.Y (./publier.sh) : l'archive du programme, Bridge-Coach-Setup.exe et Bridge-Coach.pkg, chacun
+#   essayé sur une machine Windows et un Mac (installation complète dans un dossier d'essai), puis la version sur la
+#   page Releases, avec SHA256SUMS et l'attestation de GitHub (gh attestation verify) ;
+# - sur main, quand installer/, requirements.txt ou ce fichier changent : les mêmes essais, sans rien publier ;
+# - à la demande (onglet Actions, « Run workflow ») : les essais.
+name: Installateurs
+
+on:
+  push:
+    tags: ['v*']
+    branches: [main]
+    paths: ['installer/**', 'requirements.txt', '.github/workflows/installateurs.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  programme:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then V="${GITHUB_REF_NAME#v}"; else V="0.0"; fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+      - name: Archive du programme
+        run: |
+          V="${{ steps.v.outputs.version }}"
+          mkdir dist
+          git archive --format=zip --prefix="bridge-coach-$V/" -o "dist/bridge-coach-$V.zip" HEAD
+          ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: programme
+          path: dist/
+
+  windows:
+    needs: programme
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: programme
+          path: dist
+      - name: Bridge-Coach-Setup.exe (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          & $iscc "/DVersion=${{ needs.programme.outputs.version }}" "/O$PWD\dist" installer\windows\bridge-coach.iss
+          if ($LASTEXITCODE) { exit 1 }
+      - name: Essai de l'installation (Windows PowerShell, comme chez les membres)
+        shell: powershell
+        run: |
+          $zip = Get-ChildItem dist\bridge-coach-*.zip | Select-Object -First 1
+          $h = (Get-FileHash -Algorithm SHA256 $zip.FullName).Hash.ToLower()
+          "$h  $($zip.Name)" | Set-Content -Encoding ascii "$env:RUNNER_TEMP\SHA256SUMS"
+          powershell -NoProfile -ExecutionPolicy Bypass -File installer\windows\installer.ps1 -Dossier "$env:RUNNER_TEMP\Bridge Coach" -Zip $zip.FullName -Sommes "$env:RUNNER_TEMP\SHA256SUMS" -SansPause
+          if ($LASTEXITCODE) { exit 1 }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/Bridge-Coach-Setup.exe
+
+  mac:
+    needs: programme
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: programme
+          path: dist
+      - name: Bridge-Coach.pkg
+        run: ./installer/mac/construire.sh "${{ needs.programme.outputs.version }}" dist
+      - name: Essai de l'installation
+        run: |
+          ZIP="$(ls dist/bridge-coach-*.zip | head -1)"
+          (cd dist && shasum -a 256 "$(basename "$ZIP")") > "$RUNNER_TEMP/SHA256SUMS"
+          /bin/bash installer/mac/scripts/installer-mac.sh "$RUNNER_TEMP/Bridge Coach/programme" "$PWD/$ZIP" "$RUNNER_TEMP/SHA256SUMS"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: dist/Bridge-Coach.pkg
+
+  publier:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [programme, windows, mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Empreintes
+        run: |
+          cd dist
+          sha256sum bridge-coach-*.zip Bridge-Coach-Setup.exe Bridge-Coach.pkg > SHA256SUMS
+          cat SHA256SUMS
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/bridge-coach-*.zip
+            dist/Bridge-Coach-Setup.exe
+            dist/Bridge-Coach.pkg
+      - name: Version sur la page Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ needs.programme.outputs.version }}"
+          git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          export NOTE="$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME")" V
+          python3 -c "import os; t = open('installer/notes-de-version.md').read(); \
+          t = t.replace('@NOTE@', os.environ['NOTE'].strip()).replace('@VERSION@', os.environ['V']); \
+          t = t.replace('@SHA256SUMS@', open('dist/SHA256SUMS').read().strip()); open('notes.md', 'w').write(t)"
+          gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --title "Bridge Coach $V" --notes-file notes.md

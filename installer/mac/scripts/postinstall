@@ -1,0 +1,21 @@
+#!/bin/bash
+# Bridge-Coach.pkg, après l'accord de l'utilisateur (il tourne en root) : installe le programme au nom de la personne
+# connectée, dans ~/Library/Application Support/Bridge Coach/programme, puis crée l'application Bridge Coach dans
+# Applications et son lien sur le Bureau (raccourci-mac.sh, sans le Dock). Journal : ~/Library/Logs/Bridge Coach.
+set -u
+U="$(stat -f%Su /dev/console)"
+case "$U" in ""|root|loginwindow) echo "Aucun utilisateur connecté."; exit 1 ;; esac
+H="$(dscl . -read "/Users/$U" NFSHomeDirectory | awk '{print $2}')"
+D="$H/Library/Application Support/Bridge Coach/programme"
+J="$H/Library/Logs/Bridge Coach"
+ICI="$(cd "$(dirname "$0")" && pwd)"
+sudo -u "$U" mkdir -p "$J"
+# le script est lu ici et donné à bash : le dossier des scripts du .pkg n'est lisible que par root
+sudo -u "$U" -H /bin/bash -s -- "$D" < "$ICI/installer-mac.sh" 2>&1 | sudo -u "$U" tee "$J/installation.txt"
+[ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
+APP="/Applications/Bridge Coach.app"
+HOME="$H" "$D/raccourci-mac.sh" < /dev/null || exit 1
+chown -R "$U":staff "$APP"
+chown -h "$U":staff "$H/Desktop/Bridge Coach" 2>/dev/null || true
+sudo -u "$U" /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP" || true
+exit 0

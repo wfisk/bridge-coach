@@ -34,7 +34,24 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         -X utf8 everywhere: Windows does not default to UTF-8, and -I ignores PYTHONUTF8
     bridge-coach.exemple.ini template of the user's bridge-coach.ini, copied on the first run
     VERSION, publier.sh  the published version; ./publier.sh 1.4 "note" runs the tests, writes VERSION, tags v1.4 and pushes.
-                        Members are offered only vX.Y tags, never work in progress on main
+                        Members are offered only vX.Y tags, never work in progress on main. The tag starts
+                        .github/workflows/installateurs.yml (GitHub Actions): git archive -> bridge-coach-X.Y.zip, then
+                        Bridge-Coach-Setup.exe (Inno Setup, windows-latest) and Bridge-Coach.pkg (pkgbuild/productbuild,
+                        macos-latest), each tried by a full install into a throwaway folder, then the GitHub Release with
+                        SHA256SUMS and a build-provenance attestation, notes from installer/notes-de-version.md and the tag
+                        message. On main, when installer/ or requirements.txt change: the same tries, nothing published.
+                        Installers are never in git (.gitignore: dist/, *.exe, *.pkg, *.dmg)
+    installer/          the installers' sources. They hold no program code: each fetches the latest Release, checks
+                        bridge-coach-X.Y.zip against its SHA256SUMS, then the standalone Python named in the zip's
+                        installer/python.txt (python-build-standalone 3.12, sha256 per platform: changing Python needs no new
+                        installer), then pip --require-hashes. windows/: bridge-coach.iss (no admin, %LOCALAPPDATA%\Programs\
+                        Bridge Coach, uninstaller in .installeur/, Start menu + Desktop shortcuts) runs installer.ps1 from
+                        PrepareToInstall (a failure stops before any shortcut; log %TEMP%\bridge-coach-installation.txt);
+                        installer.ps1 is UTF-8 with BOM and CRLF (Windows PowerShell 5.1). mac/: a payload-free .pkg whose
+                        postinstall (root) runs scripts/installer-mac.sh as the console user into ~/Library/Application
+                        Support/Bridge Coach/programme (log ~/Library/Logs/Bridge Coach), then raccourci-mac.sh as root
+                        (app chowned to the user). Both scripts take a local zip + SHA256SUMS for tests. Not tried yet by a
+                        real member; the Windows one never on a real PC (only on GitHub's Windows machine)
     src/                Python code
       app.py            the NiceGUI application: one bar across the top (ui.header: Fichier menu, the tabs, Aide; not the native bar: the window process leaves
                         the Dock, so macOS would show none) with Ouvrir une séance (the .bc.json, by session date), Importer
@@ -82,7 +99,10 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         for the progress bar; Cancel stops the whole process group; French messages only,
                         the Python trace goes to rapports/derniere-erreur.txt. Window through pywebview,
                         browser if it is missing (--navigateur); always host 127.0.0.1 (NiceGUI would open 0.0.0.0 in browser
-                        mode). requirements.txt pins exact tested versions (wheels checked for Windows/Mac, Python 3.9–3.13).
+                        mode). requirements.in pins the direct libraries by hand; requirements.txt is generated from it with uv
+                        (universal: Windows and Mac, Python 3.9–3.13; this .venv's versions as constraints) with every
+                        dependency and its SHA-256 hashes, so pip installs in hash-checking mode (needs a recent pip:
+                        pip 21 rejects the socketio extra). The command is in its header.
                         Mac only so far; Windows not tested
       rapport.py        imports a source (.bws, FFB PDF, simulated .json) into the Bridge Coach file
                         seances/AAAA-MM/<name>.bc.json (format, version, source, session, joueurs, donnes…;
@@ -104,7 +124,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         button), then a separate process (--appliquer V --attendre <app pid>) waits for the app to close,
                         downloads the tag's zip, moves the old program to .ancien-programme/, puts the new one, pip only if
                         requirements.txt changed, checks the new code imports, restores the old one on any failure, writes
-                        rapports/derniere-mise-a-jour.txt and reopens the app. Never touches .venv/.git; a Git clone is told
+                        rapports/derniere-mise-a-jour.txt and reopens the app. The zip is checked against the Release's SHA256SUMS
+                        (archive_verifiee, empreinte_de); a tag with no Release assets falls back to the tag archive, unchecked.
+                        Never touches .venv/.python/.installeur/.git; a Git clone is told
                         to use git pull. tests/test_maj.py applies a good and a broken version to throwaway copies
       donnes.py         creates training deals: a count per theme ("Squeeze=4" "Aléatoire=8", lire_quotas; the app's − / + list), each theme a test on a random
                         deal (THEMES: engine auction, double-dummy, coups.py or the plan's count), DELAI seconds per deal, then

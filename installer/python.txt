@@ -1,0 +1,9 @@
+# Le Python que les installateurs téléchargent : python-build-standalone (Astral), une version complète qui reste dans
+# le dossier du programme (.python) sans toucher à un autre Python de l'ordinateur.
+# Une ligne par plateforme : plateforme, empreinte SHA-256, adresse. Les installateurs lisent ce fichier dans la
+# version qu'ils viennent de télécharger (et de vérifier) : changer de Python ne demande pas de refaire les installateurs.
+# Pour changer : https://github.com/astral-sh/python-build-standalone/releases, fichiers *-install_only.tar.gz,
+# empreintes dans le SHA256SUMS de la même version. Python 3.9 à 3.13 (endplay n'existe pas pour 3.14).
+windows-x86_64 be7f14464d1d66f84429ad27e01f6d1482963afff64a2fb5256b2a51c7b5d398 https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15%2B20261021-x86_64-pc-windows-msvc-install_only.tar.gz
+mac-aarch64 a18cc33862b53bd54a148c710def5375c1b47470cccedf817a19c2d211764584 https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15%2B20261021-aarch64-apple-darwin-install_only.tar.gz
+mac-x86_64 869e0b30959beccc616ce14907439f4d0b3170c5830a2362dade07f07b0ed3b8 https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15%2B20261021-x86_64-apple-darwin-install_only.tar.gz

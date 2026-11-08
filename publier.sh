@@ -17,4 +17,5 @@ git add VERSION
 git commit -q -m "Version $V : $NOTE"
 git tag -a "v$V" -m "$NOTE"
 git push -q origin main "v$V"
-echo "Version $V publiée."
+echo "Version $V publiée. GitHub fait maintenant les installateurs (quelques minutes) :"
+echo "  https://github.com/wfisk/bridge-coach/actions   puis   https://github.com/wfisk/bridge-coach/releases"

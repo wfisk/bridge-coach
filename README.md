@@ -15,7 +15,29 @@ Pour chaque séance, le programme produit, dans `rapports/AAAA-MM/` :
 Les rapports `standard` et `expert` commencent par une page de synthèse : contrat et entame
 recommandés face à ce qui a été joué aux tables.
 
-## Installation sur Mac
+## Installation (le plus simple)
+
+Sur la page des versions, https://github.com/wfisk/bridge-coach/releases/latest, téléchargez l'installateur :
+
+- **Windows 10 ou 11 (64 bits) :** `Bridge-Coach-Setup.exe`
+- **Mac :** `Bridge-Coach.pkg`
+
+Ouvrez-le et suivez les étapes. Il ne contient pas le programme : il télécharge sa dernière version, avec un Python
+qui lui est propre (il ne touche pas à un autre Python de l'ordinateur) et ses bibliothèques, et vérifie l'empreinte
+SHA-256 de chaque fichier avant de s'en servir. Comptez quelques minutes et une connexion à Internet. Ensuite, les
+mises à jour se font dans l'application (voir plus bas).
+
+- **Windows** affiche d'abord « Windows a protégé votre ordinateur » (l'installateur n'est pas signé) :
+  **Informations complémentaires**, puis **Exécuter quand même**. Le programme va dans
+  `%LOCALAPPDATA%\Programs\Bridge Coach`, sans droits d'administrateur ; un raccourci sur le Bureau et dans le menu
+  Démarrer (pour l'épingler à la barre des tâches : clic droit, **Plus**, **Épingler à la barre des tâches**).
+- **Mac** refuse d'abord de l'ouvrir : **Réglages Système**, **Confidentialité et sécurité**, **Ouvrir quand même**.
+  Le programme va dans `~/Library/Application Support/Bridge Coach/programme` ; l'application **Bridge Coach** dans
+  Applications, avec un lien sur le Bureau. Au premier lancement, acceptez l'accès au dossier Documents.
+
+Les installations à la main ci-dessous restent possibles (et nécessaires pour travailler sur le code).
+
+## Installation sur Mac, à la main
 
 Il faut Python 3.9 ou plus récent (`python3 --version` pour vérifier).
 
@@ -61,7 +83,7 @@ dossier à garder, en particulier les séances (`.bc.json`) : elles contiennent 
 ne peut pas recréer. Si le
 dossier du programme change de place, relancez `./raccourci-mac.sh`.
 
-## Installation sur Windows 10 ou 11
+## Installation sur Windows 10 ou 11, à la main
 
 **Pas encore essayée sur un vrai PC Windows :** ces étapes sont écrites à partir du code. Il faut un PC
 64 bits, et 8 Go de mémoire au minimum : le calcul peut occuper environ 4 Go en plus de Windows et de Bridgemate.
@@ -139,11 +161,23 @@ publiées (étiquettes `v1.4` du dépôt), jamais le travail en cours.
 Un dossier installé avec `git clone` se met à jour par `git pull` puis `./installer.sh` ; le bouton le signale.
 
 **Publier une version** (pour le responsable du programme) : `./publier.sh 1.4 "Ce qui change"`. Le script vérifie
-les tests, écrit `VERSION`, crée l'étiquette `v1.4` et l'envoie sur GitHub ; les membres la voient aussitôt.
+les tests, écrit `VERSION`, crée l'étiquette `v1.4` et l'envoie sur GitHub ; les membres la voient aussitôt. GitHub
+Actions (`.github/workflows/installateurs.yml`) fait alors l'archive du programme et les deux installateurs, les
+essaie sur une machine Windows et un Mac, et les met sur la page des versions avec leurs empreintes (`SHA256SUMS`)
+et une attestation de provenance. Les installateurs ne sont jamais dans le dépôt Git.
 
 ## Désinstaller
 
-Bridge Coach ne s'inscrit pas dans le système : on le désinstalle en supprimant ses dossiers.
+**Installé avec l'installateur**
+
+- Windows : **Paramètres**, **Applications**, **Applications installées**, **Bridge Coach**, **Désinstaller**. Le
+  programme, son Python et ses raccourcis partent ; restent vos réglages (`%APPDATA%\Bridge Coach`) et vos fichiers
+  (`Documents\bridge-coach-files`), à supprimer vous-même si vous le voulez.
+- Mac : mettez à la corbeille **Bridge Coach** dans Applications, son lien sur le Bureau, et le dossier
+  `~/Library/Application Support/Bridge Coach` (le programme, son Python et vos réglages). Vos fichiers
+  (`~/Documents/bridge-coach-files`) restent.
+
+**Installé à la main** : Bridge Coach ne s'inscrit pas dans le système, on le désinstalle en supprimant ses dossiers.
 
 **Windows**
 

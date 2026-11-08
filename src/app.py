@@ -99,11 +99,11 @@ def date_lisible(chemin):
 GRIS_BARRE = "#f3f3f1"
 LARGEUR_PANNEAU = 300                                     # la barre de droite de l'onglet Jouer
 # le côté de la table de l'onglet Jouer : ce que laissent la largeur (barres, mains des côtés) et la hauteur (mains du
-# haut et du bas), 440px au moins : en dessous, toute la table rétrécit (JS_AJUSTE)
-COTE_TABLE = "clamp(440px, min(100vw - 740px, 100vh - 375px), 640px)"
-# pendant le jeu de la carte, avec le mort sur un côté (en défense) : une table en 16:9, plus large, pour que la ligne la
-# plus longue du mort laisse la place au pli ; la colonne de la main du mort, vide, est rendue à la table
-LARGEUR_TABLE_LARGE = "clamp(600px, min(100vw - 660px, (100vh - 375px) * 16 / 9), 1000px)"
+# haut et du bas), 420px au moins : en dessous, toute la table rétrécit (JS_AJUSTE)
+COTE_TABLE = "clamp(420px, min(100vw - 740px, 100vh - 412px), 640px)"   # 412 : une main cachée en haut et la vôtre en bas
+# pendant le jeu de la carte, avec le mort sur un côté (en défense) : une table rectangulaire, de la même hauteur, plus
+# large de la colonne de la main du mort (vide : ses cartes sont sur la table). Les cartes gardent leur taille.
+LARGEUR_TABLE_LARGE = f"calc({COTE_TABLE} + 84px)"
 HAUTEUR_BARRE = 37                                        # la barre de menus du haut                                    # le gris clair des barres latérales, comme celle de Claude
 
 JS_AJUSTE = """<script>
@@ -1272,28 +1272,46 @@ def page():
                 f"title='Vert, vers le partenaire : pli gagné ; gris, en travers : pli perdu'>"
                 + "".join(f"<div class='dos {forme(g)}{' gagne' if gagne(g) else ''}'></div>" for _, g in p.plis) + "</div>")   # gagné : vert
 
-    def pli_html(p, places):
-        """Le pli en cours, chaque carte devant le joueur qui l'a posée."""
+    BORD_PLI = 54          # une carte jouée : sur la table, devant son joueur, au-delà de ses plis gardés (12 + 30 px)
+    ICI_PLI = {"haut": f"top:{BORD_PLI}px;left:50%;transform:translateX(-50%)",
+               "bas": f"bottom:{BORD_PLI}px;left:50%;transform:translateX(-50%)",
+               "gauche": f"left:{BORD_PLI}px;top:50%;transform:translateY(-50%)",
+               "droite": f"right:{BORD_PLI}px;top:50%;transform:translateY(-50%)"}
+
+    def carte_posee(c, r, ou=None, ecoule=None):
+        """Une carte jouée, comme dans les mains ; ou : le côté d'où elle glisse quand elle vient d'être posée."""
+        anim = f" arrive-{ou}" if ou else ""
+        retard = f";animation-delay:-{ecoule:.2f}s" if ou else ""
+        return f"<div class='carte{' r' if c in '♥♦' else ''}{anim}' style='margin:0{retard}'>{face(r)}<br/>{c}</div>"
+
+    def pli_cartes(p, places, posees, derniere=None, ecoule=0, mort=None):
+        """Les cartes du pli, chacune sur la table juste devant le joueur qui l'a posée, comme les cartons des enchères ;
+        celle du mort (mort : son siège, quand il est étalé sur la table) est dessinée à côté de ses cartes (mort_etale)."""
+        haut, gauche, droite, bas = places
+        cote = {haut: "haut", gauche: "gauche", droite: "droite", bas: "bas"}
+        h = ""
+        for x, (c, r) in posees.items():
+            if x == mort: continue
+            vient = cote[x] if x == derniere else None
+            h += f"<div style='position:absolute;{ICI_PLI[cote[x]]};z-index:3'>{carte_posee(c, r, vient, ecoule)}</div>"
+        return h
+
+    def pli_en_cours(p):
+        """(posées {siège: (couleur, rang)}, le siège de la carte qui vient d'arriver ou None, depuis combien de temps)."""
         pli = jeu["pli_vu"][0] if jeu["pli_vu"] else p.pos.pli
         posees = {s: (c, r.translate(carte.FR)) for s, c, r in pli}
-        D = 62                                         # chaque carte à la même distance du centre, donc de son bord
         n = len(p.pos.jouees)                          # une carte vient d'être posée : elle glisse depuis le bord du joueur
         if n > jeu.get("cartes_vues", 0): jeu["carte_arrive"] = (n, time.monotonic())
         jeu["cartes_vues"] = n
         n_, t_ = jeu.get("carte_arrive") or (0, 0)
         ecoule = time.monotonic() - t_
-        derniere = pli[-1][0] if pli and n_ == n and ecoule < .5 else None
-        haut, gauche, droite, bas = places
-        cote = {haut: "haut", gauche: "gauche", droite: "droite", bas: "bas"}
-        def case(s, x, y):                             # la carte posée, comme dans les mains, au milieu de son côté
-            if s not in posees: return ""
-            c, r = posees[s]
-            anim = f" arrive-{cote[s]}" if s == derniere else ""
-            retard = f";animation-delay:-{ecoule:.2f}s" if s == derniere else ""
-            return (f"<div style='position:absolute;left:calc(50% + {x}px);top:calc(50% + {y}px);transform:translate(-50%,-50%);"
-                    f"z-index:3'><div class='carte{' r' if c in '♥♦' else ''}{anim}' style='margin:0{retard}'>{face(r)}<br/>{c}</div></div>")
+        return posees, (pli[-1][0] if pli and n_ == n and ecoule < .5 else None), ecoule
+
+    def pli_html(p, places, mort=None):
+        """Le pli en cours, chaque carte devant le joueur qui l'a posée, et les plis gardés."""
+        posees, derniere, ecoule = pli_en_cours(p)
         return (f"<div style='position:absolute;inset:0;pointer-events:none'>"
-                f"{case(haut, 0, -D)}{case(bas, 0, D)}{case(gauche, -D, 0)}{case(droite, D, 0)}"
+                f"{pli_cartes(p, places, posees, derniere, ecoule, mort)}"
                 + "".join(plis_gardes(p, x, ou) for x, ou in zip(places, ("haut", "gauche", "droite", "bas"))
                           if x == jeu["siege"] or (p.camp(x) != p.camp(jeu["siege"]) and x != p.mort())) + "</div>")   # les vôtres, ceux des adversaires (pas du mort : il est étalé)
 
@@ -1385,30 +1403,36 @@ def page():
                      sanitize=False)
         if ok: el.on("click", lambda x=(coul, r): sur_clic(x))
 
-    def mort_etale(cartes, jouables, sur_clic, atout, cote="haut"):
+    def mort_etale(cartes, jouables, sur_clic, atout, cote="haut", posee=""):
         """Le mort étalé comme à la table : une colonne par couleur, la plus forte carte en haut, l'atout à gauche
         (à la droite du mort), puis les couleurs en alternant noir et rouge. Sur un côté (cote « gauche » ou « droite »),
-        une ligne par couleur, la plus forte carte vers le mort, l'atout toujours à sa droite."""
+        une ligne par couleur, la plus forte carte vers le mort, l'atout toujours à sa droite. posee : la carte que le
+        mort vient de jouer, juste à côté de ses cartes, du côté du centre."""
         autres = [c for c in ORDRE_MAIN if c != atout]
         ordre = ([atout] if atout in ORDRE_MAIN else []) + autres
         if cote in ("gauche", "droite"):
             if cote == "gauche": ordre = ordre[::-1]          # le mort à gauche regarde vers la droite : sa droite est en bas
-            with ui.column().classes("gap-1 mort-table mort-cote " + ("items-start" if cote == "gauche" else "items-end")):
-                for coul in ordre:
-                    with ui.row().classes("no-wrap gap-0 ligne-mort"):
-                        rangs = list(cartes.get(coul, "")) or [None]
-                        if cote == "droite": rangs = rangs[::-1]    # à droite, la plus forte contre le bord
-                        for r in rangs:
-                            if r is None: ui.html(f"<div class='carte vide'>{rouge(coul)}</div>", sanitize=False)
-                            else: carte_el(coul, r, jouables, sur_clic)
+            with ui.row().classes("no-wrap items-center gap-3"):
+                if cote == "droite" and posee: ui.html(posee, sanitize=False)
+                with ui.column().classes("gap-1 mort-table mort-cote " + ("items-start" if cote == "gauche" else "items-end")):
+                    for coul in ordre:
+                        with ui.row().classes("no-wrap gap-0 ligne-mort"):
+                            rangs = list(cartes.get(coul, "")) or [None]
+                            if cote == "droite": rangs = rangs[::-1]    # à droite, la plus forte contre le bord
+                            for r in rangs:
+                                if r is None: ui.html(f"<div class='carte vide'>{rouge(coul)}</div>", sanitize=False)
+                                else: carte_el(coul, r, jouables, sur_clic)
+                if cote == "gauche" and posee: ui.html(posee, sanitize=False)
             return
-        with ui.row().classes("no-wrap items-start gap-3 mort-table"):
-            for coul in ordre:
-                with ui.column().classes("gap-0 colonne-mort"):
-                    if not cartes.get(coul):
-                        ui.html(f"<div class='carte vide'>{rouge(coul)}</div>", sanitize=False)
-                    for r in cartes.get(coul, ""):
-                        carte_el(coul, r, jouables, sur_clic)
+        with ui.column().classes("items-center gap-3"):
+            with ui.row().classes("no-wrap items-start gap-3 mort-table"):
+                for coul in ordre:
+                    with ui.column().classes("gap-0 colonne-mort"):
+                        if not cartes.get(coul):
+                            ui.html(f"<div class='carte vide'>{rouge(coul)}</div>", sanitize=False)
+                        for r in cartes.get(coul, ""):
+                            carte_el(coul, r, jouables, sur_clic)
+            if posee: ui.html(posee, sanitize=False)
 
     def eventail(cartes, jouables=None, sur_clic=None, colonnes=False, grande=False, a_vous=False):
         """Une main en cartes : {couleur: rangs français du plus fort au plus faible}. En ligne, un petit espace entre les
@@ -1440,7 +1464,7 @@ def page():
         joueurs autour. contenu(siège, position) dessine une place ; sur_table : les positions posées sur la table (le mort)."""
         haut, gauche, droite, bas = places
         large = "gauche" in sur_table or "droite" in sur_table          # le mort sur un côté : la table en 16:9
-        forme = (f"width:{LARGEUR_TABLE_LARGE};aspect-ratio:16 / 9;" if large else f"width:{COTE_TABLE};aspect-ratio:1 / 1;")
+        forme = (f"width:{LARGEUR_TABLE_LARGE};height:{COTE_TABLE};" if large else f"width:{COTE_TABLE};aspect-ratio:1 / 1;")
         with ui.element("div").classes("w-full").style("overflow:hidden;padding-top:8px"), \
                 ui.element("div").classes("ajuste").style("width:max-content;transform-origin:0 0"):   # rétrécit avec la fenêtre (JS_AJUSTE)
             with ui.grid(columns="auto auto auto" if large else "1fr auto 1fr") \
@@ -1483,11 +1507,15 @@ def page():
                         cartes = {k: "".join(r.translate(carte.FR) for r in v) for k, v in p.pos.reste[x].items()}
                         jouables = {(k, r.translate(carte.FR)) for k, r in p.legales()} if cliquable and tour == x else None
                         clic = lambda y: carte_jouer((y[0], y[1].translate(carte.EN)))
-                        if x == p.mort(): mort_etale(cartes, jouables, clic, p.den, ou)
+                        if x == p.mort():
+                            posees, derniere, ecoule = pli_en_cours(p)
+                            cr = posees.get(x)
+                            mort_etale(cartes, jouables, clic, p.den, ou,
+                                       carte_posee(*cr, ou if x == derniere else None, ecoule) if cr else "")
                         else: eventail(cartes, jouables, clic, colonnes=ou in ("gauche", "droite"), grande=x == s)   # les cartes jouables ont déjà leur bord
             elif not p.fini():                               # un adversaire : sa main cachée, en éventail fermé
                 dos(ou, sum(len(v) for v in p.pos.reste[x].values()))
-        table(d, places, contenu, lambda: ui.html(pli_html(p, places), sanitize=False),
+        table(d, places, contenu, lambda: ui.html(pli_html(p, places, None if p.fini() else p.mort()), sanitize=False),
               sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == p.mort() and not p.fini()])
 
     @ui.refreshable
@@ -1649,17 +1677,11 @@ def page():
         pli = q.pos.pli or (q.plis[-1][0] if q.plis else [])
         posees = {x: (cc, r_.translate(carte.FR)) for x, cc, r_ in pli}
         def centre():
-            D = 62; haut, gauche, droite, bas = places
-            def case(x, dx, dy):
-                if x not in posees: return ""
-                cc, r_ = posees[x]
-                return (f"<div style='position:absolute;left:calc(50% + {dx}px);top:calc(50% + {dy}px);transform:translate(-50%,-50%);"
-                        f"z-index:3'><div class='carte{' r' if cc in '♥♦' else ''}' style='margin:0'>{face(r_)}<br/>{cc}</div></div>")
-            ui.html(f"<div style='position:absolute;inset:0;pointer-events:none'>{case(haut, 0, -D)}{case(bas, 0, D)}"
-                    f"{case(gauche, -D, 0)}{case(droite, D, 0)}</div>", sanitize=False)
+            ui.html(f"<div style='position:absolute;inset:0;pointer-events:none'>{pli_cartes(q, places, posees, mort=q.mort())}</div>",
+                    sanitize=False)
         def contenu(x, ou):
             reste = {kk: "".join(r_.translate(carte.FR) for r_ in v) for kk, v in q.pos.reste[x].items()}
-            if x == q.mort(): mort_etale(reste, None, None, q.den, ou)
+            if x == q.mort(): mort_etale(reste, None, None, q.den, ou, carte_posee(*posees[x]) if x in posees else "")
             else: eventail(reste, colonnes=ou in ("gauche", "droite"), grande=x == jeu["siege"])
         with ui.row().classes("w-full no-wrap items-start gap-4").style(f"padding-right:{LARGEUR_PANNEAU}px"):
             with ui.column().classes("grow min-w-0 gap-2"):

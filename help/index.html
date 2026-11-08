@@ -8,7 +8,7 @@
   body { font: 16px/1.55 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #222; background: #fff; max-width: 42em; margin: 0 auto; padding: 24px 20px 60px; }
   h1, h2 { color: #1f6b45; line-height: 1.25; }
   h1, h2, h3 { font-size: 1em; }
-  h2 { margin-top: 1.8em; }
+  h2 { margin-top: 2.2em; text-transform: none; }
   h3 { color: #1f6b45; margin-top: 1.4em; }
   li { margin-bottom: .4em; }
   code { background: #e6efe9; padding: .1em .35em; border-radius: 4px; font-size: .92em; word-break: break-all; }
@@ -19,172 +19,170 @@
 </head>
 <body>
 <h1>Aide de Bridge Coach</h1>
-<p>Bridge Coach lit le fichier d'un tournoi joué avec Bridgemate et en tire des rapports au format PDF.</p>
-<p>L'onglet <b>Donnes</b> montre la séance ouverte : à gauche, la liste de ce qu'elle contient (la séance, les joueurs, chaque donne), à droite le détail de l'entrée choisie. L'onglet <b>Jouer</b> vous fait enchérir une donne, le programme tenant les trois autres places. L'onglet <b>Analyse</b> lance l'analyse et la montre donne par donne ; l'onglet <b>Rapports</b> a trois pages, choisies à gauche : <b>Créer les rapports</b> (les options et le bouton), <b>Rapports de la séance</b> et <b>Toutes les séances</b> (le bilan des enchères). L'onglet <b>Réglages</b> en a deux : <b>Dossiers</b> et <b>Mise à jour du programme</b>. <b>Fichier</b>, <b>Nouveau…</b> crée des donnes d'entraînement. Une donne choisie dans un onglet reste choisie dans les autres.</p>
+<!-- Cinq catégories (h2), chacune avec ses sujets (h3) : l'application montre un sujet à la fois, la barre de gauche les range par catégorie. -->
 
-<h2>Jouer : enchérir une donne</h2>
-<p>Choisissez une donne à gauche. Vous êtes en bas de la table, à la place choisie dans <b>Options</b>, en haut de la liste : toujours le déclarant (le choix de départ), le camp du déclarant (le déclarant ou le mort, au hasard), la défense, le donneur, une place fixe (Nord, Sud, Est ou Ouest), ou au hasard. Le déclarant est celui de la séquence recommandée (l'analyse de l'expert, sinon l'analyse standard, sinon les enchères du programme). Le choix vaut pour toutes les donnes et reste d'une fois sur l'autre. Le programme enchérit pour votre partenaire et pour les adversaires, selon le système ; leurs mains restent cachées jusqu'à la fin.</p>
-<ul>
-  <li>Cliquez votre enchère dans la boîte : celles qui ne sont plus possibles sont grisées.</li>
-  <li><b>Indice</b>, sur le devant de la boîte à enchères, dit ce que le système vous ferait dire, et pourquoi, seulement si vous le demandez.</li>
-  <li><b>Le sens des enchères</b>, sous la grille des enchères, explique chaque enchère des autres joueurs, comme on le demande à la table.</li>
-  <li>Si vous sortez du système, votre partenaire continue au mieux ; parfois il passe, faute de règle pour la séquence.</li>
-</ul>
-<p>Le programme prend un petit temps de réflexion avant chaque enchère, comme à la table.</p>
-<p>À la fin, si votre camp déclare, <b>Jouer … par …</b> : vous tenez le déclarant et le mort, le programme défend (voir plus bas). Si c'est l'autre camp, <b>Défendre contre …</b> : vous tenez votre main, le programme joue le déclarant, son mort et votre partenaire ; les autres mains et l'analyse restent cachées jusqu'à la fin du jeu, sauf si vous choisissez <b>Voir les mains sans jouer</b>. Sinon, les quatre mains apparaissent, avec votre contrat face à ceux de l'analyse de l'expert et de l'analyse standard : le résultat au double mort, les IMP que vous gagnez ou perdez, la première enchère où les séquences diffèrent, et les séquences côte à côte. <b>Recommencer</b> rejoue la donne, <b>Donne suivante</b> passe à la suivante. Chaque essai est gardé à côté de la séance (<code>…-jeu.json</code>) ; la donne est marquée « enchérie ». Les analyses ne changent pas.</p>
-<h3>Jouer la carte</h3>
-<p>La défense entame selon les règles du système, puis le mort s'étale. Cliquez la carte à jouer dans la main dont c'est le tour, le déclarant ou le mort : seules les cartes possibles sont actives. Chaque défenseur réfléchit un instant : comme un joueur, il imagine les mains qu'il ne voit pas, d'après les enchères et les cartes déjà jouées, et joue la carte qui fait chuter le contrat le plus souvent ; il ne regarde jamais vos cartes. Le pli terminé reste un instant au centre. Comme en duplicate, chacun retourne ensuite sa carte devant lui sur la table, dans l'ordre, chaque carte en partie sur la précédente : pointée vers le partenaire pour un pli gagné (dos vert), en travers pour un pli perdu (dos gris). Chaque carte jouée glisse sur la table depuis le bord de son joueur. Vous voyez les vôtres et celles des deux adversaires. Pendant le jeu, les cartons d'enchères sont rangés : la barre de droite montre l'étui, et <b>Revoir les enchères</b> les rappelle.</p>
-<ul>
-  <li><b>Indice</b> dit la carte que jouerait le programme à votre place.</li>
-  <li><b>Réclamer le reste</b> donne toutes les levées qui restent, si la défense ne peut vraiment plus rien faire.</li>
-  <li><b>Plis joués</b> montre chaque pli, avec qui l'a gagné.</li>
-</ul>
-<p>À la fin : vos levées, le résultat du contrat et ce qu'il donne au double mort, puis la comparaison avec les analyses. <b>Rejouer la carte</b> recommence le jeu du même contrat.</p>
-<h3>Ce que pensent les joueurs du programme</h3>
-<p>Pendant le jeu, la barre de droite montre ce que pensait le dernier joueur du programme en choisissant sa carte : pourquoi cette carte (dans combien des donnes qu'il imagine elle fait gagner ou chuter le contrat, et les autres cartes), puis ce qu'il croit des mains qu'il ne voit pas : leurs points, la longueur probable de chaque couleur, les honneurs qu'il y voit. Il ne regarde jamais les mains cachées : il les imagine d'après les enchères et les cartes jouées.</p>
-<p>Les défenseurs du programme signalent, comme le prévoit le système (systems/sef-2024/entames.md, à confirmer) : sur l'entame du partenaire, une grosse carte pour l'appel, la plus petite pour le refus ; quand le déclarant joue une couleur, la parité (grosse puis petite avec un nombre pair) ; en défausse, l'appel dans la couleur aimée. Ils ne signalent qu'entre des cartes aussi bonnes l'une que l'autre, et le partenaire lit ces signaux pour se faire une idée des mains cachées. La pensée le dit : « Ses cartes se valant, il choisit celle qui signale : un appel à ♥ ».</p>
-<p>Le déclarant du programme annonce son plan avec sa première carte : ses levées sûres, ses perdantes, l'ordre des couleurs. À chaque pli qu'il entame, il regarde dans ses donnes imaginées si la suite passe par un squeeze ou une mise en main, et le dit dans sa pensée.</p>
-<p>À la fin de la donne, un <b>Résumé de la donne</b> : le résultat face au double mort, les cartes qui ont coûté une levée (cartes vues), les coups qui se présentaient (squeeze, mise en main, laisser-passer), joués ou manqués, les signaux de la défense, ce que croyaient les joueurs du programme comparé aux vraies mains, et vos cartes.</p>
-<p>À la fin, <b>Revoir la donne avec les pensées</b> rejoue la donne carte par carte (◀ ▶) : les quatre mains telles qu'elles étaient, le pli en cours et la pensée du joueur. Pour vos cartes, <b>Qu'aurait joué le programme ?</b> montre la carte qu'il aurait choisie à votre place, comparée à la vôtre. Les pensées sont gardées avec la donne.</p>
-<h3>Défendre</h3>
-<p>Quand l'autre camp gagne le contrat, vous défendez. Si c'est à vous d'entamer, choisissez votre carte : le mort s'étale ensuite. Le mort se pose sur votre gauche ou votre droite, sur la table contre son bord : une ligne par couleur, la plus forte carte vers le mort, l'atout à sa droite, comme à la table. Vous ne voyez que votre main et le mort ; le déclarant (le programme, qui ne voit pas vos cartes) joue ses deux mains, votre partenaire (le programme aussi) défend avec vous. <b>Indice</b> dit la carte que jouerait le programme à votre place ; on ne réclame pas en défense.</p>
+<h2>Démarrer</h2>
 
-<p>Chaque donne garde où vous en êtes : vos enchères et les cartes jouées restent telles quelles quand vous passez à une autre donne ou fermez Bridge Coach. Dans la barre de droite, <b>Recommencer les enchères</b> repart du début de la donne, et pendant le jeu <b>Reprendre le jeu de la carte</b> repart de l'entame. Changer de place dans <b>Options</b> fait repartir les donnes du début. Chaque carton glisse sur la table depuis le bord du joueur qui le pose ; les cartons déjà posés ne bougent pas. Le programme prend un temps de réflexion avant chaque enchère, plus long plus on monte (manche, chelem) et quand la décision est serrée ; au jeu de la carte, un défenseur joue vite une carte forcée et hésite plus longtemps quand la bonne carte ne s'impose pas.</p>
-<p>La boîte à enchères a, devant, <b>Passe</b>, <b>X</b>, <b>XX</b> et <b>Stop</b> ; <b>Indice</b>, sous la boîte, montre ce que dirait le système ; un second clic le masque. Avant un saut, cliquez sur <b>Stop</b>, puis sur l'enchère : Bridge Coach vous le rappelle si vous l'oubliez. Quand votre partenaire fait une enchère qui s'alerte (4e couleur forcing, Spoutnik, Drury, 2SA bicolore…), le bouton <b>Alerte</b> apparaît : cliquez dessus avant d'enchérir ; sinon, Bridge Coach vous le signale.</p>
-<h2>L'onglet Donnes</h2>
-<p>Il montre la séance ouverte. La liste de gauche donne :</p>
-<ul>
-  <li><b>Séance</b> : la date, d'où elle vient (Bridgemate, feuille de route, entraînement), le nombre de donnes et de tables ;</li>
-  <li><b>Joueurs</b> : chaque paire, avec les initiales et le nom complet quand il est connu ;</li>
-  <li><b>Alertes</b>, s'il y en a eu à l'import ;</li>
-  <li><b>Donne 1</b>, <b>Donne 2</b>… : les quatre mains, le donneur et la vulnérabilité, le double mort, le par, le résultat de chaque table et ses enchères, telles que les Bridgemate les ont enregistrées.</li>
-</ul>
+<h3>Présentation</h3>
+<p>Bridge Coach lit le fichier d'un tournoi joué avec Bridgemate, l'analyse et en tire des rapports au format PDF. Il fait aussi des donnes d'entraînement, et vous fait jouer chaque donne contre le programme.</p>
+<p>Tout est dans la barre en haut de la fenêtre : le menu <b>Fichier</b> à gauche, puis les onglets, et l'<b>Aide</b> à droite.</p>
+<dl>
+  <dt>Donnes</dt>
+  <dd>La séance ouverte : à gauche, la liste de ce qu'elle contient (la séance, les joueurs, chaque donne), à droite le détail de l'entrée choisie.</dd>
+  <dt>Jouer</dt>
+  <dd>Enchérir une donne, puis la jouer, comme déclarant ou en défense ; le programme tient les autres places.</dd>
+  <dt>Analyse</dt>
+  <dd>Lancer l'analyse de la séance, et la lire donne par donne.</dd>
+  <dt>Rapports</dt>
+  <dd>Créer les rapports PDF, avec leurs options, et les ouvrir.</dd>
+  <dt>Réglages</dt>
+  <dd>Les dossiers utilisés, et la mise à jour du programme.</dd>
+</dl>
+<p>Une donne choisie dans un onglet reste choisie dans les autres. Bridge Coach se rouvre sur la séance et la page où vous étiez : l'onglet, la donne, la version de l'analyse (Standard ou Expert), les tableaux dépliés ou non, la page de l'aide.</p>
 
-<h2>Le menu Fichier</h2>
-<p>Tout est dans la barre en haut de la fenêtre : le menu <b>Fichier</b> à gauche, puis les onglets <b>Donnes</b>, <b>Jouer</b>, <b>Analyse</b>, <b>Rapports</b> et <b>Réglages</b>, et l'<b>Aide</b> à droite. Le menu <b>Fichier</b> :</p>
+<h3>Le menu Fichier et les séances</h3>
 <dl>
   <dt>Nouveau…</dt>
-  <dd>Ferme la séance ouverte (la barre de titre ne montre plus de fichier) et propose une séance vide, à remplir à la main, ou des donnes tirées au hasard (voir plus bas). Dès qu'elle est créée, la nouvelle séance s'ouvre dans l'onglet <b>Donnes</b> et son nom s'affiche dans la barre de titre.</dd>
+  <dd>Ferme la séance ouverte et propose de créer une séance : vide, à remplir à la main, ou des donnes sur des thèmes (voir « Les séances »). <b>Annuler</b> vous ramène à la séance et à la page d'avant.</dd>
   <dt>Ouvrir une séance…</dt>
-  <dd>Les séances déjà dans Bridge Coach, les plus récentes d'abord : tournois importés et donnes d'entraînement. La séance choisie s'ouvre, son nom s'affiche dans la barre de titre de la fenêtre, et Bridge Coach la rouvre au prochain lancement.</dd>
+  <dd>Les séances déjà dans Bridge Coach, les plus récentes d'abord : tournois importés et donnes d'entraînement. Pour une séance rangée ailleurs, <b>Choisir un fichier…</b> et son fichier <code>.bc.json</code>. La séance choisie s'ouvre et son nom s'affiche dans la barre de titre.</dd>
   <dt>Importer…</dt>
-  <dd>Fait d'un fichier de tournoi une séance Bridge Coach : un <code>.bws</code> du dossier de Bridgemate (ceux déjà importés sont marqués), ou un fichier ailleurs sur l'ordinateur (<code>.bws</code>, feuille de route <code>.pdf</code> de FFBClubNet). Le fichier d'origine n'est pas modifié. L'import prend quelques secondes, puis la séance s'ouvre.</dd>
+  <dd>Fait d'un fichier de tournoi une séance Bridge Coach : un <code>.bws</code> du dossier de Bridgemate (ceux déjà importés sont marqués), ou un fichier ailleurs sur l'ordinateur. Le fichier d'origine n'est pas modifié. Après un tournoi, l'onglet <b>Donnes</b> signale aussi le nouveau fichier de Bridgemate, avec un bouton <b>Importer</b>.</dd>
   <dt>Exporter en PBN…</dt>
-  <dd>Écrit la séance ouverte au format <code>.pbn</code>, à côté d'elle : mains, donneur, vulnérabilité et double mort. Le <code>.pbn</code> s'importe dans Bridgemate (pour faire distribuer les donnes) et se lit dans la plupart des logiciels de bridge.</dd>
+  <dd>Écrit la séance ouverte au format <code>.pbn</code>, à côté d'elle : mains, donneur, vulnérabilité et double mort. Il s'importe dans Bridgemate (pour faire distribuer les donnes) et se lit dans la plupart des logiciels de bridge.</dd>
   <dt>Ouvrir le dossier de travail</dt>
   <dd>Le dossier où sont vos séances et vos rapports.</dd>
 </dl>
+<p>Bridge Coach lit trois sortes de fichiers : le <code>.bws</code> d'un tournoi enregistré par Bridgemate ; la feuille de route <code>.pdf</code> de FFBClubNet (les mains, les contrats et les résultats, mais pas les enchères) ; et ses propres séances, <code>.bc.json</code>. Chaque tournoi importé et chaque séance créée devient un <code>.bc.json</code> : il contient tout ce qu'il faut pour refaire les rapports, sans le fichier d'origine. Les joueurs y sont avec leurs initiales, et leur nom complet quand le fichier d'origine le donne.</p>
 
-<h2>Analyser une séance et créer les rapports</h2>
+<h3>Où sont mes fichiers ?</h3>
+<p>Dans le dossier de travail, indiqué par <code>fichiers</code> dans l'onglet <b>Réglages</b>, par défaut <code>bridge-coach-files</code> dans vos Documents. Dans l'onglet <b>Rapports</b>, <b>Ouvrir le dossier des rapports</b> y mène directement.</p>
+<ul>
+  <li><code>seances</code> : les séances Bridge Coach (<code>.bc.json</code>), rangées par mois (par exemple <code>seances/2026-11</code>), avec le fichier d'origine, les analyses et les copies datées (<code>versions</code>). Les séances créées par <b>Fichier</b>, <b>Nouveau…</b> commencent par <code>entrainement-</code>.</li>
+  <li><code>rapports</code> : les rapports PDF, classés par mois.</li>
+</ul>
+
+<h2>Les séances</h2>
+
+<h3>L'onglet Donnes</h3>
+<p>Il montre la séance ouverte. La liste de gauche donne :</p>
+<ul>
+  <li><b>Séance</b> : la date, d'où elle vient (Bridgemate, feuille de route, entraînement), le nombre de donnes et de tables, et les alertes de l'import s'il y en a eu ;</li>
+  <li><b>Joueurs</b> : chaque paire, avec les initiales et le nom complet quand il est connu ;</li>
+  <li><b>Donne 1</b>, <b>Donne 2</b>… : les quatre mains, le donneur et la vulnérabilité, le résultat de chaque table et ses enchères, telles que les Bridgemate les ont enregistrées.</li>
+</ul>
+<p>Choisissez votre nom dans <b>Vous êtes</b> (onglet <b>Rapports</b>) : votre table est surlignée en jaune dans les tableaux des résultats. Les tables y sont rangées du meilleur résultat au moins bon, vu de votre camp, et une ligne au-dessus du tableau donne votre rang, votre pourcentage et le meilleur score de la donne. Une ligne sur fond vert pâle montre le contrat recommandé, avec son résultat au double mort, à sa place parmi les tables.</p>
+<p>Quand la séance décrit son mouvement (par exemple un Mitchell, avec une table relais), la page <b>Séance</b> montre votre parcours : pour chaque tour, la table, les donnes, vos adversaires et votre pourcentage du tour ; chaque donne rappelle son tour, sa table et vos adversaires.</p>
+
+<h3>Taper ses propres donnes</h3>
 <ol>
-  <li>Après un tournoi, l'onglet <b>Donnes</b> signale le nouveau fichier de Bridgemate : cliquez sur <b>Importer</b>. Sinon, choisissez une séance avec <b>Fichier</b>, <b>Ouvrir une séance…</b> Son nom s'affiche dans la barre de titre.</li>
-  <li>Dans l'onglet <b>Analyse</b>, choisissez <b>Analyse standard</b> en haut de la liste de gauche, puis cliquez sur <b>Lancer l'analyse</b>. <b>Analyse expert</b>, juste en dessous, dit si une analyse de l'expert existe pour cette séance.</li>
-  <li>Attendez la fin de la barre de progression, en général plusieurs minutes. Vous pouvez utiliser l'ordinateur pendant ce temps.</li>
-  <li>L'analyse se lit donne par donne dans l'onglet <b>Analyse</b>, comme la page de la donne dans le rapport : les mains et les repères d'entame, les résultats à la table (votre rang et le contrat recommandé ; <b>Les … tables</b> déplie le tableau complet), les enchères recommandées et l'avis de l'expert, le plan de jeu, l'entame et la défense, le commentaire, les cartes vues. Le double mort et le par sont dans la barre de droite : fond vert là où une manche se gagne, vert plus soutenu pour un chelem, et un cadre autour du contrat du par. Quand une analyse de l'expert existe, c'est elle qui s'affiche ; le bouton <b>Standard</b> montre l'analyse standard.</li>
-  <li>Pour les rapports PDF, allez dans l'onglet <b>Rapports</b>, page <b>Créer les rapports</b>. Choisissez les options (votre nom, l'ordre des donnes, la page des noms des joueurs), puis cliquez sur <b>Créer les rapports</b> : ils reprennent l'analyse enregistrée, en une minute environ, sans la refaire.</li>
-  <li>Une fois prêts, la page <b>Rapports de la séance</b> les liste, avec la date de leur création : cliquez sur un nom pour l'ouvrir.</li>
+  <li><b>Fichier</b>, <b>Nouveau…</b>, puis, sans choisir de thème, <b>Créer une séance vide</b>. Elle s'appelle « Entraînement » et la date du jour et s'ouvre dans l'onglet <b>Donnes</b>, sur la donne 1.</li>
+  <li>Tapez les cartes de chaque couleur dans les champs, autour de la table : A R D V X 9 … 2 (ou 10 ; les lettres anglaises K Q J T marchent aussi). Une couleur vide est une chicane. Au centre, les cartes qui restent à placer ; une carte tapée deux fois est signalée.</li>
+  <li><b>Compléter au hasard</b> distribue les cartes qui manquent : tapez seulement votre main, ou la vôtre et celle du partenaire. Le double mort et le par apparaissent dès que la donne est complète.</li>
+  <li><b>Ajouter une donne</b>, en bas de la liste de gauche, en ajoute une ; <b>Supprimer la donne</b> en retire une. Le donneur et la vulnérabilité suivent le numéro de la donne et se changent en haut de la page.</li>
+</ol>
+<p>Tout est enregistré dès que vous quittez un champ. Avant les changements, Bridge Coach garde une copie de la séance (au plus une toutes les 10 minutes, les 20 dernières) : la page <b>Séance</b> les liste, et <b>Restaurer</b> en remet une. Une donne incomplète est marquée « à compléter » ; l'analyse et les rapports la laissent de côté.</p>
+<p>Une donne s'affiche d'abord telle quelle ; <b>Modifier la donne</b> ouvre la saisie, <b>Terminer</b> revient à l'affichage. Une donne modifiée perd son analyse standard (relancez l'analyse) ; si elle a une analyse de l'expert, Bridge Coach le demande d'abord, et cette analyse est mise de côté. Seules les séances créées dans Bridge Coach se modifient : les donnes d'un tournoi sont celles qui ont été jouées.</p>
+
+<h3>Créer des donnes sur des thèmes</h3>
+<ol>
+  <li><b>Fichier</b>, <b>Nouveau…</b>. Les thèmes sont rangés en deux familles, <b>Enchères</b> et <b>Jeu de la carte</b>, et en trois niveaux : <b>1re année</b> (évaluer sa main, soutenir la majeure, les SA, Stayman et texas, compter ses levées, l'impasse…), <b>Intermédiaire</b> (contres, réveil, bicolores, chelems, hold-up…) et <b>Avancé</b> (grand chelem, sacrifice, Roudi, mise en main, squeeze…). Les boutons de niveau, en haut, choisissent ceux qui s'affichent.</li>
+  <li>Chaque thème a ses boutons <b>−</b> et <b>+</b> : combien de donnes de chacun, 36 en tout au plus. <b>Donnes au hasard</b> donne des mains sans thème. Les thèmes d'enchères et de jeu de la carte choisis ensemble sont réunis dans les mêmes donnes : 2 Stayman et 2 L'impasse font 2 donnes « Stayman + L'impasse ». La ligne au-dessus du bouton dit ce qui sera créé.</li>
+  <li><b>Créer … donnes</b> : le programme cherche les donnes, les mélange et en fait une séance, qui s'ouvre aussitôt. <b>Analyser ces donnes</b> ouvre l'onglet <b>Analyse</b>, prêt à lancer l'analyse.</li>
+</ol>
+<p><b>Jeu de la carte</b> donne des contrats où le déclarant compte une levée de moins : à lui de la trouver. <b>Jeu de la carte avancé</b> : un squeeze, une mise en main ou un laisser-passer, et le contrat gagne tout juste. Un thème rare peut demander plusieurs minutes ; s'il n'est pas trouvé à temps, la donne est tirée normalement (ou, pour deux thèmes réunis, garde le thème d'enchères), et Bridge Coach le dit. Le dossier contient aussi un fichier <code>.pbn</code> pour Bridgemate Control Software (3.1.2 ou plus récent : <b>Fichier</b>, <b>Importer</b>).</p>
+<p>Drury fait partie du système (à confirmer) ; Roudi non : ces donnes sont choisies sur les mains, mais les enchères recommandées n'emploient pas cette convention.</p>
+
+<h2>Jouer</h2>
+
+<h3>Enchérir une donne</h3>
+<p>Choisissez une donne à gauche. Vous êtes en bas de la table, à la place choisie dans <b>Options</b>, en haut de la liste : le déclarant (le choix de départ), le camp du déclarant, la défense, le donneur, une place fixe ou au hasard. Le programme enchérit pour votre partenaire et pour les adversaires, selon le système ; leurs mains restent cachées jusqu'à la fin.</p>
+<ul>
+  <li>La boîte à enchères montre les enchères encore possibles ; devant, <b>Passe</b>, <b>X</b>, <b>XX</b> et <b>Stop</b>. Chaque carton glisse sur la table depuis le bord du joueur qui le pose.</li>
+  <li><b>Stop</b> : avant un saut, cliquez sur <b>Stop</b>, puis sur l'enchère ; Bridge Coach vous le rappelle si vous l'oubliez.</li>
+  <li><b>Alerte</b> apparaît quand votre partenaire fait une enchère qui s'alerte (4e couleur forcing, Spoutnik, Drury, 2SA bicolore…) : cliquez dessus avant d'enchérir.</li>
+  <li><b>Indice</b>, sous la boîte, dit ce que dirait le système, et pourquoi ; un second clic le masque.</li>
+  <li><b>Le sens des enchères</b>, sous la grille, explique chaque enchère des autres joueurs, comme on le demande à la table. Si vous sortez du système, votre partenaire continue au mieux.</li>
+</ul>
+<p>Le programme prend un temps de réflexion avant chaque enchère, plus long plus on monte et quand la décision est serrée. Chaque donne garde où vous en êtes, même après avoir fermé Bridge Coach ; <b>Recommencer les enchères</b> repart du début. Changer de place dans <b>Options</b> fait repartir les donnes du début.</p>
+<p>À la fin des enchères : <b>Jouer … par …</b> si votre camp déclare, <b>Défendre contre …</b> sinon, ou <b>Voir les mains sans jouer</b>. Les quatre mains apparaissent alors avec votre contrat face aux analyses : le résultat au double mort, les IMP gagnés ou perdus, la première enchère où les séquences diffèrent. Chaque essai est gardé à côté de la séance ; les analyses ne changent pas.</p>
+
+<h3>Jouer la carte</h3>
+<p>La défense entame selon les règles du système, puis le mort s'étale. Cliquez la carte à jouer dans la main dont c'est le tour, le déclarant ou le mort : seules les cartes possibles sont actives. Chaque défenseur imagine les mains qu'il ne voit pas, d'après les enchères et les cartes jouées, et joue la carte qui fait chuter le contrat le plus souvent ; il ne regarde jamais vos cartes.</p>
+<p>Chaque carte glisse sur la table depuis le bord de son joueur ; le pli reste un instant au centre. Comme en duplicate, chacun retourne ensuite sa carte devant lui : pointée vers le partenaire pour un pli gagné (dos vert), en travers pour un pli perdu (dos gris). Pendant le jeu, la barre de droite montre l'étui ; <b>Revoir les enchères</b> les rappelle.</p>
+<ul>
+  <li><b>Indice</b> dit la carte que jouerait le programme à votre place.</li>
+  <li><b>Réclamer</b> donne toutes les levées qui restent, si la défense ne peut vraiment plus rien faire.</li>
+  <li><b>Plis joués</b> montre chaque pli, avec qui l'a gagné ; <b>Reprendre le jeu de la carte</b> repart de l'entame.</li>
+</ul>
+<p>À la fin : vos levées, le résultat et le double mort, le <b>Résumé de la donne</b>, puis la comparaison avec les analyses. <b>Rejouer la carte</b> recommence le jeu du même contrat.</p>
+
+<h3>Défendre</h3>
+<p>Quand l'autre camp gagne le contrat, vous défendez. Si c'est à vous d'entamer, choisissez votre carte : le mort s'étale ensuite. Il se pose sur votre gauche ou votre droite, sur la table contre son bord : une ligne par couleur, la plus forte carte vers le mort, l'atout à sa droite, comme à la table. Vous ne voyez que votre main et le mort ; le déclarant (le programme, qui ne voit pas vos cartes) joue ses deux mains, votre partenaire (le programme aussi) défend avec vous et vous signale ses cartes. <b>Indice</b> dit la carte que jouerait le programme à votre place ; on ne réclame pas en défense.</p>
+
+<h3>Ce que pensent les joueurs du programme</h3>
+<p>Pendant le jeu, la barre de droite montre ce que pensait le dernier joueur du programme en choisissant sa carte : pourquoi cette carte (dans combien des donnes qu'il imagine elle fait gagner ou chuter le contrat, et les autres cartes), puis ce qu'il croit des mains qu'il ne voit pas : leurs points, la longueur probable de chaque couleur, les honneurs qu'il y voit.</p>
+<ul>
+  <li><b>Le plan</b> : le déclarant du programme annonce son plan avec sa première carte (levées sûres, perdantes, ordre des couleurs). À chaque pli qu'il entame, il dit si la suite passe par un squeeze ou une mise en main dans ses donnes imaginées.</li>
+  <li><b>Les signaux</b> : les défenseurs signalent comme le prévoit le système (à confirmer) : appel ou refus sur l'entame du partenaire, parité quand le déclarant joue une couleur, appel en défausse. Ils ne signalent qu'entre des cartes aussi bonnes l'une que l'autre, et le partenaire lit ces signaux.</li>
+  <li><b>Le résumé de la donne</b>, à la fin : le résultat face au double mort, les cartes qui ont coûté une levée (cartes vues), les coups qui se présentaient, joués ou manqués, les signaux, ce que croyaient les joueurs comparé aux vraies mains, et vos cartes.</li>
+  <li><b>Revoir la donne avec les pensées</b> rejoue la donne carte par carte (◀ ▶), les quatre mains visibles. Pour vos cartes, <b>Qu'aurait joué le programme ?</b> montre la carte qu'il aurait choisie à votre place.</li>
+</ul>
+
+<h2>Analyse et rapports</h2>
+
+<h3>Analyser une séance</h3>
+<ol>
+  <li>Ouvrez ou importez la séance (menu <b>Fichier</b>).</li>
+  <li>Dans l'onglet <b>Analyse</b>, choisissez <b>Analyse standard</b> en haut de la liste de gauche, puis <b>Lancer l'analyse</b>. Attendez la fin de la barre de progression, en général plusieurs minutes ; vous pouvez utiliser l'ordinateur pendant ce temps.</li>
+  <li>L'analyse se lit donne par donne dans l'onglet <b>Analyse</b>. Quand une analyse de l'expert existe, c'est elle qui s'affiche ; le bouton <b>Standard</b> montre l'analyse standard.</li>
 </ol>
 <p class="note">Lancez l'analyse une fois le tournoi terminé : le calcul occupe beaucoup l'ordinateur.</p>
 
-<h2>L'analyse de l'expert, avec Claude</h2>
+<h3>L'analyse de l'expert, avec Claude</h3>
 <p>L'analyse de l'expert est écrite par Claude, sur le site <b>claude.ai</b>, dans votre navigateur. Dans l'onglet <b>Analyse</b>, choisissez <b>Analyse expert</b> et suivez les étapes :</p>
 <ol>
-  <li><b>Préparer le fichier pour Claude</b> : Bridge Coach met dans un seul fichier, <code>seance-du-AAAA-MM-JJ-pour-claude.json</code>, tout ce dont Claude a besoin (la séance, l'analyse standard, le système, un exemple et la consigne), puis ouvre son dossier (<code>pour-claude</code>, dans votre dossier de travail). Les joueurs n'y sont que par leurs initiales : les noms complets, le nom du club et le nom du fichier d'origine ne quittent pas l'ordinateur.</li>
-  <li><b>Ouvrir claude.ai</b> et commencer une nouvelle conversation.</li>
-  <li>Glisser ce fichier dans la conversation.</li>
+  <li><b>Préparer le fichier pour Claude</b> : un seul fichier, <code>seance-du-AAAA-MM-JJ-pour-claude.json</code>, avec tout ce dont Claude a besoin. Les joueurs n'y sont que par leurs initiales : les noms complets, le nom du club et le nom du fichier d'origine ne quittent pas l'ordinateur.</li>
+  <li><b>Ouvrir claude.ai</b>, commencer une nouvelle conversation et y glisser ce fichier.</li>
   <li><b>Copier la consigne</b>, la coller dans la conversation et l'envoyer.</li>
-  <li>Claude écrit le fichier <code>…-expert.json</code> : le télécharger. Pour une longue séance, il peut répondre en plusieurs fichiers.</li>
-  <li><b>Importer l'analyse de l'expert…</b> : choisir le fichier téléchargé (un par un s'il y en a plusieurs). Bridge Coach vérifie qu'il correspond à la séance et ajoute les donnes à l'analyse de l'expert, rangée dans la séance ; la version d'avant est gardée dans <code>versions/</code>.</li>
-  <li>Lisez-la donne par donne dans l'onglet <b>Analyse</b>. Pour les rapports PDF : <b>Aller aux rapports</b>, puis <b>Créer les rapports</b>. Ils reprennent l'analyse de l'expert, sans refaire l'analyse standard.</li>
+  <li>Claude écrit le fichier <code>…-expert.json</code> : le télécharger (pour une longue séance, il peut y en avoir plusieurs).</li>
+  <li><b>Importer l'analyse de l'expert…</b> : Bridge Coach vérifie qu'elle correspond à la séance et l'ajoute ; la version d'avant est gardée dans <code>versions/</code>.</li>
 </ol>
 
+<h3>Lire l'analyse</h3>
+<p>Chaque donne se présente comme sa page dans le rapport : les mains et les repères d'entame, les résultats à la table (votre rang et le contrat recommandé ; <b>Les … tables</b> déplie le tableau complet), les enchères recommandées et l'avis de l'expert, le plan de jeu, l'entame et la défense, le commentaire, les cartes vues.</p>
+<p>Le double mort et le par sont dans la barre de droite : fond vert là où une manche se gagne, vert plus soutenu pour un chelem, et un cadre autour du contrat du par.</p>
+<p>Dans le plan de jeu, « Essai à la table » est une estimation : le programme joue la donne sur des mains adverses imaginées, sans voir les vraies, face à la meilleure défense. Le pourcentage est un ordre de grandeur ; le mot qui l'accompagne compte davantage.</p>
 
-<h2>Les rapports</h2>
+<h3>Les rapports</h3>
+<p>Dans l'onglet <b>Rapports</b>, page <b>Créer les rapports</b> : choisissez les options, puis <b>Créer les rapports</b>. Ils reprennent l'analyse enregistrée, en une minute environ, sans la refaire ; la page <b>Rapports de la séance</b> les liste ensuite.</p>
 <dl>
   <dt>Relevé des donnes</dt>
   <dd>Ce qui a été joué : les mains, les enchères et les résultats de chaque table.</dd>
   <dt>Analyse</dt>
   <dd>L'avis du programme : enchères recommandées, entame et plan de jeu.</dd>
   <dt>Analyse de l'expert et Comparaison</dt>
-  <dd>Ces deux rapports n'apparaissent que si une analyse rédigée existe pour ce tournoi.</dd>
+  <dd>Seulement si une analyse de l'expert existe pour la séance.</dd>
+  <dt>Bilan des enchères</dt>
+  <dd>Page <b>Toutes les séances</b> : où le programme perd des IMP face à l'expert, sur toutes vos séances.</dd>
 </dl>
+<p>Les options : <b>Vous êtes</b> (votre table surlignée), <b>Les donnes dans l'ordre où vous les avez jouées</b> (quand la séance décrit votre parcours) et <b>Ajouter une page avec le nom des joueurs</b> (sinon, les joueurs sont désignés par leurs initiales).</p>
+<p>À la fin de chaque rapport, votre parcours puis la synthèse : une ligne par donne, le contrat recommandé, combien de tables l'ont joué, plus haut (rouge) ou plus bas (bleu), ou l'ont laissé à l'autre camp, et votre contrat. Cliquez sur un contrat recommandé pour aller à ses enchères, sur un nombre pour le tableau des résultats de la donne. Les donnes créées n'ayant pas été jouées, leur rapport n'a ni relevé ni résultats des tables.</p>
 
-<h2>Lire le plan de jeu</h2>
-<p>« Essai à la table » donne une estimation : le programme joue la donne sur des mains adverses imaginées, sans voir les vraies, face à la meilleure défense. Le pourcentage est un ordre de grandeur, le mot qui l'accompagne compte davantage. À la vraie table, la défense se trompe parfois, et le contrat réussit un peu plus souvent.</p>
+<h2>Installation et réglages</h2>
 
-<h2>Choisir une autre séance</h2>
-<p><b>Fichier</b>, <b>Ouvrir une séance…</b> Pour une séance rangée ailleurs sur l'ordinateur, cliquez sur <b>Choisir un fichier…</b> et choisissez son fichier <code>.bc.json</code>.</p>
-
-<p>Bridge Coach lit trois sortes de fichiers :</p>
-<dl>
-  <dt><code>.bws</code></dt>
-  <dd>Le fichier d'un tournoi, enregistré par Bridgemate.</dd>
-  <dt><code>.pdf</code></dt>
-  <dd>Une feuille de route de FFBClubNet : elle donne les mains, les contrats et les résultats, mais pas les enchères.</dd>
-  <dt><code>.bc.json</code></dt>
-  <dd>Une séance Bridge Coach. Chaque tournoi importé, et chaque fichier de donnes créé par <b>Fichier</b>, <b>Nouveau…</b>, en devient une : elle contient tout ce qu'il faut pour refaire les rapports, sans le fichier d'origine. Les joueurs y sont avec leurs initiales, et leur nom complet quand le fichier d'origine le donne.</dd>
-</dl>
-<p>Bridge Coach se rouvre sur la séance et la page où vous étiez : l'onglet, la donne ou l'entrée choisie à gauche, la version de l'analyse (Standard ou Expert), les tableaux dépliés ou non (<b>Les … tables</b>, d'une donne à l'autre), la page de l'aide. Sur la page <b>Fichier</b>, <b>Nouveau…</b>, <b>Annuler</b> vous ramène à la séance et à la page d'avant.</p>
-<p>Les séances sont rangées par mois dans le dossier <code>seances</code>, par exemple <code>seances/2026-11</code>. Les donnes créées par <b>Fichier</b>, <b>Nouveau…</b> commencent par <code>entrainement-</code>.</p>
-<p>Les donnes créées n'ayant pas été jouées, leur rapport ne contient ni relevé des donnes, ni résultats des tables.</p>
-
-<h2>Afficher le nom des joueurs</h2>
-<p>Dans les rapports, les joueurs sont désignés par leurs initiales. Dans l'onglet <b>Rapports</b>, cochez <b>Ajouter une page avec le nom des joueurs</b> avant de créer les rapports pour ajouter une première page avec les noms complets.</p>
-
-<h2>Votre parcours et l'ordre des donnes</h2>
-<p>Quand la séance décrit son mouvement (par exemple un Mitchell : Nord-Sud fixes, Est-Ouest qui montent d'une table, les étuis qui descendent, une table relais), la page <b>Séance</b> de l'onglet <b>Donnes</b> montre votre parcours : pour chaque tour, la table, les donnes, vos adversaires et votre pourcentage moyen du tour. Chaque donne rappelle son tour, sa table et vos adversaires, à l'écran et dans les rapports PDF.</p>
-<p>Dans l'onglet <b>Rapports</b>, cochez <b>Les donnes dans l'ordre où vous les avez jouées</b> : les rapports créés ensuite suivent vos tours (une donne passée au relais reste à sa place), puis les donnes que vous n'avez pas jouées, par numéro. Votre parcours et la synthèse sont à la fin, après les donnes.</p>
-
-<h2>Le contrat recommandé et la synthèse</h2>
-<p>Le tableau des résultats de chaque donne, à l'écran et dans les rapports, contient une ligne sur fond vert pâle : le contrat recommandé (celui de l'expert, sinon celui du programme), avec son résultat et son score au double mort. Elle est rangée parmi les tables : on voit d'un coup combien ont fait mieux ou moins bien.</p>
-<p>La synthèse, en fin de rapport, tient en une ligne par donne : le contrat recommandé, combien de tables l'ont joué (<b>Même</b>), plus haut (rouge) ou plus bas (bleu) dans le même camp, ou l'ont laissé à l'autre camp ; et votre contrat, coloré de même. Elle ne parle que des enchères. Cliquez sur un contrat recommandé pour aller à ses enchères, sur la page de la donne, ou sur un nombre pour aller au tableau des résultats de la donne.</p>
-
-<h2>Taper ses propres donnes</h2>
-<ol>
-  <li><b>Fichier</b>, <b>Nouveau…</b>, puis, sans choisir de thème, <b>Créer une séance vide</b>. Elle s'appelle « Entraînement » et la date du jour (l'heure s'ajoute si ce nom existe déjà) et s'ouvre dans l'onglet <b>Donnes</b>, sur la donne 1.</li>
-  <li>Tapez les cartes de chaque couleur dans les champs, autour de la table : A R D V X 9 … 2 (ou 10 ; les lettres anglaises K Q J T marchent aussi). Une couleur vide est une chicane. Au centre, les cartes qui restent à placer ; une carte tapée deux fois est signalée.</li>
-  <li><b>Compléter au hasard</b> distribue les cartes qui manquent : tapez seulement votre main, ou la vôtre et celle du partenaire, le programme fait le reste. Le double mort et le par apparaissent dès que la donne est complète.</li>
-  <li><b>Ajouter une donne</b>, en bas de la liste de gauche, en ajoute une ; <b>Supprimer la donne</b> en retire une (les suivantes prennent le numéro d'avant). Le donneur et la vulnérabilité suivent le numéro de la donne et se changent en haut de la page.</li>
-</ol>
-<p>Tout est enregistré dès que vous quittez un champ : il n'y a rien à sauvegarder. Avant les changements, Bridge Coach garde une copie de la séance (au plus une toutes les 10 minutes, les 20 dernières) : la page <b>Séance</b> les liste, et <b>Restaurer</b> en remet une. Une donne incomplète est marquée « à compléter » ; l'analyse et les rapports la laissent de côté.</p>
-<p>Une donne s'affiche d'abord telle quelle ; le bouton <b>Modifier la donne</b>, en haut à droite, ouvre la saisie, et <b>Terminer</b> revient à l'affichage. Une donne nouvelle ou à compléter s'ouvre directement en saisie. Une donne modifiée perd son analyse standard (relancez l'analyse). Si elle a une analyse de l'expert, Bridge Coach le demande d'abord : cette analyse est mise de côté, gardée dans une copie datée, et il faudra la redemander à Claude pour cette donne ; les autres donnes gardent la leur.</p>
-<p>Seules les séances créées dans Bridge Coach se modifient : les donnes d'un tournoi sont celles qui ont été jouées, elles n'ont pas de bouton <b>Modifier la donne</b>.</p>
-
-<h2>Créer des donnes sur des thèmes</h2>
-<ol>
-  <li>Choisissez <b>Fichier</b>, <b>Nouveau…</b>. Les thèmes sont rangés en deux familles, <b>Enchères</b> et <b>Jeu de la carte</b>, et en trois niveaux : <b>1re année</b> (évaluer sa main, soutenir la majeure, les SA, Stayman et texas, compter ses levées, l'impasse…), <b>Intermédiaire</b> (contres, réveil, bicolores, chelems, hold-up…) et <b>Avancé</b> (grand chelem, sacrifice, Roudi, mise en main, squeeze…). Les boutons de niveau, en haut, choisissent ceux qui s'affichent ; un thème déjà choisi reste visible.</li>
-  <li>Chaque thème a ses boutons <b>−</b> et <b>+</b> : combien de donnes de chacun, 36 en tout au plus. <b>Donnes au hasard</b> donne des mains sans thème. Les thèmes d'enchères et de jeu de la carte choisis ensemble sont réunis dans les mêmes donnes : 2 Stayman et 2 L'impasse font 2 donnes « Stayman + L'impasse ». La ligne au-dessus du bouton dit ce qui sera créé.</li>
-  <li>Cliquez sur <b>Créer … donnes</b> (sans thème : <b>Créer une séance vide</b>) : le programme cherche les donnes, les mélange et en fait une séance, qui s'ouvre aussitôt.</li>
-  <li>Cliquez sur <b>Analyser ces donnes</b> : l'onglet <b>Analyse</b> s'ouvre avec ces donnes, prêt à lancer l'analyse.</li>
-</ol>
-<p><b>Jeu de la carte</b> donne des contrats où le déclarant compte une levée de moins : à lui de la trouver. <b>Jeu de la carte avancé</b> donne des contrats où le programme a trouvé un squeeze, une mise en main ou un laisser-passer, cartes vues, et où le contrat gagne tout juste.</p>
-<p>Un thème rare peut demander plusieurs minutes. S'il n'est pas trouvé dans le temps prévu, la donne reste tirée normalement, et Bridge Coach le signale. Deux thèmes réunis qu'on ne trouve pas ensemble : à mi-temps, la donne garde le thème d'enchères seul, et Bridge Coach le dit.</p>
-<p>Le dossier contient aussi un fichier <code>.pbn</code>. Il s'importe dans Bridgemate Control Software, version 3.1.2 ou plus récente : menu <b>Fichier</b>, <b>Importer</b>.</p>
-<p>Drury fait partie du système de Bridge Coach (à confirmer) : sur une ouverture de 1♥ ou 1♠ en 3e ou 4e, le partenaire qui a passé dit 2♣ avec un fit et 10 à 12 points. Roudi n'en fait pas partie : ces donnes sont choisies sur les mains, mais les enchères recommandées n'emploient pas cette convention.</p>
-
-<h2>Vous êtes</h2>
-<p>Dans l'onglet <b>Rapports</b>, <b>Vous êtes</b> : choisissez votre nom dans la liste (les joueurs de vos séances). Votre table est alors surlignée en jaune dans les tableaux des résultats : dans l'onglet <b>Donnes</b> tout de suite, et dans les rapports PDF quand ils sont refaits. Les tables y sont rangées du meilleur résultat au moins bon, vu de votre camp (de Nord-Sud pour une donne que vous n'avez pas jouée), et une ligne au-dessus du tableau donne votre rang, votre pourcentage et le meilleur score de la donne.</p>
-
-<h2>Réglages</h2>
-<p>L'onglet <b>Réglages</b> montre les deux dossiers utilisés, et celui où le programme est installé, qui est à part. Le bouton <b>Modifier les réglages</b> ouvre un petit fichier de texte :</p>
+<h3>Réglages et mise à jour</h3>
+<p>L'onglet <b>Réglages</b>, page <b>Dossiers</b>, montre les deux dossiers utilisés, et celui où le programme est installé. <b>Modifier les réglages</b> ouvre un petit fichier de texte :</p>
 <dl>
   <dt><code>bridgemate</code></dt>
-  <dd>Le dossier où Bridgemate enregistre ses fichiers <code>.bws</code>. Bridge Coach ne fait qu'y lire : il travaille sur une copie.</dd>
+  <dd>Le dossier où Bridgemate enregistre ses fichiers <code>.bws</code>. Bridge Coach ne fait qu'y lire.</dd>
   <dt><code>fichiers</code></dt>
-  <dd>Le dossier de travail : vos séances et vos rapports, par défaut <code>bridge-coach-files</code> dans vos Documents. Ce n'est pas le dossier où Bridge Coach est installé. Si vous le changez, les fichiers existants ne suivent pas : déplacez-les vous-même.</dd>
+  <dd>Le dossier de travail : vos séances et vos rapports. Si vous le changez, les fichiers existants ne suivent pas : déplacez-les vous-même.</dd>
 </dl>
 <p>Modifiez le dossier voulu, enregistrez, puis fermez et rouvrez Bridge Coach.</p>
-<h3>Mettre à jour Bridge Coach</h3>
-<p>En bas de l'onglet <b>Réglages</b> : la version installée et le bouton <b>Rechercher une mise à jour</b>. S'il y a une version nouvelle, <b>Mettre à jour vers …</b> ferme Bridge Coach, le met à jour en une minute environ et le rouvre. Vos séances, vos rapports et vos réglages ne changent pas ; si quelque chose se passe mal, l'ancienne version est remise en place. Bridge Coach ne contacte GitHub que si vous cliquez, et n'envoie rien.</p>
+<p>Page <b>Mise à jour du programme</b> : la version installée et <b>Rechercher une mise à jour</b>. S'il y en a une, <b>Mettre à jour vers …</b> ferme Bridge Coach, le met à jour en une minute environ et le rouvre. Vos séances, rapports et réglages ne changent pas ; si quelque chose se passe mal, l'ancienne version est remise en place. Bridge Coach ne contacte GitHub que si vous cliquez, et n'envoie rien.</p>
 
-<h2>Où sont mes fichiers ?</h2>
-<p>Ils sont dans le dossier de travail, indiqué par <code>fichiers</code> dans l'onglet <b>Réglages</b>, par défaut <code>bridge-coach-files</code> dans vos Documents. Dans l'onglet <b>Rapports</b>, <b>Ouvrir le dossier des rapports</b> y mène directement.</p>
-<ul>
-  <li><code>rapports</code> : les rapports PDF, classés par mois ;</li>
-  <li><code>seances</code> : les séances Bridge Coach (<code>.bc.json</code>), le fichier d'origine et les analyses.</li>
-</ul>
-
-<h2>Sécurité</h2>
+<h3>Sécurité</h3>
 <ul>
   <li>Téléchargez Bridge Coach seulement sur sa page GitHub, <code>github.com/wfisk/bridge-coach</code> : jamais une pièce jointe d'e-mail ni un autre site.</li>
   <li>Vos séances et vos rapports restent sur votre ordinateur : Bridge Coach n'envoie rien sur Internet, et un autre appareil du réseau, même au club, ne peut pas ouvrir l'application. Les fichiers ne partent que si vous les envoyez vous-même à Claude pour l'analyse de l'expert.</li>
@@ -192,17 +190,17 @@
   <li>« Windows a protégé votre ordinateur » est normal : le programme n'est pas signé par un certificat payant. Cliquez sur <b>Informations complémentaires</b>, puis <b>Exécuter quand même</b>.</li>
 </ul>
 
-<h2>Désinstaller Bridge Coach</h2>
+<h3>Désinstaller Bridge Coach</h3>
 <p>Bridge Coach ne s'inscrit pas dans le système : on le désinstalle en supprimant ses dossiers.</p>
 <ol>
   <li>Le dossier du programme, <code>bridge-coach</code> : le programme et ses bibliothèques, environ 220 Mo.</li>
   <li>Les réglages : sous Windows <code>%APPDATA%\Bridge Coach</code> (à taper dans la barre d'adresse de l'Explorateur), sur Mac <code>~/Library/Application Support/Bridge Coach</code>.</li>
-  <li>Le raccourci du Bureau ; sous Windows aussi celui du menu Démarrer et l'icône épinglée à la barre des tâches (clic droit, <b>Détacher</b>) ; sur Mac aussi <b>Bridge Coach</b> dans Applications et son icône du Dock (la glisser hors du Dock).</li>
+  <li>Le raccourci du Bureau ; sous Windows aussi celui du menu Démarrer et l'icône épinglée à la barre des tâches (clic droit, <b>Détacher</b>) ; sur Mac aussi <b>Bridge Coach</b> dans Applications et son icône du Dock.</li>
   <li>Facultatif, vos fichiers : le dossier <code>bridge-coach-files</code> de vos Documents. Les analyses expertes ne se recréent pas : gardez-en une copie si vous en avez besoin.</li>
-  <li>Facultatif, sous Windows : Python 3.12, si rien d'autre ne s'en sert (<b>Paramètres</b>, <b>Applications</b>, <b>Applications installées</b>), et le cache <code>%LOCALAPPDATA%\pip\Cache</code>.</li>
+  <li>Facultatif, sous Windows : Python 3.12, si rien d'autre ne s'en sert, et le cache <code>%LOCALAPPDATA%\pip\Cache</code>.</li>
 </ol>
 
-<h2>En cas de problème</h2>
+<h3>En cas de problème</h3>
 <dl>
   <dt>« Aucun tournoi trouvé »</dt>
   <dd>Vérifiez le dossier <code>bridgemate</code> dans l'onglet <b>Réglages</b>.</dd>
@@ -211,7 +209,7 @@
   <dt>« Le rapport n'a pas pu être créé »</dt>
   <dd>Le détail est dans le fichier <code>derniere-erreur.txt</code>, dans le dossier <code>rapports</code>. Transmettez-le à la personne qui s'occupe du programme.</dd>
   <dt>La création est trop longue</dt>
-  <dd>Le bouton <b>Annuler</b> l'arrête sans abîmer les rapports déjà faits. Sur un portable, branchez le chargeur et choisissez le mode d'alimentation <b>Meilleures performances</b>. Chaque analyse écrit <code>derniere-analyse.txt</code> dans le dossier <code>rapports</code> : le temps de chaque donne et ce que l'ordinateur a utilisé. Transmettez-le si l'analyse reste lente.</dd>
+  <dd>Le bouton <b>Annuler</b> l'arrête sans abîmer les rapports déjà faits. Sur un portable, branchez le chargeur et choisissez le mode d'alimentation <b>Meilleures performances</b>. Chaque analyse écrit <code>derniere-analyse.txt</code> dans le dossier <code>rapports</code> : transmettez-le si l'analyse reste lente.</dd>
 </dl>
 </body>
 </html>

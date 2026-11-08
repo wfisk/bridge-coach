@@ -287,7 +287,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (contract reached, double-dummy, gap to par); rerun after any rule change
       fonts/            DejaVu fonts (macOS has none); build_pdf.py looks here first
     help/index.html     the application's help, in French, shown as a page of the window by the Aide button (a hidden tab, 16px),
-                        one section at a time: each <h2> is an entry of the left sidebar (sections_aide, page_aide)
+                        one topic at a time: five <h2> categories (Démarrer, Les séances, Jouer, Analyse et rapports, Installation et
+                        réglages), each with <h3> topics; the sidebar shows each category's name above its topics (sections_aide gives
+                        (catégorie, titre, html), page_aide)
     docs/bridge-analysis/  earlier session's instructions (kept in step with the rules below) and
                         original scripts (reference)
     systems/            bidding systems: one folder per system + shared conventions/,

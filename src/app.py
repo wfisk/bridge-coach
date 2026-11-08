@@ -144,6 +144,7 @@ CSS_CARTES = """
   color: #2b2b2b; min-height: 32px; }
 .entree-barre.choisie { background: #e4e3df; font-weight: 600; }
 .entree-barre .q-btn__content { text-align: left; justify-content: flex-start; line-height: 1.3; padding: 2px 0; }
+.entree-barre.aide-sujet { height: auto; min-height: 32px; padding-top: 6px; padding-bottom: 6px; flex-shrink: 0; }   /* un sujet sur deux lignes ne déborde pas */
 .carte { width: 46px; height: 66px; margin-right: -18px; padding: 3px 5px; background: #fff; border: 1px solid #b9c0c7;
   border-radius: 6px; font-size: 18px; line-height: 1.05; font-weight: 600; color: #1b1b1b; }
 .carte.r { color: #c0141c; }
@@ -224,7 +225,7 @@ CSS_AIDE = """
 .aide { font-size: 16px; line-height: 1.55; color: #222; }
 .aide h1, .aide h2, .aide h3 { font-size: 16px; font-weight: 700; color: #1f6b45; margin: 1.4em 0 .4em; line-height: 1.3; letter-spacing: normal; }
 .aide > :first-child { margin-top: 0; }
-.aide > h1:first-child, .aide > h2:first-child { font-size: 18px; color: inherit; }   /* le titre de la section, comme celui des autres pages */
+.aide > h1:first-child, .aide > h2:first-child, .aide > h3:first-child { font-size: 18px; color: inherit; margin-top: 0; }   /* le titre de la section, comme celui des autres pages */
 .aide p, .aide ul, .aide ol, .aide dl { margin: .6em 0; }
 .aide ul { list-style: disc; padding-left: 1.4em; } .aide ol { list-style: decimal; padding-left: 1.4em; }
 .aide li { margin-bottom: .4em; } .aide dt { font-weight: 600; margin-top: .7em; } .aide dd { margin: 0; }
@@ -243,14 +244,18 @@ def texte_aide():
 
 
 def sections_aide():
-    """L'aide découpée en sections, une par titre <h2> : [(titre, html)] ; la première, l'introduction, s'appelle
-    « Présentation »."""
+    """L'aide découpée en sujets : [(catégorie, titre, html)], un par titre <h3>, rangés sous la catégorie (<h2>) qui
+    les précède. Sans <h2> ni <h3> (une ancienne aide) : un seul sujet."""
+    corps = re.sub(r"<!--.*?-->", "", texte_aide(), flags=re.S)
     out = []
-    for k, p in enumerate(re.split(r"(?=<h2>)", texte_aide())):
-        if not p.strip(): continue
-        m = re.search(r"<h2>(.*?)</h2>", p, re.S)
-        out.append((re.sub(r"<[^>]+>", "", m[1]).strip() if m else "Présentation", p))
-    return out
+    for bloc in re.split(r"(?=<h2>)", corps):
+        m = re.match(r"<h2>(.*?)</h2>", bloc, re.S)
+        if not m: continue
+        cat = re.sub(r"<[^>]+>", "", m[1]).strip()
+        for p in re.split(r"(?=<h3>)", bloc[m.end():]):
+            t = re.match(r"\s*<h3>(.*?)</h3>", p, re.S)
+            if t: out.append((cat, re.sub(r"<[^>]+>", "", t[1]).strip(), p))
+    return out or [("Aide", "Aide", corps)]
 
 
 def ouvrir(chemin):
@@ -1859,7 +1864,9 @@ def page():
     @ui.refreshable
     def page_aide():
         s = sections_aide()
-        ui.html(s[min(vue_aide["k"], len(s) - 1)][1], sanitize=False).classes("aide w-full pb-8")
+        cat, _, h = s[min(vue_aide["k"], len(s) - 1)]
+        ui.label(cat).classes("text-sm text-gray-500 uppercase tracking-wide")   # la catégorie, au-dessus du sujet
+        ui.html(h, sanitize=False).classes("aide w-full pb-8")
 
     def entrees_de(data):
         """Les entrées de la barre latérale : la séance, puis (onglet Donnes) les joueurs et les alertes, puis chaque donne."""
@@ -1965,9 +1972,14 @@ def page():
                     .classes("entree-barre text-left" + (" choisie" if vue_page[nom] == cle else ""))
             return
         if sur_aide():                                    # l'aide : une entrée par section
-            for k, (titre, _) in enumerate(sections_aide()):
+            avant = None
+            for k, (cat, titre, _) in enumerate(sections_aide()):
+                if cat != avant:                              # le titre de la catégorie, puis ses sujets
+                    ui.label(cat).classes("text-xs text-gray-500 uppercase tracking-wide font-bold px-2 " +
+                                          ("mt-1" if avant is None else "mt-4")).style("letter-spacing:.06em")
+                    avant = cat
                 ui.button(titre, on_click=lambda k=k: voir_aide(k)).props("flat no-caps align=left dense color=grey-10") \
-                    .classes("entree-barre text-left" + (" choisie" if k == vue_aide["k"] else ""))
+                    .classes("entree-barre aide-sujet text-left" + (" choisie" if k == vue_aide["k"] else ""))
             return
         data = lire_seance(choix["chemin"])
         if not data: return

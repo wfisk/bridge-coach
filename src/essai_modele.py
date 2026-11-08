@@ -155,3 +155,37 @@ def banc_defense(n_donnes=24, graine=3):
     lev = lambda xs: sum(t for t, _ in xs) / len(xs)
     chutes = lambda xs: sum(t < b for t, b in xs)
     return dict(sans=lev(sans), avec=lev(avec), chutes_sans=chutes(sans), chutes_avec=chutes(avec), n=n_donnes)
+
+
+def _un_declarant(arg):
+    """Une donne jouée par le déclarant simulé (Partie.indice), contre une défense au double mort (elle voit tout) ;
+    la réserve du déclarant avec ou sans le modèle. Les levées du déclarant et celles requises."""
+    graine, avec = arg
+    import carte as C
+    C.MODELE_DECLARANT = avec
+    rnd = random.Random(graine)
+    while True:
+        d = donne_au_hasard(rnd, rnd.randrange(10 ** 6))
+        r = encheres.encherir(d)
+        if r["contrat"] != "passe": break
+    p = C.Partie(d, r["contrat"], r["declarant"], r["encheres"], graine=graine)
+    lettre = dict(zip("SHDC", COULEURS))
+    while not p.fini():
+        if p.camp(p.au_trait()):
+            p.poser(p.indice())
+        else:
+            v = p.pos.valeurs(); c, rg = min(v, key=v.get)
+            p.poser((lettre.get(c, c), rg))
+    return p.levees()[0], int(r["contrat"][0]) + 6
+
+
+def banc_declarant(n_donnes=40, graine=9, version=True):
+    """Le modèle rend-il le déclarant simulé meilleur ? Mêmes donnes, défense parfaite ; levées et contrats gagnés."""
+    from multiprocessing import Pool
+    args = [(graine * 1000 + i, avec) for i in range(n_donnes) for avec in (False, version)]
+    with Pool(max(1, (os.cpu_count() or 2) - 1)) as pool:
+        res = pool.map(_un_declarant, args)
+    sans = [res[i] for i in range(0, len(res), 2)]; avec = [res[i] for i in range(1, len(res), 2)]
+    lev = lambda xs: sum(t for t, _ in xs) / len(xs)
+    gagnes = lambda xs: sum(t >= b for t, b in xs)
+    return dict(sans=lev(sans), avec=lev(avec), gagnes_sans=gagnes(sans), gagnes_avec=gagnes(avec), n=n_donnes)

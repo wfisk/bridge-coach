@@ -26,4 +26,13 @@ assert len(p.plis) == 13 and g + p.levees()[1] == 13 and dm == 13
 # la réclamation : acceptée seulement si la défense ne peut plus rien
 q = carte.Partie(d, "6♦", "N", seq)
 assert not q.reclamer() or q.levees()[0] == 13
+# en défense : le joueur tient un défenseur ; s'il entame, rien n'est encore joué ; le programme joue le déclarant
+from jeu import LHO as G, RHO as D_
+p = carte.Partie(d, "6♦", "N", seq, humain=G["N"])
+assert p.en_defense() and not p.pos.jouees and p.au_joueur() and not p.au_joueur("N") and not p.au_joueur("S")
+p.poser(p.legales()[0])
+while not p.fini() and not p.au_joueur(): p.poser(p.carte_robot())
+assert p.fini() or p.au_trait() == G["N"]
+p = carte.Partie(d, "6♦", "N", seq, humain=D_["N"])
+assert len(p.pos.jouees) == 1 and not p.au_joueur("E" if D_["N"] == "O" else "O")
 print("ok")

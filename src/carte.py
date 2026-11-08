@@ -20,6 +20,8 @@ from jeu import COULEURS, LHO, RHO, PART, ROT, PTS, _donne_dds, lire_encheres, e
 LETTRE = dict(zip(COULEURS, "SHDC"))
 MONDES = 16                                               # mondes imaginés par carte de la défense
 MODELE = False                                            # vrai : les mondes viennent du modèle des mains cachées (modele.py)
+MODELE_DECLARANT = False                                  # vrai : la réserve du déclarant simulé vient aussi du modèle ;
+                                                          # « suivi » : renouvelée à chaque carte par le modèle mis à jour
 
 
 def carte_fr(c, r):
@@ -28,7 +30,7 @@ def carte_fr(c, r):
 
 
 class Partie:
-    def __init__(self, d, contrat, decl, encheres, graine=None):
+    def __init__(self, d, contrat, decl, encheres, graine=None, humain=None):
         self.d, self.decl = d, decl
         self.den = contrat[1:].rstrip("X"); self.besoin = int(contrat[0]) + 6
         self.contrat, self.encheres = contrat, list(encheres)
@@ -40,7 +42,28 @@ class Partie:
         self._pool = None; self.reclame = False; self.difficile = False
         e = entame_et_defense(d, contrat, decl, self.encheres)["entame"]["carte"]   # « ♠V » : les règles d'entame
         self.entame = (e[0], e[1:].translate(EN))
-        self.poser(self.entame)
+        self.humain = humain if humain is not None else decl   # la place du joueur : le déclarant (et le mort) ou un défenseur
+        if self.humain != LHO[decl]: self.poser(self.entame)    # le joueur qui entame choisit lui-même sa carte
+
+    # ---------------------------------------------------------------- qui joue
+    def au_joueur(self, s=None):
+        """La place s (par défaut celle au trait) est-elle jouée par le joueur ? Au camp du déclarant, il tient le
+        déclarant et le mort ; en défense, sa seule main."""
+        s = s or self.au_trait()
+        return self.camp(s) and self.camp(self.humain) if self.camp(self.humain) else s == self.humain
+
+    def en_defense(self): return not self.camp(self.humain)
+
+    def carte_robot(self):
+        """La carte de la place au trait jouée par le programme : le déclarant simulé (lignes.py) pour le camp du
+        déclarant, la défense (carte_defense) sinon."""
+        return self.indice() if self.camp(self.au_trait()) else self.carte_defense()
+
+    def premiere(self):
+        """La carte d'entame jouée (couleur, rang anglais), ou None."""
+        if not self.pos.jouees: return None
+        j = self.pos.jouees[0]
+        return dict(zip("SHDC", COULEURS))[j[0]], j[1:]
 
     # ---------------------------------------------------------------- l'état
     def au_trait(self): return self.pos.au_trait()
@@ -149,10 +172,29 @@ class Partie:
 
     # ---------------------------------------------------------------- l'aide au déclarant
     def indice(self):
-        """La carte que jouerait le déclarant simulé (lignes.py), qui ne voit que le déclarant et le mort."""
+        """La carte que jouerait le déclarant simulé (lignes.py), qui ne voit que le déclarant et le mort ; pour un
+        défenseur au trait, celle de la défense (carte_defense)."""
+        if not self.camp(self.au_trait()): return self.carte_defense()
+        if MODELE_DECLARANT == "suivi":                   # le modèle du déclarant, mis à jour à chaque carte
+            import modele
+            lettre = dict(zip("SHDC", COULEURS))
+            jouees = [(x, lettre[j[0]] + j[1:].translate(FR)) for x, j in zip(self.pos.sieges, self.pos.jouees)]
+            m = getattr(self, "_modele_decl", None)
+            m = m.suite(jouees) if m else modele.Modele(self.d, self.decl, self.encheres, jouees, mort=self.mort(),
+                                                         graine=self.rnd.random())
+            self._modele_decl = m
+            ms = m.mondes(); ws = m.poids()
+            if ms: self._pool = self.rnd.choices([mm for mm, _ in ms], weights=ws, k=40)
         import lignes
         if self._pool is None:
-            self._pool = donnes_du_declarant(self.d, self.decl, self.encheres, carte_fr(*self.entame), 40)
+            if MODELE_DECLARANT:                          # les donnes imaginées par le modèle, vu du déclarant après l'entame
+                import modele
+                m = modele.Modele(self.d, self.decl, self.encheres, [(LHO[self.decl], carte_fr(*(self.premiere() or self.entame)))],
+                                  mort=self.mort(), graine=self.rnd.random())
+                ms = m.mondes(); ws = m.poids()
+                self._pool = [x for x in self.rnd.choices([mm for mm, _ in ms], weights=ws, k=40)] if ms else []
+            if not self._pool:
+                self._pool = donnes_du_declarant(self.d, self.decl, self.encheres, carte_fr(*(self.premiere() or self.entame)), 40)
         vides = {x: set(LETTRE[c] for c in self.vides[x]) for x in (LHO[self.decl], RHO[self.decl])}
         return lignes._carte(self.pos, self._pool, vides, self.besoin, 12, random.Random(len(self.pos.jouees)))
 

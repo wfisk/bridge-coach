@@ -153,7 +153,8 @@ CSS_CARTES = """
 .colonne-mort .carte { margin-right: 0; }
 .colonne-mort > * + * { margin-top: -42px; }
 .mort-table .carte { width: 42px; height: 60px; font-size: 17px; }
-.mort-table .colonne-mort > * + * { margin-top: -42px; }   /* le mort sur la table : un peu plus serré, la table reste carrée */
+.mort-table .colonne-mort > * + * { margin-top: -42px; }
+.ligne-mort .carte:last-child { margin-right: 0; }   /* le mort sur un côté : une ligne par couleur, chevauchée comme une main */   /* le mort sur la table : un peu plus serré, la table reste carrée */
 .carte.vide { width: 22px; border: none; background: none; margin-right: 0; padding: 3px 0; }
 .eventail .groupe { margin-right: 26px; }
 .eventail .groupe:last-child { margin-right: 16px; }
@@ -164,6 +165,7 @@ CSS_CARTES = """
 .plis-gardes .dos { width: 20px; height: 28px; border-width: 1px; border-radius: 3px; flex: none; }
 .plis-gardes .dos.couche { width: 28px; height: 20px; }   /* comme en duplicate : vers le partenaire gagné, en travers perdu */
 .plis-gardes .dos + .dos { margin-left: -9px; }           /* chaque carte posée en partie sur la précédente */
+.plis-gardes .dos.gagne { background: repeating-linear-gradient(45deg, #2e7d32 0 3px, #5a9e5f 3px 6px); outline-color: #1f5e24; }
 .plis-gardes.colonne { flex-direction: column; min-height: 0; min-width: 30px; }
 .plis-gardes.colonne .dos + .dos { margin-left: 0; margin-top: -9px; }
 .main-grande .carte { width: 55px; height: 79px; font-size: 20px; margin-right: -22px; }
@@ -181,8 +183,10 @@ CSS_CARTES = """
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
-.carton.arrive-bas { animation: arrive-bas .5s ease-out; } .carton.arrive-haut { animation: arrive-haut .5s ease-out; }
-.carton.arrive-gauche { animation: arrive-gauche .5s ease-out; } .carton.arrive-droite { animation: arrive-droite .5s ease-out; }
+.carton.arrive-bas, .carte.arrive-bas { animation: arrive-bas .5s ease-out; }
+.carton.arrive-haut, .carte.arrive-haut { animation: arrive-haut .5s ease-out; }
+.carton.arrive-gauche, .carte.arrive-gauche { animation: arrive-gauche .5s ease-out; }
+.carton.arrive-droite, .carte.arrive-droite { animation: arrive-droite .5s ease-out; }
 @keyframes arrive-bas { from { transform: translateY(110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
 @keyframes arrive-haut { from { transform: translateY(-110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
 @keyframes arrive-gauche { from { transform: translateX(-110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
@@ -1063,13 +1067,13 @@ def page():
         p = None
         if x.get("cartes"):
             c_, decl = jouer.contrat(seq, d["donneur"])
-            p = carte.Partie(d, c_, decl, seq)
-            for k in x["cartes"][1:]: p.poser((k[0], k[1:]))   # la première est l'entame, déjà posée
+            p = carte.Partie(d, c_, decl, seq, humain=x["siege"])
+            for k in x["cartes"][1 if p.pos.jouees else 0:]: p.poser((k[0], k[1:]))   # l'entame du programme est déjà posée
             if x.get("reclame"): p.reclame = True; p.pos.gagnes = x.get("gagnes", p.pos.gagnes)
         jeu.update(cle=(c, d["n"]), siege=x["siege"], seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, garde=ind is None, d=d,
                    affiche=len(seq), vus=len(seq), revele=False, pense=None, partie=p, pli_vu=None, msg="", garde_jeu=bool(p and p.fini()),
                    sans_jouer=bool(x.get("sans_jouer")))
-        if p and not p.fini(): background_tasks.create(carte_defense())   # si la défense avait la main
+        if p and not p.fini(): background_tasks.create(carte_defense())   # si le programme avait la main
 
     def jeu_garder():
         """Garde la donne en cours telle quelle (jouer.garder_en_cours) : on la retrouve en revenant, même plus tard."""
@@ -1179,7 +1183,7 @@ def page():
     # ---------------------------------------------------------------- le jeu de la carte
     def carte_demarrer(d):
         c_, decl = jouer.contrat(jeu["seq"], d["donneur"])
-        jeu.update(partie=carte.Partie(d, c_, decl, jeu["seq"]), pli_vu=None, msg="", garde_jeu=False, sans_jouer=False)
+        jeu.update(partie=carte.Partie(d, c_, decl, jeu["seq"], humain=jeu["siege"]), pli_vu=None, msg="", garde_jeu=False, sans_jouer=False)
         jeu_garder(); vue_jouer.refresh(); background_tasks.create(carte_defense())
 
     async def carte_poser(x):
@@ -1193,19 +1197,20 @@ def page():
         vue_jouer.refresh()
 
     async def carte_defense():
-        """Les défenseurs jouent, chacun après un temps de réflexion, jusqu'au tour du déclarant ou du mort."""
+        """Le programme joue les autres places (les défenseurs, ou le déclarant et son mort quand vous défendez), chacun
+        après un temps de réflexion, jusqu'à votre tour."""
         p = jeu["partie"]
-        while p and not p.fini() and not p.camp(p.au_trait()) and jeu["partie"] is p:
+        while p and not p.fini() and not p.au_joueur() and jeu["partie"] is p:
             jeu["pense"] = p.au_trait(); vue_jouer.refresh()
             pause = 0.4 if len(p.legales()) == 1 else 1.3 if not p.pos.pli else 0.8   # forcée : vite ; une entame : on réfléchit
-            x, _ = await asyncio.gather(run.io_bound(p.carte_defense), asyncio.sleep(pause))
+            x, _ = await asyncio.gather(run.io_bound(p.carte_robot), asyncio.sleep(pause))
             if getattr(p, "difficile", False): await asyncio.sleep(1.4)   # la bonne carte ne s'imposait pas : il hésite
             jeu["pense"] = None
             await carte_poser(x)
 
     async def carte_jouer(x):
         p = jeu["partie"]
-        if not p or jeu["pense"] or jeu["pli_vu"] or p.fini() or x not in p.legales(): return
+        if not p or jeu["pense"] or jeu["pli_vu"] or p.fini() or not p.au_joueur() or x not in p.legales(): return
         await carte_poser(x)
         await carte_defense()
 
@@ -1234,24 +1239,33 @@ def page():
         ici = {"bas": "bottom:12px;left:50%;transform:translateX(-50%)", "haut": "top:12px;left:50%;transform:translateX(-50%)",
                "gauche": "left:12px;top:50%;transform:translateY(-50%)", "droite": "right:12px;top:50%;transform:translateY(-50%)"}[ou]
         return (f"<div class='plis-gardes{' colonne' if cote else ''}' style='position:absolute;{ici}' "
-                f"title='Vers le partenaire : pli gagné ; en travers : pli perdu'>"
-                + "".join(f"<div class='dos {forme(g)}'></div>" for _, g in p.plis) + "</div>")
+                f"title='Vert, vers le partenaire : pli gagné ; gris, en travers : pli perdu'>"
+                + "".join(f"<div class='dos {forme(g)}{' gagne' if gagne(g) else ''}'></div>" for _, g in p.plis) + "</div>")   # gagné : vert
 
     def pli_html(p, places):
         """Le pli en cours, chaque carte devant le joueur qui l'a posée."""
         pli = jeu["pli_vu"][0] if jeu["pli_vu"] else p.pos.pli
         posees = {s: (c, r.translate(carte.FR)) for s, c, r in pli}
         D = 62                                         # chaque carte à la même distance du centre, donc de son bord
+        n = len(p.pos.jouees)                          # une carte vient d'être posée : elle glisse depuis le bord du joueur
+        if n > jeu.get("cartes_vues", 0): jeu["carte_arrive"] = (n, time.monotonic())
+        jeu["cartes_vues"] = n
+        n_, t_ = jeu.get("carte_arrive") or (0, 0)
+        ecoule = time.monotonic() - t_
+        derniere = pli[-1][0] if pli and n_ == n and ecoule < .5 else None
+        haut, gauche, droite, bas = places
+        cote = {haut: "haut", gauche: "gauche", droite: "droite", bas: "bas"}
         def case(s, x, y):                             # la carte posée, comme dans les mains, au milieu de son côté
             if s not in posees: return ""
             c, r = posees[s]
-            return (f"<div class='carte{' r' if c in '♥♦' else ''}' style='position:absolute;left:calc(50% + {x}px);"
-                    f"top:calc(50% + {y}px);transform:translate(-50%,-50%);margin:0;z-index:3'>{face(r)}<br/>{c}</div>")
-        haut, gauche, droite, bas = places
+            anim = f" arrive-{cote[s]}" if s == derniere else ""
+            retard = f";animation-delay:-{ecoule:.2f}s" if s == derniere else ""
+            return (f"<div style='position:absolute;left:calc(50% + {x}px);top:calc(50% + {y}px);transform:translate(-50%,-50%);"
+                    f"z-index:3'><div class='carte{' r' if c in '♥♦' else ''}{anim}' style='margin:0{retard}'>{face(r)}<br/>{c}</div></div>")
         return (f"<div style='position:absolute;inset:0;pointer-events:none'>"
                 f"{case(haut, 0, -D)}{case(bas, 0, D)}{case(gauche, -D, 0)}{case(droite, D, 0)}"
                 + "".join(plis_gardes(p, x, ou) for x, ou in zip(places, ("haut", "gauche", "droite", "bas"))
-                          if x == jeu["siege"] or not p.camp(x)) + "</div>")   # l'étui est dans la barre de droite
+                          if x == jeu["siege"] or (p.camp(x) != p.camp(jeu["siege"]) and x != p.mort())) + "</div>")   # les vôtres, ceux des adversaires (pas du mort : il est étalé)
 
     def etui(d, places, petit=False):
         """L'étui de la donne au centre, comme un vrai étui : Nord et Sud toujours sur les petits côtés (debout quand
@@ -1334,11 +1348,23 @@ def page():
                      sanitize=False)
         if ok: el.on("click", lambda x=(coul, r): sur_clic(x))
 
-    def mort_etale(cartes, jouables, sur_clic, atout):
+    def mort_etale(cartes, jouables, sur_clic, atout, cote="haut"):
         """Le mort étalé comme à la table : une colonne par couleur, la plus forte carte en haut, l'atout à gauche
-        (à la droite du mort), puis les couleurs en alternant noir et rouge."""
+        (à la droite du mort), puis les couleurs en alternant noir et rouge. Sur un côté (cote « gauche » ou « droite »),
+        une ligne par couleur, la plus forte carte vers le mort, l'atout toujours à sa droite."""
         autres = [c for c in ORDRE_MAIN if c != atout]
         ordre = ([atout] if atout in ORDRE_MAIN else []) + autres
+        if cote in ("gauche", "droite"):
+            if cote == "gauche": ordre = ordre[::-1]          # le mort à gauche regarde vers la droite : sa droite est en bas
+            with ui.column().classes("gap-1 mort-table mort-cote " + ("items-start" if cote == "gauche" else "items-end")):
+                for coul in ordre:
+                    with ui.row().classes("no-wrap gap-0 ligne-mort"):
+                        rangs = list(cartes.get(coul, "")) or [None]
+                        if cote == "droite": rangs = rangs[::-1]    # à droite, la plus forte contre le bord
+                        for r in rangs:
+                            if r is None: ui.html(f"<div class='carte vide'>{rouge(coul)}</div>", sanitize=False)
+                            else: carte_el(coul, r, jouables, sur_clic)
+            return
         with ui.row().classes("no-wrap items-start gap-3 mort-table"):
             for coul in ordre:
                 with ui.column().classes("gap-0 colonne-mort"):
@@ -1381,14 +1407,21 @@ def page():
             with ui.grid(columns="1fr auto 1fr").classes("items-center gap-x-2 gap-y-4"):   # les mains des côtés contre la table
                 with ui.column().classes("items-center").style("grid-column: 1 / 4"):
                     if "haut" not in sur_table: contenu(haut, "haut")
-                with ui.column().classes("items-end"): contenu(gauche, "gauche")
+                with ui.column().classes("items-end"):
+                    if "gauche" not in sur_table: contenu(gauche, "gauche")
                 with ui.column().classes("items-center gap-4").style(       # la table, carrée comme une vraie, à la taille de la fenêtre
                         f"width:{COTE_TABLE};background:#f3efe7;border:1px solid #e3dccf;border-radius:28px;padding:12px 16px;"
                         "aspect-ratio:1 / 1;justify-content:space-between;position:relative"):
                     if "haut" in sur_table: contenu(haut, "haut")
+                    for ou, x in (("gauche", gauche), ("droite", droite)):   # le mort d'un côté : sur la table, contre son bord
+                        if ou in sur_table:
+                            with ui.element("div").style(f"position:absolute;{'left' if ou == 'gauche' else 'right'}:14px;"
+                                                         "top:50%;transform:translateY(-50%);z-index:2"):
+                                contenu(x, ou)
                     if centre: centre()
                     if "bas" in sur_table: contenu(bas, "bas")
-                with ui.column().classes("items-start"): contenu(droite, "droite")
+                with ui.column().classes("items-start"):
+                    if "droite" not in sur_table: contenu(droite, "droite")
                 with ui.column().classes("items-center").style(
                         "grid-column: 1 / 4" + ("" if "bas" in sur_table else ";margin-top:12px")):
                     if "bas" not in sur_table: contenu(bas, "bas")             # votre main, un peu en retrait de la table
@@ -1400,16 +1433,17 @@ def page():
         """Le jeu de la carte : la table et le pli au centre ; le panneau de droite est dessiné par vue_jouer."""
         p = jeu["partie"]; s = jeu["siege"]; part = jouer.PART[s]
         tour = p.au_trait()
-        cliquable = not p.fini() and not jeu["pense"] and not jeu["pli_vu"] and p.camp(tour)
+        cliquable = not p.fini() and not jeu["pense"] and not jeu["pli_vu"] and p.au_joueur(tour)
+        voit = lambda x: p.fini() or x == s or (x == p.mort() and p.pos.jouees) or (p.camp(x) and not p.en_defense())
 
         def contenu(x, ou):
-            if p.camp(x) or p.fini():
+            if voit(x):
                 with ui.column().classes("gap-1 " + ("items-center" if ou in ("haut", "bas") else "")):
                     if not p.fini():
                         cartes = {k: "".join(r.translate(carte.FR) for r in v) for k, v in p.pos.reste[x].items()}
                         jouables = {(k, r.translate(carte.FR)) for k, r in p.legales()} if cliquable and tour == x else None
                         clic = lambda y: carte_jouer((y[0], y[1].translate(carte.EN)))
-                        if x == p.mort(): mort_etale(cartes, jouables, clic, p.den)
+                        if x == p.mort(): mort_etale(cartes, jouables, clic, p.den, ou)
                         else: eventail(cartes, jouables, clic, colonnes=ou in ("gauche", "droite"), grande=x == s)   # les cartes jouables ont déjà leur bord
             elif not p.fini():                               # un adversaire : sa main cachée, en éventail fermé
                 dos(ou, sum(len(v) for v in p.pos.reste[x].values()))
@@ -1436,7 +1470,8 @@ def page():
                 if x.pop("en_cours", None) is not None:
                     json.dump(x, open(jouer.fichier_jeu(base_seance(c)), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
             ui.radio(dict(jouer.PLACES), value=place_jouer(), on_change=changer).classes("text-base")
-            ui.label("En défense, vous enchérissez ; le jeu de la carte en défense viendra plus tard.").classes("text-sm text-gray-600")
+            ui.label("Quand l'autre camp gagne le contrat, vous jouez la carte en défense : le programme tient le déclarant, "
+                     "son mort et votre partenaire.").classes("text-sm text-gray-600")
             return
         d = next(x for x in data["donnes"] if f"d{x['n']}" == e)
         if jeu["cle"] != (c, d["n"]): jeu_depart(c, d)
@@ -1447,7 +1482,7 @@ def page():
         fini = jeu["indice"] is None and not attente
         p = jeu["partie"]
         c_, decl = jouer.contrat(jeu["seq"], d["donneur"]) if fini else ("passe", None)
-        a_jouer = fini and not p and c_ != "passe" and jouer.camp(decl) == jouer.camp(s) and not jeu.get("sans_jouer")
+        a_jouer = fini and not p and c_ != "passe" and not jeu.get("sans_jouer")   # au déclarant ou en défense
         montrer = (fini and not a_jouer and not p) or (p and p.fini())
 
         with ui.row().classes("w-full no-wrap items-start gap-4").style(f"padding-right:{LARGEUR_PANNEAU}px"):
@@ -1484,11 +1519,13 @@ def page():
                 if p:
                     vous, defense = p.levees()
                     ui.label(f"{p.contrat} par {SIEGE[p.decl]}").classes("text-base font-bold")
-                    ui.label(f"Levées : vous {vous}, la défense {defense}").classes("text-base")
+                    if p.en_defense(): ui.label(f"Levées : le déclarant {vous}, vous {defense}").classes("text-base")
+                    else: ui.label(f"Levées : vous {vous}, la défense {defense}").classes("text-base")
                     if not p.fini():
                         with ui.row().classes("gap-2"):
                             ui.button("Indice", icon="lightbulb", on_click=lambda: carte_indice()).props("outline dense no-caps")
-                            ui.button("Réclamer", icon="done_all", on_click=lambda: carte_reclamer()).props("outline dense no-caps")
+                            if not p.en_defense():
+                                ui.button("Réclamer", icon="done_all", on_click=lambda: carte_reclamer()).props("outline dense no-caps")
                         if jeu["msg"]: ui.label(jeu["msg"]).classes("text-sm")
                     if p.plis:
                         with ui.expansion(f"Plis joués ({len(p.plis)})", icon="list").props("dense").classes("w-full text-sm"):
@@ -1510,10 +1547,9 @@ def page():
                     if jeu.get("note"):
                         ui.html(f"<div style='font-size:15px;color:#8a5a00'>{rouge(jeu['note'])}</div>", sanitize=False)
                 elif a_jouer:
-                    ui.button(f"Jouer {c_} par {SIEGE[decl]}", icon="style", on_click=lambda: carte_demarrer(d)).classes("w-full")
+                    ui.button(f"Jouer {c_} par {SIEGE[decl]}" if jouer.camp(decl) == jouer.camp(s) else f"Défendre contre {c_} par {SIEGE[decl]}",
+                              icon="style", on_click=lambda: carte_demarrer(d)).classes("w-full")
                     ui.button("Voir les mains sans jouer", on_click=lambda: (jeu.update(sans_jouer=True), jeu_garder(), vue_jouer.refresh())).props("flat no-caps dense")
-                elif fini and c_ != "passe" and jouer.camp(decl) != jouer.camp(s):
-                    ui.label("Votre camp défend : le jeu en défense viendra plus tard.").classes("text-sm text-gray-600")
                 if (p and not p.fini()) or (not p and not fini and any(siege_de(d, k) == s for k in range(len(jeu["seq"])))):   # revenir au début, en cours de route
                     with ui.column().classes("w-full gap-1 mt-3"):
                         if p:

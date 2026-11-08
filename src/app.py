@@ -1582,11 +1582,25 @@ def page():
             if p.fini():
                 g, ecart, dm = p.resultat()
                 texte = "fait tout juste" if ecart == 0 else f"fait avec {ecart} de mieux" if ecart > 0 else f"chute de {-ecart}"
-                ui.html(f"<div style='font-size:16px;margin-top:8px'><b>{g} levées</b> : {rouge(p.contrat)} {texte}. "
+                ui.html(f"<div style='font-size:16px;margin-top:8px;margin-right:{LARGEUR_PANNEAU}px'><b>{g} levées</b> : {rouge(p.contrat)} {texte}. "
                         f"Au double mort, le contrat donne {dm} levées.</div>", sanitize=False)
                 if not jeu["garde_jeu"]:
                     jouer.completer_jeu(base_seance(c), d["n"], [carte.carte_fr(cc, r) for pli, _ in p.plis for _x, cc, r in pli], g)
                     jeu["garde_jeu"] = True
+                if jeu.get("resume_de") is not p:            # le résumé écrit, une fois la donne finie
+                    try:
+                        tout = [(cc, r_) for pli, _ in p.plis for _x, cc, r_ in pli]
+                        jeu["resume"] = carte.resume_donne(d, p.contrat, p.decl, p.humain, tout, p.pensees, g)
+                    except Exception:
+                        jeu["resume"] = []
+                    jeu["resume_de"] = p
+                if jeu.get("resume"):
+                    with ui.element("div").classes("max-w-3xl mt-2").style(
+                            f"background:#f6f8fb;border:1px solid #dfe5ea;border-radius:6px;padding:8px 12px;"
+                            f"margin-right:{LARGEUR_PANNEAU}px"):
+                        ui.label("Résumé de la donne").classes("text-base font-bold")
+                        for ligne in jeu["resume"]:
+                            ui.html(f"<div style='font-size:15px;margin-top:4px'>{rouge(ligne)}</div>", sanitize=False)
                 with ui.row().classes("gap-3 mt-2"):
                     ui.button("Revoir la donne avec les pensées", icon="psychology",
                               on_click=lambda: (jeu.update(revoir=0), vue_jouer.refresh())).props("unelevated")

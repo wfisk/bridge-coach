@@ -20,6 +20,7 @@ from jeu import COULEURS, LHO, RHO, PART, ROT, PTS, _donne_dds, lire_encheres, e
 LETTRE = dict(zip(COULEURS, "SHDC"))
 MONDES = 16                                               # mondes imaginés par carte de la défense
 MODELE = False                                            # vrai : les mondes viennent du modèle des mains cachées (modele.py)
+SIGNAUX = True                                            # les défenseurs signalent (appel, parité) entre cartes équivalentes
 MODELE_DECLARANT = False                                  # vrai : la réserve du déclarant simulé vient aussi du modèle ;
                                                           # « suivi » : renouvelée à chaque carte par le modèle mis à jour
 
@@ -87,6 +88,7 @@ class Partie:
         robot : son dernier calcul). Tout en texte et nombres, pour être gardé avec la donne."""
         ch = self.dernier if self.dernier and self.dernier.get("siege") == s else None
         return dict(n=len(self.pos.jouees), siege=s, carte=carte_fr(*x), humain=humain,
+                    signal=(ch.get("signal") if ch and ch.get("role") == "defense" else None),
                     role="declarant" if self.camp(s) else "defense",
                     croyance=[] if humain else self.croyance(s), mondes=ch["mondes"] if ch else 0,
                     force=bool(ch and ch["force"]),
@@ -193,11 +195,52 @@ class Partie:
         self.dernier.update(mondes=len(dd), scores={x: (chute[x], total[x]) for x in leg})
         cle = lambda x: (chute[x], total[x])
         meilleure = max(leg, key=lambda x: (chute[x], total[x], RANGS.index(x[1])))
+        if SIGNAUX:                                    # entre cartes aussi bonnes, celle qui renseigne le partenaire
+            egales = [x for x in leg if cle(x) == cle(meilleure)]
+            sig = self.signal(s, egales)
+            if sig: meilleure, self.dernier["signal"] = sig
         # difficile : la meilleure carte ne fait chuter que dans un ou deux mondes de plus qu'une autre (l'application
         # réfléchit plus longtemps) ; si toutes chutent aussi souvent, rien ne se décide ici
         moins = [chute[x] for x in leg if chute[x] < chute[meilleure]]
         self.difficile = bool(moins) and chute[meilleure] - max(moins) <= max(1, len(dd) // 16)
         return meilleure
+
+    def aime(self, s, c):
+        """Le défenseur s aime-t-il la couleur c (pour l'appel) : l'as, le roi, ou la dame avec le valet."""
+        x = self.pos.reste[s].get(c, "")
+        return "A" in x or "K" in x or ("Q" in x and "J" in x)
+
+    def signal(self, s, egales):
+        """(carte, sens) : le signal du défenseur s parmi des cartes également bonnes, ou None.
+        Sur l'entame (ou la couleur menée) du partenaire : appel (grosse) ou refus (petite). Couleur menée par le
+        déclarant ou le mort : parité, grosse puis petite avec un nombre pair. Défausse : grosse dans une couleur
+        aimée (appel), sinon la plus petite d'une couleur non aimée (refus). systems/sef-2024/entames.md (à confirmer)."""
+        if len(egales) < 2: return None
+        petites = lambda xs: [x for x in xs if x[1] not in "AKQJ"] or xs
+        haute = lambda xs: min(xs, key=lambda x: RANGS.index(x[1]))
+        basse = lambda xs: max(xs, key=lambda x: RANGS.index(x[1]))
+        pli = self.pos.pli
+        if not pli: return None                         # en tête : pas de signal (le choix de la carte d'attaque)
+        c0, meneur = pli[0][1], pli[0][0]
+        memes = [x for x in egales if x[0] == c0]
+        deja = any(x == s and j[0] == LETTRE[c0] for x, j in zip(self.pos.sieges, self.pos.jouees))
+        if memes and deja: return None                  # le signal se donne la première fois qu'on joue la couleur
+        if memes:
+            if len(memes) < 2: return None
+            xs = petites(memes)
+            if len(xs) < 2: return None
+            if meneur == PART[s]:                       # le partenaire mène : appel ou refus
+                return (haute(xs), "appel") if self.aime(s, c0) else (basse(xs), "refus")
+            if self.camp(meneur):                       # le déclarant mène : la parité de la couleur
+                pair = len(self.pos.reste[s][c0]) % 2 == 0
+                return (haute(xs), "parité paire") if pair else (basse(xs), "parité impaire")
+            return None
+        if c0 != self.den and not any(x[0] == self.den for x in egales):   # une défausse (pas une coupe)
+            aimees = [x for x in petites(egales) if self.aime(s, x[0]) and x[1] not in "AKQJ"]
+            if aimees: return haute(aimees), "appel"
+            autres = [x for x in egales if not self.aime(s, x[0])]
+            if autres: return basse(autres), "refus"
+        return None
 
     def defendre(self, sur_carte=None):
         """Joue les cartes de la défense jusqu'au tour du déclarant (ou du mort), ou jusqu'à la fin."""
@@ -306,6 +349,13 @@ def _texte_pensee(pz, decl):
             raison = f"Pour {but} : cette carte réussit dans {a} mondes sur {m}"
             raison += f" ({alt})" if alt else ""
             raison += ", et donne le plus de levées." if moins_lev else "."
+    sig = pz.get("signal")
+    if sig:
+        c = pz["carte"][0]
+        sens = {"appel": f"un appel à {c} : il aime la couleur", "refus": f"un refus à {c} : il n'aime pas la couleur",
+                "parité paire": f"la parité à {c} : un nombre pair de cartes (grosse puis petite)",
+                "parité impaire": f"la parité à {c} : un nombre impair de cartes (la plus petite)"}.get(sig, sig)
+        raison = (raison + " " if raison else "") + f"Ses cartes se valant, il choisit celle qui signale : {sens}."
     return dict(titre=titre, raison=raison, croyance=list(pz.get("croyance") or []))
 
 
@@ -318,3 +368,102 @@ def avis_programme(d, contrat, decl, encheres, humain, cartes, k):
     ch = q.dernier or {}
     return dict(carte=carte_fr(*x), mondes=ch.get("mondes", 0),
                 scores={carte_fr(*kk): list(v) for kk, v in (ch.get("scores") or {}).items()}, croyance=q.croyance(s))
+
+
+def analyse_jeu(d, contrat, decl, cartes):
+    """Le jeu réel revu cartes vues (double mort), pour le résumé : pour chaque carte, ce qu'elle coûte en levées
+    face à la meilleure carte de ce joueur à ce moment, et les coups qui se présentaient (squeeze, mise en main,
+    laisser-passer ou coup à blanc), joués ou manqués. cartes : [(couleur, rang anglais)] dans l'ordre.
+    {"dm": levées du déclarant au double mort au départ, "cartes": [{k, siege, carte, perte, pli}], "coups": [...]}"""
+    from coups import squeeze, mise_en_main, baisse
+    den = contrat[1:].rstrip("X")
+    pos = Position(d["mains"], den, decl)
+    out, coups, dm = [], [], None
+    for k, x in enumerate(cartes):
+        s = pos.au_trait()
+        try:
+            v = pos.valeurs()
+        except Exception:
+            v = {}
+        if v:
+            meilleur = (max if pos.camp(s) else min)(v.values())
+            if dm is None: dm = meilleur
+            val = v.get(x)
+            if val is None:                                # une carte équivalente à une autre : la même valeur
+                val = next((v[y] for y in v if y[0] == x[0]), meilleur)
+            perte = (meilleur - val) if pos.camp(s) else (val - meilleur)
+            if not pos.camp(s) and squeeze(pos, v):
+                coups.append(dict(type="squeeze", pli=pos.n, joueur=s, k=k))
+            if mise_en_main(pos, meilleur):
+                coups.append(dict(type="mise en main", pli=pos.n, joueur=s, k=k))
+            b = baisse(pos, v)
+            if b:
+                joue = val == meilleur                     # le déclarant a-t-il trouvé la carte qui gagne la levée ?
+                coups.append(dict(type=b[0], pli=pos.n, couleur=b[1], gain=b[2], joue=joue, joueur=s, k=k))
+        else:
+            perte = 0
+        out.append(dict(k=k, siege=s, carte=carte_fr(*x), perte=perte, pli=pos.n))
+        pos.jouer(*x)
+    return dict(dm=dm, cartes=out, coups=coups)
+
+
+def resume_donne(d, contrat, decl, humain, cartes, pensees, levees):
+    """Le résumé écrit de la donne jouée, en paragraphes : le résultat face au double mort, les cartes qui ont coûté
+    une levée (cartes vues), les coups (squeeze, mise en main, laisser-passer), les signaux de la défense, ce que
+    croyaient les joueurs du programme comparé aux vraies mains, et vos cartes."""
+    import re
+    a = analyse_jeu(d, contrat, decl, cartes)
+    mort = PART[decl]; besoin = int(contrat[0]) + 6
+    def nom(s, sujet=True):
+        if humain is not None and (s == humain or (s == mort and humain == decl)): return "vous" if not sujet else "Vous"
+        if s == mort: return "le mort" if not sujet else "Le mort"
+        return NOMS[s]
+    out = []
+    ecart = levees - besoin
+    res = "gagné tout juste" if ecart == 0 else f"gagné avec {ecart} de mieux" if ecart > 0 else f"chute de {-ecart}"
+    t = f"{contrat} par {NOMS[decl]} : {levees} levées, contrat {res}."
+    if a["dm"] is not None:
+        t += f" Cartes vues (double mort), le contrat en donnait {a['dm']}"
+        t += "." if a["dm"] == levees else (f" : le déclarant a fait {levees - a['dm']} de mieux, grâce à la défense." if levees > a["dm"]
+                                           else f" : {a['dm'] - levees} levée{'s' if a['dm'] - levees > 1 else ''} de moins.")
+    out.append(t)
+    couteuses = [z for z in a["cartes"] if z["perte"] > 0]
+    if couteuses:
+        lignes = [f"pli {z['pli']}, {nom(z['siege'], False)} : {z['carte']} ({z['perte']} levée{'s' if z['perte'] > 1 else ''})"
+                  for z in couteuses[:6]]
+        out.append("Les cartes qui ont coûté, cartes vues : " + " ; ".join(lignes) + ".")
+    else:
+        out.append("Aucune carte n'a coûté de levée, cartes vues : chacun a joué au mieux.")
+    vus = []
+    for c in a["coups"]:
+        if c["type"] == "squeeze": vus.append(f"{NOMS[c['joueur']]} a été squeezé au pli {c['pli']}")
+        elif c["type"] == "mise en main": vus.append(f"{NOMS[c['joueur']]} a été mis en main au pli {c['pli']}")
+        else:
+            g = f"{c['gain']} levée{'s' if c['gain'] > 1 else ''}"
+            vus.append(f"{c['type']} à {c['couleur']} au pli {c['pli']} : " + ("trouvé" if c["joue"] else f"manqué, il rapportait {g}"))
+    out.append(("Les coups : " + " ; ".join(vus) + ".") if vus else "Pas de squeeze ni de mise en main dans cette donne.")
+    sig = [f"{NOMS[z['siege']]} : {z['signal']} à {z['carte'][0]} ({z['carte']})" for z in pensees if z.get("signal")]
+    if sig: out.append("Les signaux de la défense : " + " ; ".join(sig[:8]) + ".")
+    cr = []                                                # ce qu'ils croyaient, face aux vraies mains
+    for z in pensees:
+        if z.get("humain") or not z.get("croyance"): continue
+        for ligne in z["croyance"]:
+            m = re.match(r"(\w+) : (\d+)(?:–(\d+))? H", ligne)
+            if not m: continue
+            s = {v: k for k, v in NOMS.items()}.get(m.group(1))
+            if not s: continue
+            vrai = sum(PTS.get(r, 0) for r in d["mains"][s].replace(" ", ""))
+            lo, hi = int(m.group(2)), int(m.group(3) or m.group(2))
+            cr.append((z["siege"], s, lo, hi, vrai))
+        if len(cr) >= 2: break
+    if cr:
+        out.append("Ce qu'ils croyaient à leur première carte : " + " ; ".join(
+            f"{NOMS[x] if x != mort else 'le déclarant'} voyait {NOMS[s]} à {lo}–{hi} H, il en avait {v}"
+            + ("" if lo <= v <= hi else " (à côté)") for x, s, lo, hi, v in cr) + ".")
+    if humain is not None:
+        miennes = [z for z in a["cartes"] if nom(z["siege"]) == "Vous"]
+        perdues = [z for z in miennes if z["perte"] > 0]
+        out.append("Vos cartes : " + ("aucune n'a coûté de levée, cartes vues." if not perdues else
+                   f"{len(perdues)} sur {len(miennes)} ont coûté, cartes vues ("
+                   + ", ".join(f"pli {z['pli']} {z['carte']}" for z in perdues[:4]) + ")."))
+    return out

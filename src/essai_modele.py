@@ -189,3 +189,29 @@ def banc_declarant(n_donnes=40, graine=9, version=True):
     lev = lambda xs: sum(t for t, _ in xs) / len(xs)
     gagnes = lambda xs: sum(t >= b for t, b in xs)
     return dict(sans=lev(sans), avec=lev(avec), gagnes_sans=gagnes(sans), gagnes_avec=gagnes(avec), n=n_donnes)
+
+
+CONFIGS = {"ancienne": dict(MODELE=False, SIGNAUX=False, LIRE=False),
+           "modèle": dict(MODELE=True, SIGNAUX=False, LIRE=False),
+           "modèle + signaux": dict(MODELE=True, SIGNAUX=True, LIRE=True)}
+
+
+def _une_defense_cfg(arg):
+    graine, nom = arg
+    import carte as C, modele as M
+    cfg = CONFIGS[nom]
+    C.SIGNAUX, M.LIRE_SIGNAUX = cfg["SIGNAUX"], cfg["LIRE"]
+    return nom, _une_defense((graine, cfg["MODELE"]))
+
+
+def banc_signaux(n_donnes=60, graine=21, noms=tuple(CONFIGS)):
+    """Les mêmes donnes défendues de plusieurs façons contre un déclarant au double mort : levées du déclarant
+    (moins = mieux) et contrats chutés."""
+    from multiprocessing import Pool
+    args = [(graine * 1000 + i, nom) for i in range(n_donnes) for nom in noms]
+    with Pool(max(1, (os.cpu_count() or 2) - 1)) as pool:
+        res = pool.map(_une_defense_cfg, args)
+    out = {}
+    for nom, (t, b) in res:
+        o = out.setdefault(nom, dict(lev=0.0, chutes=0, n=0)); o["lev"] += t; o["chutes"] += t < b; o["n"] += 1
+    return {k: dict(levees=v["lev"] / v["n"], chutes=v["chutes"], n=v["n"]) for k, v in out.items()}

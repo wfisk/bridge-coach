@@ -200,7 +200,14 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         seat, kept and updated); your cards are recorded too; texte_pensee turns one into French (why this card,
                         the alternatives, what it believes); avis_programme: what the program would have played in your place.
                         The app shows the last robot thought in the sidebar, saves them with the deal (en_cours "pensees"), and
-                        « Revoir la donne avec les pensées » replays the deal card by card (vue_revoir). In defence the app draws dummy on the table at the side,
+                        « Revoir la donne avec les pensées » replays the deal card by card (vue_revoir). Signals (carte.SIGNAUX): among cards equally good in its
+                        worlds, a defender signals (Partie.signal: attitude on partner's lead, count when declarer leads, attitude
+                        on a discard; first card in the suit only; entames.md, à confirmer); the model reads partner's signals
+                        (modele.signaux_vus, signal_plausible, EPS_SIGNAL). essai_modele.banc_signaux, 240 deals against a double-dummy declarer: old
+                        defence 9.59 tricks / 54 sets, model + signals 9.52 / 53: kept for the commentary and for you (signals cost
+                        nothing: only among equal cards), but carte.MODELE stays off. analyse_jeu reviews the play double-dummy (cost of each
+                        card, squeeze / mise en main / laisser-passer found or missed); resume_donne writes the end-of-deal summary
+                        shown under the result. In defence the app draws dummy on the table at the side,
                         one row per suit, highest card toward dummy, trumps on dummy's right (mort_etale cote, table sur_table). Defence like lignes.py from the defender's
                         seat: 16 worlds of the two hidden hands true to the auction (lire_encheres), cards played and shown voids,
                         solved double-dummy, the card that sets the contract most often (then most tricks, then the lowest).

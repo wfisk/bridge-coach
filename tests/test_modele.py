@@ -31,4 +31,13 @@ for mains, w in m2.mondes():
 m3 = m2.suite(jouees + [("N", "♦2")])
 assert all(mains["S"] == d["mains"]["S"] for mains, _ in m3.mondes())
 assert len(modele.Modele(d, "N", seq, jouees, mort="S", n=50, efficace=10, n_max=100).pensees()) == 2
+# les signaux : une grosse carte sur l'entame du partenaire dit « j'aime » ; la parité, un nombre pair
+main = "R95 X87 6543 D32"                                  # ♠R95 : on aime les piques
+assert modele.signal_plausible(main, ("♠", "9"), "attitude", "♠") == 1.0
+assert modele.signal_plausible(main, ("♠", "5"), "attitude", "♠") == modele.EPS_SIGNAL
+assert modele.signal_plausible(main, ("♦", "6"), "parité", "♦") == 1.0       # quatre carreaux : grosse d'abord
+assert modele.signal_plausible(main, ("♦", "3"), "parité", "♦") == modele.EPS_SIGNAL
+assert modele.signal_plausible("R5 X87 65432 D32", ("♠", "5"), "attitude", "♠") == 1.0   # pas le choix : neutre
+sv = modele.signaux_vus([("E", "♥3"), ("S", "♥2"), ("O", "♥9"), ("N", "♥A")], "N")
+assert ("O", ("♥", "9"), "attitude", "♥") in sv
 print("ok")

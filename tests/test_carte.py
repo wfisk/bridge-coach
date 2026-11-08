@@ -46,4 +46,12 @@ cartes = [(c, r) for c, r in [(j[0], j[1:]) for j in []]]
 tout = [(cc, rr) for pli, _ in p.plis for _x, cc, rr in pli] + [(cc, rr) for _x, cc, rr in p.pos.pli]
 a = carte.avis_programme(d, "6♦", "N", seq, G["N"], tout, 0)
 assert a["carte"] and carte.texte_pensee(dict(p.pensees[0], avis=a), "N")["raison"]
+# le résumé écrit d'une donne jouée jusqu'au bout par le programme
+p = carte.Partie(d, "6♦", "N", seq)
+while not p.fini(): p.poser(p.indice() if p.camp(p.au_trait()) else p.carte_robot())
+tout = [(cc, rr) for pli, _ in p.plis for _x, cc, rr in pli]
+res = carte.resume_donne(d, "6♦", "N", "N", tout, p.pensees, p.levees()[0])
+assert res[0].startswith("6♦ par Nord") and any(l.startswith("Vos cartes") for l in res)
+a = carte.analyse_jeu(d, "6♦", "N", tout)
+assert len(a["cartes"]) == 52 and all(z["perte"] >= 0 for z in a["cartes"])
 print("ok")

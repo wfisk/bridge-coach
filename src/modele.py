@@ -19,6 +19,8 @@ from jeu import COULEURS, ORDRE, ROT, PTS, PART, LHO
 SUIVIS = "ARDVX9"                                          # les cartes dont on prédit la place
 EPS_ENCHERE = 0.05                                         # une enchère que notre système n'aurait pas faite
 EFFICACE = 150                                             # on imagine des donnes jusqu'à en avoir autant qui comptent
+EPS_SIGNAL = 0.35                                          # un signal du partenaire que sa main imaginée n'aurait pas donné
+LIRE_SIGNAUX = True                                        # un défenseur lit les signaux de son partenaire
 EPS_ENTAME = 0.05                                           # une entame que la règle n'aurait pas choisie
 
 
@@ -69,6 +71,8 @@ class Modele:
         self.contrat, self.decl = jouer.contrat(self.seq, d["donneur"]) if fini else ("passe", None)
         self.cx = jeu.lire_encheres(self.seq, d["donneur"])
         self._mondes = None
+        self.signaux = signaux_vus(self.jouees, self.decl) if (LIRE_SIGNAUX and self.decl and observateur != self.decl
+                                                                and observateur != PART[self.decl]) else []
 
     # ---------------------------------------------------------------- les donnes imaginées
     def _tirer(self):
@@ -108,6 +112,8 @@ class Modele:
             except Exception:
                 w *= self.eps_enchere ** 3
         if self.jouees and self.decl and LHO[self.decl] in mains: w *= self._facteur_entame(m)
+        for x, carte, sens, c in self.signaux:              # les signaux du partenaire (appel, refus, parité)
+            if x in mains: w *= signal_plausible(m[x], carte, sens, c)
         return w, m
 
     def mondes(self):
@@ -125,6 +131,7 @@ class Modele:
                    eps_enchere=self.eps_enchere, eps_entame=self.eps_entame,
                    prefiltre=self.prefiltre, efficace=self.cible, n_max=self.n_max)
         garde = []
+        neufs = [z for z in m.signaux if z not in self.signaux]     # un signal vient d'être vu : il compte aussi
         for mains, w in self.mondes():
             if any(mains[x] != self.d["mains"][x] for x in m.vus): continue          # le mort réel, désormais vu
             ok = True
@@ -133,7 +140,10 @@ class Modele:
                 if not m.jouees_par[x] <= cartes or any((c, r) in cartes and (c, r) not in m.jouees_par[x]
                                                        for c in m.vides[x] for r in ORDRE):
                     ok = False; break
-            if ok: garde.append((mains, w))
+            if ok:
+                for x, carte, sens, c in neufs:
+                    if x in m.caches: w *= signal_plausible(mains[x], carte, sens, c)
+                garde.append((mains, w))
         if m.jouees and not self.jouees and m.decl and LHO[m.decl] in m.caches:    # l'entame vient d'être vue
             garde = [(mains, w * m._facteur_entame(mains)) for mains, w in garde]
         m._mondes = garde
@@ -219,6 +229,48 @@ class Modele:
 
 
 NOMS = {"N": "Nord", "S": "Sud", "E": "Est", "O": "Ouest"}
+
+
+def aime(tenue):
+    """Une tenue (« ARx », rangs français) qu'on aime : l'as, le roi, ou la dame avec le valet (comme carte.aime)."""
+    return "A" in tenue or "R" in tenue or ("D" in tenue and "V" in tenue)
+
+
+def signaux_vus(jouees, decl):
+    """Les signaux qu'un défenseur a pu donner : [(siège, (couleur, rang), sens, couleur)], sens « attitude » (sur le
+    partenaire qui mène), « parité » (le déclarant mène) ou « défausse ». Seulement la première carte d'un défenseur
+    dans la couleur menée, ou une défausse hors atout. Comme carte.Partie.signal, vu de l'extérieur."""
+    from jeu import PART as P, LHO as G
+    den = None
+    out, deja = [], set()
+    for i in range(0, len(jouees), 4):
+        pli = jouees[i:i + 4]
+        if not pli: continue
+        meneur, c0 = pli[0][0], pli[0][1][0]
+        for x, c in pli[1:]:
+            if x not in (G[decl], P[G[decl]]): continue
+            carte = carte_fr(c)
+            if c[0] == c0:
+                if (x, c0) in deja: continue
+                deja.add((x, c0))
+                if meneur == P[x]: out.append((x, carte, "attitude", c0))
+                elif meneur in (decl, P[decl]): out.append((x, carte, "parité", c0))
+            else:
+                out.append((x, carte, "défausse", c[0]))
+    return out
+
+
+def signal_plausible(main, carte, sens, c):
+    """1 si la main imaginée (13 cartes, « ARx Dx … ») aurait donné ce signal, EPS_SIGNAL sinon ; 1 aussi quand elle
+    n'avait pas le choix (moins de deux petites cartes dans la couleur)."""
+    tenue = main.split()[COULEURS.index(c)]
+    tenue = "" if tenue == "-" else tenue
+    petites = [r for r in tenue if r not in "ARDV"]
+    if len(petites) < 2 or carte[1] not in petites: return 1.0
+    haute = carte[1] != petites[-1]                       # pas la plus petite : un signal « fort »
+    if sens == "parité": voulu = len(tenue) % 2 == 0
+    else: voulu = aime(tenue)
+    return 1.0 if haute == voulu else EPS_SIGNAL
 
 
 if __name__ == "__main__":

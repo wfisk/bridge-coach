@@ -89,6 +89,10 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         where it is, under its own name (even with a date in it): no undated copy is made.
                         migrer(), on every start: reports/ → rapports/, <name>-donnes.json → <name>.bc.json with
                         its source and players (<name>-paires.json merged in, then removed)
+      moi.py            who the user is: « Vous êtes » in Réglages saves the full name in etat.json (moi.nom); moi.paires(data)
+                        finds that player's pairs in a .bc.json's "joueurs"; their tables get a pale yellow row (SURLIGNE) in the
+                        PDF results tables and summary (build_pdf.MES) and in the Donnes tab. Also holds dossier_des_reglages
+                        (light: build_pdf imports it without the rest of the program)
       maj.py            updates from GitHub, standard library only: derniere_version (tags API, only on the Réglages
                         button), then a separate process (--appliquer V --attendre <app pid>) waits for the app to close,
                         downloads the tag's zip, moves the old program to .ancien-programme/, puts the new one, pip only if

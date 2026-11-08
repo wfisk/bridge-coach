@@ -159,3 +159,13 @@ print("ok")
 from webview.util import parse_file_type
 for types in (app.TYPES_FICHIERS, app.TYPES_SEANCES, app.TYPES_IMPORT, app.TYPES_EXPERT):
     for f in types: parse_file_type(f)
+# « Vous êtes » : vos tables sont repérées par votre nom complet, dans chaque séance
+import moi
+assert moi.ETAT == app.ETAT and moi.nom() is None
+s = {"joueurs": {"1": [{"initiales": "AM", "nom": "MARTIN Anne"}, {"initiales": "BD", "nom": "DURAND Bruno"}],
+                 "2": [{"initiales": "CL", "nom": "LEROY Claire"}]}}
+assert moi.paires(s, "martin anne") == {"1"} and moi.paires(s, "") == set()
+assert moi.a_joue({"paire_ns": "2", "paire_eo": "1"}, {"1"}) and not moi.a_joue({"paire_ns": "", "paire_eo": ""}, {"1"})
+app.ecrire_etat(moi="MARTIN Anne"); assert moi.nom() == "MARTIN Anne" and moi.paires(s) == {"1"}
+app.ecrire_etat(moi=None); assert moi.nom() is None
+print("ok")

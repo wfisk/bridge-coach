@@ -26,6 +26,9 @@ Mise en page : chaque donne commence sur une nouvelle page, deux pages au maximu
 tailles de police fixes (ne jamais réduire).
 """
 import sys, os, re, json, glob
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import moi
+MES = set()                     # les paires de l'utilisateur dans cette séance (moi.py) : leurs lignes sont surlignées
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
@@ -241,7 +244,7 @@ def results_table(d):
     beaucoup = len(d["tables"]) > 2
     entete = ["<b>Paires</b>", "<b>Contrat</b>", "<b>Entame</b>", "<b>Nord-Sud</b>", "<b>IMP N-S</b>"]
     if beaucoup: entete = ["<b>Table</b>"] + entete + ["<b>% N-S</b>"]
-    rows = [[P(x) for x in entete]]
+    rows = [[P(x) for x in entete]]; vous = []
     for t in d["tables"]:                 # dans l'ordre des tables
         res = "=" if t["resultat"] in ("=", "") else t["resultat"]
         passe = t["contrat"] == "passe"
@@ -250,11 +253,12 @@ def results_table(d):
                P(suits(t["entame"])), P(f"{t['score_ns']:+d}"), P(f"{t['imp_ns']:+d}" if t["imp_ns"] else "0")]
         if beaucoup: row = [P(str(t["table"]))] + row + [P(f"{t['pct_ns']:.0f} %" if t.get("pct_ns") is not None else "")]
         rows.append(row)
+        if moi.a_joue(t, MES): vous.append(("BACKGROUND", (0, len(rows) - 1), (-1, len(rows) - 1), colors.HexColor(moi.SURLIGNE)))
     larg = [1.5, 3.6, 3.3, 2.0, 2.3, 1.6, 1.6] if beaucoup else [4.4, 3.6, 2.0, 2.3, 2.0]
     tb = Table(rows, colWidths=[x*cm for x in larg], hAlign="LEFT")
     tb.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, 0), 0.6, colors.HexColor(INK)),
         ("LINEBELOW", (0, -1), (-1, -1), 0.4, colors.HexColor("#aab")), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]))
+        ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)] + vous))
     return tb
 
 def grille(donneur, bids):
@@ -442,7 +446,8 @@ def lire_contrat(c):
 def _paires(tb, camp):
     """« AB/CD – EF/GH », N-S d'abord, le camp donné ("NS" ou "EO") en gras."""
     ns, eo = (str(tb.get(f"nom_{x}") or tb[f"paire_{x}"]) for x in ("ns", "eo"))
-    return f"<b>{ns}</b> – {eo}" if camp == "NS" else f"{ns} – <b>{eo}</b>" if camp == "EO" else f"{ns} – {eo}"
+    txt = f"<b>{ns}</b> – {eo}" if camp == "NS" else f"{ns} – <b>{eo}</b>" if camp == "EO" else f"{ns} – {eo}"
+    return f"<font backColor='{moi.SURLIGNE}'>{txt}</font>" if moi.a_joue(tb, MES) else txt   # votre table
 
 
 def _larg_paires(tables):
@@ -598,7 +603,9 @@ def _tables(tbs, total=None):
 
 
 def main():
+    global MES
     data = json.load(open(sys.argv[1])); an = json.load(open(sys.argv[2])); out = sys.argv[3]
+    MES = moi.paires(data)
     date = data["session"]["date"]
     pied = an.get("titre_pied", f"Analyse des donnes – séance du {date} – Système SEF, marque IMP")
     def footer(c, doc):

@@ -37,13 +37,8 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 RACINE = os.path.dirname(ICI)
 
 
-def dossier_des_reglages():
-    """Un lieu fixe, propre à l'ordinateur : bridge-coach.ini dit où sont les fichiers, il ne peut pas être avec eux.
-    BRIDGE_COACH_DONNEES sert aux essais : tout va alors dans ce dossier."""
-    if os.environ.get("BRIDGE_COACH_DONNEES"): return os.environ["BRIDGE_COACH_DONNEES"]
-    if sys.platform == "win32": return os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), "Bridge Coach")
-    if sys.platform == "darwin": return os.path.expanduser("~/Library/Application Support/Bridge Coach")
-    return os.path.expanduser("~/.config/bridge-coach")
+sys.path.insert(0, ICI)                                # -I : le dossier du script n'est pas dans le chemin
+from moi import dossier_des_reglages                   # un lieu fixe, propre à l'ordinateur (moi.py)
 
 
 CONFIG = os.path.join(dossier_des_reglages(), "bridge-coach.ini")

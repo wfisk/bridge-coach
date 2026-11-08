@@ -12,7 +12,7 @@ import asyncio, datetime, glob, json, os, re, shutil, signal, subprocess, sys, t
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import carte, donnes, edition, jouer, maj, rapport
+import carte, donnes, edition, jouer, maj, moi, rapport
 from nicegui import app, background_tasks, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -505,21 +505,23 @@ def page_dm_par(d, par=True):
         ui.html(sanitize=False, content=f"<div style='font-size:15px'>{par_html(d)}</div>")
 
 
-def page_donne(d):
+def page_donne(d, mes=frozenset()):
     """Une donne dans l'onglet Donnes : les mains et les tables ; le nom, le donneur, la vulnérabilité et le par sont
-    dans la barre de droite. Le double mort est dans l'onglet Analyse."""
+    dans la barre de droite. Le double mort est dans l'onglet Analyse. mes : vos paires (moi.paires), dont la ligne est
+    surlignée."""
     mains_grille(d)
     if d.get("tables"):
         ui.label("Aux tables").classes("text-base font-bold mt-2")
         rows = [{"k": str(i), "table": str(x.get("table", "")), "ns": x.get("nom_ns") or x.get("paire_ns", ""),
                  "eo": x.get("nom_eo") or x.get("paire_eo", ""), "contrat": x.get("contrat", ""),
                  "decl": SIEGE.get(x.get("declarant"), x.get("declarant") or ""), "res": x.get("resultat", ""),
-                 "entame": x.get("entame") or "", "score": f"{x['score_ns']:+d}" if isinstance(x.get("score_ns"), int) else ""}
+                 "entame": x.get("entame") or "", "score": f"{x['score_ns']:+d}" if isinstance(x.get("score_ns"), int) else "",
+                 "moi": moi.a_joue(x, mes)}
                 for i, x in enumerate(d["tables"])]
         cols = [("table", "Table"), ("ns", "Nord-Sud"), ("eo", "Est-Ouest"), ("contrat", "Contrat"), ("decl", "Déclarant"),
                 ("res", "Résultat"), ("entame", "Entame"), ("score", "Score N-S")]
         ui.table(columns=[{"name": k, "label": l, "field": k, "align": "left"} for k, l in cols], rows=rows, row_key="k") \
-            .props("flat dense").classes("w-full")
+            .props(f"flat dense :table-row-style-fn=\"r => r.moi ? 'background:{moi.SURLIGNE}' : ''\"").classes("w-full")   # votre table
         if any(x.get("encheres") for x in d["tables"]):
             ui.label("Les enchères aux tables").classes("text-base font-bold mt-2")
             with ui.row().classes("gap-6 items-start"):
@@ -809,7 +811,7 @@ def page():
                     editeur_donne(c, d)                    # une donne à compléter s'ouvre déjà en modification
                 else:
                     with ui.column().classes("w-full gap-3").style(f"padding-right:{LARGEUR_PANNEAU}px"):
-                        page_donne(d)
+                        page_donne(d, moi.paires(data))
                     with panneau_droit(d):
                         if ok: ui.button("Modifier la donne", icon="edit", on_click=lambda n=d["n"]: modifier(c, n)).props("outline").classes("w-full")
 
@@ -1657,6 +1659,15 @@ def page():
                             ui.button("Ouvrir", on_click=lambda c=chemin: ouvrir(c)).props("outline").classes("shrink-0")
                         else:
                             ui.label("Dossier introuvable").classes("text-sm text-red-800 shrink-0")
+                with ui.column().classes("w-full gap-1"):
+                    ui.label("Vous êtes").classes("text-base")
+                    noms_ = moi.tous_les_noms(rapport.glob_seances("*" + rapport.BC))
+                    actuel = moi.nom()
+                    if actuel and actuel not in noms_: noms_ = [actuel] + noms_
+                    ui.select({"": "—"} | {x: x for x in noms_}, value=actuel or "", with_input=True,
+                              on_change=lambda e: ecrire_etat(moi=e.value or None)).classes("w-full").props("outlined dense")
+                    ui.label("Votre ligne est surlignée dans les tableaux des résultats (onglet Donnes et rapports PDF, "
+                             "une fois les rapports refaits).").classes("text-sm text-gray-600")
                 ui.button("Modifier les réglages", on_click=ouvrir_reglages).classes("w-full text-base py-3")
                 ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-sm text-gray-600")
 

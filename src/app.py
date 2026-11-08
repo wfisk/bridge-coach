@@ -153,7 +153,9 @@ CSS_CARTES = """
 .carte.r { color: #c0141c; }
 .carte.jouable { cursor: pointer; border-color: #1f6b45; }
 .carte.jouable:hover { transform: translateY(-6px); }
-.carte.terne { opacity: .45; }
+.carte.terne { background: #eceae5; border-color: #cfd3d7; color: #9a9fa5; }   /* pas jouable : terne mais opaque,
+   les cartes en dessous ne se voient pas au travers */
+.carte.r.terne { color: #d6a3a6; }
 .colonne-mort .carte { margin-right: 0; }
 .colonne-mort > * + * { margin-top: -42px; }
 .mort-table .carte { width: 42px; height: 60px; font-size: 17px; }
@@ -176,10 +178,8 @@ CSS_CARTES = """
 .main-grande .carte { width: 55px; height: 79px; font-size: 20px; margin-right: -22px; }
 .main-grande .groupe { margin-right: 30px; }
 .main-grande .groupe:last-child { margin-right: 22px; }   /* juste ce que dépasse la dernière carte : le trait s'arrête avec elle */
-/* à vous d'enchérir ou de jouer : les cartes à jouer soulignées, comme l'onglet choisi du menu ; le trait est toujours là,
-   transparent, pour que rien ne bouge quand il apparaît */
-.main-grande, .mort-table { border-bottom: 3px solid transparent; padding-bottom: 4px; }
-.main-grande.a-vous, .mort-table.a-vous { border-bottom-color: var(--q-primary); }
+/* à vous d'enchérir ou de jouer : les cartes à jouer (votre main, ou le mort quand vous en jouez) luisent en jaune */
+.main-grande.a-vous, .mort-table.a-vous { filter: drop-shadow(0 0 6px rgba(242, 183, 5, .9)); }
 /* à qui le tour (vous ou un joueur du programme) : un petit triangle sur le bord de la table, tourné vers ce joueur */
 .fleche-tour { position: absolute; width: 0; height: 0; z-index: 4; pointer-events: none; }
 .fleche-tour.bas { bottom: -10px; left: 50%; transform: translateX(-50%); border: 9px solid transparent; border-bottom: 0;

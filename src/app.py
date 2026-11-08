@@ -101,6 +101,9 @@ LARGEUR_PANNEAU = 300                                     # la barre de droite d
 # le côté de la table de l'onglet Jouer : ce que laissent la largeur (barres, mains des côtés) et la hauteur (mains du
 # haut et du bas), 440px au moins : en dessous, toute la table rétrécit (JS_AJUSTE)
 COTE_TABLE = "clamp(440px, min(100vw - 740px, 100vh - 375px), 640px)"
+# pendant le jeu de la carte, avec le mort sur un côté (en défense) : une table en 16:9, plus large, pour que la ligne la
+# plus longue du mort laisse la place au pli ; la colonne de la main du mort, vide, est rendue à la table
+LARGEUR_TABLE_LARGE = "clamp(600px, min(100vw - 660px, (100vh - 375px) * 16 / 9), 1000px)"
 HAUTEUR_BARRE = 37                                        # la barre de menus du haut                                    # le gris clair des barres latérales, comme celle de Claude
 
 JS_AJUSTE = """<script>
@@ -155,7 +158,8 @@ CSS_CARTES = """
 .colonne-mort > * + * { margin-top: -42px; }
 .mort-table .carte { width: 42px; height: 60px; font-size: 17px; }
 .mort-table .colonne-mort > * + * { margin-top: -42px; }
-.ligne-mort .carte:last-child { margin-right: 0; }   /* le mort sur un côté : une ligne par couleur, chevauchée comme une main */   /* le mort sur la table : un peu plus serré, la table reste carrée */
+.ligne-mort > :last-child .carte { margin-right: 0; }   /* le mort sur un côté : une ligne par couleur, chevauchée comme une main
+   (chaque carte est seule dans son enveloppe : c'est la dernière enveloppe de la ligne qui compte) */
 .carte.vide { width: 22px; border: none; background: none; margin-right: 0; padding: 3px 0; }
 .eventail .groupe { margin-right: 26px; }
 .eventail .groupe:last-child { margin-right: 16px; }
@@ -184,6 +188,12 @@ CSS_CARTES = """
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
+/* la place du prochain carton : « À vous » quand c'est à vous d'enchérir, « … » pendant qu'un joueur du programme réfléchit */
+.carton.attente { background: rgba(255, 250, 230, .95); border: 2px dashed #d39e00; box-shadow: none; color: #7a5a00;
+  font-size: 14px; white-space: nowrap; align-items: center; justify-content: center; animation: pense 1.2s ease-in-out infinite; }
+.carton.attente.robot { background: rgba(255, 255, 255, .9); border-color: #9aa3ad; color: #5f6b77; font-size: 20px; }
+.pile.vers-droite .carton + .carton.attente { padding-left: 24px; }   /* le texte dans la partie qui se voit */
+.pile.vers-bas .carton + .carton.attente { padding-top: 19px; }
 .carton.arrive-bas, .carte.arrive-bas { animation: arrive-bas .5s ease-out; }
 .carton.arrive-haut, .carte.arrive-haut { animation: arrive-haut .5s ease-out; }
 .carton.arrive-gauche, .carte.arrive-gauche { animation: arrive-gauche .5s ease-out; }
@@ -1341,12 +1351,19 @@ def page():
                 cls += f" arrive-{cote[x]}"; retard = f";animation-delay:-{ecoule:.2f}s"
             texte = {"passe": "Passe", "contre": "X", "surcontre": "XX"}.get(b, b)
             return f"<div class='carton{cls}{' recent' if recent else ''}' style='z-index:{k + 1}{retard}'>{texte}</div>"
+        attente = jeu["affiche"] < len(jeu["seq"])
+        a_vous = jeu["indice"] is not None and not attente      # les enchères attendent la vôtre
         def pile(x, sens, ou):
             """Les cartons d'un joueur empilés, le dernier dessus : on voit encore le haut des précédents. Chaque pile part
             d'un point fixe près du milieu de son bord, à la même distance du bord pour les quatre joueurs : un carton
-            de plus s'ajoute au bout, les autres ne bougent pas."""
+            de plus s'ajoute au bout, les autres ne bougent pas. Au bout, la place du prochain carton dit qui doit
+            enchérir : « À vous », ou « … » pendant qu'un joueur du programme réfléchit."""
             bs = devant[x]
             cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1, x) for k, b in enumerate(bs))
+            if a_vous and x == jeu["siege"]:
+                cartons += f"<div class='carton derniere attente' style='z-index:{len(bs) + 1}'>À vous</div>"
+            elif jeu.get("pense") == x:
+                cartons += f"<div class='carton derniere attente robot' style='z-index:{len(bs) + 1}'>…</div>"
             return f"<div class='pile {sens}' style='position:absolute;{ou}'>{cartons}</div>"
         haut, gauche, droite, bas = places
         bord = 18                                          # la distance au bord de la table
@@ -1422,16 +1439,19 @@ def page():
         """La table, une grande surface vert clair : l'étui, les cartons, le pli et le mort posé dessus ; les mains des
         joueurs autour. contenu(siège, position) dessine une place ; sur_table : les positions posées sur la table (le mort)."""
         haut, gauche, droite, bas = places
+        large = "gauche" in sur_table or "droite" in sur_table          # le mort sur un côté : la table en 16:9
+        forme = (f"width:{LARGEUR_TABLE_LARGE};aspect-ratio:16 / 9;" if large else f"width:{COTE_TABLE};aspect-ratio:1 / 1;")
         with ui.element("div").classes("w-full").style("overflow:hidden;padding-top:8px"), \
                 ui.element("div").classes("ajuste").style("width:max-content;transform-origin:0 0"):   # rétrécit avec la fenêtre (JS_AJUSTE)
-            with ui.grid(columns="1fr auto 1fr").classes("items-center gap-x-2 gap-y-4"):   # les mains des côtés contre la table
+            with ui.grid(columns="auto auto auto" if large else "1fr auto 1fr") \
+                    .classes("items-center gap-x-2 gap-y-4"):            # les mains des côtés contre la table
                 with ui.column().classes("items-center").style("grid-column: 1 / 4"):
                     if "haut" not in sur_table: contenu(haut, "haut")
                 with ui.column().classes("items-end"):
                     if "gauche" not in sur_table: contenu(gauche, "gauche")
                 with ui.column().classes("items-center gap-4").style(       # la table, carrée comme une vraie, à la taille de la fenêtre
-                        f"width:{COTE_TABLE};background:#f3efe7;border:1px solid #e3dccf;border-radius:28px;padding:12px 16px;"
-                        "aspect-ratio:1 / 1;justify-content:space-between;position:relative"):
+                        f"{forme}background:#f3efe7;border:1px solid #e3dccf;border-radius:28px;padding:12px 16px;"
+                        "justify-content:space-between;position:relative"):
                     if "haut" in sur_table: contenu(haut, "haut")
                     for ou, x in (("gauche", gauche), ("droite", droite)):   # le mort d'un côté : sur la table, contre son bord
                         if ou in sur_table:

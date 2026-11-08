@@ -209,7 +209,9 @@ CSS_CARTES = """
 
 CSS_AIDE = """
 .aide { font-size: 16px; line-height: 1.55; color: #222; }
-.aide h1, .aide h2, .aide h3 { font-size: 16px; font-weight: 700; color: #1f6b45; margin: 1.4em 0 .4em; }
+.aide h1, .aide h2, .aide h3 { font-size: 16px; font-weight: 700; color: #1f6b45; margin: 1.4em 0 .4em; line-height: 1.3; letter-spacing: normal; }
+.aide > :first-child { margin-top: 0; }
+.aide > h1:first-child, .aide > h2:first-child { font-size: 18px; color: inherit; }   /* le titre de la section, comme celui des autres pages */
 .aide p, .aide ul, .aide ol, .aide dl { margin: .6em 0; }
 .aide ul { list-style: disc; padding-left: 1.4em; } .aide ol { list-style: decimal; padding-left: 1.4em; }
 .aide li { margin-bottom: .4em; } .aide dt { font-weight: 600; margin-top: .7em; } .aide dd { margin: 0; }
@@ -1684,7 +1686,7 @@ def page():
                 vue_analyse()
 
             pages_ui = {}
-            with ui.tab_panel(o_rapports).classes("px-0 gap-4 max-w-xl mx-auto"):
+            with ui.tab_panel(o_rapports).classes("px-0 pt-0 gap-4 max-w-xl"):
                 with ui.column().classes("w-full gap-2") as pages_ui["creer"]:   # les options, puis « Créer les rapports »
                     ui.label("Créer les rapports").classes("text-lg font-bold")
                     ui.label("Vous êtes").classes("text-base")
@@ -1736,7 +1738,7 @@ def page():
                 with ui.column().classes("w-full gap-2") as pages_ui["bilan"]:
                     toutes()
 
-            with ui.tab_panel(o_reglages).classes("px-0 gap-5 max-w-xl mx-auto"):
+            with ui.tab_panel(o_reglages).classes("px-0 pt-0 gap-5 max-w-xl"):
               with ui.column().classes("w-full gap-5") as pages_ui["dossiers"]:
                 ui.label("Dossiers").classes("text-lg font-bold")
                 for titre, chemin in (("Dossier de Bridgemate : les fichiers .bws, lus sans être modifiés", dossier),
@@ -1770,10 +1772,10 @@ def page():
 
             montrer_pages()                                # chaque onglet à pages s'ouvre sur sa première page
 
-            with ui.tab_panel(o_aide).classes("px-0 max-w-xl mx-auto"):   # une page comme les autres : un onglet la quitte
+            with ui.tab_panel(o_aide).classes("px-0 pt-0 max-w-xl"):   # une page comme les autres : un onglet la quitte
                 page_aide()                                    # une section à la fois, choisie dans la barre de gauche
 
-            with ui.tab_panel(o_nouveau).classes("px-0 max-w-xl mx-auto"):   # Fichier, Nouveau… : une page, comme l'aide
+            with ui.tab_panel(o_nouveau).classes("px-0 pt-0 max-w-xl"):   # Fichier, Nouveau… : une page, comme l'aide
                 ui.label("Nouvelle séance").classes("text-lg font-bold")
                 ui.label("Une séance vide, « Entraînement » et la date du jour, à remplir donne par donne : vous tapez les mains "
                          "dans l'onglet Donnes, et le programme peut compléter au hasard ce qui manque.").classes("text-base text-gray-600")

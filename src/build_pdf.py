@@ -257,7 +257,7 @@ def results_table(d, a=None):
         passe = t["contrat"] == "passe"
         jeu = "passe générale" if passe else f"<b>{t['contrat']} {SEAT[t['declarant']]}</b> {res}"
         if t.get("recommande"):
-            row = [P("<i>Recommandé" + (", au DM" if not passe else "") + "</i>"), P(suits(jeu)), P(suits(t["entame"])),
+            row = [P("<i>Recommandé" + (" (DM)" if not passe else "") + "</i>"), P(suits(jeu)), P(suits(t["entame"])),
                    P(f"{t['score_ns']:+d}"), P("")]
             if beaucoup: row = [P("")] + row + [P("")]
             rows.append(row); vous.append(("BACKGROUND", (0, len(rows) - 1), (-1, len(rows) - 1), colors.HexColor(FOND_RECO)))
@@ -395,7 +395,7 @@ def page(d, a, date, expliquer=True):
           Spacer(1, 2), diagram_legende(d, a)]
     if TOURS.get(d["n"]): el[3:3] = [Paragraph(suits(TOURS[d["n"]]), S_sub)]   # le tour, la table, les adversaires
     if d["tables"]:
-        el += [Paragraph("Résultats à la table", S_h)]
+        el += [Paragraph(f"<a name='res{d['n']}'/>Résultats à la table", S_h)]   # cible des liens de la synthèse
         rang = moi.votre_rang(d["tables"], MES, lambda t: f"{t['contrat']} {SEAT[t['declarant']]} {t['resultat']}".strip())
         if rang: el += [Paragraph(f"<font backColor='{moi.SURLIGNE}'>{suits(rang)}</font>", S_body), Spacer(1, 3)]
         el += [results_table(d, a), Paragraph("Enchères aux tables", S_h)]
@@ -428,7 +428,7 @@ def page(d, a, date, expliquer=True):
         el += [tb, Spacer(1, 3)]
     for n in notes: el.append(Paragraph(txt(n), S_note))
     if a.get("enc"):
-        el.append(Paragraph("Enchères recommandées (SEF)", S_h))
+        el.append(Paragraph(f"<a name='reco{d['n']}'/>Enchères recommandées (SEF)", S_h))
         notes = a.get("notes", "")
         droite = Paragraph(txt(notes), S_notes) if a.get("auto") or not notes else bloc_avis(notes, 8.4*cm, S_notes)
         side = Table([[bidding(a["enc"], 2.1*cm), droite]], colWidths=[8.8*cm, 8.6*cm])
@@ -541,9 +541,9 @@ def _groupe(style, debut, fin, bande):
 
 def synthese(data, an):
     """Page de fin : une ligne par donne. Le contrat recommandé, puis combien de tables l'ont joué, ont joué plus haut
-    (rouge) ou plus bas (bleu) dans le même camp, ou ont laissé jouer l'autre camp ; votre contrat (coloré de même) ;
-    l'entame recommandée et combien de tables de la même dénomination ont entamé autre chose (jaune). Le détail de
-    chaque table est sur la page de la donne, avec la ligne du contrat recommandé."""
+    (rouge) ou plus bas (bleu) dans le même camp, ou ont laissé jouer l'autre camp ; votre contrat (coloré de même).
+    Les enchères seulement : pas d'entame ici. Le contrat recommandé mène à ses enchères sur la page de la donne, les
+    nombres à son tableau des résultats (liens internes du PDF)."""
     if not any(x.get("enc") for x in an.get("donnes", {}).values()): return []   # archive : rien à comparer
     if not any(d["tables"] for d in data["donnes"]): return []    # donnes créées : aucune table à comparer
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -551,8 +551,7 @@ def synthese(data, an):
     P = lambda x, s=S_cell: Paragraph(x, s)
     C = lambda x: P(x, S_cellc)
     vous_col = bool(MES)
-    tete = ["N°", "Contrat recommandé", "Même", "Plus haut", "Plus bas", "Autre camp"] + (["Vous"] if vous_col else []) + \
-           ["Entame recom.", "Autre entame"]
+    tete = ["N°", "Contrat recommandé", "Même", "Plus haut", "Plus bas", "Autre camp"] + (["Vous"] if vous_col else [])
     rows = [[P(f"<b>{x}</b>") if k < 2 else C(f"<b>{x}</b>") for k, x in enumerate(tete)]]
     style = []; bandes = [("VALIGN", (0, 0), (-1, -1), "MIDDLE")]         # les couleurs passent après les bandes
     tot = {"meme": 0, "plus": 0, "moins": 0, "autre": 0}; N = 0
@@ -566,9 +565,8 @@ def synthese(data, an):
             lev = d["dm"][c[1:]][decl]; marge = lev - int(c[0]) - 6      # rien si le contrat est juste
             levees = "" if marge == 0 else f" ({lev} lev.)" if marge > 0 else f" <font color='{ROUGE}'>({lev} lev.)</font>"
             reco = f"{c}{'X' * dbl} {SEAT[decl]}{levees}"
-        e = a.get("entame"); carte = e.get("carte") if isinstance(e, dict) else None
         meme = "passe" if c == "passe" else (c + "X" * dbl, decl)
-        n = {"meme": 0, "plus": 0, "moins": 0, "autre": 0}; leads = [0, 0]; vous = None
+        n = {"meme": 0, "plus": 0, "moins": 0, "autre": 0}; vous = None
         for tb in d["tables"]:
             cle = "passe" if tb["contrat"] == "passe" else (tb["contrat"], tb["declarant"])
             sens = None if cle == meme else sens_contrat(cle, meme)
@@ -576,27 +574,23 @@ def synthese(data, an):
             elif cle == meme or "passe" in (cle, meme) or (cle[1] in "NS") == (meme[1] in "NS"): genre = "meme"
             else: genre = "autre"
             n[genre] += 1
-            if carte and c != "passe" and cle != "passe" and tb["contrat"].rstrip("X")[1:] == c[1:]:
-                leads[1] += 1; leads[0] += tb.get("entame") != carte
             if moi.a_joue(tb, MES):
                 jeu = "passe" if cle == "passe" else f"{tb['contrat']} {SEAT[tb['declarant']][0]} {_resultat(tb['resultat'])}"
-                vous = (jeu, sens, tb.get("entame") if carte and leads[1] and tb.get("entame") != carte and cle != "passe"
-                        and tb["contrat"].rstrip("X")[1:] == c[1:] else None)
+                vous = (jeu, sens)
         for k in tot: tot[k] += n[k]
         i = len(rows)
-        ligne = [P(f"<b>{d['n']}</b>"), P(suits(reco)), C(str(n["meme"] or "–")), C(str(n["plus"] or "–")),
-                 C(str(n["moins"] or "–")), C(str(n["autre"] or "–"))]
+        lien = lambda x, cible: f"<a href='#{cible}{d['n']}'>{x}</a>"          # liens internes du PDF
+        nombre = lambda k: C(lien(f"<u>{n[k]}</u>", "res") if n[k] else "–")
+        ligne = [P(lien(f"<b>{d['n']}</b>", "res")), P(lien(f"<u>{suits(reco)}</u>", "reco")), nombre("meme"), nombre("plus"),
+                 nombre("moins"), nombre("autre")]
         if n["plus"]: style.append(("BACKGROUND", (3, i), (3, i), colors.HexColor(SENS["plus"][0])))
         if n["moins"]: style.append(("BACKGROUND", (4, i), (4, i), colors.HexColor(SENS["moins"][0])))
         if vous_col:
             ligne.append(C(suits(vous[0])) if vous else C("–"))
             if vous and vous[1]: style.append(("BACKGROUND", (6, i), (6, i), colors.HexColor(SENS[vous[1]][0])))
-        ligne += [C(suits(carte) if carte and c != "passe" else "–"),
-                  C(f"{leads[0]} sur {leads[1]}" + (f" (vous {suits(vous[2])})" if vous and vous[2] else "") if leads[0] else "–")]
-        if leads[0]: style.append(("BACKGROUND", (len(ligne) - 1, i), (len(ligne) - 1, i), colors.HexColor(FOND_ENTAME)))
         rows.append(ligne)
         _groupe(bandes, i, i, (i - 1) % 2)
-    larg = [0.9, 3.6, 1.5, 1.6, 1.5, 1.7] + ([2.4] if vous_col else []) + [2.0, 2.6]
+    larg = [0.9, 4.2, 1.6, 1.7, 1.6, 1.8] + ([2.6] if vous_col else [])
     larg = [x * 17.6 / sum(larg) for x in larg]
     tb = _grille(rows, [x * cm for x in larg], bandes + style)
     return [Paragraph("Synthèse : recommandé vs joué", S_title),
@@ -607,8 +601,8 @@ def synthese(data, an):
                           f"<font backColor='{SENS[k][0]}'> {SENS[k][1]} </font> ({tot[k]} tables)" for k in SENS) +
                       ". « Même » : le contrat recommandé, par le déclarant ou son partenaire. « Autre camp » : l'autre camp "
                       "joue. Contrat recommandé : ses levées au double mort seulement si elles diffèrent du contrat, en rouge "
-                      "s'il chute. « Autre entame » : les tables de la même dénomination qui ont entamé autre chose. Le détail "
-                      "de chaque table est sur la page de la donne.", S_note),
+                      "s'il chute. Cliquez sur un contrat recommandé pour voir ses enchères, sur un nombre "
+                      "pour le tableau des résultats de la donne.", S_note),
             Spacer(1, 4), tb,
             Spacer(1, 6), Paragraph(EXPLICATIONS, S_body), PageBreak()]
 

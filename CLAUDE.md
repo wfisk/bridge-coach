@@ -125,9 +125,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         double-dummy result and score, no IMP or %; the app's Donnes tab shows it too, the expert's else the
                         standard's). Then at the end the pair's rounds (page_parcours) and, in -standard and -expert, the summary
                         page, one line per deal: recommended contract, how many tables played it (same side, partner included),
-                        higher (red), lower (blue), or let the other side play; your contract coloured the same way; the
-                        recommended lead and how many tables in the same denomination led something else (yellow). No IMP here;
-                        each table's detail is on the deal's page
+                        higher (red), lower (blue), or let the other side play; your contract coloured the same way. Bidding
+                        only, no leads, no IMP. Internal PDF links: the recommended contract goes to the deal's « Enchères
+                        recommandées » (anchor reco<n>), the counts and the deal number to its « Résultats à la table » (res<n>)
       commentaires.py   automatic factual comment per deal (best contracts from double-dummy, a grand slam
                         noted as rarely bid, a small slam played not called a miss, missed games/slams, tricks vs double-dummy, IMP between tables);
                         rapport.py uses it for any deal without a written `comm`, so the

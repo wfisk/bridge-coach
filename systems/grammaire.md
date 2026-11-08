@@ -186,6 +186,9 @@ ouverture:                       # les ouvertures
   `"1M"` vaut pour `1C` et `1P`, `"1N"` pour `1T` et `1K`, `"(1x)"` pour les quatre
   couleurs. Les rôles suivent les enchères : U est toujours l'ouvreur, même adverse ;
   quand ils ouvrent, nous sommes Y (l'intervenant) et Z (son partenaire).
+  Deux sections qui décrivent la même séquence : la plus précise l'emporte (celle qui a le moins de `M`, `N`
+  ou `x`) ; `"(1T) 2K"` (les deux majeures) passe ainsi avant `"(1x) 2x"` (l'intervention naturelle). À précision
+  égale, c'est une erreur.
 - **Règles** : une par ligne, dans l'ordre de priorité ; on prend la première dont la
   condition est vraie. Sans `si`, la règle s'applique toujours (en fin de liste).
   Une enchère impossible dans la séquence (1P après 1P) est sautée.

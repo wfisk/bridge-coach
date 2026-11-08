@@ -14,7 +14,8 @@
 #   alerte : oui pour une enchère que le partenaire alerte. On alerte : cue-bid Michaels, 4e couleur forcing,
 #   3e couleur forcing artificielle, Roudi, Drury, splinter, Jacoby 2SA, soutiens Bergen, Lebensohl, 2SA bicolore,
 #   contres artificiels (Spoutnik…), ouvertures artificielles (Multi 2♦, forts non standard). Le moteur ne joue
-#   encore ni Michaels, ni Roudi, ni splinter, ni Jacoby, ni Bergen, ni Lebensohl, ni Multi.
+#   encore ni Roudi, ni splinter, ni Jacoby, ni Bergen, ni Lebensohl, ni Multi (bicolores : cue-bid, 2♦ sur 1♣, 2SA et 3♣, depuis le 2026-11-08).
+#   Deux sections pour la même séquence : la plus précise l'emporte (« (1T) 2T » sur « (1x) 2x »).
 
 systeme: sef-2024
 
@@ -466,21 +467,26 @@ ouverture:
 # ------------------------------------------------------------------ sur une ouverture de 1 à la couleur (directement)
 "(1T)":
   - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt trèfle" }
+  - 2K:  { si: "C 5+, P 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à cœur et à pique", nature: bicolore, source: à confirmer, alerte: oui }
+  - 2SA: { si: "K 5+, C 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à carreau et à cœur, les deux plus basses", nature: bicolore, source: à confirmer, alerte: oui }
   - 1P:  { si: "P 5+, P >= C, P >= K, (H 8-16, bonne P || H 10-16)", montre: "5+ piques, 8–16 H" }
   - 1C:  { si: "C 5+, C >= K, (H 8-16, bonne C || H 10-16)", montre: "5+ cœurs, 8–16 H" }
   - 1K:  { si: "K 5+, (H 8-16, bonne K || H 10-16)", montre: "5+ carreaux, 8–16 H" }
   - 2P:  { si: "P 6+, H 6-10, non VN || P 6+, H 8-10", montre: "saut faible, 6 piques" }
   - 2C:  { si: "C 6+, H 6-10, non VN || C 6+, H 8-10", montre: "saut faible, 6 cœurs" }
-  - 2K:  { si: "K 6+, H 6-10, non VN || K 6+, H 8-10", montre: "saut faible, 6 carreaux" }
   - contre: { si: "H 12+, U 2-, CP 3+ || H 17+, (CP !1- || H 19+)", montre: "contre d'appel", nature: appel }
   - passe: { montre: "pas d'intervention" }
   - exemples:
       - { main: "AD975 R82 V4 863", attendu: 1P }
       - { main: "AD9 R82 V43 AV86", attendu: 1SA }
       - { main: "AD95 R852 RV43 6", attendu: contre }
+      - { main: "RV975 AD863 4 63", attendu: 2K }      # bicolore : les deux majeures
+      - { main: "4 AD863 RV975 63", attendu: 2SA }     # bicolore : carreau et cœur
 
 "(1K)":
   - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt carreau" }
+  - 2K:  { si: "C 5+, P 5+, H 8-18", montre: "cue-bid bicolore : 5-5 (au moins) à cœur et à pique", nature: bicolore, source: à confirmer, alerte: oui }
+  - 2SA: { si: "T 5+, C 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à trèfle et à cœur, les deux plus basses", nature: bicolore, source: à confirmer, alerte: oui }
   - 1P:  { si: "P 5+, P >= C, (H 8-16, bonne P || H 10-16)", montre: "5+ piques, 8–16 H" }
   - 1C:  { si: "C 5+, (H 8-16, bonne C || H 10-16)", montre: "5+ cœurs, 8–16 H" }
   - 2T:  { si: "T 5+, H 11-18, bonne T, non vul nous || T 5+, H 12-18, bonne T", montre: "5+ trèfles, 11–18 H" }
@@ -493,28 +499,32 @@ ouverture:
 "(1C)":
   - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt cœur" }
   - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui }
+  - 2C:  { si: "T 5+, P 5+, H 8-18", montre: "cue-bid bicolore : 5-5 (au moins) à trèfle et à pique", nature: bicolore, source: à confirmer, alerte: oui }
+  - 3T:  { si: "K 5+, P 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à carreau et à pique", nature: bicolore, source: à confirmer, alerte: oui }
   - 1P:  { si: "P 5+, (H 8-16, bonne P || H 10-16)", montre: "5+ piques, 8–16 H" }
   - 2K:  { si: "K 5+, K >= T, H 11-18, bonne K, non vul nous || K 5+, K >= T, H 12-18, bonne K", montre: "5+ carreaux, 11–18 H" }
   - 2T:  { si: "T 5+, H 11-18, bonne T, non vul nous || T 5+, H 12-18, bonne T", montre: "5+ trèfles, 11–18 H" }
   - 2P:  { si: "P 6+, H 6-10, non VN || P 6+, H 8-10", montre: "saut faible, 6 piques" }
   - 3K:  { si: "K 6+, H 6-10, non VN || K 6+, H 8-10", montre: "saut faible, 6 carreaux" }
-  - 3T:  { si: "T 6+, H 6-10, non VN || T 6+, H 8-10", montre: "saut faible, 6 trèfles" }
   - contre: { si: "H 12+, U 2-, P 3+ || H 17+, (P !1- || H 19+)", montre: "contre d'appel", nature: appel }
   - passe: { montre: "pas d'intervention" }
 
 "(1P)":
   - 1SA: { si: "reg, H 15-18, arret U", montre: "15–18 H, régulier, arrêt pique" }
   - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui }
+  - 2P:  { si: "T 5+, C 5+, H 8-18", montre: "cue-bid bicolore : 5-5 (au moins) à trèfle et à cœur", nature: bicolore, source: à confirmer, alerte: oui }
+  - 3T:  { si: "K 5+, C 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à carreau et à cœur", nature: bicolore, source: à confirmer, alerte: oui }
   - 2C:  { si: "C 5+, C >= K, C >= T, H 11-18, bonne C, non vul nous || C 5+, C >= K, C >= T, H 12-18, bonne C", montre: "5+ cœurs, 11–18 H" }
   - 2K:  { si: "K 5+, K >= T, H 11-18, bonne K, non vul nous || K 5+, K >= T, H 12-18, bonne K", montre: "5+ carreaux, 11–18 H" }
   - 2T:  { si: "T 5+, H 11-18, bonne T, non vul nous || T 5+, H 12-18, bonne T", montre: "5+ trèfles, 11–18 H" }
   - 3C:  { si: "C 6+, H 6-10, non VN || C 6+, H 8-10", montre: "saut faible, 6 cœurs" }
   - 3K:  { si: "K 6+, H 6-10, non VN || K 6+, H 8-10", montre: "saut faible, 6 carreaux" }
-  - 3T:  { si: "T 6+, H 6-10, non VN || T 6+, H 8-10", montre: "saut faible, 6 trèfles" }
   - contre: { si: "H 12+, U 2-, C 3+ || H 17+, (C !1- || H 19+)", montre: "contre d'appel", nature: appel }
   - passe: { montre: "pas d'intervention" }
   - exemples:
       - { main: "82 AR975 R4 V863", attendu: 2C }
+      - { main: "8 AR975 4 RV8632", attendu: 2P }      # cue-bid bicolore : trèfle et cœur
+      - { main: "8 AR975 RV8632 4", attendu: 3T }      # bicolore : carreau et cœur
       - { main: "82 R9753 R4 V863", attendu: passe }
       - { main: "82 AR975 R4 V863", vul: VN, attendu: passe }   # 11 H vulnérable : il en faut 12
 
@@ -668,6 +678,89 @@ ouverture:
   - "*K": { si: "K 5+, non Y est K, non U est K, non W est K, palier(K) 2-, H 10+", montre: "5+ carreaux" }
   - "*T": { si: "T 5+, non Y est T, non U est T, non W est T, palier(T) 2-, H 10+", montre: "5+ trèfles" }
   - passe: { montre: "rien à ajouter" }
+
+# ------------------------------------------------------------------ après une intervention bicolore du partenaire (à confirmer)
+# Les bicolores 5-5 (au moins), 8–18 H, alertés. Sur 1♣ ou 1♦ : 2♦ = les deux majeures, 2SA = les deux couleurs
+# libres les plus basses (carreau et cœur sur 1♣, trèfle et cœur sur 1♦). Sur 1♥ ou 1♠ : le cue-bid = trèfle et
+# l'autre majeure, 2SA = les mineures, 3♣ = carreau et l'autre majeure. Le partenaire choisit une des deux
+# couleurs : au plus bas avec 0–8 H, avec un saut avec 9–11 H quand il y a la place, à la manche avec plus.
+# Ces clés précises l'emportent sur l'intervention naturelle « (1x) 2x ».
+"(1T) 2K | (1K) 2K | (1T) 2K (contre) | (1K) 2K (contre)":          # les deux majeures
+  - 3SA: { si: "H 12+, arret U, C 2-, P 2-", montre: "12+ H, arrêt, sans fit majeur : manche", nature: conclusion }
+  - 4P:  { si: "P 3+, P > C, H 12+", montre: "fit pique, 12+ H : manche", nature: conclusion }
+  - 4C:  { si: "C 3+, H 12+", montre: "fit cœur, 12+ H : manche", nature: conclusion }
+  - 3P:  { si: "P 3+, P > C, H 9-11", montre: "fit pique, 9–11 H : invitation", nature: invite }
+  - 3C:  { si: "C 3+, H 9-11", montre: "fit cœur, 9–11 H : invitation", nature: invite }
+  - 2P:  { si: "P > C", montre: "préférence pique, 0–8 H", nature: limite }
+  - 2C:  { montre: "préférence cœur (la plus longue, ou à égalité), 0–8 H", nature: limite }
+  - exemples:
+      - { main: "852 D74 X63 V952", apres: (1T) 2K, attendu: 2C }
+      - { main: "A852 D4 RX63 952", apres: (1K) 2K, attendu: 3P }
+      - { main: "A852 RD4 RX63 92", apres: (1T) 2K, attendu: 4P }
+
+"(1T) 2SA | (1T) 2SA (contre)":                  # carreau et cœur
+  - 4C:  { si: "C 3+, H 10+", montre: "fit cœur, 10+ H : manche", nature: conclusion }
+  - 5K:  { si: "K 4+, H 13+, C 2-", montre: "fit carreau, 13+ H : manche", nature: conclusion }
+  - 3C:  { si: "C 3+, C >= K", montre: "préférence cœur", nature: limite }
+  - 3K:  { montre: "préférence carreau", nature: limite }
+
+"(1K) 2SA | (1K) 2SA (contre)":                  # trèfle et cœur
+  - 4C:  { si: "C 3+, H 10+", montre: "fit cœur, 10+ H : manche", nature: conclusion }
+  - 5T:  { si: "T 4+, H 13+, C 2-", montre: "fit trèfle, 13+ H : manche", nature: conclusion }
+  - 3C:  { si: "C 3+, C >= T", montre: "préférence cœur", nature: limite }
+  - 3T:  { montre: "préférence trèfle", nature: limite }
+
+"(1C) 2SA | (1P) 2SA | (1C) 2SA (contre) | (1P) 2SA (contre)":      # les mineures
+  - 3SA: { si: "H 13+, arret U", montre: "13+ H, arrêt : manche", nature: conclusion }
+  - 5K:  { si: "K 4+, K > T, H 13+", montre: "fit carreau, 13+ H : manche", nature: conclusion }
+  - 5T:  { si: "T 4+, H 13+", montre: "fit trèfle, 13+ H : manche", nature: conclusion }
+  - 3K:  { si: "K > T", montre: "préférence carreau", nature: limite }
+  - 3T:  { montre: "préférence trèfle (la plus longue, ou à égalité)", nature: limite }
+
+"(1C) 2C | (1C) 2C (contre)":                   # trèfle et pique
+  - 4P:  { si: "P 3+, H 12+", montre: "fit pique, 12+ H : manche", nature: conclusion }
+  - 3P:  { si: "P 3+, H 9-11", montre: "fit pique, 9–11 H : invitation", nature: invite }
+  - 2P:  { si: "P 3+", montre: "fit pique, 0–8 H", nature: limite }
+  - 5T:  { si: "T 4+, H 13+", montre: "fit trèfle, 13+ H : manche", nature: conclusion }
+  - 3T:  { montre: "préférence trèfle", nature: limite }
+  - exemples:
+      - { main: "852 D74 X63 V952", apres: (1C) 2C, attendu: 2P }
+      - { main: "85 D74 RX63 V952", apres: (1C) 2C, attendu: 3T }
+
+"(1P) 2P | (1P) 2P (contre)":                   # trèfle et cœur
+  - 4C:  { si: "C 3+, H 10+", montre: "fit cœur, 10+ H : manche", nature: conclusion }
+  - 3C:  { si: "C 3+", montre: "fit cœur, 0–9 H", nature: limite }
+  - 5T:  { si: "T 4+, H 13+", montre: "fit trèfle, 13+ H : manche", nature: conclusion }
+  - 3T:  { montre: "préférence trèfle", nature: limite }
+
+"(1C) 3T | (1C) 3T (contre)":                   # carreau et pique
+  - 4P:  { si: "P 3+, H 10+", montre: "fit pique, 10+ H : manche", nature: conclusion }
+  - 3P:  { si: "P 3+", montre: "fit pique, 0–9 H", nature: limite }
+  - 5K:  { si: "K 4+, H 13+", montre: "fit carreau, 13+ H : manche", nature: conclusion }
+  - 3K:  { montre: "préférence carreau", nature: limite }
+
+"(1P) 3T | (1P) 3T (contre)":                   # carreau et cœur
+  - 4C:  { si: "C 3+, H 10+", montre: "fit cœur, 10+ H : manche", nature: conclusion }
+  - 3C:  { si: "C 3+", montre: "fit cœur, 0–9 H", nature: limite }
+  - 5K:  { si: "K 4+, H 13+", montre: "fit carreau, 13+ H : manche", nature: conclusion }
+  - 3K:  { montre: "préférence carreau", nature: limite }
+
+# l'intervenant après le choix du partenaire : il ne relance qu'avec le haut de sa zone
+"(1T) 2K 2C | (1T) 2K 2P | (1K) 2K 2C | (1K) 2K 2P | (1C) 2C 2P":
+  - 4Z:  { si: "H 17+", montre: "17+ H : manche", nature: conclusion }
+  - "*Z": { si: "H 15-16", montre: "15–16 H : invitation", nature: invite }
+  - passe: { montre: "le partenaire a choisi : on s'arrête" }
+
+"(1T) 2K 3C | (1T) 2K 3P | (1K) 2K 3C | (1K) 2K 3P | (1C) 2C 3P":
+  - 4Z:  { si: "H 11+", montre: "accepte l'invitation", nature: conclusion }
+  - passe: { montre: "refuse l'invitation" }
+
+"(1P) 2P 3C | (1C) 3T 3P | (1P) 3T 3C | (1T) 2SA 3C | (1K) 2SA 3C":
+  - 4Z:  { si: "H 16+", montre: "16+ H : manche", nature: conclusion }
+  - passe: { montre: "le partenaire a choisi : on s'arrête" }
+
+"(1T) 2K 3SA | (1T) 2K 4C | (1T) 2K 4P | (1K) 2K 3SA | (1K) 2K 4C | (1K) 2K 4P | (1C) 2C 3T | (1C) 2C 4P | (1C) 2C 5T | (1P) 2P 3T | (1P) 2P 4C | (1P) 2P 5T | (1C) 3T 3K | (1C) 3T 4P | (1C) 3T 5K | (1P) 3T 3K | (1P) 3T 4C | (1P) 3T 5K | (1T) 2SA 3K | (1T) 2SA 4C | (1T) 2SA 5K | (1K) 2SA 3T | (1K) 2SA 4C | (1K) 2SA 5T | (1C) 2SA 3T | (1C) 2SA 3K | (1C) 2SA 3SA | (1C) 2SA 5T | (1C) 2SA 5K | (1P) 2SA 3T | (1P) 2SA 3K | (1P) 2SA 3SA | (1P) 2SA 5T | (1P) 2SA 5K":
+  - passe: { montre: "le partenaire a conclu" }
 
 # ------------------------------------------------------------------ après un contre d'appel du partenaire
 # On nomme sa meilleure couleur, une majeure 4e d'abord : au palier le plus bas avec 0–8 H,

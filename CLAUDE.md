@@ -295,6 +295,11 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         2♣ – 2♦ – 2♥ – 2♠ (four spades) and opener's 3♥; responder after opener's 2SA answer to the 4th suit;
                         cue-bids showing support and strength (nature cue, atout = the fit; follow-ups in
                         encheres/__init__.py: reponse_cue, reponse_cue_intervenant, apres_mon_cue).
+                        Two-suited overcalls (5-5, 8–18 H, alerted; the user's scheme, 2026-11-08): over 1♣/1♦ 2♦ = majors,
+                        2SA = the two lowest unbid; over 1♥/1♠ the cue-bid = clubs + other major (Michaels), 2SA = minors,
+                        3♣ = diamonds + other major; advancer picks a suit by strength; +0.61 IMP a deal on 20 000 random
+                        deals (331 uses) against the old natural overcalls. Two sections for one auction: the more specific
+                        key (fewer M/N/x) wins over the generic one (regles.charger), else an error.
                         Responder after a take-out double is still the old code: a first rule
                         version (redouble, pre-emptive raise) cost 0.08 IMP on fresh deals
                         because the later rounds don't follow up those bids Keys put the opponents' calls in brackets ("1K (1P)");

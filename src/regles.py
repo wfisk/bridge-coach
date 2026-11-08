@@ -494,19 +494,25 @@ def charger(chemin):
             defs[nom] = Condition(texte, defs, lg, None, dernier)
         return defs
     definitions({j: ["♣"] for j in JOUEURS}, "", -1)    # vérifie la syntaxe une fois
-    sequences, exemples, origine = {}, [], {}
+    sequences, exemples, origine, generalite = {}, [], {}, {}
     for cle in doc:
         if cle in ("systeme", cle_defs): continue
         ligne_cle = doc.lc.key(cle)[0] + 1
-        cles = [x for k in str(cle).split("|") for x in deplier(k.strip())]   # « a | b » : plusieurs clés
-        for cle_reelle in cles:                          # « 1M » vaut pour 1C et 1P
+        # « a | b » : plusieurs clés ; chacune garde son degré de généralité (le nombre de 1x, 1M, 1N qu'elle déplie)
+        cles = [(x, len(re.findall(r"[1-7][MNx]", k))) for k in str(cle).split("|") for x in deplier(k.strip())]
+        for cle_reelle, gen in cles:                     # « 1M » vaut pour 1C et 1P
             seq = sequence(cle_reelle, ligne_cle)
             rangs = [rang(nue(x)) for x in seq if rang(nue(x)) >= 0]
             if len(cles) > 1 and any(b <= a for a, b in zip(rangs, rangs[1:])):
                 continue                                  # combinaison impossible d'une clé générique
             if seq in sequences:
-                raise ErreurRegles(f"ligne {ligne_cle} : séquence « {cle_reelle} » déjà décrite ligne {origine[seq]}")
-            origine[seq] = ligne_cle
+                # deux sections pour la même séquence : la plus précise l'emporte (« (1T) 2T », le cue-bid Michaels,
+                # sur « (1x) 2x », l'intervention naturelle) ; à précision égale, c'est une erreur
+                if gen == generalite[seq]:
+                    raise ErreurRegles(f"ligne {ligne_cle} : séquence « {cle_reelle} » déjà décrite ligne {origine[seq]}")
+                if gen > generalite[seq]: continue
+                exemples[:] = [x for x in exemples if x[0] != seq]
+            origine[seq] = ligne_cle; generalite[seq] = gen
             roles = couleurs_des_joueurs(seq)
             dernier = max((rang(nue(x)) for x in seq), default=-1)
             defs = definitions(roles, cle_reelle, dernier)

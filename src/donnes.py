@@ -130,11 +130,12 @@ def barrage(e):
     return o in ("2♥", "2♠") or (o and o[0] in "34" and o[1:] != "SA")
 
 
+BICOLORES = ("cue-bid bicolore", "bicolore : 5-5", "bicolore mineur")
+
+
 def bicolore(e):
-    for s in SIEGES:
-        L = sorted((len(x) if x != "-" else 0 for x in e.mains[s].split()), reverse=True)
-        if L[0] >= 5 and L[1] >= 5 and e.h(s) >= 9: return True
-    return False
+    """Une intervention bicolore du moteur (regles.yaml) : cue-bid (Michaels), 2♦ sur 1♣ (les majeures), 2SA, 3♣."""
+    return any(any(m in x for m in BICOLORES) for _s, _b, x in e.enc.get("explications", []))
 
 
 def blackwood(e): return "4SA" in e.seq and bool(re.match(r"^[67]", e.contrat)) and e.fait()
@@ -260,7 +261,7 @@ def plan_compte(e, mot=None):
 THEMES = {
     ALEATOIRE: lambda e: True,
     "Barrage": barrage,
-    "Bicolore": bicolore,
+    "Michaels et bicolores": bicolore,
     "Blackwood": blackwood,
     "Chelem": lambda e: chelem(e, (12, 13)),
     "Contre d'appel": contre_appel,
@@ -299,7 +300,7 @@ META = {
     "Évaluer sa main": ("encheres", 1), "Soutien de la majeure": ("encheres", 1), "Enchères à SA": ("encheres", 1),
     "Manche à SA": ("encheres", 1), "Manche en majeure": ("encheres", 1), "Manche en mineure": ("encheres", 1),
     "Stayman": ("encheres", 1), "Texas": ("encheres", 1), "Barrage": ("encheres", 1), "Intervention": ("encheres", 1),
-    "Contre d'appel": ("encheres", 2), "Contre Spoutnik": ("encheres", 2), "Réveil": ("encheres", 2), "Bicolore": ("encheres", 2),
+    "Contre d'appel": ("encheres", 2), "Contre Spoutnik": ("encheres", 2), "Réveil": ("encheres", 2), "Michaels et bicolores": ("encheres", 2),
     "Quatrième couleur forcing": ("encheres", 2), "Partielle disputée": ("encheres", 2), "Blackwood": ("encheres", 2),
     "Petit chelem": ("encheres", 2), "Drury": ("encheres", 2),
     "Chelem": ("encheres", 3), "Grand chelem": ("encheres", 3), "Roudi": ("encheres", 3), "Sacrifice": ("encheres", 3),

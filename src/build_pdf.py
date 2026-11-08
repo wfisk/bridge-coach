@@ -245,7 +245,7 @@ def results_table(d):
     entete = ["<b>Paires</b>", "<b>Contrat</b>", "<b>Entame</b>", "<b>Nord-Sud</b>", "<b>IMP N-S</b>"]
     if beaucoup: entete = ["<b>Table</b>"] + entete + ["<b>% N-S</b>"]
     rows = [[P(x) for x in entete]]; vous = []
-    for t in d["tables"]:                 # dans l'ordre des tables
+    for t in moi.ordre(d["tables"], MES):  # du meilleur résultat au moins bon, vu de votre camp (moi.ordre)
         res = "=" if t["resultat"] in ("=", "") else t["resultat"]
         passe = t["contrat"] == "passe"
         jeu = "passe générale" if passe else f"<b>{t['contrat']} {SEAT[t['declarant']]}</b> {res}"
@@ -379,7 +379,11 @@ def page(d, a, date, expliquer=True):
           Paragraph(f"Donneur : <b>{SEAT[d['donneur']]}</b> &nbsp;·&nbsp; Vulnérable : <b>{seats(d['vul'])}</b> "
                     + (f"&nbsp;·&nbsp; Thème : <b>{d['theme']}</b> – marque IMP" if d.get("theme") else f"&nbsp;·&nbsp; Séance du {date} – marque IMP"), S_sub),
           Spacer(1, 2), diagram_legende(d, a)]
-    if d["tables"]: el += [Paragraph("Résultats à la table", S_h), results_table(d), Paragraph("Enchères aux tables", S_h)]
+    if d["tables"]:
+        el += [Paragraph("Résultats à la table", S_h)]
+        rang = moi.votre_rang(d["tables"], MES, lambda t: f"{t['contrat']} {SEAT[t['declarant']]} {t['resultat']}".strip())
+        if rang: el += [Paragraph(f"<font backColor='{moi.SURLIGNE}'>{suits(rang)}</font>", S_body), Spacer(1, 3)]
+        el += [results_table(d), Paragraph("Enchères aux tables", S_h)]
     corr = a.get("encheres_corrigees", {})
     cells, notes = [], []
     groupes = {}                        # séquences identiques regroupées (utile à partir de 3 tables)

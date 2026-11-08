@@ -169,3 +169,11 @@ assert moi.a_joue({"paire_ns": "2", "paire_eo": "1"}, {"1"}) and not moi.a_joue(
 app.ecrire_etat(moi="MARTIN Anne"); assert moi.nom() == "MARTIN Anne" and moi.paires(s) == {"1"}
 app.ecrire_etat(moi=None); assert moi.nom() is None
 print("ok")
+# les tables du meilleur au moins bon, vu de votre camp ; votre rang au-dessus du tableau
+T = [dict(paire_ns="", paire_eo="", score_ns=-200, pct_ns=9), dict(paire_ns="3", paire_eo="2", score_ns=-100, pct_ns=50),
+     dict(paire_ns="", paire_eo="", score_ns=110, pct_ns=89), dict(paire_ns="", paire_eo="", score_ns=-100, pct_ns=50)]
+assert [t["score_ns"] for t in moi.ordre(T, {"2"})] == [-200, -100, -100, 110] and moi.ordre(T, {"2"})[1] is T[1]   # E-O : votre table d'abord à égalité
+assert [t["score_ns"] for t in moi.ordre(T, set())] == [110, -100, -100, -200]                                       # sans vous : Nord-Sud
+assert moi.votre_rang(T, {"2"}, lambda t: "3♠ S -2") == "Votre résultat : 2e ex aequo sur 4 (50 %) – meilleur : +200 (3♠ S -2)"
+assert moi.votre_rang(T, set()) == ""
+print("ok")

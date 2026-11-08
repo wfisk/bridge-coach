@@ -49,3 +49,38 @@ def tous_les_noms(seances):
         except (OSError, ValueError, AttributeError):
             pass
     return sorted(out, key=str.lower)
+
+
+def mon_camp(tables, mes_paires):
+    """("NS" ou "EO", la table) si l'utilisateur a joué la donne, sinon (None, None)."""
+    for t in tables:
+        if a_joue(t, mes_paires):
+            return ("NS" if str(t.get("paire_ns")) in mes_paires else "EO"), t
+    return None, None
+
+
+def ordre(tables, mes_paires=frozenset()):
+    """Les tables du meilleur résultat au moins bon : vu de votre camp si vous avez joué la donne, sinon de Nord-Sud.
+    À score égal, votre table d'abord, puis l'ordre des tables."""
+    camp, _ = mon_camp(tables, mes_paires)
+    signe = -1 if camp == "EO" else 1
+    rang = {id(t): k for k, t in enumerate(tables)}
+    return sorted(tables, key=lambda t: (-signe * (t.get("score_ns") or 0), not a_joue(t, mes_paires), rang[id(t)]))
+
+
+def votre_rang(tables, mes_paires, decrire=lambda t: ""):
+    """« Votre résultat : 8e sur 24 (50 %) – meilleur : +200 (3♠ Sud -2) », ou "" si vous n'avez pas joué la donne.
+    decrire(t) : le contrat d'une table en texte."""
+    camp, t = mon_camp(tables, mes_paires)
+    if not camp or len(tables) < 2: return ""
+    s = lambda x: (x.get("score_ns") or 0) * (1 if camp == "NS" else -1)
+    rang = 1 + sum(1 for x in tables if s(x) > s(t))
+    egaux = sum(1 for x in tables if s(x) == s(t)) > 1
+    pct = t.get("pct_ns")
+    pct = None if pct is None else pct if camp == "NS" else 100 - pct
+    meilleure = max(tables, key=s)
+    texte = f"Votre résultat : {rang}{'er' if rang == 1 else 'e'}{' ex aequo' if egaux else ''} sur {len(tables)}"
+    if pct is not None: texte += f" ({pct:.0f} %)"
+    if s(meilleure) > s(t): texte += f" – meilleur : {s(meilleure):+d} ({decrire(meilleure)})"
+    else: texte += " – le meilleur score de la donne"
+    return texte

@@ -91,7 +91,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         its source and players (<name>-paires.json merged in, then removed)
       moi.py            who the user is: « Vous êtes » in Réglages saves the full name in etat.json (moi.nom); moi.paires(data)
                         finds that player's pairs in a .bc.json's "joueurs"; their tables get a pale yellow row (SURLIGNE) in the
-                        PDF results tables and summary (build_pdf.MES) and in the Donnes tab. Also holds dossier_des_reglages
+                        PDF results tables and summary (build_pdf.MES) and in the Donnes tab. Results tables are sorted best first from the user's side
+                        (N-S when they did not play the deal; moi.ordre), with a rank line above (moi.votre_rang). Also holds dossier_des_reglages
                         (light: build_pdf imports it without the rest of the program)
       maj.py            updates from GitHub, standard library only: derniere_version (tags API, only on the Réglages
                         button), then a separate process (--appliquer V --attendre <app pid>) waits for the app to close,

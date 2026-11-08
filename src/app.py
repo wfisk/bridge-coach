@@ -512,12 +512,14 @@ def page_donne(d, mes=frozenset()):
     mains_grille(d)
     if d.get("tables"):
         ui.label("Aux tables").classes("text-base font-bold mt-2")
+        rang = moi.votre_rang(d["tables"], mes, lambda t: f"{t['contrat']} {SIEGE.get(t['declarant'], t['declarant'])} {t['resultat']}".strip())
+        if rang: ui.html(f"<div style='font-size:15px;background:{moi.SURLIGNE};padding:2px 6px;border-radius:4px'>{rouge(rang)}</div>", sanitize=False)
         rows = [{"k": str(i), "table": str(x.get("table", "")), "ns": x.get("nom_ns") or x.get("paire_ns", ""),
                  "eo": x.get("nom_eo") or x.get("paire_eo", ""), "contrat": x.get("contrat", ""),
                  "decl": SIEGE.get(x.get("declarant"), x.get("declarant") or ""), "res": x.get("resultat", ""),
                  "entame": x.get("entame") or "", "score": f"{x['score_ns']:+d}" if isinstance(x.get("score_ns"), int) else "",
                  "moi": moi.a_joue(x, mes)}
-                for i, x in enumerate(d["tables"])]
+                for i, x in enumerate(moi.ordre(d["tables"], mes))]   # le meilleur résultat d'abord, vu de votre camp
         cols = [("table", "Table"), ("ns", "Nord-Sud"), ("eo", "Est-Ouest"), ("contrat", "Contrat"), ("decl", "Déclarant"),
                 ("res", "Résultat"), ("entame", "Entame"), ("score", "Score N-S")]
         ui.table(columns=[{"name": k, "label": l, "field": k, "align": "left"} for k, l in cols], rows=rows, row_key="k") \

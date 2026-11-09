@@ -113,10 +113,16 @@ JS_GLISSE = """<script>
 // de place connue : elle garde son glissement depuis le bord du joueur (arrive-*). Changer de donne oublie les places.
 (function () {
   var places = new Map(), donne = null, envol = new Set(), calme = false, prevu = false;
+  function ou(el) {                            // la place d'une carte dans la table, en unités de la table : quand la table
+    var t = el.closest('.ajuste'), r = el.getBoundingClientRect();   // change d'échelle (JS_AJUSTE), rien ne bouge
+    if (!t) return {x: r.left, y: r.top, w: r.width};
+    var c = t.getBoundingClientRect(), e = c.width / (t.offsetWidth || c.width) || 1;
+    return {x: (r.left - c.left) / e, y: (r.top - c.top) / e, w: r.width};
+  }
   function suivreVol() {                       // pendant le vol, la place notée est la place vue : un redessin repart d'ici
     envol.forEach(function (el) {
       if (!el.isConnected) { envol.delete(el); return; }
-      var r = el.getBoundingClientRect(); places.set(el.getAttribute('data-c'), {x: r.left, y: r.top});
+      places.set(el.getAttribute('data-c'), ou(el));
     });
     if (envol.size) requestAnimationFrame(suivreVol);
   }
@@ -124,25 +130,34 @@ JS_GLISSE = """<script>
     prevu = false;
     var t = document.querySelector('.ajuste[data-donne]'), d = t ? t.getAttribute('data-donne') : null;
     if (d !== donne) { places.clear(); donne = d; }
-    var vues = new Map(), vol = false;
+    var vues = new Map(), vols = [];
     document.querySelectorAll('[data-c]').forEach(function (el) {
       var k = el.getAttribute('data-c');
       if (envol.has(el)) { vues.set(k, places.get(k)); return; }
-      var r = el.getBoundingClientRect(); if (!r.width) return;
-      vues.set(k, {x: r.left, y: r.top});
-      var avant = places.get(k); if (!avant || calme) return;
-      var dx = avant.x - r.left, dy = avant.y - r.top;
+      var avant = places.get(k);
+      if (avant && !calme && /arrive-/.test(el.className)) {   // déjà vue ailleurs : pas de glissement depuis le bord,
+        el.className = el.className.replace(/\s*arrive-\S+/g, ''); el.style.animationDelay = '';   // et il fausserait la mesure
+      }
+      var p = ou(el); if (!p.w) return;
+      vues.set(k, p);
+      if (!avant || calme) return;
+      var dx = avant.x - p.x, dy = avant.y - p.y;               // en unités de la table : la translation de la carte
       if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
-      var e = r.width / (el.offsetWidth || r.width) || 1;       // l'échelle de la table (JS_AJUSTE)
-      el.className = el.className.replace(/\s*arrive-\S+/g, ''); el.style.animationDelay = '';
+      vols.push({el: el, dx: dx, dy: dy, d: Math.hypot(dx, dy)});
+    });
+    // au pas des cartes des défenseurs (arrive-* : 110 px en 0,5 s, ease-out) : 0,5 s au moins, plus pour un long trajet ;
+    // toutes ensemble, le temps du plus long : les cartes qui se resserrent arrivent avec celle posée sur la table
+    var duree = Math.min(800, Math.max(500, Math.max.apply(null, vols.map(function (v) { return v.d; }).concat([0])) * 4.5));
+    vols.forEach(function (v) {
+      var el = v.el;
       el.style.position = el.style.position || 'relative'; el.style.zIndex = 5;
-      var a = el.animate([{transform: 'translate(' + dx / e + 'px,' + dy / e + 'px)'}, {transform: 'none'}],
-                         {duration: 380, easing: 'cubic-bezier(.25,.7,.3,1)'});
-      envol.add(el); vol = true;
+      var a = el.animate([{transform: 'translate(' + v.dx + 'px,' + v.dy + 'px)'}, {transform: 'none'}],
+                         {duration: duree, easing: 'ease-out'});
+      envol.add(el);
       a.onfinish = a.oncancel = function () { envol.delete(el); el.style.zIndex = ''; };
     });
     places = vues; calme = false;
-    if (vol) requestAnimationFrame(suivreVol);
+    if (vols.length) requestAnimationFrame(suivreVol);
   }
   function plusTard() { if (!prevu) { prevu = true; requestAnimationFrame(noter); } }
   window.addEventListener('resize', function () { calme = true; plusTard(); });   // la fenêtre change : rien ne vole
@@ -1368,15 +1383,17 @@ def page():
         """Le pli en cours, chaque carte devant le joueur qui l'a posée, et les plis gardés."""
         posees, derniere, ecoule = pli_en_cours(p)
         return (f"<div style='position:absolute;inset:0;pointer-events:none'>"
+                f"<div style='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)'>{etui(p.d, places, petit=True, pale=True)}</div>"
                 f"{pli_cartes(p, places, posees, derniere, ecoule, mort)}"
                 + "".join(plis_gardes(p, x, ou) for x, ou in zip(places, ("haut", "gauche", "droite", "bas"))
                           if x == jeu["siege"] or (p.camp(x) != p.camp(jeu["siege"]) and x != p.mort())) + "</div>")   # les vôtres, ceux des adversaires (pas du mort : il est étalé)
 
-    def etui(d, places, petit=False):
+    def etui(d, places, petit=False, pale=False):
         """L'étui de la donne au centre, comme un vrai étui : Nord et Sud toujours sur les petits côtés (debout quand
         Nord-Sud sont en haut et en bas, couché sinon), leurs bandes sur toute la largeur, Est et Ouest entre elles ;
         chaque nom se lit depuis sa place, en capitales, blanc sur rouge si son camp est vulnérable, sur vert sinon ; le
-        donneur écrit « Donneur » en rouge ou vert sur blanc ; le joueur qui réfléchit clignote."""
+        donneur écrit « Donneur » en rouge ou vert sur blanc ; le joueur qui réfléchit clignote. pale : pendant le jeu de la
+        carte, l'étui reste sur la table en filigrane, ses couleurs à peine plus foncées que la table (ETUI_PALE)."""
         v = d["vul"]; vul = lambda x: v == "Tous" or v == ("N-S" if x in "NS" else "E-O")
         l, L, h, f = (84, 149, 22, 12) if petit else ETUI      # l × L : l'étui (9:16), h : épaisseur des bandes
         haut, gauche, droite, bas = places
@@ -1386,12 +1403,14 @@ def page():
             place = {haut: "1 / 1 / 2 / 4", bas: "3 / 1 / 4 / 4", gauche: "2 / 1 / 3 / 2", droite: "2 / 3 / 3 / 4"}
         else:                                                 # Nord et Sud à gauche et à droite, Est-Ouest entre eux
             place = {gauche: "1 / 1 / 4 / 2", droite: "1 / 3 / 4 / 4", haut: "1 / 2 / 2 / 3", bas: "3 / 2 / 4 / 3"}
+        P = ETUI_PALE
         def bande(x):
-            teinte = "#c0141c" if vul(x) else "#2e7d32"
+            teinte = (P["rouge"] if vul(x) else P["vert"]) if pale else "#c0141c" if vul(x) else "#2e7d32"
+            blanc = P["fond"] if pale else "#fff"
             if x == d["donneur"]:                             # le donneur : « Donneur » en couleur sur blanc
-                nom, fond, encre = "Donneur", f"#fff;border:2px solid {teinte}", teinte
+                nom, fond, encre = "Donneur", f"{blanc};border:2px solid {teinte}", P["encre"] if pale else teinte
             else:                                             # les autres : le nom en capitales, blanc sur la couleur
-                nom, fond, encre = SIEGE[x].upper(), teinte, "#fff"
+                nom, fond, encre = SIEGE[x].upper(), teinte, P["encre"] if pale else "#fff"
             if x in (haut, bas):
                 forme = "width:100%;height:100%;" + ("transform:rotate(180deg);" if x == haut else "")
             else:
@@ -1401,10 +1420,13 @@ def page():
                     f"box-sizing:border-box;background:{fond}'>{nom}</div>")
         return (f"<div title='En rouge les camps vulnérables, en vert les autres' style='display:grid;box-sizing:border-box;"
                 f"width:{W}px;height:{H}px;grid-template-columns:{h}px 1fr {h}px;grid-template-rows:{h}px 1fr {h}px;gap:4px;"
-                f"padding:6px;border-radius:8px;background:#e4e7eb;border:1px solid #c8ced5;box-shadow:0 1px 2px rgba(0,0,0,.12)'>"
+                f"padding:6px;border-radius:8px;" + (f"background:{P['fond']};border:1px solid {P['bord']}'>" if pale else
+                "background:#e4e7eb;border:1px solid #c8ced5;box-shadow:0 1px 2px rgba(0,0,0,.12)'>") +
                 f"{bande(haut)}{bande(gauche)}{bande(droite)}{bande(bas)}</div>")
 
     ETUI = (135, 240, 30, 14)    # les côtés de l'étui (9:16), l'épaisseur des bandes, le texte
+    # l'étui en filigrane pendant le jeu de la carte : quelques nuances de la table (#f3efe7), sans rouge ni vert
+    ETUI_PALE = {"fond": "#ece6db", "bord": "#e2dacc", "rouge": "#e0d8ca", "vert": "#e0d8ca", "encre": "#b3a796"}
 
     def tapis_encheres(d, places):
         """Les enchères posées devant chaque joueur, comme les cartons d'une boîte à enchères ; la dernière ressort."""
@@ -1738,7 +1760,8 @@ def page():
         pli = q.pos.pli or (q.plis[-1][0] if q.plis else [])
         posees = {x: (cc, r_.translate(carte.FR)) for x, cc, r_ in pli}
         def centre():
-            ui.html(f"<div style='position:absolute;inset:0;pointer-events:none'>{pli_cartes(q, places, posees, mort=q.mort())}</div>",
+            ui.html(f"<div style='position:absolute;inset:0;pointer-events:none'><div style='position:absolute;left:50%;top:50%;"
+                    f"transform:translate(-50%,-50%)'>{etui(d, places, petit=True, pale=True)}</div>{pli_cartes(q, places, posees, mort=q.mort())}</div>",
                     sanitize=False)
         def contenu(x, ou):
             reste = {kk: "".join(r_.translate(carte.FR) for r_ in v) for kk, v in q.pos.reste[x].items()}
@@ -2587,6 +2610,16 @@ async def devant():
     return {}
 
 
+def precharger():
+    """Le système d'enchères (regles.yaml : 2 à 3 secondes à lire) chargé dès l'ouverture, pendant que vous regardez la
+    première page : le premier clic sur Jouer n'attend plus."""
+    try:
+        from encheres import systeme
+        systeme()
+    except Exception:
+        pass                                               # il sera lu au premier besoin, comme avant
+
+
 def principal():
     fenetre = "--navigateur" not in sys.argv and "--sans-ouvrir" not in sys.argv
     if fenetre:
@@ -2596,6 +2629,7 @@ def principal():
             fenetre = False
     opts = dict(native=True, window_size=(1200, 850)) if fenetre else dict(show="--sans-ouvrir" not in sys.argv)
     app.on_shutdown(lambda: (annuler(T), annuler(D), annuler(I)))
+    app.on_startup(lambda: threading.Thread(target=precharger, daemon=True).start())
     # 127.0.0.1 : seul cet ordinateur joint l'application ; sans fenêtre, NiceGUI ouvrirait sinon le port à tout le réseau
     ui.run(title=TITRE, host="127.0.0.1", port=PORT, reload=False, show_welcome_message=False, favicon="♠", language="fr", **opts)
 

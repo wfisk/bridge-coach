@@ -21,11 +21,21 @@ def camp(s): return "NS" if s in "NS" else "EO"
 
 # ---------------------------------------------------------------- règles du fichier (systems/<système>/regles.yaml)
 _SYSTEME = {}
+import threading
+_VERROU = threading.Lock()      # l'application les charge d'avance dans un fil à part : une seule lecture à la fois
 
 
 def systeme(nom="sef-2024"):
     """Les règles écrites dans systems/<nom>/regles.yaml (src/regles.py), ou None si elles ne
-    peuvent pas être lues (ruamel.yaml absent, fichier en erreur : le moteur garde son code)."""
+    peuvent pas être lues (ruamel.yaml absent, fichier en erreur : le moteur garde son code).
+    La première lecture prend 2 à 3 secondes (le fichier, puis ses milliers de conditions) : l'application
+    l'appelle dès son ouverture, en arrière-plan (app.precharger)."""
+    if nom in _SYSTEME: return _SYSTEME[nom]
+    with _VERROU:
+        return _systeme(nom)
+
+
+def _systeme(nom):
     if nom not in _SYSTEME:
         import os, sys
         racine = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

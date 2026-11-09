@@ -92,9 +92,7 @@ def encheres_auto(d):
         ed = entame_et_defense(d, r["contrat"], r["declarant"], r["encheres"])
         out.update(entame=ed["entame"],
                    defense=avec_coach(ed["defense"], coach.conseil_defense(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"])),
-                   plan=avec_coach(plan := plan_de_jeu(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"], simuler=True),
-                                   coach.conseil_plan(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"],
-                                                      sans_impasse="ne dépend pas d'une impasse" in plan)),
+                   plan=avec_coach("", coach.redaction_plan(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"])),   # tout le plan : le coach
                    vues=cartes_vues(d, r["contrat"], r["declarant"], ed["entame"]))
     return out
 
@@ -106,15 +104,16 @@ def coach_pour_expert(d, a_exp, a_std):
     from build_pdf import MARQUE_AVIS, MARQUE_COACH, decouper_avis
     from comparer import final
     if not (a_exp and a_std and a_exp.get("enc") and a_std.get("enc")): return a_exp
+    out = dict(a_exp, enc_coach=a_std["enc"])              # les enchères du coach, montrées à côté quand elles diffèrent
     meme = final(a_exp["enc"], d["donneur"]) == final(a_std["enc"], d["donneur"]) and \
         (a_exp.get("entame") or {}).get("carte") == (a_std.get("entame") or {}).get("carte")
-    if not meme: return a_exp
-    out = dict(a_exp)
+    if not meme: return out
     for k in ("plan", "defense"):
         coach = decouper_avis(a_std.get(k) or "")[1]
         texte = out.get(k) or ""
         if not coach or not texte or "Le conseil du coach" in texte: continue
         prog, _, avis = texte.partition(MARQUE_AVIS)
+        if k == "plan": prog = ""                          # le plan du programme est tout entier dans le conseil du coach
         out[k] = prog + MARQUE_COACH + " " + coach + (MARQUE_AVIS + avis if avis else "")
     return out
 

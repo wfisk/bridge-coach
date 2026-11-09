@@ -772,11 +772,12 @@ COUPES_DABORD = "faire d'abord les coupes, puis purger les atouts"
 ATOUT_PUIS = "tirer un ou deux tours d'atout, puis faire les coupes en gardant de quoi couper"
 
 
-def plan_de_jeu(d, contrat, decl, entame=None, encheres=None, simuler=False, verdict=True):
+def plan_de_jeu(d, contrat, decl, entame=None, encheres=None, simuler=False, verdict=True, parties=False):
     """Plan de jeu du déclarant (systems/technique/jeu-de-la-carte.md), à la table : il part de
     sa main, du mort, de l'entame et des enchères, jamais des mains adverses. Le compte, puis les
     étapes numérotées dans l'ordre de jeu. verdict=False : sans la dernière phrase (l'expert la
-    remplace par son avis)."""
+    remplace par son avis). parties=True : les morceaux, pour que le coach les rédige (coach.redaction_plan) :
+    {"compte", "etapes" (dans l'ordre de jeu), "essai" (lignes.analyser ou None), "fin"}."""
     essai = ""; a = None
     if simuler and entame:                                 # l'ordre et les choix : ceux du déclarant simulé
         import lignes
@@ -804,6 +805,7 @@ def plan_de_jeu(d, contrat, decl, entame=None, encheres=None, simuler=False, ver
         if pp:                                             # son pourcentage, à cartes vues, n'est pas celui de l'essai
             pp = re.sub(r" \(le contrat gagne \d+\s?% du temps, contre \d+\s?% avec ([^)]+)\)", r" (plutôt que \1)", pp)
             etapes.insert(0, pp.replace("Premier pli :", "<b>Premier pli :</b>"))
+    if parties: return {"compte": compte, "etapes": etapes, "essai": a, "fin": fin}
     texte = [compte] + [f"{k}. {x}" for k, x in enumerate(etapes, 1)] + ([essai] if essai else [])
     return "<br/>".join(texte + ([fin] if verdict and fin else []))
 

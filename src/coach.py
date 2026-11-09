@@ -31,25 +31,27 @@ def _pts(p, x):
     return f"{bas} H" if bas == haut else f"{bas} à {haut} H"
 
 
-def conseil_plan(d, contrat, decl, entame, encheres, sans_impasse=False):
+def conseil_plan(d, contrat, decl, entame, encheres, sans_impasse=False, morceaux=False):
     """Le conseil du coach au déclarant : les points des défenseurs, la chance de chaque impasse d'après les enchères,
     la place probable des honneurs qui manquent, et à SA la main dangereuse. sans_impasse : le plan dit déjà que le
-    contrat ne dépend pas d'une impasse ; les impasses que les enchères ne départagent pas ne se disent pas."""
-    if not entame or contrat == "passe": return ""
+    contrat ne dépend pas d'une impasse ; les impasses que les enchères ne départagent pas ne se disent pas.
+    morceaux=True : {"points", "impasses": {couleur: (phrase seule, phrase courte après l'étape du plan)}, "honneurs",
+    "danger"}, pour que redaction_plan place chaque impasse après l'étape qui la propose."""
+    vide = {"points": "", "impasses": {}, "honneurs": [], "danger": ""}
+    if not entame or contrat == "passe": return vide if morceaux else ""
     mort = PART[decl]; g, dr = LHO[decl], RHO[decl]
     try:
-        m = _modele(d, decl, encheres, [(g, entame["carte"])], mort=mort)
-        p = m.prediction()
+        p = _modele(d, decl, encheres, [(g, entame["carte"])], mort=mort).prediction()
     except Exception:
-        return ""
-    if p.get("efficace", 0) < 8: return ""                # trop peu de donnes imaginées comptent : rien de sûr à dire
+        return vide if morceaux else ""
+    if p.get("efficace", 0) < 8: return vide if morceaux else ""   # trop peu de donnes imaginées comptent : rien de sûr
     den = contrat.rstrip("X")[1:]
     s_dec, s_mort = jeu.suites(d["mains"][decl]), jeu.suites(d["mains"][mort])
-    phrases = []
-    a_parle = {x for i, x in enumerate(_parleurs(encheres, d["donneur"])) if x}
+    out = dict(vide, impasses={}, honneurs=[])
+    a_parle = {x for x in _parleurs(encheres, d["donneur"]) if x}
     if a_parle & {g, dr}:
-        phrases.append(f"Les enchères donnent à {NOMS[g]} {_pts(p, g)} et à {NOMS[dr]} {_pts(p, dr)}.")
-    vus = set(); neutres = []
+        out["points"] = f"Les enchères donnent à {NOMS[g]} {_pts(p, g)} et à {NOMS[dr]} {_pts(p, dr)}."
+    vus = set()
     for c in COULEURS:                                     # les impasses du plan, et leur chance d'après les enchères
         for texte, hs, qui in jeu.impasses((decl, s_dec), (mort, s_mort), c):
             q = 1.0
@@ -59,14 +61,14 @@ def conseil_plan(d, contrat, decl, entame, encheres, sans_impasse=False):
             if q >= NETTE: avis = "faites-la"
             elif q <= 1 - NETTE: avis = "cherchez d'abord une autre ligne (jeu en tête, mise en main, défausse)"
             else:
-                neutres.append(f"à {c} ({noms} en {NOMS[qui]})"); continue
-            phrases.append(f"L'impasse à {c} demande {noms} en {NOMS[qui]} : d'après les enchères, environ {POURCENT(q)} ; {avis}.")
-    if neutres and not sans_impasse:                       # celles que les enchères ne départagent pas : une seule phrase
-        un = len(neutres) == 1
-        debut = "L'impasse" if un else "Les impasses"
-        phrases.append(f"{debut} {' et '.join(neutres)} : rien dans les enchères ne place "
-                       f"{'cet honneur' if un else 'ces honneurs'} ; tentez d'abord les autres chances et "
-                       f"{'gardez-la' if un else 'gardez-les'} pour la fin.")
+                if sans_impasse: continue
+                pron = "les" if len(hs) > 1 else "la" if hs == "D" else "le"
+                out["impasses"][c] = (f"L'impasse à {c} demande {noms} en {NOMS[qui]} : rien dans les enchères ne {pron} place ; "
+                                      "tentez d'abord les autres chances et gardez-la pour la fin.",
+                                      f"Rien dans les enchères ne {pron} place : gardez cette impasse pour la fin.")
+                continue
+            out["impasses"][c] = (f"L'impasse à {c} demande {noms} en {NOMS[qui]} : d'après les enchères, environ {POURCENT(q)} ; {avis}.",
+                                  f"D'après les enchères, elle réussit environ {POURCENT(q)} du temps : {avis}.")
     for c in COULEURS:                                     # les honneurs qui manquent ailleurs : de quel côté ?
         nous = s_dec[c] + s_mort[c]
         if len([h for h in "ARDV" if h in nous]) < 2: continue
@@ -78,15 +80,15 @@ def conseil_plan(d, contrat, decl, entame, encheres, sans_impasse=False):
             if tot < .5: continue                          # (une carte déjà jouée)
             x, q = (g, qg / tot) if qg >= qd else (dr, qd / tot)
             if q >= NETTE:
-                phrases.append(f"{ART[h].capitalize()}{c}{h} est plutôt en {NOMS[x]} (environ {POURCENT(q)}).")
+                out["honneurs"].append(f"{ART[h].capitalize()}{c}{h} est plutôt en {NOMS[x]} (environ {POURCENT(q)}).")
     if den == "SA" and int(contrat[0]) <= 3:               # la main dangereuse : celle qui affranchit sa longue (au chelem,
-                                                           # céder la main, c'est chuter : rien à dire)
-        c = entame["carte"][0]
+        c = entame["carte"][0]                             # céder la main, c'est chuter : rien à dire)
         L = p[g]["L"][c][1]; q5 = sum(v for k, v in L.items() if k >= 5)
         if q5 >= .6:
-            phrases.append(f"Main dangereuse : {NOMS[g]}, qui a sans doute cinq cartes à {c} ou plus ({POURCENT(q5)}) : "
-                           f"s'il faut céder la main, la céder à {NOMS[dr]}.")
-    return " ".join(phrases)
+            out["danger"] = (f"Main dangereuse : {NOMS[g]}, qui a sans doute cinq cartes à {c} ou plus ({POURCENT(q5)}) : "
+                             f"s'il faut céder la main, la céder à {NOMS[dr]}.")
+    if morceaux: return out
+    return " ".join([out["points"]] + [x[0] for x in out["impasses"].values()] + out["honneurs"] + [out["danger"]]).strip()
 
 
 def _parleurs(encheres, donneur):
@@ -139,3 +141,41 @@ def conseil_encheres(r):
     if not out: return ""
     return ("Décision serrée" if len(out) == 1 else "Décisions serrées") + " (l'autre enchère vient après dans le système) : " \
         + " ; ".join(out) + "."
+
+
+def redaction_plan(d, contrat, decl, entame, encheres):
+    """Tout le plan de jeu du programme, rédigé par le coach comme un avis : le verdict de l'essai à la table et ce qui
+    décide, le compte, l'ordre de jeu, chaque étape en une phrase, puis ce que disent les enchères (conseil_plan).
+    Les morceaux viennent de jeu.plan_de_jeu(parties=True) : rien de nouveau n'est calculé, tout est dit autrement."""
+    import re, lignes
+    p = jeu.plan_de_jeu(d, contrat, decl, entame, encheres, simuler=True, parties=True)
+    a = p["essai"]; phrases = []
+    if a:                                                  # 1. le verdict : l'essai à la table, plus sûr que le compte seul
+        mot = next(m for x, m in lignes.CHANCE if a["taux"] >= x)
+        v = (f"Le contrat est {mot} : sur {a['n']} donnes imaginées, sans voir les mains adverses, il gagne environ "
+             f"{10 * round(a['taux'] * 10)} % du temps")
+        need = int(contrat[0]) + 6
+        if a["decide"]: v += " ; ce qui décide : " + " ; ".join(a["decide"]) + "."
+        elif a["taux"] >= .9 and a.get("levees", 0) >= need + .4 and need < 13:
+            v += f" ; l'enjeu est la {need + 1}e levée."
+        else: v += "."
+        phrases.append(v)
+    compte = re.sub(r"^<b>Compte :</b> [^.]*\.\s*", "", p["compte"]).strip()   # 2. le compte, sans redire le contrat
+    if compte: phrases.append(compte[0].upper() + compte[1:])
+    if a and a["ligne"]:                                   # 3. l'ordre le plus joué par le déclarant simulé
+        ordre = ", puis ".join(lignes._dire(x) for x in a["ligne"])
+        phrases.append(f"Le déclarant simulé joue le plus souvent dans cet ordre : {ordre}.")
+    sans = "ne dépend pas d'une impasse" in (p["fin"] or "")
+    c_ = conseil_plan(d, contrat, decl, entame, encheres, sans_impasse=sans, morceaux=True)
+    dites = set()
+    for e in p["etapes"]:                                  # 4. chaque étape, une phrase ; l'impasse avec sa chance d'après
+        e = re.sub(r" \([NSEO] a montré [^)]*\)", "", e)   # les enchères (le modèle), à la place de l'ancienne estimation
+        m = re.match(r"<b>([^<]+?) ?:</b>\s*(.*)", e)
+        t = f"{m[1]} : {m[2]}" if m else e
+        for c, (seule, courte) in c_["impasses"].items():
+            if c not in dites and "impasse" in t and c in t:
+                t = t.rstrip() + " " + courte; dites.add(c)
+        phrases.append(t)
+    if p["fin"] and not (a and a["taux"] >= .9 and "tient" in p["fin"]): phrases.append(p["fin"])
+    phrases += [c_["points"]] + [seule for c, (seule, _) in c_["impasses"].items() if c not in dites] + c_["honneurs"] + [c_["danger"]]
+    return " ".join(x.strip() for x in phrases if x.strip())

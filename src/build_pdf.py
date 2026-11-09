@@ -295,20 +295,30 @@ def complete(bids):
     while len(bids) > 1 and bids[-1] == "passe": bids.pop()
     return ["passe"] * 4 if all(b == "passe" for b in bids) else bids + ["passe"] * 3
 
-def bidding(rows_, w):
+BORD_GRILLE = {"coach": "#9fb5a8", "expert": "#b9a3cf"}   # le cadre de la grille d'enchères, à la couleur de qui la recommande
+
+
+def bidding(rows_, w, qui="coach"):
+    """La grille d'enchères ; son en-tête au fond de qui la recommande (AVIS) : vert pâle le coach, violet pâle l'expert."""
     rows = [[Paragraph(f"<b>{x}</b>", S_cellc) for x in ("Ouest", "Nord", "Est", "Sud")]]
     rows += [[Paragraph(suits(x), S_cellc) for x in r] for r in rows_]
     t = Table(rows, colWidths=[w]*4)
-    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e6efe9")),
-        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#9fb5a8")),
+    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(AVIS[qui][2])),
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(BORD_GRILLE[qui])),
         ("TOPPADDING", (0, 0), (-1, -1), 1), ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
         ("LEFTPADDING", (0, 0), (-1, -1), 2), ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
     return t
 
+CASQUETTE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icones", "casquette.png")   # le coach (icones/)
+
+
 def bloc_avis(texte, largeur, style, qui="expert"):
-    """Un avis dans son bloc (AVIS) : ✦ et le titre dans sa couleur, fond pâle, trait à gauche. qui : "coach" ou "expert"."""
+    """Un avis dans son bloc (AVIS) : son signe et le titre, fond pâle, trait à gauche dans sa couleur ; la casquette
+    pour le coach, ✦ pour l'expert. qui : "coach" ou "expert"."""
     marque, trait, fond = AVIS[qui]
-    tb = Table([[Paragraph(txt(f"<font color='{trait}'>✦</font> " + marque[5:] + " " + texte.strip()), style)]], colWidths=[largeur])
+    signe = (f"<img src='{CASQUETTE}' width='17' height='10.6' valign='-1.5'/>" if qui == "coach" and os.path.exists(CASQUETTE)
+             else f"<font color='{trait}'>✦</font>")
+    tb = Table([[Paragraph(signe + " " + txt(marque[5:] + " " + texte.strip()), style)]], colWidths=[largeur])
     tb.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(fond)),
                             ("LINEBEFORE", (0, 0), (0, -1), 2, colors.HexColor(trait)), ("LEFTPADDING", (0, 0), (-1, -1), 6),
                             ("RIGHTPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
@@ -319,9 +329,9 @@ def bloc_avis(texte, largeur, style, qui="expert"):
 def avec_avis(texte):
     """Le texte du programme, puis le conseil du coach et l'avis de l'expert, chacun dans son bloc."""
     prog, coach, expert = decouper_avis(texte)
-    el = [Paragraph(txt(prog), S_body)]
+    el = [Paragraph(txt(prog), S_body)] if prog.strip() else []   # le plan du coach n'a pas de texte avant son bloc
     for qui, avis in (("coach", coach), ("expert", expert)):
-        if avis: el += [Spacer(1, 2), bloc_avis(avis, 17.4*cm, S_body, qui)]
+        if avis: el += ([Spacer(1, 2)] if el else []) + [bloc_avis(avis, 17.4*cm, S_body, qui)]
     return el
 
 
@@ -456,11 +466,18 @@ def page(d, a, date, expliquer=True):
     if a.get("enc"):
         el.append(Paragraph(f"<a name='reco{d['n']}'/>Enchères recommandées (SEF)", S_h))
         notes = a.get("notes", "")
-        if a.get("auto") or not notes or MARQUE_COACH in notes:  # le programme : ses explications, puis le conseil du coach
+        expert = not (a.get("auto") or not notes or MARQUE_COACH in notes)
+        if not expert:                                     # le programme : ses explications, puis le conseil du coach
             prog, coach, _ = decouper_avis(notes)
             droite = [Paragraph(txt(prog), S_notes)] + ([Spacer(1, 3), bloc_avis(coach, 8.4*cm, S_notes, "coach")] if coach else [])
         else: droite = bloc_avis(notes, 8.4*cm, S_notes)        # l'expert : tout est son avis
-        side = Table([[bidding(a["enc"], 2.1*cm), droite]], colWidths=[8.8*cm, 8.6*cm])
+        gauche = bidding(a["enc"], 2.1*cm, "expert" if expert else "coach")
+        if expert and a.get("enc_coach") and a["enc_coach"] != a["enc"]:   # le coach enchérit autrement : ses enchères aussi
+            legende = lambda qui, t: Paragraph(f"<font color='{AVIS[qui][1]}'><b>{t}</b></font>", S_notes)
+            cas = f"<img src='{CASQUETTE}' width='15' height='9.4' valign='-1.5'/> " if os.path.exists(CASQUETTE) else ""
+            gauche = [legende("expert", "✦ L'expert"), gauche, Spacer(1, 6), legende("coach", cas + "Le coach"),
+                      bidding(a["enc_coach"], 2.1*cm, "coach")]
+        side = Table([[gauche, droite]], colWidths=[8.8*cm, 8.6*cm])
         side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                   ("RIGHTPADDING", (0, 0), (0, 0), 10)]))
         el.append(side)

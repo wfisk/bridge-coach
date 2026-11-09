@@ -794,10 +794,13 @@ Les règles, à suivre strictement :
 3. L'entame et la défense (« entame », « defense ») viennent de la main de l'entameur et des enchères seulement,
    d'après entames.yaml et entames.md : jamais d'une simulation au double mort.
 4. Le plan de jeu (« plan ») ne voit que les mains du déclarant et du mort, l'entame et les enchères.
-5. Dans « plan » et « defense », garde le texte du programme (« analyse_standard »), avec « Le conseil du coach » s'il y
-   est (c'est le programme qui parle, ne le change pas), puis ajoute
-   <br/><b>Avis de l'expert :</b> et trois ou quatre phrases de jugement que le programme n'a pas : pourquoi le plan
-   marche, la main dangereuse, l'ordre de jeu ; cherche un laisser-passer, une élimination, un squeeze ou un coup.
+5. Dans « plan » et « defense », garde le texte du programme (« analyse_standard ») tel quel, avec « Le conseil du
+   coach » (c'est le programme qui parle : ne le change pas), puis ajoute <br/><b>Avis de l'expert :</b> et seulement ce
+   que tu vois autrement que le coach ou ce qu'il n'a pas vu : une erreur de compte, une meilleure ligne, l'ordre de jeu,
+   la main dangereuse, un laisser-passer, une élimination, un squeeze ou un coup. Ne répète pas ce que le coach a dit.
+   S'il a raison sur tout, une phrase suffit (« D'accord avec le coach. ») avec, au besoin, le détail qui compte.
+   Quand ton contrat n'est pas celui du programme, le coach ne parle pas de ta donne : écris alors toi-même le plan
+   (le compte, l'ordre de jeu, les impasses) avant ton avis.
 6. « notes » : l'avis de l'expert sur les enchères. « comm » : le commentaire après coup ; le double mort y est
    permis, pour dire ce que le contrat donne et ce qui aurait marché.
 7. Les joueurs : par leurs initiales seulement (« AB/CD »), jamais leur nom ; aucun nom de club. Les cartes en
@@ -897,12 +900,17 @@ def importer_expert(c, chemin):
             f"l'expert couvre maintenant {len(fusion['donnes'])} donnes sur {len(nums)}.")
 
 
-def grille_html(enc, vul=None):
+def grille_html(enc, vul=None, qui=None):
     """Une grille d'enchères Ouest Nord Est Sud (lignes d'une analyse, standard ou expert). vul : la vulnérabilité de
-    la donne ; chaque place est alors soulignée d'un trait épais, rouge si vulnérable, vert sinon."""
+    la donne ; chaque place est alors soulignée d'un trait épais, rouge si vulnérable, vert sinon. qui : "coach" ou
+    "expert", l'en-tête au fond de qui recommande ces enchères (build_pdf.AVIS), comme dans le PDF."""
     trait = lambda s: "" if vul is None else \
         f";width:25%;border-bottom:6px solid {'#c0141c' if vul == 'Tous' or vul == ('N-S' if s in 'NS' else 'E-O') else '#2e7d32'}"
-    tete = "".join(f"<th style='padding:2px 10px;text-align:center{trait(s)}'>{SIEGE[s]}</th>" for s in "ONES")
+    fond = ""
+    if qui:
+        from build_pdf import AVIS
+        fond = f";background:{AVIS[qui][2]}"
+    tete = "".join(f"<th style='padding:2px 10px;text-align:center{trait(s)}{fond}'>{SIEGE[s]}</th>" for s in "ONES")
     corps = "".join("<tr>" + "".join(f"<td style='padding:1px 10px;text-align:center'>{rouge(c)}</td>" for c in r) + "</tr>" for r in enc)
     large = "" if vul is None else ";width:100%;table-layout:fixed"          # quatre colonnes égales
     return f"<table style='border-collapse:collapse;font-size:15px{large}'><tr>{tete}</tr>{corps}</table>"
@@ -911,12 +919,21 @@ def grille_html(enc, vul=None):
 VERT, ROUGE_VUL, ENCRE = "#1f5f3a", "#c0141c", "#3b424f"      # les couleurs du PDF (build_pdf)
 
 
+CASQUETTE_SVG = ("<svg viewBox='0 0 128 80' width='21' height='13' style='vertical-align:-1px'>"   # comme icones/casquette.png
+                 "<ellipse cx='90' cy='62' rx='34' ry='7' fill='#1f5f3a'/><path d='M8 60 A42 46 0 0 1 92 60 Z' fill='#1f5f3a'/>"
+                 "<rect x='8' y='57' width='84' height='6' fill='#1f5f3a'/><circle cx='50' cy='14' r='5' fill='#1f5f3a'/>"
+                 "<path d='M47 22 Q37 34 35 52' stroke='#e6efe9' stroke-width='3' fill='none'/>"
+                 "<line x1='10' y1='60' x2='90' y2='60' stroke='#e6efe9' stroke-width='2'/></svg>")
+
+
 def bloc_avis_html(qui, texte):
-    """Un avis dans son bloc, comme le PDF (build_pdf.AVIS) : le conseil du coach en vert, l'avis de l'expert en violet."""
+    """Un avis dans son bloc, comme le PDF (build_pdf.AVIS) : le conseil du coach en vert sous sa casquette, l'avis de
+    l'expert en violet avec ✦."""
     from build_pdf import AVIS, txt
     marque, trait, fond = AVIS[qui]
+    signe = CASQUETTE_SVG if qui == "coach" else f"<span style='color:{trait}'>✦</span>"
     return (f"<div style='background:{fond};border-left:3px solid {trait};padding:4px 8px;margin-top:4px'>"
-            f"<span style='color:{trait}'>✦</span> {marque[5:]} {txt(texte.strip())}</div>")
+            f"{signe} {marque[5:]} {txt(texte.strip())}</div>")
 
 
 def titre_section(t):
@@ -966,7 +983,7 @@ def avec_avis_html(texte):
     """Le texte du programme, puis le conseil du coach et l'avis de l'expert, chacun dans son bloc, comme le PDF."""
     from build_pdf import txt, decouper_avis
     prog, coach, expert = decouper_avis(texte)
-    h = f"<div>{txt(prog)}</div>"
+    h = f"<div>{txt(prog)}</div>" if prog.strip() else ""
     for qui, avis in (("coach", coach), ("expert", expert)):
         if avis: h += bloc_avis_html(qui, avis)
     return h
@@ -1013,8 +1030,14 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
                 encheres_tables(d)
     titre_section("Enchères recommandées (SEF)")
     notes = a.get("notes", "")
+    expert = not (a.get("auto") or version == "Standard")
     with ui.row().classes("w-full no-wrap items-start gap-6"):
-        ui.html(grille_html(a["enc"]), sanitize=False).classes("shrink-0")
+        if expert and a.get("enc_coach") and a["enc_coach"] != a["enc"]:   # le coach enchérit autrement : ses enchères aussi
+            from build_pdf import AVIS
+            ui.html(f"<div><div style='color:{AVIS['expert'][1]};font-weight:700'>✦ L'expert</div>{grille_html(a['enc'], qui='expert')}"
+                    f"<div style='color:{AVIS['coach'][1]};font-weight:700;margin-top:10px;white-space:nowrap'>{CASQUETTE_SVG} Le coach</div>"
+                    f"{grille_html(a['enc_coach'], qui='coach')}</div>", sanitize=False).classes("shrink-0")
+        else: ui.html(grille_html(a["enc"], qui="expert" if expert else "coach"), sanitize=False).classes("shrink-0")
         if notes:
             if a.get("auto") or version == "Standard": html(avec_avis_html(notes))   # avec le conseil du coach
             else: ui.html(bloc_avis_html("expert", notes), sanitize=False)

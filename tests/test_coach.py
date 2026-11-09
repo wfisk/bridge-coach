@@ -27,7 +27,7 @@ grille = [["–", "–", "–", "1♠"], ["passe", "4♠", "passe", "passe"], ["
 std = {"enc": grille, "entame": {"joueur": "O", "carte": "♦R"}, "plan": "Plan." + MARQUE_COACH + " Coach.", "defense": "Déf."}
 exp = {"enc": grille, "entame": {"joueur": "O", "carte": "♦R"}, "plan": "Plan." + MARQUE_AVIS + " Expert.", "defense": "Déf."}
 x = rapport.coach_pour_expert(dict(d, donneur="S"), exp, std)
-assert x["plan"] == "Plan." + MARQUE_COACH + " Coach." + MARQUE_AVIS + " Expert." and x["defense"] == "Déf." and exp["plan"].endswith("Expert.")
-assert rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std) is not None
+assert x["plan"] == MARQUE_COACH + " Coach." + MARQUE_AVIS + " Expert." and x["defense"] == "Déf." and exp["plan"].endswith("Expert.")   # le plan : tout au coach
+assert rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std)["enc_coach"] == grille
 assert MARQUE_COACH not in rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std)["plan"]
 print("ok")

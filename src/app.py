@@ -229,6 +229,7 @@ CSS_CARTES = """
 .eventail .groupe:last-child { margin-right: 16px; }
 .groupe.colonne .carte { width: 34px; height: 46px; margin-right: -15px; padding: 2px 4px; font-size: 15px; }
 .groupe.colonne > :last-child .carte { margin-right: 0; }
+.ajuste .carte { position: relative; z-index: 1; }      /* sur la table, les cartes passent au-dessus de l'étui en filigrane */
 .groupe.colonne .dix { letter-spacing: -2.5px; }           /* le 10 tient dans la part visible d'une petite carte */  /* sinon la ligne paraît plus courte : à gauche, elle passerait sous la table */
 .dos { width: 32px; height: 46px; border-radius: 4px; border: 2px solid #fff; outline: 1px solid #c3cbd4;
   background: repeating-linear-gradient(45deg, #9aa8b8 0 3px, #b0bccA 3px 6px); }
@@ -238,6 +239,9 @@ CSS_CARTES = """
 .plis-gardes .dos + .dos { margin-left: -9px; }           /* chaque carte posée en partie sur la précédente */
 .plis-gardes .dos.gagne { background: repeating-linear-gradient(45deg, #2e7d32 0 3px, #5a9e5f 3px 6px); outline-color: #1f5e24; }
 .plis-gardes.colonne { flex-direction: column; min-height: 0; min-width: 30px; }
+.compte-plis { position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); min-width: 24px; height: 24px;
+  padding: 0 6px; border-radius: 12px; background: #2e7d32; color: #fff; font-size: 15px; font-weight: 700; line-height: 24px;
+  text-align: center; box-sizing: border-box; }   /* hors de la rangée : elle reste centrée */
 .plis-gardes.colonne .dos + .dos { margin-left: 0; margin-top: -9px; }
 .main-grande .carte { width: 55px; height: 79px; font-size: 20px; margin-right: -22px; }
 .main-grande .groupe { margin-right: 30px; }
@@ -1342,7 +1346,9 @@ def page():
                "gauche": "left:12px;top:50%;transform:translateY(-50%)", "droite": "right:12px;top:50%;transform:translateY(-50%)"}[ou]
         return (f"<div class='plis-gardes{' colonne' if cote else ''}' style='position:absolute;{ici}' "
                 f"title='Vert, vers le partenaire : pli gagné ; gris, en travers : pli perdu'>"
-                + "".join(f"<div class='dos {forme(g)}{' gagne' if gagne(g) else ''}'></div>" for _, g in p.plis) + "</div>")   # gagné : vert
+                + "".join(f"<div class='dos {forme(g)}{' gagne' if gagne(g) else ''}'></div>" for _, g in p.plis)   # gagné : vert
+                + (f"<div class='compte-plis' title='Les levées de votre camp'>{sum(gagne(g) for _, g in p.plis)}</div>"
+                   if ou == "bas" else "") + "</div>")      # devant vous : le nombre de levées gagnées, au bout de la rangée
 
     BORD_PLI = 54          # une carte jouée : sur la table, devant son joueur, au-delà de ses plis gardés (12 + 30 px)
     ICI_PLI = {"haut": f"top:{BORD_PLI}px;left:50%;transform:translateX(-50%)",
@@ -1383,7 +1389,7 @@ def page():
         """Le pli en cours, chaque carte devant le joueur qui l'a posée, et les plis gardés."""
         posees, derniere, ecoule = pli_en_cours(p)
         return (f"<div style='position:absolute;inset:0;pointer-events:none'>"
-                f"<div style='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)'>{etui(p.d, places, petit=True, pale=True)}</div>"
+                f"<div style='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:0'>{etui(p.d, places, petit=True, pale=True)}</div>"
                 f"{pli_cartes(p, places, posees, derniere, ecoule, mort)}"
                 + "".join(plis_gardes(p, x, ou) for x, ou in zip(places, ("haut", "gauche", "droite", "bas"))
                           if x == jeu["siege"] or (p.camp(x) != p.camp(jeu["siege"]) and x != p.mort())) + "</div>")   # les vôtres, ceux des adversaires (pas du mort : il est étalé)
@@ -1761,7 +1767,7 @@ def page():
         posees = {x: (cc, r_.translate(carte.FR)) for x, cc, r_ in pli}
         def centre():
             ui.html(f"<div style='position:absolute;inset:0;pointer-events:none'><div style='position:absolute;left:50%;top:50%;"
-                    f"transform:translate(-50%,-50%)'>{etui(d, places, petit=True, pale=True)}</div>{pli_cartes(q, places, posees, mort=q.mort())}</div>",
+                    f"transform:translate(-50%,-50%);z-index:0'>{etui(d, places, petit=True, pale=True)}</div>{pli_cartes(q, places, posees, mort=q.mort())}</div>",
                     sanitize=False)
         def contenu(x, ou):
             reste = {kk: "".join(r_.translate(carte.FR) for r_ in v) for kk, v in q.pos.reste[x].items()}

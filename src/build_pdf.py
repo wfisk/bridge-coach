@@ -326,6 +326,17 @@ def bloc_avis(texte, largeur, style, qui="expert"):
     return tb
 
 
+def abreger_plan(coach):
+    """Le plan du coach en court, pour qu'une donne tienne en deux pages : le verdict, le compte et l'ordre de jeu,
+    sans les étapes ni ce que disent les enchères (coach.redaction_plan les écrit dans cet ordre)."""
+    i = coach.find("Le déclarant simulé joue le plus souvent")
+    if i >= 0:
+        j = coach.find(".", i)
+        return coach[:j + 1] if j > 0 else coach
+    j = coach.find(".", coach.find(".") + 1)                # sans ordre de jeu : les deux premières phrases
+    return coach[:j + 1] if j > 0 else coach
+
+
 def avec_avis(texte):
     """Le texte du programme, puis le conseil du coach et l'avis de l'expert, chacun dans son bloc."""
     prog, coach, expert = decouper_avis(texte)
@@ -706,16 +717,31 @@ def main():
         return doc, {n: s[1] - s[0] + 1 for n, s in doc._spans.items() if s[1] - s[0] + 1 > 2}
 
     doc, longues = fabriquer(an)
-    for champ in ("defense", "plan"):              # une donne de plus de deux pages : le conseil du coach s'efface (défense,
-        retirer = {str(n) for n in longues        # puis plan) ; l'avis de l'expert et le texte du programme restent
-                   if MARQUE_COACH in ((an.get("donnes") or {}).get(str(n), {}).get(champ) or "")}
+    origine = an; essayees = set()
+    for champ in ("defense", "plan"):              # une donne de plus de deux pages : le conseil du coach en défense s'efface,
+        retirer = {str(n) for n in longues        # puis son plan se raccourcit (le plan, c'est lui : il ne s'efface jamais) ;
+                   if MARQUE_COACH in ((an.get("donnes") or {}).get(str(n), {}).get(champ) or "")}   # l'expert reste entier
         if not retirer: continue
-        an = json.loads(json.dumps(an))
+        an = json.loads(json.dumps(an)); faits = []
         for n in retirer:
-            prog, _, expert = decouper_avis(an["donnes"][n][champ])
-            an["donnes"][n][champ] = prog + (MARQUE_AVIS + " " + expert if expert else "")
-        print(f"Conseil du coach ({champ}) retiré pour tenir en deux pages : donne(s) {', '.join(sorted(retirer, key=int))}")
+            prog, coach, expert = decouper_avis(an["donnes"][n][champ])
+            if champ == "plan":
+                court = abreger_plan(coach)
+                if court == coach: continue
+                coach = court
+            else: coach = ""
+            faits.append(n)
+            an["donnes"][n][champ] = prog + (MARQUE_COACH + " " + coach if coach else "") + (MARQUE_AVIS + " " + expert if expert else "")
+        if not faits: continue
+        essayees.update(faits)
         doc, longues = fabriquer(an)
+    rendues = {n for n in essayees if int(n) in longues or n in longues}   # sans effet : la donne garde tout son coach
+    if rendues:
+        an = json.loads(json.dumps(an))
+        for n in rendues: an["donnes"][n] = origine["donnes"][n]
+        doc, longues = fabriquer(an)
+    gardees = sorted(essayees - rendues, key=int)
+    if gardees: print(f"Conseil du coach raccourci pour tenir en deux pages : donne(s) {', '.join(gardees)}")
     manquantes = [d["n"] for d in data["donnes"] if str(d["n"]) not in an.get("donnes", {})]
     print(f"PDF écrit : {out.replace('.provisoire.pdf', '.pdf')} ({doc.page} pages, {len(data['donnes'])} donnes)")
     if longues: print("ATTENTION, donnes de plus de deux pages :", longues)

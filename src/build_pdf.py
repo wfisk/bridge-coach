@@ -66,9 +66,11 @@ def txt(t): return suits(seats(t))
 
 MARQUE_AVIS = "<br/><b>Avis de l'expert :</b>"           # le jugement de Claude, après le texte du programme
 MARQUE_COACH = "<br/><b>Le conseil du coach :</b>"       # celui du programme (Bridge Coach), avant l'avis de l'expert
-VIOLET = "#5b2a86"
-# chaque avis a son bloc : ✦, fond pâle et trait à gauche ; le coach dans le vert du programme, l'expert en violet
-AVIS = {"coach": (MARQUE_COACH, "#1f5f3a", "#e6efe9"), "expert": (MARQUE_AVIS, VIOLET, "#efe8f5")}
+# l'avis de l'expert seul est mis en valeur : ✦, fond vert pâle, trait vert ; le conseil du coach est du texte ordinaire,
+# sa casquette et son titre en tête (fond None)
+AVIS = {"coach": (MARQUE_COACH, "#1f5f3a", None), "expert": (MARQUE_AVIS, "#1f5f3a", "#e6efe9")}
+GRILLE = {"reco": ("#e6efe9", "#9fb5a8"), "autre": ("#eef0f2", "#c3c8ce")}   # en-tête, cadre : les enchères recommandées
+                                                                            # en vert ; celles du coach à côté, en gris
 
 
 def decouper_avis(texte):
@@ -295,16 +297,14 @@ def complete(bids):
     while len(bids) > 1 and bids[-1] == "passe": bids.pop()
     return ["passe"] * 4 if all(b == "passe" for b in bids) else bids + ["passe"] * 3
 
-BORD_GRILLE = {"coach": "#9fb5a8", "expert": "#b9a3cf"}   # le cadre de la grille d'enchères, à la couleur de qui la recommande
-
-
-def bidding(rows_, w, qui="coach"):
-    """La grille d'enchères ; son en-tête au fond de qui la recommande (AVIS) : vert pâle le coach, violet pâle l'expert."""
+def bidding(rows_, w, qui="reco"):
+    """La grille d'enchères ; en-tête vert pâle pour les enchères recommandées, gris pour celles du coach montrées à côté
+    de celles de l'expert (GRILLE)."""
     rows = [[Paragraph(f"<b>{x}</b>", S_cellc) for x in ("Ouest", "Nord", "Est", "Sud")]]
     rows += [[Paragraph(suits(x), S_cellc) for x in r] for r in rows_]
     t = Table(rows, colWidths=[w]*4)
-    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(AVIS[qui][2])),
-        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(BORD_GRILLE[qui])),
+    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(GRILLE[qui][0])),
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(GRILLE[qui][1])),
         ("TOPPADDING", (0, 0), (-1, -1), 1), ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
         ("LEFTPADDING", (0, 0), (-1, -1), 2), ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
     return t
@@ -318,23 +318,14 @@ def bloc_avis(texte, largeur, style, qui="expert"):
     marque, trait, fond = AVIS[qui]
     signe = (f"<img src='{CASQUETTE}' width='17' height='10.6' valign='-1.5'/>" if qui == "coach" and os.path.exists(CASQUETTE)
              else f"<font color='{trait}'>✦</font>")
+    if fond is None:                               # le coach : du texte ordinaire, sans fond ni trait
+        return Paragraph(signe + " " + txt(marque[5:] + " " + texte.strip()), style)
     tb = Table([[Paragraph(signe + " " + txt(marque[5:] + " " + texte.strip()), style)]], colWidths=[largeur])
     tb.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(fond)),
                             ("LINEBEFORE", (0, 0), (0, -1), 2, colors.HexColor(trait)), ("LEFTPADDING", (0, 0), (-1, -1), 6),
                             ("RIGHTPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
     tb.hAlign = "LEFT"
     return tb
-
-
-def abreger_plan(coach):
-    """Le plan du coach en court, pour qu'une donne tienne en deux pages : le verdict, le compte et l'ordre de jeu,
-    sans les étapes ni ce que disent les enchères (coach.redaction_plan les écrit dans cet ordre)."""
-    i = coach.find("Le déclarant simulé joue le plus souvent")
-    if i >= 0:
-        j = coach.find(".", i)
-        return coach[:j + 1] if j > 0 else coach
-    j = coach.find(".", coach.find(".") + 1)                # sans ordre de jeu : les deux premières phrases
-    return coach[:j + 1] if j > 0 else coach
 
 
 def avec_avis(texte):
@@ -482,12 +473,12 @@ def page(d, a, date, expliquer=True):
             prog, coach, _ = decouper_avis(notes)
             droite = [Paragraph(txt(prog), S_notes)] + ([Spacer(1, 3), bloc_avis(coach, 8.4*cm, S_notes, "coach")] if coach else [])
         else: droite = bloc_avis(notes, 8.4*cm, S_notes)        # l'expert : tout est son avis
-        gauche = bidding(a["enc"], 2.1*cm, "expert" if expert else "coach")
+        gauche = bidding(a["enc"], 2.1*cm)
         if expert and a.get("enc_coach") and a["enc_coach"] != a["enc"]:   # le coach enchérit autrement : ses enchères aussi
-            legende = lambda qui, t: Paragraph(f"<font color='{AVIS[qui][1]}'><b>{t}</b></font>", S_notes)
+            legende = lambda qui, t: Paragraph(f"<font color='{AVIS[qui][1] if qui == 'expert' else INK}'><b>{t}</b></font>", S_notes)
             cas = f"<img src='{CASQUETTE}' width='15' height='9.4' valign='-1.5'/> " if os.path.exists(CASQUETTE) else ""
             gauche = [legende("expert", "✦ L'expert"), gauche, Spacer(1, 6), legende("coach", cas + "Le coach"),
-                      bidding(a["enc_coach"], 2.1*cm, "coach")]
+                      bidding(a["enc_coach"], 2.1*cm, "autre")]
         side = Table([[gauche, droite]], colWidths=[8.8*cm, 8.6*cm])
         side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                   ("RIGHTPADDING", (0, 0), (0, 0), 10)]))
@@ -716,32 +707,7 @@ def main():
         doc.build(page_noms(data, sys.argv[4] if len(sys.argv) > 4 else None) + story[:-1])
         return doc, {n: s[1] - s[0] + 1 for n, s in doc._spans.items() if s[1] - s[0] + 1 > 2}
 
-    doc, longues = fabriquer(an)
-    origine = an; essayees = set()
-    for champ in ("defense", "plan"):              # une donne de plus de deux pages : le conseil du coach en défense s'efface,
-        retirer = {str(n) for n in longues        # puis son plan se raccourcit (le plan, c'est lui : il ne s'efface jamais) ;
-                   if MARQUE_COACH in ((an.get("donnes") or {}).get(str(n), {}).get(champ) or "")}   # l'expert reste entier
-        if not retirer: continue
-        an = json.loads(json.dumps(an)); faits = []
-        for n in retirer:
-            prog, coach, expert = decouper_avis(an["donnes"][n][champ])
-            if champ == "plan":
-                court = abreger_plan(coach)
-                if court == coach: continue
-                coach = court
-            else: coach = ""
-            faits.append(n)
-            an["donnes"][n][champ] = prog + (MARQUE_COACH + " " + coach if coach else "") + (MARQUE_AVIS + " " + expert if expert else "")
-        if not faits: continue
-        essayees.update(faits)
-        doc, longues = fabriquer(an)
-    rendues = {n for n in essayees if int(n) in longues or n in longues}   # sans effet : la donne garde tout son coach
-    if rendues:
-        an = json.loads(json.dumps(an))
-        for n in rendues: an["donnes"][n] = origine["donnes"][n]
-        doc, longues = fabriquer(an)
-    gardees = sorted(essayees - rendues, key=int)
-    if gardees: print(f"Conseil du coach raccourci pour tenir en deux pages : donne(s) {', '.join(gardees)}")
+    doc, longues = fabriquer(an)                   # deux pages par donne : un repère, pas une règle (l'utilisateur, 2026-11-09)
     manquantes = [d["n"] for d in data["donnes"] if str(d["n"]) not in an.get("donnes", {})]
     print(f"PDF écrit : {out.replace('.provisoire.pdf', '.pdf')} ({doc.page} pages, {len(data['donnes'])} donnes)")
     if longues: print("ATTENTION, donnes de plus de deux pages :", longues)

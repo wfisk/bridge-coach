@@ -909,9 +909,9 @@ def grille_html(enc, vul=None, qui=None):
     trait = lambda s: "" if vul is None else \
         f";width:25%;border-bottom:6px solid {'#c0141c' if vul == 'Tous' or vul == ('N-S' if s in 'NS' else 'E-O') else '#2e7d32'}"
     fond = ""
-    if qui:
-        from build_pdf import AVIS
-        fond = f";background:{AVIS[qui][2]}"
+    if qui:                                       # "reco" : vert pâle, les enchères recommandées ; "autre" : gris, celles du coach
+        from build_pdf import GRILLE
+        fond = f";background:{GRILLE[qui][0]}"
     tete = "".join(f"<th style='padding:2px 10px;text-align:center{trait(s)}{fond}'>{SIEGE[s]}</th>" for s in "ONES")
     corps = "".join("<tr>" + "".join(f"<td style='padding:1px 10px;text-align:center'>{rouge(c)}</td>" for c in r) + "</tr>" for r in enc)
     large = "" if vul is None else ";width:100%;table-layout:fixed"          # quatre colonnes égales
@@ -930,10 +930,12 @@ CASQUETTE_SVG = ("<svg viewBox='0 0 128 80' width='21' height='13' style='vertic
 
 def bloc_avis_html(qui, texte):
     """Un avis dans son bloc, comme le PDF (build_pdf.AVIS) : le conseil du coach en vert sous sa casquette, l'avis de
-    l'expert en violet avec ✦."""
+    l'expert dans son bloc vert avec ✦ (le seul mis en valeur)."""
     from build_pdf import AVIS, txt
     marque, trait, fond = AVIS[qui]
     signe = CASQUETTE_SVG if qui == "coach" else f"<span style='color:{trait}'>✦</span>"
+    if fond is None:                              # le coach : du texte ordinaire, l'expert seul est mis en valeur
+        return f"<div style='margin-top:4px'>{signe} {marque[5:]} {txt(texte.strip())}</div>"
     return (f"<div style='background:{fond};border-left:3px solid {trait};padding:4px 8px;margin-top:4px'>"
             f"{signe} {marque[5:]} {txt(texte.strip())}</div>")
 
@@ -1036,10 +1038,10 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
     with ui.row().classes("w-full no-wrap items-start gap-6"):
         if expert and a.get("enc_coach") and a["enc_coach"] != a["enc"]:   # le coach enchérit autrement : ses enchères aussi
             from build_pdf import AVIS
-            ui.html(f"<div><div style='color:{AVIS['expert'][1]};font-weight:700'>✦ L'expert</div>{grille_html(a['enc'], qui='expert')}"
-                    f"<div style='color:{AVIS['coach'][1]};font-weight:700;margin-top:10px;white-space:nowrap'>{CASQUETTE_SVG} Le coach</div>"
-                    f"{grille_html(a['enc_coach'], qui='coach')}</div>", sanitize=False).classes("shrink-0")
-        else: ui.html(grille_html(a["enc"], qui="expert" if expert else "coach"), sanitize=False).classes("shrink-0")
+            ui.html(f"<div><div style='color:{AVIS['expert'][1]};font-weight:700'>✦ L'expert</div>{grille_html(a['enc'], qui='reco')}"
+                    f"<div style='color:{ENCRE};font-weight:700;margin-top:10px;white-space:nowrap'>{CASQUETTE_SVG} Le coach</div>"
+                    f"{grille_html(a['enc_coach'], qui='autre')}</div>", sanitize=False).classes("shrink-0")
+        else: ui.html(grille_html(a["enc"], qui="reco"), sanitize=False).classes("shrink-0")
         if notes:
             if a.get("auto") or version == "Standard": html(avec_avis_html(notes))   # avec le conseil du coach
             else: ui.html(bloc_avis_html("expert", notes), sanitize=False)
@@ -2256,7 +2258,7 @@ def page():
                     ui.checkbox("Inclure l'avis de l'expert", value=avec_expert(),
                                 on_change=lambda e: ecrire_etat(avec_expert=e.value)).classes("text-base")
                     ui.label("Quand Claude a rédigé l'analyse de la séance (onglet Analyse, « Analyse expert ») : son avis, en "
-                             "violet, après le conseil du coach.").classes("text-sm text-gray-600 -mt-2")
+                             "vert, après le conseil du coach.").classes("text-sm text-gray-600 -mt-2")
                     noms = ui.checkbox("Ajouter une page avec le nom des joueurs").classes("text-base")
                     creer_r = ui.button("Créer les rapports", icon="picture_as_pdf", on_click=lambda: maj_rapports()).classes("text-base px-6 mt-2")
                     besoin_r = ui.label("").classes("text-sm text-gray-600")

@@ -90,7 +90,8 @@ def encheres_auto(d):
     if r["contrat"] != "passe" and d.get("mains"):         # entame, défense et plan de jeu (jeu.py)
         ed = entame_et_defense(d, r["contrat"], r["declarant"], r["encheres"])
         out.update(entame=ed["entame"],
-                   defense=avec_coach(ed["defense"], coach.conseil_defense(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"])),
+                   defense=avec_coach("", " ".join(x for x in (ed["pourquoi"], coach.conseil_defense(   # la défense : le coach,
+                       d, r["contrat"], r["declarant"], ed["entame"], r["encheres"])) if x)),           # raison de l'entame d'abord
                    plan=avec_coach("", coach.redaction_plan(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"])),   # tout le plan : le coach
                    vues=cartes_vues(d, r["contrat"], r["declarant"], ed["entame"]))
     return out
@@ -112,7 +113,7 @@ def coach_pour_expert(d, a_exp, a_std):
         texte = out.get(k) or ""
         if not coach or not texte or "Le conseil du coach" in texte: continue
         prog, _, avis = texte.partition(MARQUE_AVIS)
-        if k == "plan": prog = ""                          # le plan du programme est tout entier dans le conseil du coach
+        prog = ""                                          # le plan et la défense du programme sont tout entiers dans le coach
         out[k] = prog + MARQUE_COACH + " " + coach + (MARQUE_AVIS + avis if avis else "")
     return out
 

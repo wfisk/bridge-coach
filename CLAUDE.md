@@ -12,17 +12,16 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
 
 ## Layout
 
-    rapport.sh          the one command: ./rapport.sh [file.bws] [--sans-analyse] [--avec-noms] [--avec-releve]
+    rapport.sh          the one command: ./rapport.sh [file.bws] [--sans-analyse] [--avec-noms]
                         without a file it lists the .bws in the Bridgemate folder set in bridge-coach.ini
                         (template bridge-coach.exemple.ini), newest first, ten at
-                        a time; Enter picks the latest. It builds -analyse and, only with --avec-releve (the Rapports tab's
-                        « Ajouter le relevé des donnes », off by default, etat avec_releve), -archive (what was played: tables,
-                        results, factual comment, no recommendations, to share at the club). -analyse is the program's analysis with the coach's
+                        a time; Enter picks the latest. It builds -analyse (the record of play, -archive, was dropped on
+                        2026-11-09: the analysis holds the tables and results). -analyse is the program's analysis with the coach's
                         advice or, with a written analysis (and without --sans-analyse, the Rapports tab's « Inclure l'avis
                         de l'expert », etat avec_expert), Claude's analysis with the coach before the expert's advice; with a
                         written analysis also -diff (program and expert compared). One report since 1.4: building it removes
-                        that session's old -standard and -expert PDFs, and the app lists an old -expert/-standard as the
-                        session's analysis until then (rapports_de). Sorted alphabetically: analyse, archive, diff
+                        that session's old -standard, -expert and -archive PDFs, and the app lists an old -expert/-standard as the
+                        session's analysis until then (rapports_de). Sorted alphabetically: analyse, diff
     bridge-coach.sh      opens the application (src/app.py): one window, one tab per job
     raccourci-mac.sh    creates /Applications/Bridge Coach.app and its Desktop link (a stay-open
                         AppleScript applet: a shell script in an .app is refused access to Documents, without
@@ -135,7 +134,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
       donnes.py         creates training deals: a count per theme ("Squeeze=4" "Aléatoire=8", lire_quotas; the app's − / + list), each theme a test on a random
                         deal (THEMES: engine auction, double-dummy, coups.py or the plan's count), DELAI seconds per deal, then
                         random and says so. Writes entrainement-<date>-<HHMMSS>.bc.json (source "entrainement" or "saisie") and a .pbn for Bridgemate
-                        (Control Software 3.1.2+: File, Import). Deals have no tables: reports skip the archive
+                        (Control Software 3.1.2+: File, Import). Deals have no tables: their report has no results tables
                         Each theme has a family and a level (META: encheres / carte, 1 = 1re année, 2 = intermédiaire,
                         3 = avancé; new first-year themes Évaluer sa main, Soutien de la majeure, Compter ses levées, L'impasse);
                         a bidding theme and a card-play theme chosen together are combined in the same deals ("A + B",
@@ -359,7 +358,7 @@ Its `[dossiers]` section gives `bridgemate`, where the .bws are read, never writ
                         -standard.json / -expert.json / -expert-avant-*.json, folded in once by rapport.fondre_analyses),
                         <name>-jeu.json (the Jouer tab's attempts)
     rapports/AAAA-MM/   only the PDFs, ignored by git, with the date first: <date>-<name>-analyse.pdf,
-                        -archive.pdf, -diff.pdf (no spaces in names: dashes; a date already in the
+                        -diff.pdf (no spaces in names: dashes; a date already in the
                         name is not repeated and its time comes first, rapport.nom_court: 2026-11-01-224232-entrainement-diff.pdf)
 
 Read `docs/bridge-analysis/PROJECT-INSTRUCTIONS.md` and

@@ -26,9 +26,9 @@ TITRE = "Bridge Coach"
 PORT = int(os.environ.get("BRIDGE_COACH_PORT") or 8123)    # un autre port : une seconde instance d'essai
 LARGEUR_BARRE = 220                                        # la barre de gauche (Donnes, Jouer, Analyse) : « Donne 24 » et la barre de défilement
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
-NB_PDF = 2                                                 # l'analyse, la comparaison (le relevé, sur demande)
+NB_PDF = 2                                                 # l'analyse, la comparaison
 RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du coach et, si vous l'incluez, avis de l'expert"),
-            ("archive", "Relevé des donnes", "ce qui a été joué"), ("diff", "Comparaison", "programme et expert"))
+            ("diff", "Comparaison", "programme et expert"))
 TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
 TYPES_IMPORT = ("Bridgemate ou feuille de route (*.bws;*.pdf)", "Tous les fichiers (*.*)")
@@ -381,16 +381,11 @@ def avec_expert():
     return lire_etat().get("avec_expert", True)
 
 
-def avec_releve():
-    """L'option « Ajouter le relevé des donnes » de l'onglet Rapports (etat.json, non par défaut)."""
-    return bool(lire_etat().get("avec_releve", False))
-
-
 def lancer_rapports(chemin, noms):
     """Les PDF seulement, depuis les analyses enregistrées (rapport.py --rapports) : la barre avance rapport par rapport."""
     T.__init__(0.0, "Écriture des rapports"); T.genre = "rapports"; T.seance = chemin; T.texte = "Écriture des rapports"
     demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--rapports"] + (["--avec-noms"] if noms else [])
-                     + ([] if avec_expert() else ["--sans-analyse"]) + (["--avec-releve"] if avec_releve() else []))
+                     + ([] if avec_expert() else ["--sans-analyse"]))
 
 
 def lancer_import(chemin):
@@ -2260,10 +2255,6 @@ def page():
                                 on_change=lambda e: ecrire_etat(avec_expert=e.value)).classes("text-base")
                     ui.label("Quand Claude a rédigé l'analyse de la séance (onglet Analyse, « Analyse expert ») : son avis, en "
                              "violet, après le conseil du coach.").classes("text-sm text-gray-600 -mt-2")
-                    ui.checkbox("Ajouter le relevé des donnes (sans conseils)", value=avec_releve(),
-                                on_change=lambda e: ecrire_etat(avec_releve=e.value)).classes("text-base")
-                    ui.label("Ce qui a été joué, table par table, sans recommandation : à partager au club. L'analyse "
-                             "contient déjà tout cela.").classes("text-sm text-gray-600 -mt-2")
                     noms = ui.checkbox("Ajouter une page avec le nom des joueurs").classes("text-base")
                     creer_r = ui.button("Créer les rapports", icon="picture_as_pdf", on_click=lambda: maj_rapports()).classes("text-base px-6 mt-2")
                     besoin_r = ui.label("").classes("text-sm text-gray-600")

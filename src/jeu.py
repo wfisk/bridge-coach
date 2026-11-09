@@ -782,7 +782,8 @@ def plan_de_jeu(d, contrat, decl, entame=None, encheres=None, simuler=False, ver
     if simuler and entame:                                 # l'ordre et les choix : ceux du déclarant simulé
         import lignes
         a = lignes.analyser(d, contrat, decl, entame, encheres)
-    compte, etapes, fin, reste = compter_plan(d, contrat, decl, entame, encheres, a)
+    infos = {}
+    compte, etapes, fin, reste = compter_plan(d, contrat, decl, entame, encheres, a, infos)
     if a:
         vus = [x[0] for x in a["ligne"]]                   # d'abord l'ordre le plus joué, puis le rang moyen
         def rang(e):
@@ -805,7 +806,7 @@ def plan_de_jeu(d, contrat, decl, entame=None, encheres=None, simuler=False, ver
         if pp:                                             # son pourcentage, à cartes vues, n'est pas celui de l'essai
             pp = re.sub(r" \(le contrat gagne \d+\s?% du temps, contre \d+\s?% avec ([^)]+)\)", r" (plutôt que \1)", pp)
             etapes.insert(0, pp.replace("Premier pli :", "<b>Premier pli :</b>"))
-    if parties: return {"compte": compte, "etapes": etapes, "essai": a, "fin": fin}
+    if parties: return {"compte": compte, "etapes": etapes, "essai": a, "fin": fin, "infos": infos}
     texte = [compte] + [f"{k}. {x}" for k, x in enumerate(etapes, 1)] + ([essai] if essai else [])
     return "<br/>".join(texte + ([fin] if verdict and fin else []))
 
@@ -845,9 +846,11 @@ def maniement(a, b, c, decl, mort):
     return txt, perte
 
 
-def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None):
+def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None, infos=None):
     """(le compte, les étapes dans l'ordre de jeu, la phrase de fin, levées qui manquent avec des
-    partages normaux). essai : lignes.analyser, qui tranche ce que le compte seul ne dit pas."""
+    partages normaux). essai : lignes.analyser, qui tranche ce que le compte seul ne dit pas. infos (un dict) reçoit
+    les chiffres du compte, pour que le coach les rédige : need, reste, gain (impasses possibles) ; à SA ks (levées
+    sûres) et k (avec des partages normaux) ; à la couleur perdantes (texte), permis, coupes, conseil (l'ordre atout/coupes)."""
     den = contrat[1:].rstrip("X"); need = int(contrat[0]) + 6
     mort = PART[decl]; s_dec, s_mort = suites(d["mains"][decl]), suites(d["mains"][mort])
     cx = lire_encheres(encheres, d["donneur"]) if encheres else None
@@ -871,6 +874,7 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None):
         partage = {c: sur[c] if imps[c] and c != principal else tops[c] for c in COULEURS}   # l'impasse n'est pas comptée
         k = min(sum(partage.values()), 13)
         ph = f"Levées sûres : {lister_levees(sur)} : {ks} ; il en faut {need}."
+        if infos is not None: infos.update(ks=ks, k=k)
         if partage != sur: ph += f" Avec des partages normaux : {lister_levees(partage)} : {k} levées."
         cumul = ks
         for c in ordre:                                    # les couleurs qu'il faut affranchir, la plus payante d'abord
@@ -934,6 +938,8 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None):
             ph += f", dont {NOMBRE.get(sum(coupes.values()), sum(coupes.values()))} à couper au mort" if h == decl \
                 else f", dont {NOMBRE.get(sum(coupes.values()), sum(coupes.values()))} à couper en {decl}"
         ph += f" ; on peut en perdre {permis}."
+        if infos is not None: infos.update(perdantes=nommer_perdantes(nommees, den), permis=permis, total=total, coupes=dict(coupes),
+                                           coupe_ou="au mort" if h == decl else f"en {decl}")
         defausses = {}                                     # les cartes maîtresses en trop de la main courte
         for c in COULEURS:
             if c != den and len(courte[c]) > len(longue[c]):
@@ -941,6 +947,7 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None):
                 if k > 0: defausses[c] = k
         libres = max(total - sum(coupes.values()), 0)
         n_def = min(sum(defausses.values()), libres)
+        if infos is not None: infos.update(defausses=n_def, defausse_sur=" et ".join(NOM_C[c] for c in defausses))
         if n_def:
             ph += (f" {'Une défausse' if n_def == 1 else NOMBRE.get(n_def, n_def).capitalize() + ' défausses'} sur les "
                    f"{' et '.join(NOM_C[c] for c in defausses)} maîtres{'' if h != decl else ' du mort'}.")
@@ -958,10 +965,12 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None):
         for txt, hh, avant in imps[den]: at += " " + txt + placer(hh[0], den, avant, decl, cx, restant, entame) + "."
         e = en_tete(s_dec[den], s_mort[den], den)
         if e: at += " " + e + "."
+        if infos is not None: infos["en_tete"] = bool(e)
         p = mauvais_partage(s_dec[den], s_mort[den])
         if p and len(tours_adverses(s_dec[den], s_mort[den], r[den], lambda x: [x[:p[0]], x[p[0]:]])) > nommees[den][0]:
             at += f" Si l'atout est {p[0]}-{p[1]}, il coûte une levée de plus."
         etapes.append((den, at))
+        if infos is not None: infos["conseil"] = conseil
         if coupes:
             ou = "au mort" if h == decl else f"en {decl}"
             etapes.append((next(iter(coupes)), f"<b>Coupes :</b> {lister_levees(coupes)} {ou}."))
@@ -1003,4 +1012,5 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None):
         k = reste - gain
         fin = (f"Même avec les impasses, il manque {'une' if k == 1 else NOMBRE.get(k, k)} "
                f"levée{'s' if k > 1 else ''} : compter sur la défense, ou limiter la chute.")
+    if infos is not None: infos.update(need=need, reste=reste, gain=gain, sa=den == "SA")
     return f"<b>Compte :</b> {tete} {ph}", etapes, fin, reste

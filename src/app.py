@@ -795,12 +795,14 @@ Les règles, à suivre strictement :
    d'après entames.yaml et entames.md : jamais d'une simulation au double mort.
 4. Le plan de jeu (« plan ») ne voit que les mains du déclarant et du mort, l'entame et les enchères.
 5. Dans « plan » et « defense », garde le texte du programme (« analyse_standard ») tel quel, avec « Le conseil du
-   coach » (c'est le programme qui parle : ne le change pas), puis ajoute <br/><b>Avis de l'expert :</b> et seulement ce
-   que tu vois autrement que le coach ou ce qu'il n'a pas vu : une erreur de compte, une meilleure ligne, l'ordre de jeu,
-   la main dangereuse, un laisser-passer, une élimination, un squeeze ou un coup. Ne répète pas ce que le coach a dit.
-   S'il a raison sur tout, une phrase suffit (« D'accord avec le coach. ») avec, au besoin, le détail qui compte.
-   Quand ton contrat n'est pas celui du programme, le coach ne parle pas de ta donne : écris alors toi-même le plan
-   (le compte, l'ordre de jeu, les impasses) avant ton avis.
+   coach » (c'est le programme qui parle : ne le change pas), puis ajoute <br/><b>Avis de l'expert :</b>. Ton avis est un
+   commentaire du conseil du coach, pas un autre plan : commence par dire en une phrase si le coach a raison, puis
+   complète ou corrige ce qu'il dit (« Le coach a raison : … », « Le coach oublie que … », « Le coach se trompe sur … »).
+   Ce qu'il faut ajouter : une erreur de compte, une meilleure ligne, l'ordre de jeu, la main dangereuse, la défense qui
+   bat la ligne (vérifie ton plan contre ta propre défense), un laisser-passer, une élimination, un squeeze ou un coup.
+   Ne répète pas ce que le coach a dit. S'il a raison sur tout : « Le coach a raison. » suffit, avec au besoin le détail
+   qui compte. Seule exception : quand ton contrat n'est pas celui du programme, le coach ne parle pas de ta donne ;
+   écris alors toi-même le plan (le compte, l'ordre de jeu, les impasses) avant ton avis.
 6. « notes » : l'avis de l'expert sur les enchères. « comm » : le commentaire après coup ; le double mort y est
    permis, pour dire ce que le contrat donne et ce qui aurait marché.
 7. Les joueurs : par leurs initiales seulement (« AB/CD »), jamais leur nom ; aucun nom de club. Les cartes en

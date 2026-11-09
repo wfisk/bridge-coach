@@ -26,9 +26,9 @@ TITRE = "Bridge Coach"
 PORT = int(os.environ.get("BRIDGE_COACH_PORT") or 8123)    # un autre port : une seconde instance d'essai
 LARGEUR_BARRE = 220                                        # la barre de gauche (Donnes, Jouer, Analyse) : « Donne 24 » et la barre de défilement
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
-NB_PDF = 4
-RAPPORTS = (("archive", "Relevé des donnes", "ce qui a été joué"), ("standard", "Analyse", "enchères, entame et plan de jeu"),
-            ("expert", "Analyse de l'expert", "avec l'avis de l'expert"), ("diff", "Comparaison", "programme et expert"))
+NB_PDF = 3                                                 # l'analyse, le relevé, la comparaison
+RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du coach et, si vous l'incluez, avis de l'expert"),
+            ("archive", "Relevé des donnes", "ce qui a été joué"), ("diff", "Comparaison", "programme et expert"))
 TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
 TYPES_IMPORT = ("Bridgemate ou feuille de route (*.bws;*.pdf)", "Tous les fichiers (*.*)")
@@ -85,9 +85,9 @@ def message_erreur(sortie):
 def rapports_de(chemin):
     """{niveau: pdf} déjà produits pour cette séance."""
     nom = rapport.nom_court(rapport.nom_seance(chemin)); out = {}
-    for quoi, _, _ in RAPPORTS:
+    for quoi in [q for q, _, _ in RAPPORTS] + ["expert", "standard"]:   # avant la 1.4 : -expert, sinon -standard, tient lieu d'analyse
         x = sorted(glob.glob(os.path.join(glob.escape(rapport.RAPPORTS), "*", f"*-{glob.escape(nom)}-{quoi}.pdf")))
-        if x: out[quoi] = x[-1]
+        if x: out.setdefault("analyse" if quoi in ("expert", "standard") else quoi, x[-1])
     return out
 
 
@@ -376,10 +376,16 @@ def lancer(chemin):
     demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--analyse-seule"])
 
 
+def avec_expert():
+    """L'option « Inclure l'avis de l'expert » de l'onglet Rapports (etat.json, oui par défaut)."""
+    return lire_etat().get("avec_expert", True)
+
+
 def lancer_rapports(chemin, noms):
     """Les PDF seulement, depuis les analyses enregistrées (rapport.py --rapports) : la barre avance rapport par rapport."""
     T.__init__(0.0, "Écriture des rapports"); T.genre = "rapports"; T.seance = chemin; T.texte = "Écriture des rapports"
-    demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--rapports"] + (["--avec-noms"] if noms else []))
+    demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--rapports"] + (["--avec-noms"] if noms else [])
+                     + ([] if avec_expert() else ["--sans-analyse"]))
 
 
 def lancer_import(chemin):
@@ -2222,6 +2228,10 @@ def page():
                     ui.checkbox("Les donnes dans l'ordre où vous les avez jouées", value=moi.ordre_joue(),
                                 on_change=lambda e: ecrire_etat(ordre_joue=e.value)).classes("text-base")
                     ui.label("Quand la séance décrit votre parcours (tour, table, adversaires) ; sinon par numéro.").classes("text-sm text-gray-600 -mt-2")
+                    ui.checkbox("Inclure l'avis de l'expert", value=avec_expert(),
+                                on_change=lambda e: ecrire_etat(avec_expert=e.value)).classes("text-base")
+                    ui.label("Quand Claude a rédigé l'analyse de la séance (onglet Analyse, « Analyse expert ») : son avis, en "
+                             "violet, après le conseil du coach.").classes("text-sm text-gray-600 -mt-2")
                     noms = ui.checkbox("Ajouter une page avec le nom des joueurs").classes("text-base")
                     creer_r = ui.button("Créer les rapports", icon="picture_as_pdf", on_click=lambda: maj_rapports()).classes("text-base px-6 mt-2")
                     besoin_r = ui.label("").classes("text-sm text-gray-600")

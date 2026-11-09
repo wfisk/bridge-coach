@@ -16,10 +16,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         without a file it lists the .bws in the Bridgemate folder set in bridge-coach.ini
                         (template bridge-coach.exemple.ini), newest first, ten at
                         a time; Enter picks the latest. It builds -archive (what was played: tables,
-                        results, factual comment, no recommendations) and -standard (program only);
-                        with a written analysis also
-                        -expert (Claude's analysis) and -diff (standard and expert compared).
-                        Sorted alphabetically: archive, diff, expert, standard
+                        results, factual comment, no recommendations) and -analyse: the program's analysis with the coach's
+                        advice or, with a written analysis (and without --sans-analyse, the Rapports tab's « Inclure l'avis
+                        de l'expert », etat avec_expert), Claude's analysis with the coach before the expert's advice; with a
+                        written analysis also -diff (program and expert compared). One report since 1.4: building it removes
+                        that session's old -standard and -expert PDFs, and the app lists an old -expert/-standard as the
+                        session's analysis until then (rapports_de). Sorted alphabetically: analyse, archive, diff
     bridge-coach.sh      opens the application (src/app.py): one window, one tab per job
     raccourci-mac.sh    creates /Applications/Bridge Coach.app and its Desktop link (a stay-open
                         AppleScript applet: a shell script in an .app is refused access to Documents, without
@@ -152,7 +154,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         moi.ordre_des_donnes), each with its round line (moi.tour_de); each results table holds the
                         recommended contract as a pale green row ranked among the tables (comparer.table_recommandee: its
                         double-dummy result and score, no IMP or %; the app's Donnes tab shows it too, the expert's else the
-                        standard's). Then at the end the pair's rounds (page_parcours) and, in -standard and -expert, the summary
+                        standard's). Then at the end the pair's rounds (page_parcours) and, in -analyse, the summary
                         page, one line per deal: recommended contract, how many tables played it (same side, partner included),
                         higher (red), lower (blue), or let the other side play; your contract coloured the same way. Bidding
                         only, no leads, no IMP. Internal PDF links: the recommended contract goes to the deal's « Enchères
@@ -355,8 +357,8 @@ Its `[dossiers]` section gives `bridgemate`, where the .bws are read, never writ
                         the original beside it (<name>.bws, the FFB .pdf…), versions/ (dated copies; also the old separate
                         -standard.json / -expert.json / -expert-avant-*.json, folded in once by rapport.fondre_analyses),
                         <name>-jeu.json (the Jouer tab's attempts)
-    rapports/AAAA-MM/   only the PDFs, ignored by git, with the date first: <date>-<name>-archive.pdf,
-                        -standard.pdf, -diff.pdf, -expert.pdf (no spaces in names: dashes; a date already in the
+    rapports/AAAA-MM/   only the PDFs, ignored by git, with the date first: <date>-<name>-analyse.pdf,
+                        -archive.pdf, -diff.pdf (no spaces in names: dashes; a date already in the
                         name is not repeated and its time comes first, rapport.nom_court: 2026-11-01-224232-entrainement-diff.pdf)
 
 Read `docs/bridge-analysis/PROJECT-INSTRUCTIONS.md` and

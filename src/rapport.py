@@ -24,11 +24,12 @@ d'espace dans les noms (remplacés par des tirets) :
                      refaite à chaque fois ; "expert" : celle rédigée par Claude}), versions/ (copies datées)
   rapports/AAAA-MM/  seulement les PDF, précédés de la date (l'ordre alphabétique suit les niveaux,
                      diff entre les deux analyses qu'il compare) :
+                     <date>-<nom>-analyse.pdf (l'analyse du programme et le conseil du coach ; avec une analyse
+                         rédigée par Claude, la sienne et l'avis de l'expert, le coach avant lui),
                      <date>-<nom>-archive.pdf (ce qui a été joué, sans recommandation),
-                     <date>-<nom>-standard.pdf (analyse du programme),
-                     <date>-<nom>-diff.pdf (standard et expert comparées, comparer.py),
-                     <date>-<nom>-expert.pdf (analyse rédigée par Claude, complétée par le programme).
-Sans analyse rédigée, ou avec --sans-analyse : archive et standard seulement.
+                     <date>-<nom>-diff.pdf (programme et expert comparés, comparer.py ; seulement avec une analyse rédigée).
+--sans-analyse : l'analyse sans l'avis de l'expert (l'option « Inclure l'avis de l'expert » de l'onglet Rapports).
+Avant la 1.4, -standard.pdf et -expert.pdf : refaire les rapports les remplace par -analyse.pdf.
 
 Les joueurs : dans le .bc.json, "joueurs" {paire: [{"initiales", "nom"}, …]}, le nom complet facultatif
 (le .bws le donne ; une feuille de route n'a que ce que <nom>-paires.json apporte). Les rapports restent en
@@ -564,25 +565,29 @@ def main():
                "donnes": {n: {"comm": x["comm"], "vues": tables[n]} for n, x in auto["donnes"].items()}}
     if any(d["tables"] for d in data["donnes"]):           # des donnes créées n'ont pas été jouées
         construire_pdf(donnes, joue, {"donnes": {}}, pdf("archive"))
-    if sans or not redigee:
-        print("--sans-analyse : analyse rédigée ignorée" if sans and redigee
-              else "Pas d'analyse rédigée", ": analyse automatique seulement.")
-        construire_pdf(donnes, {}, auto, pdf("standard"))
-        chrono.etape("rapports PDF"); chrono.ecrire(len(data["donnes"]))
-        return
-    construire_pdf(donnes, {}, auto, pdf("standard"))
-    chrono.etape("rapport standard"); atexit.register(chrono.ecrire, len(data["donnes"]))
-    from comparer import final
-    for d in data["donnes"]:                               # les cartes vues du contrat de l'expert
-        a = an["donnes"].get(str(d["n"]), {})
-        if a.get("enc") and isinstance(a.get("entame"), dict):
-            c, decl, dbl = final(a["enc"], d["donneur"])
-            if c != "passe":
-                a["vues"] = joindre(cartes_vues(d, c + "X" * dbl, decl, a["entame"]), tables[str(d["n"])])
-    std_d = auto.get("donnes") or {}                       # le conseil du coach, avant l'avis de l'expert
-    an = dict(an, donnes={n: coach_pour_expert(next((d for d in data["donnes"] if str(d["n"]) == n), {"donneur": "N"}), x, std_d.get(n))
-                          for n, x in an["donnes"].items()})
-    construire_pdf(donnes, an, auto, pdf("expert"))
+    def anciens():                                         # avant la 1.4, deux rapports : -standard et -expert, que -analyse remplace
+        for q in ("standard", "expert"):
+            if os.path.exists(pdf(q)): os.remove(pdf(q))
+    if sans or not redigee:                                # l'analyse du programme et le conseil du coach
+        print("Sans l'avis de l'expert (--sans-analyse)" if sans and redigee
+              else "Pas d'analyse de l'expert", ": l'analyse du programme seulement.")
+        construire_pdf(donnes, {}, auto, pdf("analyse")); anciens()
+        if not redigee:
+            chrono.etape("rapports PDF"); chrono.ecrire(len(data["donnes"]))
+            return
+    else:                                                  # avec l'avis de l'expert : son analyse, et le coach avant lui
+        from comparer import final
+        for d in data["donnes"]:                           # les cartes vues du contrat de l'expert
+            a = an["donnes"].get(str(d["n"]), {})
+            if a.get("enc") and isinstance(a.get("entame"), dict):
+                c, decl, dbl = final(a["enc"], d["donneur"])
+                if c != "passe":
+                    a["vues"] = joindre(cartes_vues(d, c + "X" * dbl, decl, a["entame"]), tables[str(d["n"])])
+        std_d = auto.get("donnes") or {}
+        an = dict(an, donnes={n: coach_pour_expert(next((d for d in data["donnes"] if str(d["n"]) == n), {"donneur": "N"}), x,
+                                                   std_d.get(n)) for n, x in an["donnes"].items()})
+        construire_pdf(donnes, an, auto, pdf("analyse")); anciens()
+    chrono.etape("rapport d'analyse"); atexit.register(chrono.ecrire, len(data["donnes"]))
     sys.stdout.flush()
     provisoire = pdf("diff")[:-4] + ".provisoire.pdf"
     fauto, fexpert = (provisoire_json(analyse_de(seance, q)) for q in ANALYSES)   # comparer.py lit deux fichiers

@@ -12,11 +12,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
 
 ## Layout
 
-    rapport.sh          the one command: ./rapport.sh [file.bws] [--sans-analyse] [--avec-noms]
+    rapport.sh          the one command: ./rapport.sh [file.bws] [--sans-analyse] [--avec-noms] [--avec-releve]
                         without a file it lists the .bws in the Bridgemate folder set in bridge-coach.ini
                         (template bridge-coach.exemple.ini), newest first, ten at
-                        a time; Enter picks the latest. It builds -archive (what was played: tables,
-                        results, factual comment, no recommendations) and -analyse: the program's analysis with the coach's
+                        a time; Enter picks the latest. It builds -analyse and, only with --avec-releve (the Rapports tab's
+                        « Ajouter le relevé des donnes », off by default, etat avec_releve), -archive (what was played: tables,
+                        results, factual comment, no recommendations, to share at the club). -analyse is the program's analysis with the coach's
                         advice or, with a written analysis (and without --sans-analyse, the Rapports tab's « Inclure l'avis
                         de l'expert », etat avec_expert), Claude's analysis with the coach before the expert's advice; with a
                         written analysis also -diff (program and expert compared). One report since 1.4: building it removes

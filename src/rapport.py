@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Produit les PDF d'une séance en une seule commande.
 
-Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer]
+Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--avec-releve] [--importer]
 --importer : seulement le fichier Bridge Coach (.bc.json), sans analyse ni rapport.
 --rapports : seulement les PDF, depuis les analyses déjà enregistrées (après l'import d'une analyse de l'expert).
 --analyse-seule : l'analyse standard, enregistrée dans la séance, sans les PDF (l'onglet Analyse ; les PDF se font
@@ -26,7 +26,7 @@ d'espace dans les noms (remplacés par des tirets) :
                      diff entre les deux analyses qu'il compare) :
                      <date>-<nom>-analyse.pdf (l'analyse du programme et le conseil du coach ; avec une analyse
                          rédigée par Claude, la sienne et l'avis de l'expert, le coach avant lui),
-                     <date>-<nom>-archive.pdf (ce qui a été joué, sans recommandation),
+                     <date>-<nom>-archive.pdf (ce qui a été joué, sans conseil ; seulement avec --avec-releve),
                      <date>-<nom>-diff.pdf (programme et expert comparés, comparer.py ; seulement avec une analyse rédigée).
 --sans-analyse : l'analyse sans l'avis de l'expert (l'option « Inclure l'avis de l'expert » de l'onglet Rapports).
 Avant la 1.4, -standard.pdf et -expert.pdf : refaire les rapports les remplace par -analyse.pdf.
@@ -463,7 +463,7 @@ def main():
     rapports_seuls = "--rapports" in sys.argv; analyse_seule = "--analyse-seule" in sys.argv
     if not args: args = [choisir_seance()]
     if len(args) != 1 or not os.path.isfile(args[0]):
-        raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer] [--rapports] [--analyse-seule]")
+        raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--avec-releve] [--importer] [--rapports] [--analyse-seule]")
 
     bws = os.path.abspath(args[0])
     source = {".bws": "bws", ".pdf": "feuille-de-route", ".json": "simulation"}.get(os.path.splitext(bws)[1].lower(), "inconnue")
@@ -562,8 +562,8 @@ def main():
     # archive : ce qui a été joué, sans recommandation (le commentaire factuel reste)
     joue = {"titre_pied": f"Relevé des donnes – séance du {data['session']['date']}",
                "donnes": {n: {"comm": x["comm"], "vues": tables[n]} for n, x in auto["donnes"].items()}}
-    if any(d["tables"] for d in data["donnes"]):           # des donnes créées n'ont pas été jouées
-        construire_pdf(donnes, joue, {"donnes": {}}, pdf("archive"))
+    if "--avec-releve" in sys.argv and any(d["tables"] for d in data["donnes"]):   # sur demande ; des donnes créées
+        construire_pdf(donnes, joue, {"donnes": {}}, pdf("archive"))                # n'ont pas été jouées
     def anciens():                                         # avant la 1.4, deux rapports : -standard et -expert, que -analyse remplace
         for q in ("standard", "expert"):
             if os.path.exists(pdf(q)): os.remove(pdf(q))

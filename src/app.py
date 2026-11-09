@@ -271,6 +271,7 @@ CSS_CARTES = """
 .carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
 .carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
 .carton.recent { outline: 2px solid #f2b705; }
+@keyframes tourne { from { transform: rotate(180deg); } to { transform: none; } }   /* la table, d'un demi-tour (TOURNE) */
 .carton.arrive-bas, .carte.arrive-bas { animation: arrive-bas .5s ease-out; }
 .carton.arrive-haut, .carte.arrive-haut { animation: arrive-haut .5s ease-out; }
 .carton.arrive-gauche, .carte.arrive-gauche { animation: arrive-gauche .5s ease-out; }
@@ -1437,7 +1438,7 @@ def page():
                 f"<div style='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:0'>{etui(p.d, places, petit=True, pale=True)}</div>"
                 f"{pli_cartes(p, places, posees, derniere, ecoule, mort)}"
                 + "".join(plis_gardes(p, x, ou) for x, ou in zip(places, ("haut", "gauche", "droite", "bas"))
-                          if x == jeu["siege"] or (p.camp(x) != p.camp(jeu["siege"]) and x != p.mort())) + "</div>")   # les vôtres, ceux des adversaires (pas du mort : il est étalé)
+                          if x == places[3] or (p.camp(x) != p.camp(places[3]) and x != p.mort())) + "</div>")   # les vôtres, ceux des adversaires (pas du mort : il est étalé)
 
     def etui(d, places, petit=False, pale=False):
         """L'étui de la donne au centre, comme un vrai étui : Nord et Sud toujours sur les petits côtés (debout quand
@@ -1476,6 +1477,7 @@ def page():
                 f"{bande(haut)}{bande(gauche)}{bande(droite)}{bande(bas)}</div>")
 
     ETUI = (135, 240, 30, 14)    # les côtés de l'étui (9:16), l'épaisseur des bandes, le texte
+    TOURNE = 1.4                 # secondes : la table tourne d'un demi-tour quand le déclarant que vous jouez passe devant vous
     # l'étui en filigrane pendant le jeu de la carte : quelques nuances de la table (#f3efe7), sans rouge ni vert
     ETUI_PALE = {"fond": "#ece6db", "bord": "#e2dacc", "rouge": "#e0d8ca", "vert": "#e0d8ca", "encre": "#b3a796"}
 
@@ -1593,8 +1595,10 @@ def page():
         forme = (f"width:{LARGEUR_TABLE_LARGE};height:{COTE_TABLE};" if large else f"width:{COTE_TABLE};aspect-ratio:1 / 1;")
         with ui.element("div").classes("w-full").style("overflow:hidden;padding-top:8px"), \
                 ui.element("div").classes("ajuste").style("width:max-content;transform-origin:0 0") \
-                    .props(f'data-donne="{d["n"]}"'):                   # rétrécit avec la fenêtre (JS_AJUSTE) ; JS_GLISSE
-            with ui.grid(columns="auto auto auto" if large else "1fr auto 1fr") \
+                    .props(f'data-donne="{d["n"]}-{bas}"'):             # rétrécit avec la fenêtre (JS_AJUSTE) ; JS_GLISSE
+            ecoule = time.monotonic() - jeu.get("tourne", -99)   # la table qui tourne : le demi-tour reprend où il en était
+            tourne = f"animation:tourne {TOURNE}s ease-in-out;animation-delay:-{ecoule:.2f}s" if ecoule < TOURNE else ""
+            with ui.grid(columns="auto auto auto" if large else "1fr auto 1fr").style(tourne) \
                     .classes("items-center gap-x-2 gap-y-4"):            # les mains des côtés contre la table
                 with ui.column().classes("items-center").style("grid-column: 1 / 4"):
                     if "haut" not in sur_table: contenu(haut, "haut")
@@ -1625,7 +1629,7 @@ def page():
 
     def vue_carte(c, d, data, places):
         """Le jeu de la carte : la table et le pli au centre ; le panneau de droite est dessiné par vue_jouer."""
-        p = jeu["partie"]; s = jeu["siege"]; part = jouer.PART[s]
+        p = jeu["partie"]; s = places[3]; part = jouer.PART[s]   # le siège du bas : le vôtre, ou le déclarant que vous jouez
         tour = p.au_trait()
         cliquable = not p.fini() and not jeu["pense"] and not jeu["pli_vu"] and p.au_joueur(tour)
         voit = lambda x: p.fini() or x == s or (x == p.mort() and p.pos.jouees) or (p.camp(x) and not p.en_defense())
@@ -1677,11 +1681,18 @@ def page():
         d = next(x for x in data["donnes"] if f"d{x['n']}" == e)
         if jeu["cle"] != (c, d["n"]): jeu_depart(c, d)
         s = jeu["siege"]; part = jouer.PART[s]
-        gauche, droite = jouer.ROT[(jouer.ROT.index(s) + 1) % 4], jouer.ROT[(jouer.ROT.index(s) + 3) % 4]
-        places = (part, gauche, droite, s)               # vos cartes toujours en bas ; la table et l'étui tournent avec vous
+        p = jeu["partie"]
+        # vos cartes toujours en bas ; la table et l'étui tournent avec vous. Vous tenez le déclarant et son mort, et vous
+        # avez enchéri de la place du mort : pendant le jeu de la carte, le déclarant passe devant vous (la table tourne)
+        bas = p.decl if p and not p.en_defense() and s == p.mort() else s
+        vu = jeu.get("bas_vu")                           # (séance, donne, siège du bas) au dessin d'avant
+        if vu and vu[:2] == (c, d["n"]) and vu[2] != bas and p and not p.pos.jouees[1:]:
+            jeu["tourne"] = time.monotonic()             # le début du jeu de la carte : la table tourne d'un demi-tour
+        jeu["bas_vu"] = (c, d["n"], bas); jeu["bas"] = bas
+        gauche, droite = jouer.ROT[(jouer.ROT.index(bas) + 1) % 4], jouer.ROT[(jouer.ROT.index(bas) + 3) % 4]
+        places = (jouer.PART[bas], gauche, droite, bas)
         attente = jeu["affiche"] < len(jeu["seq"])
         fini = jeu["indice"] is None and not attente
-        p = jeu["partie"]
         if p and p.fini() and jeu.get("revoir") is not None:   # la relecture, carte par carte, avec les pensées
             vue_revoir(c, d, data, places, p); return
         c_, decl = jouer.contrat(jeu["seq"], d["donneur"]) if fini else ("passe", None)

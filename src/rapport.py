@@ -9,7 +9,7 @@ dans l'onglet Rapports, avec --rapports).
 Toute séance devient d'abord un fichier Bridge Coach, <nom>.bc.json : tout ce que les rapports demandent
 (la séance, les joueurs, les donnes, les résultats de chaque table). Il s'importe d'un .bws, d'une feuille
 de route PDF de FFBClubNet (feuille_route.py : mains, contrats, entames et résultats, sans enchères ; le
-double mort est calculé) ou d'une séance simulée ; un .bc.json se relit tel quel (l'ancien -donnes.json aussi).
+double mort est calculé), d'un .pbn (pbn.py : les donnes, et une table jouée quand il la donne) ou d'une séance simulée ; un .bc.json se relit tel quel (l'ancien -donnes.json aussi).
 
 Deux dossiers, réglés dans bridge-coach.ini : celui de Bridgemate, où le programme lit les .bws, et le dossier
 de travail (seances/, rapports/), hors du dossier où le programme est installé. Le .ini est à une place fixe (dossier_des_reglages).
@@ -199,8 +199,8 @@ def source_d_origine(base):
     if nom.startswith("entrainement-"): return "entrainement", nom
     for f in sorted(os.listdir(os.path.dirname(base))):
         ext = os.path.splitext(f)[1].lower()
-        if ext in (".bws", ".pdf") and nom_seance(f) == nom:
-            return ("bws" if ext == ".bws" else "feuille-de-route"), f
+        if ext in (".bws", ".pdf", ".pbn") and nom_seance(f) == nom:
+            return {".bws": "bws", ".pdf": "feuille-de-route", ".pbn": "pbn"}[ext], f
     return "inconnue", nom
 
 
@@ -326,7 +326,7 @@ def seances_du_dossier(dossier):
 def nom_seance(chemin):
     """Le nom de la séance dans seances/ et rapports/ : sans extension, sans date en tête, sans espace."""
     base = os.path.basename(chemin)
-    for ext in (BC, ANCIEN, ".json", ".bws", ".pdf"):    # .bc.json, séance.bws, séance simulée .json, feuille de route .pdf
+    for ext in (BC, ANCIEN, ".json", ".bws", ".pdf", ".pbn"):   # .bc.json, .bws, séance simulée .json, feuille de route .pdf, .pbn
         if base.lower().endswith(ext): base = base[:-len(ext)]; break
     base = re.sub(r"^\d{4}-\d\d-\d\d-", "", base)        # déjà rangée : pas de date en double
     return re.sub(r"\s+", "-", base.strip())               # pas d'espace dans les noms de fichier
@@ -467,7 +467,7 @@ def main():
         raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer] [--rapports] [--analyse-seule]")
 
     bws = os.path.abspath(args[0])
-    source = {".bws": "bws", ".pdf": "feuille-de-route", ".json": "simulation"}.get(os.path.splitext(bws)[1].lower(), "inconnue")
+    source = {".bws": "bws", ".pdf": "feuille-de-route", ".json": "simulation", ".pbn": "pbn"}.get(os.path.splitext(bws)[1].lower(), "inconnue")
     origine = os.path.basename(bws)
     if bws.lower().endswith(".pdf"):                    # feuille de route FFBClubNet : devient une séance JSON
         from feuille_route import convertir
@@ -477,9 +477,16 @@ def main():
                   open(bws, "w"), ensure_ascii=False)
     nom = nom_seance(bws)
 
-    verifier_fichier(bws)
-    pret = donnes_pretes(bws)
-    data = pret or extraire(bws)
+    if bws.lower().endswith(".pbn"):                       # PBN : les donnes (et une table jouée quand il la donne)
+        from pbn import seance as seance_pbn, ErreurPBN
+        try:
+            pret, data = None, seance_pbn(bws)
+        except ErreurPBN as ex:
+            raise SystemExit(f"{os.path.basename(bws)} : {ex}")
+    else:
+        verifier_fichier(bws)
+        pret = donnes_pretes(bws)
+        data = pret or extraire(bws)
     j, m, a = data["session"]["date"].split("/")
     date = f"{a}-{m}-{j}"
     DATA = os.path.join(SEANCES, f"{a}-{m}"); SORTIE = os.path.join(RAPPORTS, f"{a}-{m}")

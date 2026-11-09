@@ -29,9 +29,9 @@ PART_ANALYSE = .85                                         # la part de la barre
 NB_PDF = 2                                                 # l'analyse, la comparaison
 RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du coach et, si vous l'incluez, avis de l'expert"),
             ("comparaison", "Comparaison", "programme et expert"))
-TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.json)", "Tous les fichiers (*.*)")
+TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.pbn;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
-TYPES_IMPORT = ("Bridgemate ou feuille de route (*.bws;*.pdf)", "Tous les fichiers (*.*)")
+TYPES_IMPORT = ("Bridgemate, feuille de route ou PBN (*.bws;*.pdf;*.pbn)", "Tous les fichiers (*.*)")
 TYPES_EXPERT = ("Analyse expert (*.json)", "Tous les fichiers (*.*)")   # pywebview : lettres et espaces seulement, pas d'apostrophe
 SOURCES = {"bws": "Bridgemate", "feuille-de-route": "Feuille de route", "entrainement": "Entraînement",
            "saisie": "Donnes saisies", "simulation": "Simulation"}

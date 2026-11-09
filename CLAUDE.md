@@ -107,7 +107,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         dependency and its SHA-256 hashes, so pip installs in hash-checking mode (needs a recent pip:
                         pip 21 rejects the socketio extra). The command is in its header.
                         Mac only so far; Windows not tested
-      rapport.py        imports a source (.bws, FFB PDF, simulated .json) into the Bridge Coach file
+      rapport.py        imports a source (.bws, FFB PDF, .pbn, simulated .json) into the Bridge Coach file
                         seances/AAAA-MM/<name>.bc.json (format, version, source, session, joueurs, donnes…;
                         entete, ecrire_bc), keeps a copy of the original beside it, builds the PDFs into
                         rapports/AAAA-MM/ (writes each PDF under a temporary name then swaps it in:
@@ -144,6 +144,10 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         Deals typed by hand (lire_texte / texte_de: "PRDX76C32K…T…" × 4 from North, then vulnerability
                         N-S, E-O as V/N and the dealer, "VVN"; West may be left out): donnes.py --texte only (the app types deals in the Donnes tab)
       bws_extract.py    .bws -> donnes-AAAA-MM-JJ.json (prints ALERTES for broken auctions)
+      pbn.py            .pbn import (rapport.py, the app's Importer): deals as in a training session (donnes.donne_complete:
+                        double-dummy, points, par), source "pbn", title from [Event], date from [Date]; a deal with
+                        [Contract] [Declarer] [Result] keeps one table played ([Auction] from the dealer, AP, notes skipped;
+                        lead = first card of [Play]); a single missing hand (« - ») is filled in. tests/test_pbn.py
       jet4.py           pure-Python Access reader, nothing to install
       feuille_route.py  FFBClubNet "feuille de route" PDF -> session JSON (hands by position on the
                         page, contracts, leads, results; no auctions, double-dummy computed with

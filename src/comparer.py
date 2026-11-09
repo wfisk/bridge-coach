@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """PDF comparant l'analyse du programme (-standard.json) et l'analyse experte.
 
-Usage : python3 comparer.py <nom>.bc.json <nom>-standard.json <nom>-expert.json sortie-diff.pdf
+Usage : python3 comparer.py <nom>.bc.json <nom>-standard.json <nom>-expert.json sortie-comparaison.pdf
 
 Pour chaque donne : contrat recommandé (gagnant ou non au double mort, écart au par en IMP)
 et entame recommandée (levées de la défense au double mort, comparées à la meilleure entame).

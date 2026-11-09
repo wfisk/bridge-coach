@@ -26,7 +26,8 @@ d'espace dans les noms (remplacés par des tirets) :
                      diff entre les deux analyses qu'il compare) :
                      <date>-<nom>-analyse.pdf (l'analyse du programme et le conseil du coach ; avec une analyse
                          rédigée par Claude, la sienne et l'avis de l'expert, le coach avant lui),
-                     <date>-<nom>-diff.pdf (programme et expert comparés, comparer.py ; seulement avec une analyse rédigée).
+                     <date>-<nom>-comparaison.pdf (programme et expert comparés, comparer.py ; seulement avec une analyse
+                         rédigée ; -diff.pdf avant le 09/11/2026).
 --sans-analyse : l'analyse sans l'avis de l'expert (l'option « Inclure l'avis de l'expert » de l'onglet Rapports).
 Avant la 1.4, -standard.pdf, -expert.pdf et -archive.pdf : refaire les rapports les remplace par -analyse.pdf.
 
@@ -583,11 +584,12 @@ def main():
         construire_pdf(donnes, an, auto, pdf("analyse")); anciens()
     chrono.etape("rapport d'analyse"); atexit.register(chrono.ecrire, len(data["donnes"]))
     sys.stdout.flush()
-    provisoire = pdf("diff")[:-4] + ".provisoire.pdf"
+    provisoire = pdf("comparaison")[:-4] + ".provisoire.pdf"
     fauto, fexpert = (provisoire_json(analyse_de(seance, q)) for q in ANALYSES)   # comparer.py lit deux fichiers
     subprocess.run([sys.executable, "-I", "-X", "utf8", os.path.join(ICI, "comparer.py"), donnes, fauto, fexpert,
                     provisoire] + FICHIER_NOMS, check=True)
-    remplacer(provisoire, pdf("diff"))
+    remplacer(provisoire, pdf("comparaison"))
+    if os.path.exists(pdf("diff")): os.remove(pdf("diff"))      # l'ancien nom de la comparaison
     subprocess.run([sys.executable, "-I", "-X", "utf8", os.path.join(ICI, "bilan.py")])   # toutes les séances : pas bloquant
 
 

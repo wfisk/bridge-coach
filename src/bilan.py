@@ -5,7 +5,7 @@ Usage : .venv/bin/python -I src/bilan.py [sortie.pdf]      (par défaut rapports
 
 Lit chaque séance de seances/ (<nom>.bc.json) qui a, rangées dedans, une analyse experte et une analyse du
 programme ("analyses" : "expert" et "standard"). Pour chaque donne où les contrats diffèrent : les IMP du Standard
-face à l'Expert au double mort (comme le -diff), le genre d'écart (chelem manqué, manche de trop…)
+face à l'Expert au double mort (comme la comparaison), le genre d'écart (chelem manqué, manche de trop…)
 et l'étape où les enchères se séparent (ouverture, réponse, redemande…). Les totaux par genre et
 par étape disent quoi travailler en premier ; la liste des donnes suit, les plus coûteuses d'abord.
 """
@@ -147,7 +147,7 @@ def main():
 
     el += [Paragraph("Les donnes, des plus coûteuses aux moins coûteuses", S_h),
            Paragraph("Le premier écart : le joueur, les enchères qui précèdent, puis l'appel de l'Expert / celui du "
-                     "Standard. Couleurs du Standard comme dans le -diff : rouge plus haut, bleu plus bas, même camp.",
+                     "Standard. Couleurs du Standard comme dans la comparaison : rouge plus haut, bleu plus bas, même camp.",
                      S_note), Spacer(1, 3)]
     rows = [[P(f"<b>{x}</b>") for x in ("Date", "N°", "Expert", "Standard", "Premier écart", "IMP")]]
     st_, fonds = [], []

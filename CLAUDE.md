@@ -19,9 +19,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         2026-11-09: the analysis holds the tables and results). -analyse is the program's analysis with the coach's
                         advice or, with a written analysis (and without --sans-analyse, the Rapports tab's « Inclure l'avis
                         de l'expert », etat avec_expert), Claude's analysis with the coach before the expert's advice; with a
-                        written analysis also -diff (program and expert compared). One report since 1.4: building it removes
+                        written analysis also -comparaison (program and expert compared; -diff before 2026-11-09). One report since 1.4: building it removes
                         that session's old -standard, -expert and -archive PDFs, and the app lists an old -expert/-standard as the
-                        session's analysis until then (rapports_de). Sorted alphabetically: analyse, diff
+                        session's analysis until then (rapports_de). Sorted alphabetically: analyse, comparaison
     bridge-coach.sh      opens the application (src/app.py): one window, one tab per job
     raccourci-mac.sh    creates /Applications/Bridge Coach.app and its Desktop link (a stay-open
                         AppleScript applet: a shell script in an .app is refused access to Documents, without
@@ -194,7 +194,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         to the comment. rapport.py adds them to the
                         automatic analysis for the engine's contract; its rules are written
                         in systems/sef-2024/entames.md and systems/technique/jeu-de-la-carte.md
-      comparer.py       the -diff PDF: program vs Claude per deal, judged double-dummy, Expert always first.
+      comparer.py       the -comparaison PDF: program vs Claude per deal, judged double-dummy, Expert always first.
                         Summary: same contract n/N and the Standard's IMP against the Expert first, par only as a
                         secondary table (par includes doubled sacrifices; a grand-slam par counts as the small slam,
                         par_pratique, shown "7♥ Sud (6♥)"). Then two tables like the summary page of
@@ -207,7 +207,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
       bilan.py          rapports/bilan-encheres.pdf: every session with both analyses, IMP the Standard loses by
                         session, by kind (missed slam, game too many…) and by the stage where the auctions part
                         (opening, response, rebid…), then every differing deal, costliest first. rapport.py reruns it
-                        after each -diff
+                        after each -comparaison
       edition.py        sessions made in Bridge Coach (source "saisie"/"entrainement") are edited in the Donnes tab, deal by
                         deal: a deal shows as a page with "Modifier la donne" (editor; "Terminer" goes back), new or unfinished
                         deals open in the editor; a deal with an expert analysis asks first (a_analyse_expert), and changing it
@@ -360,8 +360,8 @@ Its `[dossiers]` section gives `bridgemate`, where the .bws are read, never writ
                         -standard.json / -expert.json / -expert-avant-*.json, folded in once by rapport.fondre_analyses),
                         <name>-jeu.json (the Jouer tab's attempts)
     rapports/AAAA-MM/   only the PDFs, ignored by git, with the date first: <date>-<name>-analyse.pdf,
-                        -diff.pdf (no spaces in names: dashes; a date already in the
-                        name is not repeated and its time comes first, rapport.nom_court: 2026-11-01-224232-entrainement-diff.pdf)
+                        -comparaison.pdf (no spaces in names: dashes; a date already in the
+                        name is not repeated and its time comes first, rapport.nom_court: 2026-11-01-224232-entrainement-comparaison.pdf)
 
 Read `docs/bridge-analysis/PROJECT-INSTRUCTIONS.md` and
 `docs/bridge-analysis/INSTRUCTIONS.md` before writing an analysis or changing the

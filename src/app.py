@@ -28,7 +28,7 @@ LARGEUR_BARRE = 220                                        # la barre de gauche 
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
 NB_PDF = 2                                                 # l'analyse, la comparaison
 RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du coach et, si vous l'incluez, avis de l'expert"),
-            ("diff", "Comparaison", "programme et expert"))
+            ("comparaison", "Comparaison", "programme et expert"))
 TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
 TYPES_IMPORT = ("Bridgemate ou feuille de route (*.bws;*.pdf)", "Tous les fichiers (*.*)")
@@ -85,9 +85,10 @@ def message_erreur(sortie):
 def rapports_de(chemin):
     """{niveau: pdf} déjà produits pour cette séance."""
     nom = rapport.nom_court(rapport.nom_seance(chemin)); out = {}
-    for quoi in [q for q, _, _ in RAPPORTS] + ["expert", "standard"]:   # avant la 1.4 : -expert, sinon -standard, tient lieu d'analyse
+    ancien = {"expert": "analyse", "standard": "analyse", "diff": "comparaison"}   # les noms d'avant la 1.4, jusqu'aux rapports refaits
+    for quoi in [q for q, _, _ in RAPPORTS] + list(ancien):
         x = sorted(glob.glob(os.path.join(glob.escape(rapport.RAPPORTS), "*", f"*-{glob.escape(nom)}-{quoi}.pdf")))
-        if x: out.setdefault("analyse" if quoi in ("expert", "standard") else quoi, x[-1])
+        if x: out.setdefault(ancien.get(quoi, quoi), x[-1])
     return out
 
 

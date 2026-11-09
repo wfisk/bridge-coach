@@ -31,7 +31,7 @@ RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du c
             ("comparaison", "Comparaison", "programme et expert"))
 TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.pbn;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
-TYPES_IMPORT = ("Bridgemate, feuille de route ou PBN (*.bws;*.pdf;*.pbn)", "Tous les fichiers (*.*)")
+TYPES_IMPORT = ("Bridgemate feuille de route ou PBN (*.bws;*.pdf;*.pbn)", "Tous les fichiers (*.*)")
 TYPES_EXPERT = ("Analyse expert (*.json)", "Tous les fichiers (*.*)")   # pywebview : lettres et espaces seulement, pas d'apostrophe
 SOURCES = {"bws": "Bridgemate", "feuille-de-route": "Feuille de route", "entrainement": "Entraînement",
            "saisie": "Donnes saisies", "simulation": "Simulation"}

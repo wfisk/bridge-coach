@@ -788,7 +788,8 @@ Les règles, à suivre strictement :
 3. L'entame et la défense (« entame », « defense ») viennent de la main de l'entameur et des enchères seulement,
    d'après entames.yaml et entames.md : jamais d'une simulation au double mort.
 4. Le plan de jeu (« plan ») ne voit que les mains du déclarant et du mort, l'entame et les enchères.
-5. Dans « plan » et « defense », garde le texte du programme (« analyse_standard ») puis ajoute
+5. Dans « plan » et « defense », garde le texte du programme (« analyse_standard »), avec « Le conseil du coach » s'il y
+   est (c'est le programme qui parle, ne le change pas), puis ajoute
    <br/><b>Avis de l'expert :</b> et trois ou quatre phrases de jugement que le programme n'a pas : pourquoi le plan
    marche, la main dangereuse, l'ordre de jeu ; cherche un laisser-passer, une élimination, un squeeze ou un coup.
 6. « notes » : l'avis de l'expert sur les enchères. « comm » : le commentaire après coup ; le double mort y est
@@ -902,7 +903,14 @@ def grille_html(enc, vul=None):
 
 
 VERT, ROUGE_VUL, ENCRE = "#1f5f3a", "#c0141c", "#3b424f"      # les couleurs du PDF (build_pdf)
-STYLE_AVIS = f"background:#e6efe9;border-left:3px solid {VERT};padding:4px 8px;margin-top:4px"
+
+
+def bloc_avis_html(qui, texte):
+    """Un avis dans son bloc, comme le PDF (build_pdf.AVIS) : le conseil du coach en vert, l'avis de l'expert en violet."""
+    from build_pdf import AVIS, txt
+    marque, trait, fond = AVIS[qui]
+    return (f"<div style='background:{fond};border-left:3px solid {trait};padding:4px 8px;margin-top:4px'>"
+            f"<span style='color:{trait}'>✦</span> {marque[5:]} {txt(texte.strip())}</div>")
 
 
 def titre_section(t):
@@ -949,11 +957,12 @@ def diagramme_html(d, a):
 
 
 def avec_avis_html(texte):
-    """Le texte du programme, puis l'avis de l'expert (après MARQUE_AVIS) dans son bloc vert, comme le PDF."""
-    from build_pdf import txt, MARQUE_AVIS
-    prog, _, avis = texte.partition(MARQUE_AVIS)
+    """Le texte du programme, puis le conseil du coach et l'avis de l'expert, chacun dans son bloc, comme le PDF."""
+    from build_pdf import txt, decouper_avis
+    prog, coach, expert = decouper_avis(texte)
     h = f"<div>{txt(prog)}</div>"
-    if avis: h += f"<div style='{STYLE_AVIS}'><span style='color:{VERT}'>✦</span> <b>Avis de l'expert :</b> {txt(avis.strip())}</div>"
+    for qui, avis in (("coach", coach), ("expert", expert)):
+        if avis: h += bloc_avis_html(qui, avis)
     return h
 
 
@@ -1001,8 +1010,8 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
     with ui.row().classes("w-full no-wrap items-start gap-6"):
         ui.html(grille_html(a["enc"]), sanitize=False).classes("shrink-0")
         if notes:
-            if a.get("auto") or version == "Standard": html(txt(notes))
-            else: html(f"<span style='color:{VERT}'>✦</span> <b>Avis de l'expert :</b> {txt(notes)}", STYLE_AVIS)
+            if a.get("auto") or version == "Standard": html(avec_avis_html(notes))   # avec le conseil du coach
+            else: ui.html(bloc_avis_html("expert", notes), sanitize=False)
     if a.get("plan"):
         titre_section("Plan de jeu"); html(avec_avis_html(a["plan"]))
     e = a.get("entame")

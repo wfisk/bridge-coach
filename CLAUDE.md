@@ -270,6 +270,13 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
       essai_modele.py   bench of modele.py: random deals (engine auctions, random play) and the real 23/10 auctions (banc_reel),
                         Brier score of honour places, error on lengths and H, against no information and the old filter;
                         banc_defense: the same deals defended with and without the model against a double-dummy declarer
+      coach.py          « Le conseil du coach », the program's own advice at the table, never the real hidden hands nor
+                        double-dummy: conseil_plan (declarer's view through modele.Modele with the lead and dummy: the
+                        defenders' points from the auction, each finesse of jeu.impasses with its chance from the auction
+                        — take it at 65 %+, look elsewhere at 35 %-, else keep it for last —, where missing honours
+                        lie, the danger hand at SA up to 3SA), conseil_defense (the leader's count after dummy, then attack
+                        if dummy has a long suit for discards, lead trumps if it is short with trumps, else wait),
+                        conseil_encheres (the engine's close decisions, « … convenait aussi »). tests/test_coach.py
       essai_jeu.py      bench: the simulated declarer on the real deal against double-dummy
                         (rerun after changing lignes.py; two sessions: 45 of the 52 makeable contracts; --aleatoire N for
                         fresh deals: 89 of 107, and the announced rate against the real result)
@@ -376,7 +383,7 @@ the opponents' cards or the double-dummy, in those fields. Double-dummy appears 
 "Cartes vues" section, after the fact, to say what the contract gives and what would have worked.
 In `plan`, the expert keeps the program's layout (`plan_de_jeu` with `simuler=True, verdict=False`: first trick,
 hold-up and squeeze worked out from declarer's view),
-then `<br/><b>Avis de l'expert :</b>` and three or four sentences of judgement the program lacks (why the plan works, the danger hand, the order of play) (`defense` ends the same way, after the rule's text; `notes` is the expert's opinion on the auction). The expert report marks all three with a ✦, a pale green background and a green bar; the standard report has none. For each
+then `<br/><b>Avis de l'expert :</b>` and three or four sentences of judgement the program lacks (why the plan works, the danger hand, the order of play) (`defense` ends the same way, after the rule's text; `notes` is the expert's opinion on the auction). The expert report marks all three with a ✦, a pale purple background and a purple bar (build_pdf.AVIS, VIOLET; app.bloc_avis_html); the standard report has none. « Le conseil du coach : » (MARQUE_COACH) is the program's own advice, drawn the same way in Bridge Coach's green, before the expert's (decouper_avis); src/coach.py writes it into the standard analysis (rapport.encheres_auto), and the expert keeps it unchanged in plan and defense (CONSIGNE 5). For each
 contract, look for a hold-up, an elimination, a squeeze or a coup; if one fits, say so there. `tests/test_coups.py`
 holds textbook positions for `coups.py`.
 All three sessions now follow these rules: the 23/10 and 6-table auctions were rebid on

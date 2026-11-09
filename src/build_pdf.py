@@ -64,7 +64,18 @@ def seats(t):
 
 def txt(t): return suits(seats(t))
 
-MARQUE_AVIS = "<br/><b>Avis de l'expert :</b>"
+MARQUE_AVIS = "<br/><b>Avis de l'expert :</b>"           # le jugement de Claude, après le texte du programme
+MARQUE_COACH = "<br/><b>Le conseil du coach :</b>"       # celui du programme (Bridge Coach), avant l'avis de l'expert
+VIOLET = "#5b2a86"
+# chaque avis a son bloc : ✦, fond pâle et trait à gauche ; le coach dans le vert du programme, l'expert en violet
+AVIS = {"coach": (MARQUE_COACH, "#1f5f3a", "#e6efe9"), "expert": (MARQUE_AVIS, VIOLET, "#efe8f5")}
+
+
+def decouper_avis(texte):
+    """(texte du programme, conseil du coach, avis de l'expert) : les deux avis suivent le texte, le coach d'abord."""
+    reste, _, expert = (texte or "").partition(MARQUE_AVIS)
+    prog, _, coach = reste.partition(MARQUE_COACH)
+    return prog, coach.strip(), expert.strip()
 
 def st(name, **kw):
     b = dict(fontName="DV", textColor=colors.HexColor(INK)); b.update(kw); return ParagraphStyle(name, **b)
@@ -294,20 +305,24 @@ def bidding(rows_, w):
         ("LEFTPADDING", (0, 0), (-1, -1), 2), ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
     return t
 
-def bloc_avis(texte, largeur, style):
-    """L'avis de l'expert : fond vert pâle (celui des en-têtes d'enchères) et trait vert à gauche."""
-    tb = Table([[Paragraph(txt(f"<font color='{GREEN}'>✦</font> " + MARQUE_AVIS[5:] + " " + texte.strip()), style)]], colWidths=[largeur])
-    tb.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#e6efe9")),
-                            ("LINEBEFORE", (0, 0), (0, -1), 2, colors.HexColor(GREEN)), ("LEFTPADDING", (0, 0), (-1, -1), 6),
+def bloc_avis(texte, largeur, style, qui="expert"):
+    """Un avis dans son bloc (AVIS) : ✦ et le titre dans sa couleur, fond pâle, trait à gauche. qui : "coach" ou "expert"."""
+    marque, trait, fond = AVIS[qui]
+    tb = Table([[Paragraph(txt(f"<font color='{trait}'>✦</font> " + marque[5:] + " " + texte.strip()), style)]], colWidths=[largeur])
+    tb.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(fond)),
+                            ("LINEBEFORE", (0, 0), (0, -1), 2, colors.HexColor(trait)), ("LEFTPADDING", (0, 0), (-1, -1), 6),
                             ("RIGHTPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
     tb.hAlign = "LEFT"
     return tb
 
 
 def avec_avis(texte):
-    """Le texte du programme, puis l'avis de l'expert qui le suit après MARQUE_AVIS."""
-    prog, _, avis = texte.partition(MARQUE_AVIS)
-    return [Paragraph(txt(prog), S_body)] + ([Spacer(1, 2), bloc_avis(avis, 17.4*cm, S_body)] if avis else [])
+    """Le texte du programme, puis le conseil du coach et l'avis de l'expert, chacun dans son bloc."""
+    prog, coach, expert = decouper_avis(texte)
+    el = [Paragraph(txt(prog), S_body)]
+    for qui, avis in (("coach", coach), ("expert", expert)):
+        if avis: el += [Spacer(1, 2), bloc_avis(avis, 17.4*cm, S_body, qui)]
+    return el
 
 
 def annexe(d, expliquer=True):
@@ -441,7 +456,10 @@ def page(d, a, date, expliquer=True):
     if a.get("enc"):
         el.append(Paragraph(f"<a name='reco{d['n']}'/>Enchères recommandées (SEF)", S_h))
         notes = a.get("notes", "")
-        droite = Paragraph(txt(notes), S_notes) if a.get("auto") or not notes else bloc_avis(notes, 8.4*cm, S_notes)
+        if a.get("auto") or not notes or MARQUE_COACH in notes:  # le programme : ses explications, puis le conseil du coach
+            prog, coach, _ = decouper_avis(notes)
+            droite = [Paragraph(txt(prog), S_notes)] + ([Spacer(1, 3), bloc_avis(coach, 8.4*cm, S_notes, "coach")] if coach else [])
+        else: droite = bloc_avis(notes, 8.4*cm, S_notes)        # l'expert : tout est son avis
         side = Table([[bidding(a["enc"], 2.1*cm), droite]], colWidths=[8.8*cm, 8.6*cm])
         side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                   ("RIGHTPADDING", (0, 0), (0, 0), 10)]))

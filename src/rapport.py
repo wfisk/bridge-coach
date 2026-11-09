@@ -83,11 +83,16 @@ def encheres_auto(d):
         lignes.append(f"Contrat : <b>{r['contrat']} par {r['declarant']}</b>.")
     if r["statut"] != "complète": lignes.append(f"Séquence {r['statut']}.")
     lignes += r["notes"]
-    out = {"enc": grille, "notes": "<br/>".join(lignes)}
+    import coach
+    from build_pdf import MARQUE_COACH
+    avec_coach = lambda texte, conseil: texte + (MARQUE_COACH + " " + conseil if conseil else "")   # le conseil du coach
+    out = {"enc": grille, "notes": avec_coach("<br/>".join(lignes), coach.conseil_encheres(r))}
     if r["contrat"] != "passe" and d.get("mains"):         # entame, défense et plan de jeu (jeu.py)
         ed = entame_et_defense(d, r["contrat"], r["declarant"], r["encheres"])
-        out.update(entame=ed["entame"], defense=ed["defense"],
-                   plan=plan_de_jeu(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"], simuler=True),
+        out.update(entame=ed["entame"],
+                   defense=avec_coach(ed["defense"], coach.conseil_defense(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"])),
+                   plan=avec_coach(plan_de_jeu(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"], simuler=True),
+                                   coach.conseil_plan(d, r["contrat"], r["declarant"], ed["entame"], r["encheres"])),
                    vues=cartes_vues(d, r["contrat"], r["declarant"], ed["entame"]))
     return out
 

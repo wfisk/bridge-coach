@@ -276,8 +276,10 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         double-dummy: conseil_plan (declarer's view through modele.Modele with the lead and dummy: the
                         defenders' points from the auction, each finesse of jeu.impasses with its chance from the auction
                         — take it at 65 %+, look elsewhere at 35 %-, else keep it for last —, where missing honours
-                        lie, the danger hand at SA up to 3SA), conseil_defense (the leader's count after dummy, then attack
-                        if dummy has a long suit for discards, lead trumps if it is short with trumps, else wait),
+                        lie, the danger hand at SA up to 3SA), conseil_defense (prose from the leader's seat after dummy: the count; don't give
+                        dummy a ruff in the lead suit after the top cards; at SA keep running the long lead suit and
+                        keep the entries; a race when dummy has a 4+ suit whose tops declarer's side probably holds
+                        (model, 1.7+ of A K Q): switch at once to the best sequence; else trumps against ruffs, or wait),
                         conseil_encheres (the engine's close decisions; not used in the standard analysis, whose notes
                         already say « … convenait aussi »). Finesses the auction does not place are one sentence, left out
                         when the plan says the contract does not depend on a finesse (a deal stays within two pages). tests/test_coach.py

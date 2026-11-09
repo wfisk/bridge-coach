@@ -15,7 +15,12 @@ assert "♣R en Ouest" in p and "faites-la" in p, p
 autre = dict(d, mains=dict(d["mains"], E="X V9842 X87 R92", O="975 ADX6 RD96 V87"))
 assert coach.conseil_plan(autre, "4♠", "S", {"joueur": "O", "carte": "♦R"}, enc) == p
 # la défense : le compte vu de l'entameur
-assert coach.conseil_defense(d, "4♠", "S", {"joueur": "O", "carte": "♦R"}, enc).startswith("Le compte, vu de Ouest")
+assert coach.conseil_defense(d, "4♠", "S", {"joueur": "O", "carte": "♦R"}, enc).startswith("Ouest compte : le déclarant")
+# la course : 07/11 donne 13, Est entame ♣A de AR82 contre 4♥ ; le mort (Sud) a ♣DV et quatre piques 8532 : pas de 3e trèfle,
+# et passer au ♦R (RD8432) avant que les piques ne donnent une défausse
+d13 = dict(n=13, donneur="N", vul="Personne", mains=dict(N="AD6 RV963 A7 764", E="97 8 RD8432 AR82", S="8532 ADX72 95 DV", O="RVX4 54 VX6 X953"))
+x = coach.conseil_defense(d13, "4♥", "N", {"joueur": "E", "carte": "♣A"}, ["1♥", "2♦", "3♥", "passe", "4♥", "passe", "passe", "passe"])
+assert "ne pas jouer un troisième ♣" in x and "le ♦R" in x, x
 # les enchères : une décision serrée du moteur, dite en une phrase
 r = {"explications": [("N", "2♦", "19 H : 11+ H, forcing. 2♣ (11+ H, forcing) convenait aussi, mais vient après dans le système")]}
 assert coach.conseil_encheres(r) == "Décision serrée (l'autre enchère vient après dans le système) : Nord 2♦ plutôt que 2♣ (11+ H, forcing)."

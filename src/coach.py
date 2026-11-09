@@ -97,35 +97,80 @@ def _parleurs(encheres, donneur):
     return [rot[(i0 + i) % 4] if b != "passe" else None for i, b in enumerate(encheres)]
 
 
+def _tete(x):
+    """Les honneurs de tête qui se suivent depuis l'as dans une couleur (« AR8 » -> 2, « RD5 » -> 0)."""
+    k = 0
+    for r in "ARDVX":
+        if r in x: k += 1
+        else: break
+    return k
+
+
+def _sequence(x):
+    """La tête de séquence d'une couleur (deux honneurs qui se suivent parmi A R D V), ou None : « RD843 » -> « R »."""
+    for h, h2 in zip("ARDV", "RDVX"):
+        if h in x and h2 in x: return h
+    return None
+
+
 def conseil_defense(d, contrat, decl, entame, encheres):
-    """Le conseil du coach à la défense, vu de l'entameur une fois le mort étalé : le compte des points (le déclarant et le
-    partenaire d'après les enchères), puis attaquer ou attendre selon le mort : une longue qui fournira des défausses, des
-    coupes au mort, ou rien à craindre."""
+    """Le conseil du coach à la défense, vu de l'entameur une fois le mort étalé, en quelques phrases : le compte d'après
+    les enchères ; la couleur d'entame (ne pas offrir une coupe au mort) ; la course quand le mort a une longue qui
+    fournira des défausses (changer tout de suite pour sa meilleure séquence) ; sinon l'atout contre les coupes, ou
+    attendre. Il ne voit que sa main, le mort et les enchères."""
     if not entame or contrat == "passe": return ""
     mort = PART[decl]; g = LHO[decl]; part = PART[g]
-    den = contrat.rstrip("X")[1:]
+    den = contrat.rstrip("X")[1:]; atout = den if den in COULEURS else None
     try:
         p = _modele(d, g, encheres, [(g, entame["carte"])], mort=mort).prediction()
     except Exception:
         return ""
     if p.get("efficace", 0) < 8: return ""
     s_moi, s_mort = jeu.suites(d["mains"][g]), jeu.suites(d["mains"][mort])
-    h_moi = sum(jeu.PTS.get(r, 0) for c in COULEURS for r in s_moi[c]); h_mort = sum(jeu.PTS.get(r, 0) for c in COULEURS for r in s_mort[c])
-    phrases = [f"Le compte, vu de {NOMS[g]} : {h_moi} H en main, {h_mort} au mort, le déclarant {_pts(p, decl)} : "
-               f"{NOMS[part]} a {_pts(p, part)}."]
-    longue = None                                          # une longue du mort qui va donner des défausses
-    for c in COULEURS:
-        if c == den: continue
-        x = s_mort[c]
-        if len(x) >= 5 and sum(h in x for h in "ARD") >= 2: longue = c
-        elif len(x) >= 4 and all(h in x for h in "ARD"): longue = c
-    court = [c for c in COULEURS if c != den and den in COULEURS and len(s_mort[c]) <= 1 and len(s_mort.get(den, "")) >= 2]
-    if longue:
-        phrases.append(f"Le mort a une longue à {longue} qui fournira des défausses : prendre ses levées vite, avant qu'elle soit prête.")
-    elif court:
-        phrases.append(f"Le mort est court à {' et à '.join(court)} avec des atouts : rejouer atout à chaque prise de main.")
+    c0, h0 = entame["carte"][0], entame["carte"][1:].replace("10", "X")
+    phrases = [f"{NOMS[g]} compte : le déclarant {_pts(p, decl)}, {NOMS[part]} {_pts(p, part)}."]
+    # la couleur d'entame : après les levées de tête, le mort coupe-t-il ?
+    tetes = _tete(s_moi[c0])
+    if atout and c0 != atout and s_mort.get(atout) and 0 < len(s_mort[c0]) <= tetes:
+        cartes = " et ".join(f"{c0}{r}" for r in s_moi[c0][:len(s_mort[c0])])
+        phrases.append(f"Après {cartes}, ne pas jouer un {'troisième' if len(s_mort[c0]) == 2 else 'autre'} {c0} : le mort coupe.")
+    elif atout and c0 != atout and s_mort.get(atout) and len(s_mort[c0]) == 0:
+        phrases.append(f"Le mort n'a plus de {c0} : ne pas continuer la couleur, il couperait.")
+    # à sans-atout : sa longue est l'arme ; la continuer à chaque prise de main, et garder ses reprises pour l'encaisser
+    if not atout and len(s_moi[c0]) >= 5:
+        reprises = [f"{c}{r}" for c in COULEURS if c != c0 for r in s_moi[c][:1] if r in "AR"]
+        phrases.append(f"La longue de {NOMS[g]} à {c0} est l'arme de la défense : la rejouer à chaque prise de main pour "
+                       "l'affranchir" + (f", et garder ses reprises ({', '.join(reprises)}) pour l'encaisser." if reprises else "."))
+    # la course : une longue du mort qui fournira des défausses (ou des levées à SA), si le camp du déclarant en a les têtes
+    def menace(c):
+        tetes_camp = sum(h in s_mort[c] for h in "ARD") + sum(p[decl]["cartes"].get((c, h), 0) for h in "ARD" if h not in s_mort[c])
+        return len(s_mort[c]) >= 4 and tetes_camp >= 1.7   # 07/11 : 1,9 et 1,8 vraies menaces, 1,6 non
+    longue = max((c for c in COULEURS if c != atout and c != c0 and menace(c)), key=lambda c: len(s_mort[c]), default=None)
+    if longue and not atout:
+        n = len(s_mort[longue])
+        phrases.append(f"Le mort a {NOMBRES.get(n, n).replace('une', 'un') if n < 5 else n} {jeu.NOM_C[longue]} qui donneront des "
+                       "levées au déclarant : la défense doit affranchir les siennes avant.")
+    elif longue:
+        n = len(s_mort[longue])
+        phrases.append(f"Le mort a {NOMBRES.get(n, n).replace('une', 'un') if n < 5 else n} {jeu.NOM_C[longue]} : une fois "
+                       f"affranchis, ils donneront {'une défausse' if not atout or n == 4 else 'des défausses'} au déclarant ; "
+                       "la défense doit prendre ses levées avant.")
+        sequences = [c for c in COULEURS if c not in (atout, longue) and _sequence(s_moi[c])
+                     and not any(h in s_mort[c] for h in "ARDV"[:"ARDV".index(_sequence(s_moi[c]))])]
+        if c0 in sequences and len(sequences) > 1: sequences.remove(c0)
+        if sequences:
+            c = max(sequences, key=lambda c: len(s_moi[c]))
+            h = _sequence(s_moi[c]); h2 = "ARDVX"["ARDV".index(h) + 1]
+            phrases.append(f"Changer tout de suite pour {ART[h]}{c}{h}, pour affranchir {ART[h2] if h2 != 'X' else 'le '}{c}{h2} avant.")
+        else:
+            phrases.append("Encaisser ses levées dès que possible.")
+    elif not atout: pass                                   # à SA, la longue d'entame a déjà dit le plan
+    elif atout and any(len(s_mort[c]) <= 1 for c in COULEURS if c != atout) and len(s_mort.get(atout, "")) >= 2:
+        court = [c for c in COULEURS if c != atout and len(s_mort[c]) <= 1]
+        phrases.append(f"Le mort est court à {' et à '.join(court)} avec des atouts : rejouer atout à chaque prise de main, "
+                       "pour réduire ses coupes.")
     else:
-        phrases.append("Ni longue ni coupe au mort : rien ne presse, laisser le déclarant ouvrir les couleurs.")
+        phrases.append("Le mort n'a ni longue ni coupe : rien ne presse, laisser le déclarant ouvrir les couleurs.")
     return " ".join(phrases)
 
 

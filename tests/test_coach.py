@@ -18,6 +18,6 @@ assert coach.conseil_plan(autre, "4♠", "S", {"joueur": "O", "carte": "♦R"}, 
 assert coach.conseil_defense(d, "4♠", "S", {"joueur": "O", "carte": "♦R"}, enc).startswith("Le compte, vu de Ouest")
 # les enchères : une décision serrée du moteur, dite en une phrase
 r = {"explications": [("N", "2♦", "19 H : 11+ H, forcing. 2♣ (11+ H, forcing) convenait aussi, mais vient après dans le système")]}
-assert coach.conseil_encheres(r) == "Décision serrée : Nord : 2♦ plutôt que 2♣ (11+ H, forcing), que le système classe après."
+assert coach.conseil_encheres(r) == "Décision serrée (l'autre enchère vient après dans le système) : Nord 2♦ plutôt que 2♣ (11+ H, forcing)."
 assert coach.conseil_encheres({"explications": [("N", "passe", "rien")]}) == ""
 print("ok")

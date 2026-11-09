@@ -7,7 +7,8 @@ le mort et les enchères. Les mains cachées viennent du modèle (modele.py) : d
 
     conseil_plan(d, contrat, decl, entame, encheres)     -> texte ou "" (le déclarant)
     conseil_defense(d, contrat, decl, entame, encheres)  -> texte ou "" (l'entameur, le mort étalé)
-    conseil_encheres(r)                                  -> texte ou "" (les décisions serrées du moteur)
+    conseil_encheres(r)                                  -> texte ou "" (les décisions serrées du moteur ; pas dans
+                                                           l'analyse standard : ses explications les disent déjà)
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -30,9 +31,10 @@ def _pts(p, x):
     return f"{bas} H" if bas == haut else f"{bas} à {haut} H"
 
 
-def conseil_plan(d, contrat, decl, entame, encheres):
+def conseil_plan(d, contrat, decl, entame, encheres, sans_impasse=False):
     """Le conseil du coach au déclarant : les points des défenseurs, la chance de chaque impasse d'après les enchères,
-    la place probable des honneurs qui manquent, et à SA la main dangereuse."""
+    la place probable des honneurs qui manquent, et à SA la main dangereuse. sans_impasse : le plan dit déjà que le
+    contrat ne dépend pas d'une impasse ; les impasses que les enchères ne départagent pas ne se disent pas."""
     if not entame or contrat == "passe": return ""
     mort = PART[decl]; g, dr = LHO[decl], RHO[decl]
     try:
@@ -47,7 +49,7 @@ def conseil_plan(d, contrat, decl, entame, encheres):
     a_parle = {x for i, x in enumerate(_parleurs(encheres, d["donneur"])) if x}
     if a_parle & {g, dr}:
         phrases.append(f"Les enchères donnent à {NOMS[g]} {_pts(p, g)} et à {NOMS[dr]} {_pts(p, dr)}.")
-    vus = set()
+    vus = set(); neutres = []
     for c in COULEURS:                                     # les impasses du plan, et leur chance d'après les enchères
         for texte, hs, qui in jeu.impasses((decl, s_dec), (mort, s_mort), c):
             q = 1.0
@@ -57,10 +59,14 @@ def conseil_plan(d, contrat, decl, entame, encheres):
             if q >= NETTE: avis = "faites-la"
             elif q <= 1 - NETTE: avis = "cherchez d'abord une autre ligne (jeu en tête, mise en main, défausse)"
             else:
-                phrases.append(f"L'impasse à {c} demande {noms} en {NOMS[qui]} : rien dans les enchères ne {'les' if len(hs) > 1 else 'la' if hs == 'D' else 'le'} "
-                               "place ; tentez d'abord les autres chances et gardez-la pour la fin.")
-                continue
+                neutres.append(f"à {c} ({noms} en {NOMS[qui]})"); continue
             phrases.append(f"L'impasse à {c} demande {noms} en {NOMS[qui]} : d'après les enchères, environ {POURCENT(q)} ; {avis}.")
+    if neutres and not sans_impasse:                       # celles que les enchères ne départagent pas : une seule phrase
+        un = len(neutres) == 1
+        debut = "L'impasse" if un else "Les impasses"
+        phrases.append(f"{debut} {' et '.join(neutres)} : rien dans les enchères ne place "
+                       f"{'cet honneur' if un else 'ces honneurs'} ; tentez d'abord les autres chances et "
+                       f"{'gardez-la' if un else 'gardez-les'} pour la fin.")
     for c in COULEURS:                                     # les honneurs qui manquent ailleurs : de quel côté ?
         nous = s_dec[c] + s_mort[c]
         if len([h for h in "ARDV" if h in nous]) < 2: continue
@@ -103,8 +109,8 @@ def conseil_defense(d, contrat, decl, entame, encheres):
     if p.get("efficace", 0) < 8: return ""
     s_moi, s_mort = jeu.suites(d["mains"][g]), jeu.suites(d["mains"][mort])
     h_moi = sum(jeu.PTS.get(r, 0) for c in COULEURS for r in s_moi[c]); h_mort = sum(jeu.PTS.get(r, 0) for c in COULEURS for r in s_mort[c])
-    phrases = [f"Le compte, vu de {NOMS[g]} après le mort : {h_moi} H en main, {h_mort} au mort, le déclarant {_pts(p, decl)} "
-               f"d'après les enchères : {NOMS[part]} a {_pts(p, part)}."]
+    phrases = [f"Le compte, vu de {NOMS[g]} : {h_moi} H en main, {h_mort} au mort, le déclarant {_pts(p, decl)} : "
+               f"{NOMS[part]} a {_pts(p, part)}."]
     longue = None                                          # une longue du mort qui va donner des défausses
     for c in COULEURS:
         if c == den: continue
@@ -113,14 +119,11 @@ def conseil_defense(d, contrat, decl, entame, encheres):
         elif len(x) >= 4 and all(h in x for h in "ARD"): longue = c
     court = [c for c in COULEURS if c != den and den in COULEURS and len(s_mort[c]) <= 1 and len(s_mort.get(den, "")) >= 2]
     if longue:
-        phrases.append(f"Le mort a une longue à {longue} qui va fournir des défausses au déclarant : la défense doit prendre "
-                       "ses levées vite, en attaquant la couleur où elle peut en affranchir une avant que la longue ne soit prête.")
+        phrases.append(f"Le mort a une longue à {longue} qui fournira des défausses : prendre ses levées vite, avant qu'elle soit prête.")
     elif court:
-        phrases.append(f"Le mort est court à {' et à '.join(court)} avec des atouts : le déclarant voudra y couper ; "
-                       "jouer atout à chaque prise de main réduit ces coupes.")
+        phrases.append(f"Le mort est court à {' et à '.join(court)} avec des atouts : rejouer atout à chaque prise de main.")
     else:
-        phrases.append("Le mort n'a ni longue à affranchir ni coupe facile : rien ne presse, la défense peut attendre ses "
-                       "levées et laisser le déclarant ouvrir les couleurs lui-même.")
+        phrases.append("Ni longue ni coupe au mort : rien ne presse, laisser le déclarant ouvrir les couleurs.")
     return " ".join(phrases)
 
 
@@ -132,6 +135,7 @@ def conseil_encheres(r):
     for s, b, x in r.get("explications") or []:
         m = re.search(r"(\S+) \(([^)]*)\) convenait aussi", x or "")
         if m and b != "passe":
-            out.append(f"{NOMS.get(s, s)} : {b} plutôt que {m[1]} ({m[2]}), que le système classe après.")
+            out.append(f"{NOMS.get(s, s)} {b} plutôt que {m[1]} ({m[2]})")
     if not out: return ""
-    return ("Décision serrée : " if len(out) == 1 else "Décisions serrées : ") + " ".join(out)
+    return ("Décision serrée" if len(out) == 1 else "Décisions serrées") + " (l'autre enchère vient après dans le système) : " \
+        + " ; ".join(out) + "."

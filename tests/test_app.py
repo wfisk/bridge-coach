@@ -68,8 +68,8 @@ json.dump({"format": "bridge-coach", "source": {"type": "bws", "fichier": "60000
            "analyses": {"standard": {"systeme": "sef-2024", "donnes": {"1": {"enc": []}}, "fait_le": "2026-10-23T20:00:00"}}},
           open(sc, "w"))
 dossier, consigne = app.preparer_pour_claude(sc)
-assert os.listdir(dossier) == ["seance-du-2026-10-23-pour-claude.json"]           # un seul fichier à donner à Claude
-tout = json.load(open(os.path.join(dossier, "seance-du-2026-10-23-pour-claude.json")))
+assert os.listdir(dossier) == ["seance-du-2026-10-23.ai.json"]           # un seul fichier à donner à Claude
+tout = json.load(open(os.path.join(dossier, "seance-du-2026-10-23.ai.json")))
 assert tout["consigne"] == consigne and "seance-du-2026-10-23-expert.json" in consigne and "Décision serrée" in consigne
 assert "systeme.md" in tout["documents"] and tout["analyse_standard"]["donnes"] == {"1": {"enc": []}}
 texte = json.dumps(tout, ensure_ascii=False)                                        # ni noms, ni club, ni fichier d'origine

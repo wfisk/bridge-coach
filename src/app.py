@@ -770,7 +770,7 @@ POUR_CLAUDE = [("systems/sef-2024/systeme.md", "systeme.md"), ("systems/sef-2024
                ("systems/sef-2024/entames.yaml", "entames.yaml"), ("systems/technique/jeu-de-la-carte.md", "jeu-de-la-carte.md")]
 
 CONSIGNE = """Tu es l'expert de Bridge Coach, un programme qui analyse les séances de bridge d'un club français.
-Écris l'analyse experte de la séance du fichier joint, {nom}-pour-claude.json, et rends-la dans un seul fichier
+Écris l'analyse experte de la séance du fichier joint, {nom}.ai.json, et rends-la dans un seul fichier
 JSON à télécharger, nommé {nom}-expert.json. Réponds en français.
 
 Le fichier joint rassemble tout :
@@ -845,7 +845,7 @@ def seance_pour_claude(data):
 
 
 def preparer_pour_claude(c):
-    """Un seul fichier à donner à Claude, <dossier de travail>/pour-claude/<nom>/<seance-du-…>-pour-claude.json : la
+    """Un seul fichier à donner à Claude, <dossier de travail>/pour-claude/<nom>/<seance-du-…>.ai.json : la
     séance sans les noms (seance_pour_claude), l'analyse standard, l'exemple, les documents du système et la consigne.
     Renvoie (dossier, consigne)."""
     data = lire_seance(c) or {}
@@ -862,7 +862,7 @@ def preparer_pour_claude(c):
             "analyse_standard": {k: v for k, v in (lire_analyses(c)[0] or {}).items() if k != "fait_le"},
             "exemple_analyse": json.load(open(ex, encoding="utf-8")) if os.path.exists(ex) else None,
             "documents": documents}
-    with open(os.path.join(dossier, nom + "-pour-claude.json"), "w", encoding="utf-8") as f:
+    with open(os.path.join(dossier, nom + ".ai.json"), "w", encoding="utf-8") as f:
         json.dump(tout, f, ensure_ascii=False, indent=1)
     return dossier, consigne
 
@@ -2070,7 +2070,7 @@ def page():
             ui.button("Préparer le fichier pour Claude", icon="folder_open", on_click=lambda: preparer_expert(c)).props("outline")
             etape(2, "Ouvrez <b>claude.ai</b> dans votre navigateur et commencez une nouvelle conversation.")
             ui.button("Ouvrir claude.ai", icon="open_in_new", on_click=lambda: ouvrir("https://claude.ai/new")).props("outline")
-            etape(3, f"Glissez le fichier <code>{nom}-pour-claude.json</code> dans la conversation.")
+            etape(3, f"Glissez le fichier <code>{nom}.ai.json</code> dans la conversation.")
             etape(4, "Copiez la consigne, collez-la dans la conversation, puis envoyez.")
             ui.button("Copier la consigne", icon="content_copy", on_click=lambda: copier_consigne(c)).props("outline")
             etape(5, f"Claude écrit le fichier <code>{nom}-expert.json</code> : téléchargez-le avec le bouton sous sa réponse. "

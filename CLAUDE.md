@@ -67,7 +67,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         table results; vue_seance, page_donne…), view only so far. A deal page in Donnes, Analyse and Jouer has the same right sidebar (panneau_droit: fixed, LARGEUR_PANNEAU, the deal's name, a small board case, theme and par; Analyse adds the Standard | Expert toggle, the recommended contract, the lead and the double-dummy table (dm_html); Donnes the « Modifier la donne » button); Analyse: sidebar Analyse standard (status, date, "Lancer
                         l'analyse": rapport.py --analyse-seule, the analysis only, no PDF; the run block stays visible while it runs), Analyse expert
                         (status, date, and the steps to get it from Claude on the web: preparer_pour_claude writes ONE file,
-                        <working folder>/pour-claude/<name>/seance-du-AAAA-MM-JJ-pour-claude.json: "consigne" (CONSIGNE, the rules for
+                        <working folder>/pour-claude/<name>/seance-du-AAAA-MM-JJ.ai.json: "consigne" (CONSIGNE, the rules for
                         the expert analysis, in French), "seance" (seance_pour_claude: no analyses, no source, no title, players
                         by initials only: full names, club and original file name never leave the computer), "analyse_standard",
                         "exemple_analyse", "documents" (the system files); Claude returns seance-du-…-expert.json; importer_expert

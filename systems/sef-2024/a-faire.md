@@ -220,3 +220,12 @@ Non retenu : 2♣ sur levées de jeu et 4♠ sur 3♠ en concurrence (déjà mes
 imaginées contre la même ligne avec la couleur clé jouée tout de suite. 57 cadres sur 1 099 contrats
 à la couleur tirés au hasard, 2 conseils ; aucun sur les trois séances. À revoir : la ligne du
 déclarant est simple (pas d'impasse ailleurs, entrées limitées), ce qui peut cacher des cas.
+
+## Réponses aux deux faibles et aux barrages (2026-11-09)
+Banc nouveau : deux versions du moteur sur les mêmes donnes au hasard, écart au par (IMP) des donnes où les contrats
+diffèrent. Gardé : 2M – 4M et 3M – 4M avec dix atouts ensemble (`fit(U) 10+`, loi des levées) : 20 000 donnes, 57
+contrats changés, +38 IMP ; sur 3M, la manche dès 12 HLD avec deux atouts (au lieu de 15 ; 14 : +18, 13 : +29, 12 : +36,
+11 : +35 ; graine 11 : 13 +44, 12 +46). Les deux ensemble : +136 IMP sur 20 000 donnes (graine 11). Donne réelle : 3♠
+du 05/11 (n° 21), le partenaire A4 AX4 A9874 X95 dit maintenant 4♠.
+Essayé et retiré : après 2♣ – 2♦ – 2M, le soutien à 3M forcing (3+ atouts, 6+ H) pour chercher le chelem, 4M restant
+faible : +17 puis −15 IMP sur deux lots de 20 000 (neutre), bien que le 6♠ du 05/11 (n° 26) soit trouvé.

@@ -6,7 +6,8 @@
 # requirements.txt.
 reportlab==4.2.5        # les PDF ; 4.3 et plus demandent Python 3.10
 endplay==0.5.12         # double mort (DDS) ; existe pour Python 3.9 à 3.13, pas 3.14
+                        # (il charge numpy et matplotlib dès l'import, même pour le seul solveur : on ne peut pas les retirer)
 ruamel.yaml==0.19.1     # lecture des règles (regles.yaml, entames.yaml)
 nicegui==3.6.1          # l'application (src/app.py)
 pywebview==6.2.1        # sa fenêtre ; sans elle, elle s'ouvre dans le navigateur
-pypdfium2==5.14.0       # facultatif : rendre les pages en images pour les vérifier
+pypdfium2==5.14.0       # lire les feuilles de route FFB (feuille_route.py), et rendre les pages en images pour les vérifier

@@ -23,7 +23,7 @@ if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son 
         pass
 
 TITRE = "Bridge Coach"
-PORT = 8123
+PORT = int(os.environ.get("BRIDGE_COACH_PORT") or 8123)    # un autre port : une seconde instance d'essai
 LARGEUR_BARRE = 220                                        # la barre de gauche (Donnes, Jouer, Analyse) : « Donne 24 » et la barre de défilement
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
 NB_PDF = 4
@@ -166,6 +166,8 @@ CSS_CARTES = """
 .eventail .groupe { margin-right: 26px; }
 .eventail .groupe:last-child { margin-right: 16px; }
 .groupe.colonne .carte { width: 34px; height: 46px; margin-right: -15px; padding: 2px 4px; font-size: 15px; }
+.groupe.colonne > :last-child .carte { margin-right: 0; }
+.groupe.colonne .dix { letter-spacing: -2.5px; }           /* le 10 tient dans la part visible d'une petite carte */  /* sinon la ligne paraît plus courte : à gauche, elle passerait sous la table */
 .dos { width: 32px; height: 46px; border-radius: 4px; border: 2px solid #fff; outline: 1px solid #c3cbd4;
   background: repeating-linear-gradient(45deg, #9aa8b8 0 3px, #b0bccA 3px 6px); }
 .plis-gardes { display: flex; align-items: center; min-height: 30px; }
@@ -1395,7 +1397,7 @@ def page():
 
     ORDRE_MAIN = "♠♥♣♦"                                    # noir, rouge, noir, rouge
 
-    face = lambda r: "10" if r == "X" else r              # sur une carte à jouer, le dix s'écrit 10 (X dans les textes)
+    face = lambda r: "<span class='dix'>10</span>" if r == "X" else r   # sur une carte à jouer, le dix s'écrit 10 (X dans les textes)
 
     def carte_el(coul, r, jouables, sur_clic):
         rouge_ = " r" if coul in "♥♦" else ""

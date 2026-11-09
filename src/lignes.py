@@ -88,12 +88,14 @@ def _carte(pos, pool, vides, need, k, rnd, details=None):
 
     def prudence(x):
         """À égalité, le jeu sûr : quand tous les mondes disent « ça gagne », le double mort se moque de
-        l'ordre, pas la table. On tire les atouts adverses, on ne coupe pas sans besoin."""
-        if not gains[x] or pos.den not in LETTRES: return 0
-        if not pos.pli:
-            return x[0] == pos.den and any(LETTRES[pos.den] + y not in pos.jouees and LETTRES[pos.den] + y not in nous for y in RANGS)
+        l'ordre, pas la table. On tire les atouts adverses, on ne coupe pas sans besoin. Une fois leurs atouts
+        tombés, plus de prudence : la coupe d'une perdante au mort est une levée de plus (le nombre de levées décide)."""
+        if not gains[x] or pos.den not in LETTRES or not atouts_dehors: return 0
+        if not pos.pli: return x[0] == pos.den
         return x[0] != pos.den
     nous = _ensemble(pos.mains[pos.decl]) | _ensemble(pos.mains[PART[pos.decl]])
+    atouts_dehors = pos.den in LETTRES and any(LETTRES[pos.den] + y not in pos.jouees and LETTRES[pos.den] + y not in nous
+                                                for y in RANGS)
     if details is not None: details.update(mondes=len(dd), scores={x: (gains[x], total[x]) for x in leg})
     return max(reversed(leg), key=lambda x: (gains[x], prudence(x), total[x]))
 

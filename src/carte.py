@@ -393,7 +393,10 @@ def _texte_pensee(pz, decl):
         sens = {"appel": f"un appel à {c} : il aime la couleur", "refus": f"un refus à {c} : il n'aime pas la couleur",
                 "parité paire": f"la parité à {c} : un nombre pair de cartes (grosse puis petite)",
                 "parité impaire": f"la parité à {c} : un nombre impair de cartes (la plus petite)"}.get(sig, sig)
-        raison = (raison + " " if raison else "") + f"Ses cartes se valant, il choisit celle qui signale : {sens}."
+        if raison.endswith(" ; il joue la plus petite."):           # une seule phrase : ses cartes se valent, il signale
+            raison = raison[:-len(" ; il joue la plus petite.")] + f" ; il choisit celle qui signale : {sens}."
+        else:
+            raison = (raison + " " if raison else "") + f"Parmi les cartes qui se valent, il choisit celle qui signale : {sens}."
     return dict(titre=titre, raison=raison, croyance=list(pz.get("croyance") or []), plan=pz.get("plan") or "")
 
 

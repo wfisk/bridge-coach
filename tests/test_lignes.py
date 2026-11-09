@@ -21,6 +21,14 @@ for c, r in (("♠", "7"), ("♠", "3"), ("♠", "T"), ("♠", "A")):
     p.sieges.append(p.au_trait()); p.jouer(c, r)
 for m in lignes._mondes(p, [], {"O": {"H"}, "E": set()}, 6, random.Random(1)):
     assert "7" in m["O"].split()[0] and m["O"].split()[1] == "-" and "X" in m["E"].split()[0]
+# atouts tombés, le mort coupe la perdante à carreau au lieu de défausser (« on ne coupe pas sans besoin » ne vaut
+# que tant que la défense peut avoir des atouts)
+m = dict(N="R43 X987 - RD6542", S="A52 ARDV 5432 A3", O="DVX9 652 ARDV VX", E="876 43 X9876 987")
+p = Position(m, "♥", "S"); p.sieges = []
+for c, r in (("♠", "Q"), ("♠", "3"), ("♠", "6"), ("♠", "A"), ("♥", "A"), ("♥", "2"), ("♥", "7"), ("♥", "3"), ("♥", "K"), ("♥", "5"),
+             ("♥", "8"), ("♥", "4"), ("♥", "Q"), ("♥", "6"), ("♥", "9"), ("♦", "6"), ("♦", "2"), ("♦", "A")):
+    p.sieges.append(p.au_trait()); p.jouer(c, r)
+assert lignes._carte(p, [], {"O": set(), "E": {"H"}}, 10, 12, random.Random(1)) == ("♥", "T")
 # ce que rend l'analyse pour le plan
 assert set(a) >= {"ligne", "decide", "impasses", "coupes_avant"} and "Essai à la table" in lignes.phrase(a)
 # une impasse : ♠2 de S, ♠5 d'O, ♠D de N, S garde A et R manque ; pas d'impasse si N met l'as

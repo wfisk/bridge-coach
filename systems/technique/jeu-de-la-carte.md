@@ -65,7 +65,9 @@ double mort. Le déclarant simulé décide alors du plan :
   arrondi à 10 %, l'ordre le plus joué, ce qui décide (partage ou place d'un honneur, s'il change le taux
   d'au moins 30 points, avec 5 donnes de chaque côté), les impasses tentées.
 - Quand tous les mondes disent que plusieurs cartes gagnent, le double mort se moque de l'ordre, pas la
-  table : le déclarant prend alors le jeu sûr (tirer les atouts adverses, ne pas couper sans besoin).
+  table : le déclarant prend alors le jeu sûr (tirer les atouts adverses, ne pas couper sans besoin), tant que
+  la défense peut encore avoir des atouts. Ses atouts tombés, il joue pour le plus de levées : le mort coupe les
+  perdantes du déclarant.
   Sans cette règle, il coupait au hasard et n'annonçait que 60 % pour un grand chelem de 14 levées.
 - Ne pas comparer deux lignes carte par carte au double mort : toutes les impasses y seraient
   devinées juste, et sembleraient gratuites. Ici, chaque décision se prend sur des mondes variés.

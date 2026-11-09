@@ -50,8 +50,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         installer.ps1 is UTF-8 with BOM and CRLF (Windows PowerShell 5.1). mac/: a payload-free .pkg whose
                         postinstall (root) runs scripts/installer-mac.sh as the console user into ~/Library/Application
                         Support/Bridge Coach/programme (log ~/Library/Logs/Bridge Coach), then raccourci-mac.sh as root
-                        (app chowned to the user). Both scripts take a local zip + SHA256SUMS for tests. Not tried yet by a
-                        real member; the Windows one never on a real PC (only on GitHub's Windows machine)
+                        (app chowned to the user). Both scripts take a local zip + SHA256SUMS for tests. Windows Setup.exe works on a
+                        real PC (the user's work laptop, 2026-11-09); a club member is trying it; the Mac .pkg only on this Mac
     src/                Python code
       app.py            the NiceGUI application: one bar across the top (ui.header: Fichier menu, the tabs, Aide; not the native bar: the window process leaves
                         the Dock, so macOS would show none) with Ouvrir une séance (the .bc.json, by session date), Importer
@@ -99,7 +99,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         for the progress bar; Cancel stops the whole process group; French messages only,
                         the Python trace goes to rapports/derniere-erreur.txt. Window through pywebview,
                         browser if it is missing (--navigateur); always host 127.0.0.1 (NiceGUI would open 0.0.0.0 in browser
-                        mode). requirements.in pins the direct libraries by hand; requirements.txt is generated from it with uv
+                        mode); port 8123, BRIDGE_COACH_PORT for a second test instance (with BRIDGE_COACH_DONNEES; the browser
+                        pane cannot start it: macOS refuses it Documents, so start it from the shell). requirements.in pins the direct libraries by hand; requirements.txt is generated from it with uv
                         (universal: Windows and Mac, Python 3.9–3.13; this .venv's versions as constraints) with every
                         dependency and its SHA-256 hashes, so pip installs in hash-checking mode (needs a recent pip:
                         pip 21 rejects the socketio extra). The command is in its header.
@@ -247,7 +248,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         Bench vs a double-dummy declarer, 40 fresh deals: lead +0.23, defence +0.20 trick per deal (without the
                         auction +0.30). Indice: lignes._carte. The app adds a thinking pause to every engine call and card (reflexion: 0.9 s, 1.5 s at the 3-level or for a double, 1.9 s at game level, 2.6 s for a slam, +1.3 s when the rule's text says another call fitted too; cards 0.4 s when forced, 1.3 s to lead a trick, 0.8 s otherwise, +1.4 s when Partie.difficile: the best card beats another real choice in only a few of the imagined worlds)
       lignes.py         simulated declarer: at each card imagines 12 worlds true to the auction, lead and play,
-                        solves them, keeps the card that wins most often; never sees the defenders' hands
+                        solves them, keeps the card that wins most often (ties: the safe card — draw trumps, don't ruff —
+                        only while the defenders may hold trumps; after that the most tricks, so dummy ruffs losers:
+                        +0.14 trick a deal on 120 fresh deals, 2026-11-09); never sees the defenders' hands
                         of the deal played, defence double-dummy. analyser() runs it on 40 imagined deals: make
                         rate, order of the suits, what decides the contract (a split or a missing honour),
                         finesses taken, ruffs before trumps; plan_de_jeu follows these for its steps.
@@ -384,7 +387,8 @@ All three sessions now follow these rules: the 23/10 and 6-table auctions were r
 
 System Python is 3.9, so `.venv/` pins `reportlab<4.3` (4.3+ needs 3.10).
 To recreate it: `python3 -m venv .venv && .venv/bin/pip install "reportlab<4.3" pypdfium2 endplay ruamel.yaml`
-(pypdfium2 renders pages to PNG for checking; endplay is only for random simulations).
+(pypdfium2 reads FFB feuilles de route and renders pages to PNG for checking; endplay is the double-dummy solver, and it
+imports numpy and matplotlib on load, so the install cannot drop them; checked 2026-11-09).
 
 ## Sessions with many tables
 

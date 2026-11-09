@@ -1048,11 +1048,13 @@ ouverture:
 # ------------------------------------------------------------------ 1.4 réponses aux deux faibles et aux barrages
 "2M":
   - 4U:  { si: "U 3+, HLD(U) 16+ || U 2, HLD(U) 17+", montre: "fit et assez de points : manche", nature: conclusion }
+  - 4U:  { si: "fit(U) 10+", montre: "dix atouts ensemble : 4M pour jouer (loi des levées)", nature: conclusion }
   - passe: { montre: "pas de manche face au deux faible" }
 "2M - 3U | 2M - 4U":
   - passe: { montre: "le partenaire a décidé" }
 "3M":
-  - 4U:  { si: "U 2+, HLD(U) 15+", montre: "fit : manche", nature: conclusion }
+  - 4U:  { si: "U 2+, HLD(U) 12+", montre: "fit : manche", nature: conclusion }
+  - 4U:  { si: "fit(U) 10+", montre: "dix atouts ensemble : 4M pour jouer (loi des levées)", nature: conclusion }
   - passe: { montre: "pas de manche face au barrage" }
 "3N":
   - 3SA: { si: "U 2+, H 15-18", montre: "15+ H, la couleur du barrage pour faire des levées : 3SA", nature: conclusion, source: à confirmer }

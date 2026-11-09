@@ -12,6 +12,9 @@ dans `ffb/` avant de s'y fier.
 - 2♣ : fort indéterminé **(à confirmer)**
 - 2♦ : forcing de manche **(à confirmer)**
 - 2♥ / 2♠ : faible, 6 cartes **(à confirmer : zone de points)**
+  Réponses aux deux faibles et aux barrages majeurs : 4M avec dix atouts ensemble (4 sur un deux faible, 3 sur un
+  barrage de 3), pour jouer, quels que soient les points (loi des levées) ; sur 3M, la manche aussi avec deux atouts et
+  12 HLD (au lieu de 15). **(à confirmer)**
 - 2SA : 20–21 H, régulier **(à confirmer)**
 - En troisième position : ouverture légère dès 8 H avec la règle des 20, ou à 10 H avec neuf cartes dans les
   majeures. Un deux faible ou un barrage reste prioritaire.

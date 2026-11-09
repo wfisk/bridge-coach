@@ -670,21 +670,35 @@ def main():
             if doc._debut != c.getPageNumber():
                 c.saveState(); c.setFont("DVB", 12); c.setFillColor(colors.HexColor(INK))
                 c.drawString(1.7*cm, A4[1] - 1.1*cm, f"Donne n° {n} (suite)"); c.restoreState()
-    doc = BaseDocTemplate(out, pagesize=A4, leftMargin=1.7*cm, rightMargin=1.7*cm, topMargin=1.5*cm, bottomMargin=1.5*cm,
-                          title=f"Analyse des donnes – {date}", author="Claude")
-    doc._spans = {}
-    doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
-                                       onPage=footer, onPageEnd=suite)])
     donnes = moi.ordre_des_donnes(data, MES) if moi.ordre_joue() else data["donnes"]   # Réglages : l'ordre joué
     synth = synthese(dict(data, donnes=donnes), an)  # avec la page de synthèse, les explications y sont
-    story = []
-    for k, d in enumerate(donnes):
-        story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
-    parcours = page_parcours(data)                 # à la fin : votre parcours, puis la synthèse
-    fin = parcours + synth if synth else parcours + [PageBreak()] if parcours else []
-    if fin: story += [Marque(None)] + fin
-    doc.build(page_noms(data, sys.argv[4] if len(sys.argv) > 4 else None) + story[:-1])
-    longues = {n: s[1] - s[0] + 1 for n, s in doc._spans.items() if s[1] - s[0] + 1 > 2}
+
+    def fabriquer(an):
+        doc = BaseDocTemplate(out, pagesize=A4, leftMargin=1.7*cm, rightMargin=1.7*cm, topMargin=1.5*cm, bottomMargin=1.5*cm,
+                              title=f"Analyse des donnes – {date}", author="Claude")
+        doc._spans = {}
+        doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
+                                           onPage=footer, onPageEnd=suite)])
+        story = []
+        for k, d in enumerate(donnes):
+            story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
+        parcours = page_parcours(data)             # à la fin : votre parcours, puis la synthèse
+        fin = parcours + synth if synth else parcours + [PageBreak()] if parcours else []
+        if fin: story += [Marque(None)] + fin
+        doc.build(page_noms(data, sys.argv[4] if len(sys.argv) > 4 else None) + story[:-1])
+        return doc, {n: s[1] - s[0] + 1 for n, s in doc._spans.items() if s[1] - s[0] + 1 > 2}
+
+    doc, longues = fabriquer(an)
+    for champ in ("defense", "plan"):              # une donne de plus de deux pages : le conseil du coach s'efface (défense,
+        retirer = {str(n) for n in longues        # puis plan) ; l'avis de l'expert et le texte du programme restent
+                   if MARQUE_COACH in ((an.get("donnes") or {}).get(str(n), {}).get(champ) or "")}
+        if not retirer: continue
+        an = json.loads(json.dumps(an))
+        for n in retirer:
+            prog, _, expert = decouper_avis(an["donnes"][n][champ])
+            an["donnes"][n][champ] = prog + (MARQUE_AVIS + " " + expert if expert else "")
+        print(f"Conseil du coach ({champ}) retiré pour tenir en deux pages : donne(s) {', '.join(sorted(retirer, key=int))}")
+        doc, longues = fabriquer(an)
     manquantes = [d["n"] for d in data["donnes"] if str(d["n"]) not in an.get("donnes", {})]
     print(f"PDF écrit : {out.replace('.provisoire.pdf', '.pdf')} ({doc.page} pages, {len(data['donnes'])} donnes)")
     if longues: print("ATTENTION, donnes de plus de deux pages :", longues)

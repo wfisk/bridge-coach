@@ -98,6 +98,26 @@ def encheres_auto(d):
     return out
 
 
+def coach_pour_expert(d, a_exp, a_std):
+    """L'analyse de l'expert d'une donne, avec le conseil du coach (pris dans l'analyse standard) avant chaque avis de
+    l'expert, en plan et en défense : seulement si l'expert joue le même contrat, du même déclarant, avec la même entame,
+    puisque le coach parle de ceux-là. L'analyse rangée ne change pas : c'est pour l'afficher."""
+    from build_pdf import MARQUE_AVIS, MARQUE_COACH, decouper_avis
+    from comparer import final
+    if not (a_exp and a_std and a_exp.get("enc") and a_std.get("enc")): return a_exp
+    meme = final(a_exp["enc"], d["donneur"]) == final(a_std["enc"], d["donneur"]) and \
+        (a_exp.get("entame") or {}).get("carte") == (a_std.get("entame") or {}).get("carte")
+    if not meme: return a_exp
+    out = dict(a_exp)
+    for k in ("plan", "defense"):
+        coach = decouper_avis(a_std.get(k) or "")[1]
+        texte = out.get(k) or ""
+        if not coach or not texte or "Le conseil du coach" in texte: continue
+        prog, _, avis = texte.partition(MARQUE_AVIS)
+        out[k] = prog + MARQUE_COACH + " " + coach + (MARQUE_AVIS + avis if avis else "")
+    return out
+
+
 def joindre(*textes):
     """Les textes non vides, sans répéter une phrase déjà dite."""
     out = []
@@ -559,6 +579,9 @@ def main():
             c, decl, dbl = final(a["enc"], d["donneur"])
             if c != "passe":
                 a["vues"] = joindre(cartes_vues(d, c + "X" * dbl, decl, a["entame"]), tables[str(d["n"])])
+    std_d = auto.get("donnes") or {}                       # le conseil du coach, avant l'avis de l'expert
+    an = dict(an, donnes={n: coach_pour_expert(next((d for d in data["donnes"] if str(d["n"]) == n), {"donneur": "N"}), x, std_d.get(n))
+                          for n, x in an["donnes"].items()})
     construire_pdf(donnes, an, auto, pdf("expert"))
     sys.stdout.flush()
     provisoire = pdf("diff")[:-4] + ".provisoire.pdf"

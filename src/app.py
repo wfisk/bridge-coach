@@ -1120,6 +1120,8 @@ def page():
             ui.label("Pas encore d'analyse : « Analyse standard », puis « Lancer l'analyse ».").classes("text-base text-gray-600"); return
         if vue.get("version") not in versions: vue["version"] = "Expert" if "Expert" in versions else versions[0]
         a = (exp if vue["version"] == "Expert" else std)["donnes"][n]
+        if vue["version"] == "Expert":                    # le conseil du coach avant l'avis de l'expert (même contrat)
+            a = rapport.coach_pour_expert(d, a, (std or {}).get("donnes", {}).get(n))
         repli = (std or {}).get("donnes", {}).get(n, {})   # l'expert reprend du programme ce qu'il n'écrit pas (cartes vues…)
         with ui.column().classes("w-full gap-3").style(f"padding-right:{LARGEUR_PANNEAU}px"):
             page_analyse(d, a, repli, vue["version"], data, c, replis, retenir_page)

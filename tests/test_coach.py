@@ -20,4 +20,14 @@ assert coach.conseil_defense(d, "4♠", "S", {"joueur": "O", "carte": "♦R"}, e
 r = {"explications": [("N", "2♦", "19 H : 11+ H, forcing. 2♣ (11+ H, forcing) convenait aussi, mais vient après dans le système")]}
 assert coach.conseil_encheres(r) == "Décision serrée (l'autre enchère vient après dans le système) : Nord 2♦ plutôt que 2♣ (11+ H, forcing)."
 assert coach.conseil_encheres({"explications": [("N", "passe", "rien")]}) == ""
+# l'analyse de l'expert, affichée avec le conseil du coach avant son avis, seulement pour le même contrat et la même entame
+import rapport
+from build_pdf import MARQUE_AVIS, MARQUE_COACH
+grille = [["–", "–", "–", "1♠"], ["passe", "4♠", "passe", "passe"], ["passe", "", "", ""]]   # donneur Sud : 4♠ par Sud
+std = {"enc": grille, "entame": {"joueur": "O", "carte": "♦R"}, "plan": "Plan." + MARQUE_COACH + " Coach.", "defense": "Déf."}
+exp = {"enc": grille, "entame": {"joueur": "O", "carte": "♦R"}, "plan": "Plan." + MARQUE_AVIS + " Expert.", "defense": "Déf."}
+x = rapport.coach_pour_expert(dict(d, donneur="S"), exp, std)
+assert x["plan"] == "Plan." + MARQUE_COACH + " Coach." + MARQUE_AVIS + " Expert." and x["defense"] == "Déf." and exp["plan"].endswith("Expert.")
+assert rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std) is not None
+assert MARQUE_COACH not in rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std)["plan"]
 print("ok")

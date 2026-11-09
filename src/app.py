@@ -106,6 +106,53 @@ COTE_TABLE = "clamp(420px, min(100vw - 740px, 100vh - 420px), 640px)"   # 420 : 
 LARGEUR_TABLE_LARGE = f"calc({COTE_TABLE} + 84px)"
 HAUTEUR_BARRE = 37                                        # la barre de menus du haut                                    # le gris clair des barres latérales, comme celle de Claude
 
+JS_GLISSE = """<script>
+// Une carte qui change de place glisse de l'ancienne à la nouvelle : celle que vous jouez de votre main ou du mort vers la
+// table, et celles qui se resserrent derrière elle. La page note où est chaque carte visible (data-c : couleur et rang) ;
+// après chaque redessin, une carte déjà vue ailleurs part de là (la technique FLIP). Une carte d'une main cachée n'a pas
+// de place connue : elle garde son glissement depuis le bord du joueur (arrive-*). Changer de donne oublie les places.
+(function () {
+  var places = new Map(), donne = null, envol = new Set(), calme = false, prevu = false;
+  function suivreVol() {                       // pendant le vol, la place notée est la place vue : un redessin repart d'ici
+    envol.forEach(function (el) {
+      if (!el.isConnected) { envol.delete(el); return; }
+      var r = el.getBoundingClientRect(); places.set(el.getAttribute('data-c'), {x: r.left, y: r.top});
+    });
+    if (envol.size) requestAnimationFrame(suivreVol);
+  }
+  function noter() {
+    prevu = false;
+    var t = document.querySelector('.ajuste[data-donne]'), d = t ? t.getAttribute('data-donne') : null;
+    if (d !== donne) { places.clear(); donne = d; }
+    var vues = new Map(), vol = false;
+    document.querySelectorAll('[data-c]').forEach(function (el) {
+      var k = el.getAttribute('data-c');
+      if (envol.has(el)) { vues.set(k, places.get(k)); return; }
+      var r = el.getBoundingClientRect(); if (!r.width) return;
+      vues.set(k, {x: r.left, y: r.top});
+      var avant = places.get(k); if (!avant || calme) return;
+      var dx = avant.x - r.left, dy = avant.y - r.top;
+      if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+      var e = r.width / (el.offsetWidth || r.width) || 1;       // l'échelle de la table (JS_AJUSTE)
+      el.className = el.className.replace(/\s*arrive-\S+/g, ''); el.style.animationDelay = '';
+      el.style.position = el.style.position || 'relative'; el.style.zIndex = 5;
+      var a = el.animate([{transform: 'translate(' + dx / e + 'px,' + dy / e + 'px)'}, {transform: 'none'}],
+                         {duration: 380, easing: 'cubic-bezier(.25,.7,.3,1)'});
+      envol.add(el); vol = true;
+      a.onfinish = a.oncancel = function () { envol.delete(el); el.style.zIndex = ''; };
+    });
+    places = vues; calme = false;
+    if (vol) requestAnimationFrame(suivreVol);
+  }
+  function plusTard() { if (!prevu) { prevu = true; requestAnimationFrame(noter); } }
+  window.addEventListener('resize', function () { calme = true; plusTard(); });   // la fenêtre change : rien ne vole
+  document.addEventListener('DOMContentLoaded', function () {
+    new MutationObserver(plusTard).observe(document.body, {childList: true, subtree: true});
+    plusTard();
+  });
+})();
+</script>"""
+
 JS_AJUSTE = """<script>
 // La table de l'onglet Jouer rétrécit avec la fenêtre plutôt que d'ouvrir une barre de défilement : le bloc .ajuste
 // garde sa taille naturelle et prend l'échelle qui le fait tenir dans la largeur de son parent et la hauteur de la fenêtre.
@@ -985,7 +1032,7 @@ def page():
     ui.colors(primary="#1f6b45")
     ui.add_css("body, .q-layout, .q-page, .q-page-container, .q-tab-panels, .q-tab-panel { background: #fff; } "   # une page toute blanche
                "body { font-size: 16px; } .q-btn { text-transform: none; }" + CSS_AIDE + CSS_CARTES)
-    ui.add_head_html(JS_AJUSTE)
+    ui.add_head_html(JS_AJUSTE + JS_GLISSE)
     seances, dossier = reglages()
     deja = seances_bc()
     choix = {"chemin": T.seance or seance_active() or (deja[0] if deja else None)}
@@ -1292,7 +1339,7 @@ def page():
         """Une carte jouée, comme dans les mains ; ou : le côté d'où elle glisse quand elle vient d'être posée."""
         anim = f" arrive-{ou}" if ou else ""
         retard = f";animation-delay:-{ecoule:.2f}s" if ou else ""
-        return f"<div class='carte{' r' if c in '♥♦' else ''}{anim}' style='margin:0{retard}'>{face(r)}<br/>{c}</div>"
+        return f"<div data-c='{c}{r}' class='carte{' r' if c in '♥♦' else ''}{anim}' style='margin:0{retard}'>{face(r)}<br/>{c}</div>"
 
     def pli_cartes(p, places, posees, derniere=None, ecoule=0, mort=None):
         """Les cartes du pli, chacune sur la table juste devant le joueur qui l'a posée, comme les cartons des enchères ;
@@ -1402,7 +1449,7 @@ def page():
     def carte_el(coul, r, jouables, sur_clic):
         rouge_ = " r" if coul in "♥♦" else ""
         ok = jouables is not None and (coul, r) in jouables
-        el = ui.html(f"<div class='carte{rouge_}{' jouable' if ok else ' terne' if jouables is not None else ''}'>{face(r)}<br/>{coul}</div>",
+        el = ui.html(f"<div data-c='{coul}{r}' class='carte{rouge_}{' jouable' if ok else ' terne' if jouables is not None else ''}'>{face(r)}<br/>{coul}</div>",
                      sanitize=False)
         if ok: el.on("click", lambda x=(coul, r): sur_clic(x))
 
@@ -1472,7 +1519,8 @@ def page():
         large = "gauche" in sur_table or "droite" in sur_table          # le mort sur un côté : la table en 16:9
         forme = (f"width:{LARGEUR_TABLE_LARGE};height:{COTE_TABLE};" if large else f"width:{COTE_TABLE};aspect-ratio:1 / 1;")
         with ui.element("div").classes("w-full").style("overflow:hidden;padding-top:8px"), \
-                ui.element("div").classes("ajuste").style("width:max-content;transform-origin:0 0"):   # rétrécit avec la fenêtre (JS_AJUSTE)
+                ui.element("div").classes("ajuste").style("width:max-content;transform-origin:0 0") \
+                    .props(f'data-donne="{d["n"]}"'):                   # rétrécit avec la fenêtre (JS_AJUSTE) ; JS_GLISSE
             with ui.grid(columns="auto auto auto" if large else "1fr auto 1fr") \
                     .classes("items-center gap-x-2 gap-y-4"):            # les mains des côtés contre la table
                 with ui.column().classes("items-center").style("grid-column: 1 / 4"):

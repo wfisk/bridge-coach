@@ -331,6 +331,21 @@ def ligne_seance(L):
     return dict(vous=vous, reco=sum(recos) / len(recos) if recos else None, champ=champ)
 
 
+def chaine(D, x0, y, texte, police, taille, couleur=None, ancre="start"):
+    """Un texte dans un dessin (reportlab.graphics), ♥ et ♦ en rouge comme partout dans les rapports (suits) : posé
+    morceau par morceau, chacun à la suite du précédent."""
+    from reportlab.graphics.shapes import String
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    couleur = couleur or colors.HexColor(INK)
+    largeur = stringWidth(texte, police, taille)
+    x = x0 - largeur if ancre == "end" else x0 - largeur / 2 if ancre == "middle" else x0
+    for morceau in re.split(r"([♥♦])", texte):
+        if not morceau: continue
+        D.add(String(x, y, morceau, fontName=police, fontSize=taille,
+                     fillColor=colors.HexColor(RED) if morceau in "♥♦" else couleur))
+        x += stringWidth(morceau, police, taille)
+
+
 def page_champ(donnes, an, largeur=17.4*cm):
     """Vous face au champ : sur chaque donne, 50 % est la moyenne des tables ; la barre va de 50 % à votre pourcentage,
     à gauche ce que vous perdez face au champ (orange plein), à droite ce que vous gagnez (orange pâle), l'écart écrit à
@@ -368,17 +383,15 @@ def page_champ(donnes, an, largeur=17.4*cm):
         if r["vous"] is None:
             D.add(String(C1, y - 2.6, "–", fontName=police, fontSize=7.8, fillColor=colors.HexColor(GREY), textAnchor="end"))
             if r.get("texte_meilleur"):
-                D.add(String(C2, y - 2.6, r["texte_meilleur"], fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK)))
+                chaine(D, C2, y - 2.6, r["texte_meilleur"], police, 7.8)
             return
         v = r["vous"]; perte = v < 50
         D.add(Rect(min(x(v), x(50)), y - b * .45, abs(x(v) - x(50)), b * .9, fillColor=perdu if perte else gagne,
                    strokeColor=None, rx=1.5, ry=1.5))      # la barre : de 50 % à vous
         D.add(String(C1, y - 2.6, f"{v:.0f} %", fontName="DVB" if perte or gras else "DV", fontSize=7.8,
                      fillColor=colors.HexColor(INK), textAnchor="end"))
-        if r.get("texte_vous"):
-            D.add(String(C0, y - 2.6, r["texte_vous"], fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK)))
-        if r.get("texte_meilleur"):
-            D.add(String(C2, y - 2.6, r["texte_meilleur"], fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK)))
+        if r.get("texte_vous"): chaine(D, C0, y - 2.6, r["texte_vous"], police, 7.8)   # ♥ ♦ en rouge
+        if r.get("texte_meilleur"): chaine(D, C2, y - 2.6, r["texte_meilleur"], police, 7.8)
 
     for k, r in enumerate(L):
         y = Y - h * (k + .5)
@@ -430,8 +443,7 @@ def page_ensemble(donnes, an, largeur=17.4*cm, style="lignes"):
         if r["reco"] is not None: marques.append(("reco", x(r["reco"]), y))
         if r["vous"] is not None: marques.append(("vous", x(r["vous"]), y))
         police = "DVB" if gras else "DV"
-        ecrire = lambda xx, t_, ancre="start": D.add(String(xx, y - 2.6, t_, fontName=police, fontSize=7.8,
-                                                            fillColor=colors.HexColor(INK), textAnchor=ancre))
+        ecrire = lambda xx, t_, ancre="start": chaine(D, xx, y - 2.6, t_, police, 7.8, ancre=ancre)
         if r.get("texte_vous"):                            # votre contrat : rouge plus haut, bleu plus bas que le recommandé
             if r.get("sens"):
                 w = stringWidth(r["texte_vous"], police, 7.8)

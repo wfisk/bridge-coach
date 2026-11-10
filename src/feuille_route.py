@@ -167,7 +167,8 @@ def convertir(chemin):
                                        t["entame"][1:].translate(EN_RANG)) if t["entame"] else ""})
             RE.append(r)
     T = dict(HandRecord=HR, HandEvaluation=HE, RoundData=RD, ReceivedData=RE, BiddingData=[], PlayerNumbers=[],
-             Section=[dict(ID=1, Letter="A", Tables=max(len(d["tables"]) for d in donnes), Winners=2)],
+             Section=[dict(ID=1, Letter="A", Tables=max(len(d["tables"]) for d in donnes), Winners=2,
+                          ScoringType=1)],             # la FFB classe les tournois de paires en % : match-points
              Session=[dict(ID=1, Name="Séance", Date=f"{a}-{m}-{j}T00:00:00")])
     return T, donnes
 

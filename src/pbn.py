@@ -6,7 +6,7 @@ table jouée, avec son score et son écart au par.
 
     seance(chemin) -> les données d'une séance (session, donnes, paires, alertes), que rapport.py range en .bc.json
 
-Ce qui est lu : [Board] [Dealer] [Vulnerable] [Deal] [Date] [Event], et [Auction] [Contract] [Declarer] [Result] [Play]
+Ce qui est lu : [Board] [Dealer] [Vulnerable] [Deal] [Date] [Event] [Scoring], et [Auction] [Contract] [Declarer] [Result] [Play]
 (la première carte : l'entame). Les notes (=1=), les commentaires ({…}, ;…) et les autres balises sont ignorés.
 """
 import datetime, os, re, sys
@@ -126,7 +126,7 @@ def seance(chemin):
     texte = open(chemin, encoding="latin-1").read()          # le PBN est en ASCII ou ISO-8859-1
     blocs = _blocs(texte)
     if not blocs: raise ErreurPBN("aucune donne trouvée dans ce fichier PBN")
-    out, date, titre = [], None, None
+    out, date, titre, marque = [], None, None, None
     for k, (tags, sections) in enumerate(blocs, 1):
         try:
             n = int(re.sub(r"\D", "", tags.get("Board", "")) or k)
@@ -139,6 +139,8 @@ def seance(chemin):
         d.pop("theme", None)
         date = date or re.match(r"(\d{4})\.(\d\d)\.(\d\d)", tags.get("Date", "") or "")
         titre = titre or (tags.get("Event") or "").strip("? ")
+        sc = (tags.get("Scoring") or "").upper()          # [Scoring "MP"], "IMP", "Butler", "Cross-IMPs"…
+        marque = marque or ("MP" if sc.startswith(("MP", "MATCH")) else "IMP" if "IMP" in sc or "BUTLER" in sc else None)
         c = contrat(tags.get("Contract")); decl = DE_PBN.get(tags.get("Declarer", "").strip().upper()[:1])
         res = tags.get("Result", "").strip()
         if c and decl and res.isdigit():                     # une table jouée : contrat, résultat, enchères, entame
@@ -163,6 +165,7 @@ def seance(chemin):
     session = dict(date=jour.strftime("%d/%m/%Y"), tables=max(len(d["tables"]) for d in out), sections=["A"],
                    mitchell=False, themes=[])
     if titre: session["titre"] = titre
+    if marque: session["marque"] = marque
     return dict(session=session, donnes=out, paires={}, alertes=[])
 
 

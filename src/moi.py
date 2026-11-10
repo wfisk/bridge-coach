@@ -15,7 +15,7 @@ def dossier_des_reglages():
 
 
 ETAT = os.path.join(dossier_des_reglages(), "etat.json")
-SURLIGNE = "#fff3bf"                                       # le fond de vos lignes, dans les PDF et l'application
+SURLIGNE = "#fff2a8"                                       # le fond de vos lignes, dans les PDF et l'application
 
 
 def nom():
@@ -98,10 +98,30 @@ def _etendue(donnes):
     return f"{donnes[0]}–{donnes[-1]}" if len(donnes) > 1 else str(donnes[0]) if donnes else ""
 
 
+def mouvement(data, mes=None):
+    """Le parcours de votre paire (ou des paires mes) : {"paire", "tours": [{tour, table, donnes, adversaires, relais}]}.
+    Celui que la séance décrit à la main (session.mouvement) s'il est le vôtre ; sinon celui que donne le mouvement entier
+    lu dans le .bws (session.rondes), pour n'importe quelle paire choisie dans « Vous êtes » ; {} sinon. Sans « Vous
+    êtes », le mouvement écrit à la main."""
+    s = data.get("session") or {}
+    mes = {str(x) for x in (paires(data) if mes is None else mes)}
+    m = s.get("mouvement") or {}
+    if m.get("tours") and (not mes or str(m.get("paire")) in mes): return m
+    rondes = s.get("rondes") or []
+    k = next((p for p in sorted(mes) if any(p in (r["ns"], r["eo"]) for r in rondes)), None)
+    if not k: return {}
+    tours = []
+    for t in sorted({r["tour"] for r in rondes}):
+        r = next((r for r in rondes if r["tour"] == t and k in (r["ns"], r["eo"])), None)
+        tours.append(dict(tour=t, table=r["table"], donnes=r["donnes"], adversaires=r["eo"] if r["ns"] == k else r["ns"],
+                          relais=False) if r else dict(tour=t, table="", donnes=[], adversaires=None, relais=True))
+    return dict(paire=k, tours=tours)
+
+
 def parcours(data):
     """Les tours d'une paire ("mouvement" de la séance) : tour, table, donnes, adversaires, % moyen du tour.
     [] si la séance ne décrit pas son mouvement."""
-    m = (data.get("session") or {}).get("mouvement") or {}
+    m = mouvement(data)
     k = str(m.get("paire", "")); out = []
     for t in m.get("tours") or []:
         pcts = []
@@ -119,13 +139,13 @@ def parcours(data):
 
 def qui_parcourt(data):
     """« WF/FR (EO4) » : la paire dont le mouvement décrit les tours."""
-    m = (data.get("session") or {}).get("mouvement") or {}
+    m = mouvement(data)
     return _paire(data, m["paire"]) if m.get("paire") else ""
 
 
 def tour_de(data, n):
     """« Tour 1 · table 4 · contre AP/EK (NS4) » pour la donne n, ou "" si le mouvement ne la place pas."""
-    m = (data.get("session") or {}).get("mouvement") or {}
+    m = mouvement(data)
     for t in m.get("tours") or []:
         if n in t["donnes"]:
             if t.get("relais") or not t.get("adversaires"):
@@ -134,9 +154,22 @@ def tour_de(data, n):
     return ""
 
 
+MARQUES = {"MP": "match-points", "IMP": "IMP"}
+
+
+def marque(data):
+    """La marque de la séance, "MP" (match-points) ou "IMP" : celle que la séance a gardée (session.marque, lue à
+    l'import ou choisie sur la page Séance), sinon devinée : match-points à plus de deux tables, IMP sinon (un
+    entraînement, un match à deux tables)."""
+    s = data.get("session") or {}
+    if s.get("marque") in MARQUES: return s["marque"]
+    tables = s.get("tables") or max((len(d.get("tables") or []) for d in data.get("donnes") or []), default=0)
+    return "MP" if tables > 2 else "IMP"
+
+
 def tour_infos(data, n):
     """Le tour de la donne n : {"tour": 1, "contre": "AP/EK", "relais": False}, ou None si le mouvement ne la place pas."""
-    for t in ((data.get("session") or {}).get("mouvement") or {}).get("tours") or []:
+    for t in mouvement(data).get("tours") or []:
         if n in t["donnes"]:
             relais = bool(t.get("relais") or not t.get("adversaires"))
             contre = "" if relais else _paire(data, t["adversaires"]).split(" (")[0]
@@ -156,7 +189,7 @@ def ordre_des_donnes(data, mes_paires):
     """Les donnes dans l'ordre où vos paires les ont jouées (tour après tour, le relais à sa place), puis les autres
     par numéro ; par numéro si la séance ne décrit pas votre parcours."""
     donnes = sorted(data.get("donnes", []), key=lambda d: d["n"])
-    m = (data.get("session") or {}).get("mouvement") or {}
+    m = mouvement(data, mes_paires)
     if str(m.get("paire", "")) not in {str(x) for x in mes_paires}: return donnes
     rang = {n: k for k, n in enumerate(n for t in m.get("tours") or [] for n in t["donnes"])}
     return sorted(donnes, key=lambda d: (rang.get(d["n"], len(rang)), d["n"]))

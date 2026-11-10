@@ -21,11 +21,17 @@ assert coach.conseil_defense(d, "4♠", "S", {"joueur": "O", "carte": "♦R"}, e
 d13 = dict(n=13, donneur="N", vul="Personne", mains=dict(N="AD6 RV963 A7 764", E="97 8 RD8432 AR82", S="8532 ADX72 95 DV", O="RVX4 54 VX6 X953"))
 x = coach.conseil_defense(d13, "4♥", "N", {"joueur": "E", "carte": "♣A"}, ["1♥", "2♦", "3♥", "passe", "4♥", "passe", "passe", "passe"])
 assert "ne pas jouer un troisième ♣" in x and "le ♦R" in x, x
+# 05/11 donne 28 : Ouest entame ♥A de ARX83 contre 4♠ ; sa seule séquence est la couleur d'entame : la continuer,
+# jamais « changer pour l'♥A » qu'il vient de jouer
+d28 = dict(n=28, donneur="O", vul="N-S", mains=dict(N="AV3 V74 ARD752 R", E="R97 952 84 VX942", S="DX8642 D6 VX3 A6", O="5 ARX83 96 D8753"))
+x = coach.conseil_defense(d28, "4♠", "S", {"joueur": "O", "carte": "♥A"},
+                          ["passe", "1♦", "passe", "1♠", "passe", "3♦", "passe", "3♠", "passe", "4♠", "passe", "passe", "passe"])
+assert "Changer tout de suite pour l'♥A" not in x and "Continuer ♥" in x, x
 # les enchères : une décision serrée du moteur, dite en une phrase
 r = {"explications": [("N", "2♦", "19 H : 11+ H, forcing. 2♣ (11+ H, forcing) convenait aussi, mais vient après dans le système")]}
 assert coach.conseil_encheres(r) == "Décision serrée (l'autre enchère vient après dans le système) : Nord 2♦ plutôt que 2♣ (11+ H, forcing)."
 assert coach.conseil_encheres({"explications": [("N", "passe", "rien")]}) == ""
-# l'analyse de l'expert, affichée avec le conseil du coach avant son avis, seulement pour le même contrat et la même entame
+# l'analyse de l'expert, affichée avec le conseil du coach avant son avis, sur toutes les donnes (un seul passage chez Claude)
 import rapport
 from build_pdf import MARQUE_AVIS, MARQUE_COACH
 grille = [["–", "–", "–", "1♠"], ["passe", "4♠", "passe", "passe"], ["passe", "", "", ""]]   # donneur Sud : 4♠ par Sud
@@ -34,7 +40,12 @@ exp = {"enc": grille, "entame": {"joueur": "O", "carte": "♦R"}, "plan": "Plan.
 x = rapport.coach_pour_expert(dict(d, donneur="S"), exp, std)
 assert x["plan"] == MARQUE_COACH + " Coach." + MARQUE_AVIS + " Expert." and x["defense"] == "Déf." and exp["plan"].endswith("Expert.")   # le plan : tout au coach
 assert rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std)["enc_coach"] == grille
-assert MARQUE_COACH not in rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std)["plan"]
+assert rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std)["plan"].startswith(MARQUE_COACH + " Coach.")
+# un autre contrat (ici 3♠) : le coach parle du sien, nommé en tête ; un plan écrit par l'expert lui-même reste tel quel
+autre = [["–", "–", "–", "1♠"], ["passe", "3♠", "passe", "passe"], ["passe", "", "", ""]]
+y = rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, enc=autre, plan=MARQUE_AVIS + " Le coach joue 4♠."), std)
+assert y["plan"] == MARQUE_COACH + " <i>Pour 4♠ par Sud :</i> Coach." + MARQUE_AVIS + " Le coach joue 4♠.", y["plan"]
+assert rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, enc=autre), std)["plan"] == exp["plan"]
 print("ok")
 # le % du contrat recommandé, joué face aux tables : celles qu'il bat, plus la moitié de celles qu'il égale
 from comparer import pct_face_aux_tables

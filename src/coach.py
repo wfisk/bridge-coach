@@ -131,6 +131,7 @@ def conseil_defense(d, contrat, decl, entame, encheres):
     phrases = [f"{NOMS[g]} compte : le déclarant {_pts(p, decl)}, {NOMS[part]} {_pts(p, part)}."]
     # la couleur d'entame : après les levées de tête, le mort coupe-t-il ?
     tetes = _tete(s_moi[c0])
+    coupe = atout and c0 != atout and s_mort.get(atout) and len(s_mort[c0]) <= tetes   # rejouer l'entame offrirait une coupe
     if atout and c0 != atout and s_mort.get(atout) and 0 < len(s_mort[c0]) <= tetes:
         cartes = " et ".join(f"{c0}{r}" for r in s_moi[c0][:len(s_mort[c0])])
         phrases.append(f"Après {cartes}, ne pas jouer un {'troisième' if len(s_mort[c0]) == 2 else 'autre'} {c0} : le mort coupe.")
@@ -155,13 +156,17 @@ def conseil_defense(d, contrat, decl, entame, encheres):
         phrases.append(f"Le mort a {NOMBRES.get(n, n).replace('une', 'un') if n < 5 else n} {jeu.NOM_C[longue]} : une fois "
                        f"affranchis, ils donneront {'une défausse' if not atout or n == 4 else 'des défausses'} au déclarant ; "
                        "la défense doit prendre ses levées avant.")
-        sequences = [c for c in COULEURS if c not in (atout, longue) and _sequence(s_moi[c])
-                     and not any(h in s_mort[c] for h in "ARDV"[:"ARDV".index(_sequence(s_moi[c]))])]
-        if c0 in sequences and len(sequences) > 1: sequences.remove(c0)
+        sequences = [c for c in COULEURS if c not in (atout, longue, c0) and _sequence(s_moi[c])   # jamais la couleur
+                     and not any(h in s_mort[c] for h in "ARDV"[:"ARDV".index(_sequence(s_moi[c]))])]   # d'entame (05/11)
         if sequences:
             c = max(sequences, key=lambda c: len(s_moi[c]))
             h = _sequence(s_moi[c]); h2 = "ARDVX"["ARDV".index(h) + 1]
-            phrases.append(f"Changer tout de suite pour {ART[h]}{c}{h}, pour affranchir {ART[h2] if h2 != 'X' else 'le '}{c}{h2} avant.")
+            if h == "A":                                   # l'as et le roi : deux levées à prendre, rien à affranchir
+                phrases.append(f"Changer tout de suite pour {ART[h]}{c}{h} et {ART[h2]}{c}{h2}, à encaisser avant.")
+            else:
+                phrases.append(f"Changer tout de suite pour {ART[h]}{c}{h}, pour affranchir {ART[h2] if h2 != 'X' else 'le '}{c}{h2} avant.")
+        elif _sequence(s_moi[c0]) and not coupe:           # la seule séquence est celle d'entame : la continuer
+            phrases.append(f"Continuer {c0} à chaque prise de main, pour faire ses levées avant.")
         else:
             phrases.append("Encaisser ses levées dès que possible.")
     elif not atout: pass                                   # à SA, la longue d'entame a déjà dit le plan

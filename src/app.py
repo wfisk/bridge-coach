@@ -555,6 +555,22 @@ def page_seance(data, c):
         for k, v in lignes:
             if v:
                 ui.label(k).classes("text-gray-600"); ui.label(v).classes("break-all")
+        ui.label("Marque").classes("text-gray-600")          # lue à l'import, devinée sinon ; corrigeable ici
+        with ui.row().classes("items-center gap-3"):
+            choix_m = ui.toggle({"MP": "Match-points", "IMP": "IMP"}, value=moi.marque(data)).props("dense no-caps")
+            devinee = ui.label("devinée d'après le nombre de tables").classes("text-sm text-gray-500")
+            devinee.set_visibility(not s.get("marque"))
+            choix_m.on_value_change(lambda e: (changer_marque(c, e.value), devinee.set_visibility(False)))
+
+
+def changer_marque(c, marque):
+    """La marque choisie sur la page Séance : gardée dans le .bc.json (session.marque, marque_choisie : un réimport la
+    garde) ; les rapports la suivent à la prochaine création."""
+    data = json.load(open(c, encoding="utf-8"))
+    if (data.get("session") or {}).get("marque") == marque: return
+    data["session"].update(marque=marque, marque_choisie=True)
+    edition.enregistrer(c, data)
+    ui.notify(f"Marque : {moi.MARQUES[marque]}. Les rapports la suivront à la prochaine création.")
     tours = moi.parcours(data)
     if tours:                                              # le mouvement : vos tours, tables et adversaires
         ui.label(f"Parcours de {moi.qui_parcourt(data)}").classes("text-base font-bold mt-4")
@@ -805,15 +821,22 @@ Les règles, à suivre strictement :
    Ce qu'il faut ajouter : une erreur de compte, une meilleure ligne, l'ordre de jeu, la main dangereuse, la défense qui
    bat la ligne (vérifie ton plan contre ta propre défense), un laisser-passer, une élimination, un squeeze ou un coup.
    Ne répète pas ce que le coach a dit. S'il a raison sur tout : « Le coach a raison. » suffit, avec au besoin le détail
-   qui compte. Seule exception : quand ton contrat n'est pas celui du programme, le coach ne parle pas de ta donne ;
-   écris alors toi-même le plan (le compte, l'ordre de jeu, les impasses) avant ton avis.
+   qui compte. Quand ton contrat n'est pas celui du programme (même joué par l'autre camp), garde quand même le conseil du
+   coach tel quel : il parle de son contrat à lui. Ton avis le dit d'abord (« Le coach joue 4♥ ; je joue 3♥ : … »), juge
+   ce qui reste vrai dans son conseil, puis donne seulement ce qui change pour ton contrat : le compte, l'ordre de jeu,
+   l'impasse ou le coup qui compte, en quelques phrases ; jamais un plan complet qui répète le sien.
 6. « notes » : l'avis de l'expert sur les enchères. « comm » : le commentaire après coup ; le double mort y est
    permis, pour dire ce que le contrat donne et ce qui aurait marché.
-7. Les joueurs : par leurs initiales seulement (« AB/CD »), jamais leur nom ; aucun nom de club. Les cartes en
-   français : A R D V X ; les couleurs ♠ ♥ ♦ ♣ ; les sièges N, S, E, O.
+7. La marque de la séance est en « IMP » ou en « match-points » (« seance.session.marque » : {marque}). Juge les
+   enchères et le jeu pour cette marque : en match-points, une levée de mieux compte autant qu'une manche, 3SA vaut
+   souvent mieux que 4 en majeure, contrer une partielle adverse peut payer ; en IMP, assurer le contrat et demander la
+   manche passent d'abord (le jeu de sécurité, les manches vulnérables).
+8. Les joueurs : par leurs initiales seulement (« AB/CD »), jamais leur nom ; aucun nom de club. Les cartes en
+   français : A R D V X ; les couleurs ♠ ♥ ♦ ♣, toujours devant les cartes (« ♣AR », « ♠R », jamais « AR♣ ») ;
+   les sièges N, S, E, O.
 
 Le format du fichier rendu (celui de « exemple_analyse ») :
-{{"titre_pied": "Analyse des donnes – séance du {date} – Système SEF, marque IMP",
+{{"titre_pied": "Analyse des donnes – séance du {date} – Système SEF, marque {marque}",
  "systeme": "sef-2024",
  "note_encheres": "Enchères recommandées choisies à la table (sans double mort).",
  "donnes": {{"1": {{"enc": [["–", "1♠", "passe", "2♦"], ["passe", "…", "…", "…"]],
@@ -844,6 +867,7 @@ def seance_pour_claude(data):
     titre ; les joueurs par leurs initiales seulement (les noms complets restent sur l'ordinateur)."""
     out = {k: v for k, v in data.items() if k not in ("analyses", "source", "joueurs", "session")}
     out["session"] = {k: v for k, v in data.get("session", {}).items() if k in ("date", "tables", "sections", "mitchell")}
+    out["session"]["marque"] = moi.MARQUES[moi.marque(data)]       # IMP ou match-points : l'expert juge pour cette marque
     out["joueurs"] = {k: [{"initiales": j.get("initiales", "")} for j in v] for k, v in data.get("joueurs", {}).items()}
     return out
 
@@ -856,7 +880,7 @@ def preparer_pour_claude(c):
     nom = nom_pour_claude(data)
     dossier = os.path.join(rapport.DONNEES, "pour-claude", rapport.nom_seance(c))
     shutil.rmtree(dossier, ignore_errors=True); os.makedirs(dossier)
-    consigne = CONSIGNE.format(nom=nom, date=data.get("session", {}).get("date", ""))
+    consigne = CONSIGNE.format(nom=nom, date=data.get("session", {}).get("date", ""), marque=moi.MARQUES[moi.marque(data)])
     documents = {}
     for src, dst in POUR_CLAUDE:
         f = os.path.join(rapport.RACINE, src)
@@ -1042,9 +1066,10 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
     with ui.row().classes("w-full no-wrap items-start gap-6"):
         if expert and a.get("enc_coach") and a["enc_coach"] != a["enc"]:   # le coach enchérit autrement : ses enchères aussi
             from build_pdf import AVIS
-            ui.html(f"<div><div style='color:{AVIS['expert'][1]};font-weight:700'>✦ L'expert</div>{grille_html(a['enc'], qui='reco')}"
-                    f"<div style='color:{ENCRE};font-weight:700;margin-top:10px;white-space:nowrap'>{CASQUETTE_SVG} Le coach</div>"
-                    f"{grille_html(a['enc_coach'], qui='autre')}</div>", sanitize=False).classes("shrink-0")
+            ui.html(f"<div><div style='color:{ENCRE};font-weight:700;white-space:nowrap'>{CASQUETTE_SVG} Le coach</div>"   # le coach
+                    f"{grille_html(a['enc_coach'], qui='autre')}"                                                         # d'abord
+                    f"<div style='color:{AVIS['expert'][1]};font-weight:700;margin-top:10px'>✦ L'expert</div>{grille_html(a['enc'], qui='reco')}</div>",
+                    sanitize=False).classes("shrink-0")
         else: ui.html(grille_html(a["enc"], qui="reco"), sanitize=False).classes("shrink-0")
         if notes:
             if a.get("auto") or version == "Standard": html(avec_avis_html(notes))   # avec le conseil du coach
@@ -2123,7 +2148,7 @@ def page():
 
     def copier_consigne(c):
         date = (lire_seance(c) or {}).get("session", {}).get("date", "")
-        ui.clipboard.write(CONSIGNE.format(nom=nom_pour_claude(lire_seance(c)), date=date))
+        ui.clipboard.write(CONSIGNE.format(nom=nom_pour_claude(lire_seance(c)), date=date, marque=moi.MARQUES[moi.marque(lire_seance(c) or {})]))
         ui.notify("Consigne copiée : collez-la dans la conversation avec Claude.")
 
     def importer_expert_de(chemin):

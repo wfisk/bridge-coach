@@ -462,7 +462,8 @@ def ecrire(donnes, themes, dossier=None):
     """Le fichier Bridge Coach (.bc.json) et le .pbn à côté ; renvoie le chemin du .bc.json."""
     import rapport
     now = datetime.datetime.now()
-    data = dict(session=dict(date=now.strftime("%d/%m/%Y"), tables=0, sections=["A"], mitchell=False, themes=list(themes)),
+    data = dict(session=dict(date=now.strftime("%d/%m/%Y"), tables=0, sections=["A"], mitchell=False, themes=list(themes),
+                                marque="IMP"),
                 donnes=donnes, paires={}, alertes=[])
     rapport.preparer_donnees()
     sortie = dossier or os.path.join(rapport.SEANCES, now.strftime("%Y-%m"))

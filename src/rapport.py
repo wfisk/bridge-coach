@@ -98,24 +98,55 @@ def encheres_auto(d):
     return out
 
 
+def conseil_pour(d, enc, entame=None):
+    """Le conseil du coach (plan et défense) pour un autre contrat que le sien : celui des enchères enc (grille Ouest,
+    Nord, Est, Sud, comme dans une analyse), avec l'entame donnée ({"joueur", "carte"}) ou celle des règles. Pour que
+    l'expert commente toujours le coach, même quand il ne joue pas le contrat du programme (l'utilisateur, 2026-11-10).
+    {} pour une donne passée ou incomplète."""
+    import coach
+    from build_pdf import MARQUE_COACH
+    from comparer import final, GRID
+    if not d.get("mains"): return {}
+    c, decl, dbl = final(enc, d["donneur"])
+    if c == "passe" or not decl: return {}
+    cells = [x for row in enc for x in row]
+    appels = [x for x in cells[GRID.index(d["donneur"]):] if x not in ("", "–")]
+    contrat = c + "X" * dbl
+    ed = entame_et_defense(d, contrat, decl, appels)
+    lead, pourquoi = ed["entame"], ed["pourquoi"]
+    if entame and entame.get("carte") and entame.get("carte") != (lead or {}).get("carte"):
+        lead, pourquoi = entame, ""                         # l'entame de l'expert : la raison des règles ne vaut plus
+    defense = " ".join(x for x in (pourquoi, coach.conseil_defense(d, contrat, decl, lead, appels)) if x)
+    plan = coach.redaction_plan(d, contrat, decl, lead, appels)
+    return {k: MARQUE_COACH + " " + v for k, v in (("plan", plan), ("defense", defense)) if v}
+
+
 def coach_pour_expert(d, a_exp, a_std):
     """L'analyse de l'expert d'une donne, avec le conseil du coach (pris dans l'analyse standard) avant chaque avis de
-    l'expert, en plan et en défense : seulement si l'expert joue le même contrat, du même déclarant, avec la même entame,
-    puisque le coach parle de ceux-là. L'analyse rangée ne change pas : c'est pour l'afficher."""
-    from build_pdf import MARQUE_AVIS, MARQUE_COACH, decouper_avis
+    l'expert, en plan et en défense, même quand l'expert joue un autre contrat (l'utilisateur, 2026-11-10 : un seul
+    passage chez Claude) : le coach parle alors du sien, nommé en tête (« Pour 4♥ par Nord : »), et l'expert le commente.
+    Un plan que l'expert a écrit lui-même (analyses d'avant) est gardé tel quel. L'analyse rangée ne change pas."""
+    from build_pdf import MARQUE_AVIS, MARQUE_COACH, SEAT, decouper_avis
     from comparer import final
     if not (a_exp and a_std and a_exp.get("enc") and a_std.get("enc")): return a_exp
     out = dict(a_exp, enc_coach=a_std["enc"])              # les enchères du coach, montrées à côté quand elles diffèrent
-    meme = final(a_exp["enc"], d["donneur"]) == final(a_std["enc"], d["donneur"]) and \
-        (a_exp.get("entame") or {}).get("carte") == (a_std.get("entame") or {}).get("carte")
-    if not meme: return out
+    ce, cs = final(a_exp["enc"], d["donneur"]), final(a_std["enc"], d["donneur"])
+    autre = ce[:2] != cs[:2]                                # l'expert joue un autre contrat (même de l'autre camp)
     for k in ("plan", "defense"):
         coach = decouper_avis(a_std.get(k) or "")[1]
         texte = out.get(k) or ""
-        if not coach or not texte or "Le conseil du coach" in texte: continue
+        if not coach or not texte or "Le conseil du coach" in texte:
+            continue
         prog, _, avis = texte.partition(MARQUE_AVIS)
-        prog = ""                                          # le plan et la défense du programme sont tout entiers dans le coach
-        out[k] = prog + MARQUE_COACH + " " + coach + (MARQUE_AVIS + avis if avis else "")
+        if prog.strip() and autre:                         # une analyse d'avant : l'expert y a écrit son propre plan ; gardé
+            continue
+        out[k] = MARQUE_COACH + " " + coach + (MARQUE_AVIS + avis if avis else "")
+    if autre:                                              # le coach parle de son contrat : on le nomme en tête de son conseil
+        c, decl = cs[0] + "X" * cs[2], cs[1]
+        for k in ("plan", "defense"):
+            t = out.get(k) or ""
+            if decl and MARQUE_COACH in t and "<i>Pour " not in t:
+                out[k] = t.replace(MARQUE_COACH, MARQUE_COACH + f" <i>Pour {c} par {SEAT[decl]} :</i>", 1)
     return out
 
 
@@ -503,8 +534,12 @@ def main():
             for k, v in data["joueurs"].items():
                 for j, w in zip(v, avant.get(k, [])):
                     if w.get("nom") and not j.get("nom"): j["nom"] = w["nom"]
-            ans = json.load(open(donnes, encoding="utf-8")).get("analyses")
+            ancien = json.load(open(donnes, encoding="utf-8"))
+            ans = ancien.get("analyses")
             if ans: data["analyses"] = ans                 # réimport : les analyses restent
+            s_av = ancien.get("session") or {}
+            if s_av.get("marque_choisie"):                 # réimport : la marque choisie sur la page Séance reste
+                data["session"].update(marque=s_av["marque"], marque_choisie=True)
     else:
         entete(data, "inconnue", origine)
     if os.path.exists(fichier("-paires.json")):           # feuille de route : initiales (et noms) à part

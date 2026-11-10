@@ -6,6 +6,7 @@ import pbn
 
 PBN = """% PBN 2.1
 [Event "Tournoi du club"]
+[Scoring "MP"]
 [Date "2026.11.07"]
 [Board "1"]
 [Dealer "N"]
@@ -47,4 +48,10 @@ try:
     pbn.mains_de("N:AKQ.xx.x.x - - -"); assert False
 except pbn.ErreurPBN:
     pass
+assert s["session"]["marque"] == "MP"
+# la marque de la séance : lue, sinon devinée d'après le nombre de tables
+import moi
+assert moi.marque({"session": {"marque": "IMP", "tables": 9}}) == "IMP"
+assert moi.marque({"session": {"tables": 9}}) == "MP" and moi.marque({"session": {"tables": 2}}) == "IMP"
+assert moi.marque({"session": {}, "donnes": []}) == "IMP"
 print("ok")

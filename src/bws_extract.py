@@ -332,8 +332,18 @@ def construire(T):
     s = T["Session"][0] if T["Session"] else {}
     date = s.get("Date").strftime("%d/%m/%Y") if s.get("Date") else ""
     ntables = len({(sec, t) for b in RES for sec, t in RES[b]})
-    return dict(session=dict(date=date, tables=ntables, sections=[lettres.get(x) or str(x) for x in sections],
-                             mitchell=any(mitchell.values())),
+    session = dict(date=date, tables=ntables, sections=[lettres.get(x) or str(x) for x in sections],
+                   mitchell=any(mitchell.values()))
+    rondes = []                         # le mouvement entier : à chaque tour, qui joue où, avec quelles donnes ; le parcours
+    for x in sorted(T.get("RoundData", []), key=lambda x: (x["Round"], x["Section"], x["Table"])):   # de chaque paire en sort
+        if x.get("NSPair") is None or x.get("EWPair") is None or x.get("LowBoard") is None: continue    # (moi.mouvement)
+        rondes.append(dict(tour=x["Round"], table=str(etiq(x["Section"], x["Table"])), ns=cle(x["Section"], x["NSPair"], "NS"),
+                           eo=cle(x["Section"], x["EWPair"], "EO"), donnes=list(range(x["LowBoard"], x["HighBoard"] + 1))))
+    if rondes: session["rondes"] = rondes
+    types = {r.get("ScoringType") for r in T.get("Section", []) if r.get("ScoringType")}
+    if types:                           # Bridgemate : 1 = match-points ; les autres valeurs (IMP au datum, cross-IMP…) : IMP
+        session["marque"] = "MP" if types == {1} else "IMP"
+    return dict(session=session,
                 donnes=donnes, paires={str(k): dict(v, nom=nom(k)) for k, v in sorted(paires.items(), key=str)},
                 alertes=alertes)
 

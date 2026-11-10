@@ -69,7 +69,7 @@
 <h3>L'onglet Donnes</h3>
 <p>Il montre la séance ouverte. La liste de gauche donne :</p>
 <ul>
-  <li><b>Séance</b> : la date, d'où elle vient (Bridgemate, feuille de route, entraînement), le nombre de donnes et de tables, et les alertes de l'import s'il y en a eu ;</li>
+  <li><b>Séance</b> : la date, d'où elle vient (Bridgemate, feuille de route, entraînement), le nombre de donnes et de tables, la <b>marque</b> (match-points ou IMP), et les alertes de l'import s'il y en a eu ;</li>
   <li><b>Joueurs</b> : chaque paire, avec les initiales et le nom complet quand il est connu ;</li>
   <li><b>Donne 1</b>, <b>Donne 2</b>… : les quatre mains, le donneur et la vulnérabilité, le résultat de chaque table et ses enchères, telles que les Bridgemate les ont enregistrées.</li>
 </ul>
@@ -156,15 +156,18 @@
 <p>Le double mort et le par sont dans la barre de droite : fond vert là où une manche se gagne, vert plus soutenu pour un chelem, et un cadre autour du contrat du par.</p>
 <p>Dans le plan de jeu, « Essai à la table » est une estimation : le programme joue la donne sur des mains adverses imaginées, sans voir les vraies, face à la meilleure défense. Le pourcentage est un ordre de grandeur ; le mot qui l'accompagne compte davantage.</p>
 
+<p>La <b>marque</b> vient du fichier importé : Bridgemate l'enregistre, un PBN peut la donner, les résultats de la FFB sont en match-points, les entraînements en IMP. Sinon elle est devinée : match-points à plus de deux tables, IMP à deux. Si elle est fausse, changez-la sur la page <b>Séance</b> : les rapports et l'analyse de l'expert la suivent.</p>
+
 <h3>Les rapports</h3>
 <p>Dans l'onglet <b>Rapports</b>, page <b>Créer les rapports</b> : choisissez les options, puis <b>Créer les rapports</b>. Ils reprennent l'analyse enregistrée, en une minute environ, sans la refaire ; la page <b>Rapports de la séance</b> les liste ensuite.</p>
 <dl>
   <dt>Analyse</dt>
-  <dd>Enchères recommandées, entame, plan de jeu et défense, avec <b>le conseil du coach</b> (le programme), sous sa casquette. Quand Claude a rédigé l'analyse de la séance et que l'option <b>Inclure l'avis de l'expert</b> est cochée, c'est son analyse, avec <b>l'avis de l'expert</b> sur fond vert : dans le plan de jeu et la défense, le conseil du coach à gauche et l'avis de l'expert à droite, en paragraphes courts.</dd>
+  <dd>Enchères recommandées, entame, plan de jeu et défense, avec <b>le conseil du coach</b> (le programme), sous sa casquette. Quand Claude a rédigé l'analyse de la séance et que l'option <b>Inclure l'avis de l'expert</b> est cochée, c'est son analyse, avec <b>l'avis de l'expert</b> sur fond vert : dans le plan de jeu et la défense, le conseil du coach à gauche et l'avis de l'expert à droite, en paragraphes courts. L'expert commente toujours le coach, sans refaire son plan ; quand il joue un autre contrat, le conseil du coach dit de quel contrat il parle (« Pour 4♥ par Nord : ») et l'expert donne seulement ce qui change pour le sien.</dd>
   <dt>Comparaison</dt>
   <dd>Seulement si une analyse de l'expert existe pour la séance : le Coach (le programme) face à l'Expert (Claude), donne par donne.</dd>
 </dl>
 <p>Les options : <b>Vous êtes</b> (votre table surlignée), <b>Les donnes dans l'ordre où vous les avez jouées</b> (quand la séance décrit votre parcours), <b>Inclure l'avis de l'expert</b> (coché d'office) et <b>Ajouter une page avec le nom des joueurs</b> (sinon, les joueurs sont désignés par leurs initiales).</p>
+<p>Quand vous avez choisi <b>Vous êtes</b>, le rapport s'ouvre sur <b>Vous face au champ</b> : une ligne par donne, groupées par tour avec vos adversaires. En match-points, la barre va de 50 % (la moyenne des tables) à votre pourcentage ; en IMP, de 0 (le datum) à vos IMP. En rouge ce que vous perdez, en bleu ce que vous gagnez ; la boîte grise montre le champ.</p>
 <p>À la fin de chaque rapport, votre parcours puis la synthèse : une ligne par donne, le contrat recommandé, combien de tables l'ont joué, plus haut (rouge) ou plus bas (bleu), ou l'ont laissé à l'autre camp, et votre contrat. Cliquez sur un contrat recommandé pour aller à ses enchères, sur un nombre pour le tableau des résultats de la donne. Les donnes créées n'ayant pas été jouées, leur rapport n'a pas de résultats des tables.</p>
 
 <h2>Installation et réglages</h2>

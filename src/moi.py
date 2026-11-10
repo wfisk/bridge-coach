@@ -134,6 +134,13 @@ def tour_de(data, n):
     return ""
 
 
+def numero_tour(data, n):
+    """Le numéro du tour où la donne n se joue, ou None si le mouvement ne la place pas."""
+    for t in ((data.get("session") or {}).get("mouvement") or {}).get("tours") or []:
+        if n in t["donnes"]: return t["tour"]
+    return None
+
+
 def ordre_joue():
     """L'option de Réglages : les rapports présentent les donnes dans l'ordre où vous les avez jouées."""
     try:

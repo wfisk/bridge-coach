@@ -346,11 +346,12 @@ def chaine(D, x0, y, texte, police, taille, couleur=None, ancre="start"):
         x += stringWidth(morceau, police, taille)
 
 
-def page_champ(donnes, an, largeur=17.4*cm):
+def page_champ(donnes, an, largeur=17.4*cm, tours=None):
     """Vous face au champ : sur chaque donne, 50 % est la moyenne des tables ; la barre va de 50 % à votre pourcentage,
     à gauche ce que vous perdez face au champ (orange plein), à droite ce que vous gagnez (orange pâle), l'écart écrit à
     droite en points ; la boîte du champ derrière, pour situer l'écart. Puis la séance, et les donnes qui coûtent le plus.
-    Les pertes en rouge, les gains en bleu (PERTE_C, GAIN_C : l'utilisateur, 2026-11-10)."""
+    Les pertes en rouge, les gains en bleu (PERTE_C, GAIN_C : l'utilisateur, 2026-11-10). tours : {donne: numéro du tour} ;
+    les rayures suivent alors les tours (les donnes jouées contre la même paire sur le même fond), le tour écrit à gauche."""
     from reportlab.graphics.shapes import Drawing, Rect, Line, String
     L = [r for r in lignes_ensemble(donnes, an)]
     jouees = [r for r in L if r["vous"] is not None]
@@ -393,9 +394,17 @@ def page_champ(donnes, an, largeur=17.4*cm):
         if r.get("texte_vous"): chaine(D, C0, y - 2.6, r["texte_vous"], police, 7.8)   # ♥ ♦ en rouge
         if r.get("texte_meilleur"): chaine(D, C2, y - 2.6, r["texte_meilleur"], police, 7.8)
 
+    tours = tours or {}
+    par_tour = any(tours.get(r["n"]) for r in L)
+    bande, avant = 0, object()
     for k, r in enumerate(L):
         y = Y - h * (k + .5)
-        if k % 2: D.add(Rect(0, y - h / 2, largeur, h, fillColor=colors.HexColor("#f7f8f9"), strokeColor=None))
+        t = tours.get(r["n"]) if par_tour else k
+        if t != avant and k: bande += 1
+        if bande % 2: D.add(Rect(0, y - h / 2, largeur, h, fillColor=colors.HexColor("#f6f7f9"), strokeColor=None))   # plus pâle que les boîtes du champ
+        if par_tour and t and t != avant:                   # le tour, une fois, à gauche de sa première donne
+            D.add(String(0, y - 2.6, f"T{t}", fontName="DV", fontSize=7, fillColor=colors.HexColor(GREY)))
+        avant = t
         rangée(y, str(r["n"]), r)
     if seance:
         ys = Y - h * len(L) - ecart
@@ -408,7 +417,9 @@ def page_champ(donnes, an, largeur=17.4*cm):
     return [Paragraph("Vous face au champ", S_title),
             Paragraph(txt("Sur chaque donne, 50 % est la moyenne des tables. La barre va de 50 % à votre pourcentage : à "
                           "gauche, en rouge, ce que vous perdez face au champ ; à droite, en bleu, ce que vous gagnez. "
-                          "À droite, votre pourcentage, votre contrat et celui de la meilleure table. " + phrase), S_sub),
+                          "À droite, votre pourcentage, votre contrat et celui de la meilleure table. "
+                          + ("Les bandes regroupent les donnes d'un même tour (T1, T2…), jouées contre la même paire. "
+                             if any((tours or {}).get(r["n"]) for r in L) else "") + phrase), S_sub),
             Spacer(1, 8), D, PageBreak()]
 
 
@@ -595,19 +606,87 @@ def bloc_avis(texte, largeur, style, qui="expert"):
         return Paragraph(signe + " " + txt(marque[5:] + " " + texte.strip()), style)
     tb = Table([[Paragraph(signe + " " + txt(marque[5:] + " " + texte.strip()), style)]], colWidths=[largeur])
     tb.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(fond)),
-                            ("LINEBEFORE", (0, 0), (0, -1), 2, colors.HexColor(trait)), ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                            ("LINEBEFORE", (0, 0), (0, -1), 2 if qui == "expert" else 0, colors.HexColor(trait if qui == "expert" else fond)), ("LEFTPADDING", (0, 0), (-1, -1), 6),
                             ("RIGHTPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
     tb.hAlign = "LEFT"
     return tb
 
 
+S_avis = st("av", fontSize=9.4, leading=13.2, firstLineIndent=12, spaceAfter=3.5)   # aligné à gauche, 1re ligne en retrait
+S_titre_avis = st("ta", fontName="DVB", fontSize=9.2, leading=12.5, spaceAfter=2)
+NOUVEAU_PARAGRAPHE = {   # les phrases du coach qui ouvrent un paragraphe, et le groupe qu'elles commencent
+    "chance": r"(Il faut |Contre une bonne défense)",
+    "encheres": r"(Les enchères donnent |L'impasse à |Les impasses à |(Le |La |L')[♠♥♦♣]?[^ ]{0,3}[♠♥♦♣][ARDV] est plutôt|Main dangereuse)",
+    "compte": r"(Nord|Sud|Est|Ouest|[NSEO]) compte :"}
+
+
+PARAGRAPHE_LONG = 150   # un paragraphe se ferme à la fin de la phrase qui lui fait passer cette longueur
+FORCE = r"(Ordre :|Le coach |Si |Sinon|En défense|Ensuite)"
+COURT = 60             # une idée nouvelle n'ouvre un paragraphe qu'après un paragraphe de cette longueur (sauf « Décision serrée »)
+
+
+def paragraphes(texte):
+    """Un avis en paragraphes courts, coupés à l'affichage (l'analyse rangée ne change pas) : au début des phrases qui
+    ouvrent une idée (NOUVEAU_PARAGRAPHE, FORCE) quand le paragraphe a déjà COURT caractères, et sinon dès qu'un paragraphe passe PARAGRAPHE_LONG caractères."""
+    phrases = re.split(r"(?<=[.)])\s+(?=[A-ZÀÂÉÈÊÎÔÛ])", texte.strip())
+    out = []
+    for ph in phrases:
+        neuf = any(re.match(m, ph) for m in list(NOUVEAU_PARAGRAPHE.values()) + [FORCE])
+        if out and ((neuf and len(out[-1]) >= COURT) or ph.startswith("Décision serrée") or len(out[-1]) >= PARAGRAPHE_LONG):
+            out.append(ph)
+        elif out: out[-1] += " " + ph
+        else: out.append(ph)
+    return out
+
+
+def colonne_avis(qui, texte, largeur):
+    """Un avis, son titre seul sur sa ligne puis ses paragraphes, première ligne en retrait ; l'expert dans son bloc vert."""
+    marque, trait, fond = AVIS[qui]
+    signe = (f"<img src='{CASQUETTE}' width='17' height='10.6' valign='-1.5'/>" if qui == "coach" and os.path.exists(CASQUETTE)
+             else f"<font color='{trait}'>✦</font>")
+    el = [Paragraph(signe + " " + marque[5:].replace(" :", ""), S_titre_avis)]
+    el += [Paragraph(txt(p_), S_avis) for p_ in paragraphes(texte)]
+    if fond is None: return el
+    tb = Table([[el]], colWidths=[largeur])
+    tb.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(fond)),
+                            ("LINEBEFORE", (0, 0), (0, -1), 2 if qui == "expert" else 0, colors.HexColor(trait if qui == "expert" else fond)), ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 6), ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]))
+    tb.hAlign = "LEFT"
+    return [tb]
+
+
+BANDE = "#f1f2f4"   # le fond gris pâle du plan de jeu, sur toute la largeur (l'utilisateur, 2026-11-10)
+
+
+def bande(elements, largeur=17.6*cm, deborde=6):
+    """Une section sur une bande gris pâle (BANDE), titre compris, qui déborde de deborde points de chaque côté pour
+    entourer un peu le bloc de l'expert (le cadre fait 17,6 cm, dont 6 points de marge de chaque côté). Un élément par ligne : la bande peut se couper entre deux pages."""
+    els = [e for e in elements if not isinstance(e, Spacer)]
+    tb = Table([[e] for e in els], colWidths=[largeur])   # la largeur du cadre : le texte reste aligné sur le reste
+    tb.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(BANDE)),
+                            ("LEFTPADDING", (0, 0), (-1, -1), deborde), ("RIGHTPADDING", (0, 0), (-1, -1), deborde),
+                            ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                            ("TOPPADDING", (0, 0), (0, 0), 0), ("BOTTOMPADDING", (0, -1), (-1, -1), deborde),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    tb.hAlign = "CENTER"
+    return tb
+
+
 def avec_avis(texte):
-    """Le texte du programme, puis le conseil du coach et l'avis de l'expert, chacun dans son bloc."""
+    """Le texte du programme, puis le conseil du coach et l'avis de l'expert (essai du 10/11/2026) : le coach à gauche,
+    l'expert à droite dans son bloc vert ; sans l'un des deux, l'autre prend toute la largeur."""
     prog, coach, expert = decouper_avis(texte)
     el = [Paragraph(txt(prog), S_body)] if prog.strip() else []   # le plan du coach n'a pas de texte avant son bloc
+    if coach and expert:
+        tb = Table([[colonne_avis("coach", coach, 8.3*cm), colonne_avis("expert", expert, 8.5*cm)]], colWidths=[8.5*cm, 8.65*cm])
+        tb.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                                ("RIGHTPADDING", (0, 0), (0, 0), 10), ("RIGHTPADDING", (1, 0), (1, 0), 0),
+                                ("TOPPADDING", (0, 0), (-1, -1), 2)]))
+        tb.hAlign = "LEFT"
+        return el + [Spacer(1, 3), tb, Spacer(1, 4)]
     for qui, avis in (("coach", coach), ("expert", expert)):
-        if avis: el += ([Spacer(1, 2)] if el else []) + [bloc_avis(avis, 17.4*cm, S_body, qui)]
-    return el
+        if avis: el += [Spacer(1, 3)] + colonne_avis(qui, avis, 17.4*cm)
+    return el + [Spacer(1, 4)]
 
 
 def annexe(d, expliquer=True):
@@ -745,7 +824,7 @@ def page(d, a, date, expliquer=True):
         if not expert:                                     # le programme : ses explications, puis le conseil du coach
             prog, coach, _ = decouper_avis(notes)
             droite = [Paragraph(txt(prog), S_notes)] + ([Spacer(1, 3), bloc_avis(coach, 8.4*cm, S_notes, "coach")] if coach else [])
-        else: droite = bloc_avis(notes, 8.4*cm, S_notes)        # l'expert : tout est son avis
+        else: droite = colonne_avis("expert", notes, 8.4*cm)[0]        # l'expert : tout est son avis
         gauche = bidding(a["enc"], 2.1*cm)
         if expert and a.get("enc_coach") and a["enc_coach"] != a["enc"]:   # le coach enchérit autrement : ses enchères aussi
             legende = lambda qui, t: Paragraph(f"<font color='{AVIS[qui][1] if qui == 'expert' else INK}'><b>{t}</b></font>", S_notes)
@@ -757,7 +836,7 @@ def page(d, a, date, expliquer=True):
                                   ("RIGHTPADDING", (0, 0), (0, 0), 10)]))
         el.append(side)
     if a.get("plan"):
-        el += [Paragraph("Plan de jeu", S_h)] + avec_avis(a["plan"])
+        el += [Spacer(1, 6), bande([Paragraph("Plan de jeu", S_h)] + avec_avis(a["plan"]))]
     if a.get("entame") or a.get("defense"):
         el.append(Paragraph("Entame et défense", S_h))
         if a.get("entame"):
@@ -971,7 +1050,7 @@ def main():
         doc._spans = {}
         doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
                                            onPage=footer, onPageEnd=suite)])
-        story = page_champ(donnes, an or {"donnes": {}})    # vous avez choisi « Vous êtes » : vous face au champ (la séance en
+        story = page_champ(donnes, an or {"donnes": {}}, tours={d["n"]: moi.numero_tour(data, d["n"]) for d in data["donnes"]})    # vous avez choisi « Vous êtes » : vous face au champ (la séance en
                                                             # un coup d'œil, page_ensemble, essayée puis écartée : l'utilisateur)
         for k, d in enumerate(donnes):
             story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)

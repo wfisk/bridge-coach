@@ -597,7 +597,6 @@ def main():
                     provisoire] + FICHIER_NOMS, check=True)
     remplacer(provisoire, pdf("comparaison"))
     if os.path.exists(pdf("diff")): os.remove(pdf("diff"))      # l'ancien nom de la comparaison
-    subprocess.run([sys.executable, "-I", "-X", "utf8", os.path.join(ICI, "bilan.py")])   # toutes les séances : pas bloquant
 
 
 def provisoire_json(x):

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Bilan des enchères sur toutes les séances : où le Standard perd des IMP face à l'Expert.
+"""Bilan des enchères sur toutes les séances : où le Coach perd des IMP face à l'Expert. Un outil pour travailler le
+moteur d'enchères : il se lance à la main, ni l'application ni rapport.py ne le font.
 
 Usage : .venv/bin/python -I src/bilan.py [sortie.pdf]      (par défaut rapports/bilan-encheres.pdf)
 

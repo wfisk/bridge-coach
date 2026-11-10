@@ -77,9 +77,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         switches to the Rapports tab), then each deal's analysis laid out like its PDF page (page_analyse: title, diagramme_html with the lead marks of build_pdf.marques_entame and the vulnerability compass, Résultats à la table as the rank line, the recommended contract's double-dummy line and the full table folded in a ui.expansion (tableau_resultats, shared with Donnes; hearts and diamonds red through a v-html slot), the recommended auction beside its notes, expert text in the green ✦ block, plan, lead and defence, comment, cartes vues), the Expert's when it exists (toggle
                         Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: options (« Vous êtes », played order, the
                         names page), "Créer les rapports" (rapport.py --rapports: the PDFs from the saved analyses; T.genre says which
-                        tab shows the progress), then the session's PDFs and the bilan as links with file name and date (lien_pdf); Réglages.
+                        tab shows the progress), then the session's PDFs as links with file name and date (lien_pdf); Réglages.
                         Rapports and Réglages have a left sidebar of pages too (PAGES, vue_page, voir_page, pages_ui shown or hidden):
-                        Créer les rapports | Rapports de la séance | Toutes les séances (the bilan); Dossiers | Mise à jour du programme.
+                        Créer les rapports | Rapports de la séance; Dossiers | Mise à jour du programme.
                         Finished reports open the Rapports de la séance page. The left sidebar is LARGEUR_BARRE wide. Jouer (between Donnes and Analyse; Contrôle was removed): the player
                         bids one seat, the engine the three others (vue_jouer, boite_encheres; logic in jouer.py), then the
                         contract against Expert and Standard. Layout: the table on the left, a large warm-neutral rounded square sized to the window (COTE_TABLE: what the width and height leave, 440px at least; below that the whole table, hands and all, scales down to fit the window instead of scrolling: JS_AJUSTE, .ajuste) (no name plates: the board case in the centre, bidding
@@ -213,10 +213,11 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         denomination, yellow when different); then auctions side by side where they differ (label and
                         Standard's contract in the same red/blue), the first differing call boxed, that player's hand,
                         the engine's reason (recomputed by encherir) and the Expert's notes
-      bilan.py          rapports/bilan-encheres.pdf: every session with both analyses, IMP the Standard loses by
+      bilan.py          a developer's tool, run by hand only (off the app and no longer built after each comparison, the
+                        user's choice 2026-11-10): rapports/bilan-encheres.pdf: every session with both analyses, IMP the Coach loses by
                         session, by kind (missed slam, game too many…) and by the stage where the auctions part
-                        (opening, response, rebid…), then every differing deal, costliest first. rapport.py reruns it
-                        after each -comparaison
+                        (opening, response, rebid…), then every differing deal, costliest first:
+                        .venv/bin/python -I src/bilan.py
       edition.py        sessions made in Bridge Coach (source "saisie"/"entrainement") are edited in the Donnes tab, deal by
                         deal: a deal shows as a page with "Modifier la donne" (editor; "Terminer" goes back), new or unfinished
                         deals open in the editor; a deal with an expert analysis asks first (a_analyse_expert), and changing it

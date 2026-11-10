@@ -67,7 +67,7 @@ def lire_ligne(t, ligne):
     m = re.match(r"Rapport prêt : (.+)", ligne)
     if m:
         t.prets.append(m[1].strip())
-        t.fraction = t.part + (1 - t.part) * min(len(t.prets) / NB_PDF, 1); t.texte = "Écriture des rapports"   # + le bilan
+        t.fraction = t.part + (1 - t.part) * min(len(t.prets) / NB_PDF, 1); t.texte = "Écriture des rapports"
         return
     m = re.match(r"Fichier prêt : (.+)", ligne)
     if m: t.fichier = m[1].strip()
@@ -2018,10 +2018,10 @@ def page():
 
     PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"), ("importer", "Importer"),
                          ("exporter", "Exporter en PBN"), ("dossier", "Ouvrir le dossier de travail")],
-             "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance"), ("bilan", "Toutes les séances")],
+             "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance")],   # (le bilan : bilan.py, à la main)
              "Réglages": [("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
     vue_page = {"Fichier": PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "importer", "exporter", "dossier") else "ouvrir",
-                "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance", "bilan") else "creer",
+                "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance") else "creer",
                 "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("dossiers", "maj") else "dossiers"}
 
     def retenir_page():
@@ -2296,21 +2296,8 @@ def page():
                         ui.button("Ouvrir le dossier des rapports", on_click=lambda p=prets[next(iter(prets))]: ouvrir(os.path.dirname(p))) \
                             .props("flat no-caps").classes("mt-2 px-0")
 
-                @ui.refreshable
-                def toutes():
-                    ui.label("Toutes les séances").classes("text-lg font-bold")
-                    bilan = os.path.join(rapport.RAPPORTS, "bilan-encheres.pdf")
-                    if os.path.exists(bilan):
-                        lien_pdf(bilan, "Bilan des enchères", "où le programme perd des IMP face à l'expert")
-                    else:
-                        ui.label("Pas encore de bilan : il se fait avec les rapports d'une séance qui a une analyse de "
-                                 "l'expert.").classes("text-base text-gray-600")
-                    ui.button("Ouvrir le dossier des rapports", on_click=lambda: ouvrir(rapport.RAPPORTS)).props("flat no-caps").classes("mt-2 px-0")
-
                 with ui.column().classes("w-full gap-2") as pages_ui["seance"]:
                     resultats()
-                with ui.column().classes("w-full gap-2") as pages_ui["bilan"]:
-                    toutes()
 
             with ui.tab_panel(o_reglages).classes("px-0 pt-0 gap-5 max-w-xl"):
               with ui.column().classes("w-full gap-5") as pages_ui["dossiers"]:
@@ -2649,7 +2636,6 @@ def page():
             else:
                 faute_r.text = erreur
                 if not erreur and not T.annule: voir_page("Rapports", "seance")   # les rapports prêts : leur liste
-                toutes.refresh()
             resultats.refresh(); vue_analyse.refresh(); montrer_controles()
 
     ui.timer(.4, rafraichir)

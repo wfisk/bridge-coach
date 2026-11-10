@@ -284,9 +284,10 @@ def lignes_ensemble(donnes, an):
             f"{x['contrat']} {SEAT[x['declarant']][0]} {x['resultat'] or '='}".replace("-", "−")
         cle = lambda x: "passe" if x["contrat"] == "passe" else (x["contrat"].rstrip("X"), x["declarant"])
         sens = sens_contrat(cle(t), cle(reco)) if t and reco and cle(t) != cle(reco) else None
+        meilleure = moi.ordre(tables, MES)[0]              # la meilleure table, vue de votre camp (de Nord-Sud sinon)
         out.append(dict(n=d["n"], vous=vue(t["pct_ns"]) if t else None, reco=vue(reco.get("pct_ns")) if reco else None,
                         texte_vous=dire(t) if t else "", texte_reco=dire(reco) if reco else "", sens=sens,
-                        champ=(pcts[0], q1, med, q3, pcts[-1])))
+                        texte_meilleur=dire(meilleure), champ=(pcts[0], q1, med, q3, pcts[-1])))
     return out
 
 
@@ -340,7 +341,7 @@ def page_champ(donnes, an, largeur=17.4*cm):
     jouees = [r for r in L if r["vous"] is not None]
     if not jouees: return []
     G, X0, X1 = 1.3*cm, 1.3*cm, 11.0*cm
-    C0, C1, C2 = 11.6*cm, 14.4*cm, 17.2*cm                 # votre contrat, votre %, l'écart (les deux derniers à droite)
+    C1, C0, C2 = 12.4*cm, 12.9*cm, 15.2*cm                 # votre % (aligné à droite), votre contrat, celui de la meilleure table
     seance = ligne_seance(L)
     h = min(.72*cm, 20.5*cm / (len(L) + 2)); haut = .8*cm; ecart = .45*cm if seance else 0
     D = Drawing(largeur, haut + h * (len(L) + (1 if seance else 0)) + ecart + .2*cm)
@@ -352,7 +353,7 @@ def page_champ(donnes, an, largeur=17.4*cm):
     for p in (0, 25, 50, 75, 100):
         D.add(String(x(p), Y + .25*cm, f"{p} %", fontName="DVB" if p == 50 else "DV", fontSize=7.5,
                      fillColor=colors.HexColor(INK if p == 50 else GREY), textAnchor="middle"))
-    for t_, xx, anc in (("Vous", C0, "start"), ("%", C1, "end"), ("Écart", C2, "end")):
+    for t_, xx, anc in (("%", C1, "end"), ("Vous", C0, "start"), ("Meilleur", C2, "start")):
         D.add(String(xx, Y + .25*cm, t_, fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK), textAnchor=anc))
 
     def rangée(y, nom, r, gras=False):
@@ -365,16 +366,19 @@ def page_champ(donnes, an, largeur=17.4*cm):
             D.add(Rect(x(q1), y - b / 2, max(x(q3) - x(q1), 1), b, fillColor=colors.HexColor(CHAMP_FOND),
                        strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=.5, rx=1.5, ry=1.5))
         if r["vous"] is None:
-            D.add(String(C1, y - 2.6, "–", fontName=police, fontSize=7.8, fillColor=colors.HexColor(GREY), textAnchor="end")); return
+            D.add(String(C1, y - 2.6, "–", fontName=police, fontSize=7.8, fillColor=colors.HexColor(GREY), textAnchor="end"))
+            if r.get("texte_meilleur"):
+                D.add(String(C2, y - 2.6, r["texte_meilleur"], fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK)))
+            return
         v = r["vous"]; perte = v < 50
         D.add(Rect(min(x(v), x(50)), y - b * .45, abs(x(v) - x(50)), b * .9, fillColor=perdu if perte else gagne,
                    strokeColor=None, rx=1.5, ry=1.5))      # la barre : de 50 % à vous
+        D.add(String(C1, y - 2.6, f"{v:.0f} %", fontName="DVB" if perte or gras else "DV", fontSize=7.8,
+                     fillColor=colors.HexColor(INK), textAnchor="end"))
         if r.get("texte_vous"):
             D.add(String(C0, y - 2.6, r["texte_vous"], fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK)))
-        D.add(String(C1, y - 2.6, f"{v:.0f} %", fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK), textAnchor="end"))
-        e = round(v - 50)
-        D.add(String(C2, y - 2.6, ("+" if e > 0 else "") + str(e).replace("-", "−"), fontName="DVB" if perte or gras else "DV",
-                     fontSize=7.8, fillColor=colors.HexColor(INK), textAnchor="end"))
+        if r.get("texte_meilleur"):
+            D.add(String(C2, y - 2.6, r["texte_meilleur"], fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK)))
 
     for k, r in enumerate(L):
         y = Y - h * (k + .5)
@@ -383,7 +387,7 @@ def page_champ(donnes, an, largeur=17.4*cm):
     if seance:
         ys = Y - h * len(L) - ecart
         D.add(Line(0, ys + h / 2 + ecart / 2, largeur, ys + h / 2 + ecart / 2, strokeColor=colors.HexColor("#c7ccd2"), strokeWidth=.8))
-        rangée(ys - h / 2, "Séance", dict(seance, texte_vous=""), gras=True)
+        rangée(ys - h / 2, "Séance", dict(seance, texte_vous="", texte_meilleur=""), gras=True)
     D.add(Line(x(50), 0, x(50), Y, strokeColor=colors.HexColor(INK), strokeWidth=1))   # le champ : 50 %, au-dessus de tout
     pires = sorted((r for r in jouees if r["vous"] < 50), key=lambda r: r["vous"])[:3]
     phrase = ("Les donnes qui vous coûtent le plus : " + ", ".join(f"{r['n']} ({round(r['vous'] - 50):d})".replace("-", "−")
@@ -391,7 +395,7 @@ def page_champ(donnes, an, largeur=17.4*cm):
     return [Paragraph("Vous face au champ", S_title),
             Paragraph(txt("Sur chaque donne, 50 % est la moyenne des tables. La barre va de 50 % à votre pourcentage : à "
                           "gauche, en rouge, ce que vous perdez face au champ ; à droite, en bleu, ce que vous gagnez. "
-                          "L'écart est en points de pourcentage. " + phrase), S_sub),
+                          "À droite, votre pourcentage, votre contrat et celui de la meilleure table. " + phrase), S_sub),
             Spacer(1, 8), D, PageBreak()]
 
 
@@ -955,8 +959,8 @@ def main():
         doc._spans = {}
         doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
                                            onPage=footer, onPageEnd=suite)])
-        story = page_champ(donnes, an or {"donnes": {}})    # vous avez choisi « Vous êtes » : vous face au champ, puis
-        story += page_ensemble(donnes, an or {"donnes": {}})  # la séance en un coup d'œil (lignes ; l'haltère, essayée, écartée)
+        story = page_champ(donnes, an or {"donnes": {}})    # vous avez choisi « Vous êtes » : vous face au champ (la séance en
+                                                            # un coup d'œil, page_ensemble, essayée puis écartée : l'utilisateur)
         for k, d in enumerate(donnes):
             story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
         parcours = page_parcours(data)             # à la fin : votre parcours, puis la synthèse

@@ -158,7 +158,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         endplay; the club name is not kept); rapport.sh accepts the PDF directly.
                         FFBClubNet backups named .bws are password-protected 7z archives: not
                         readable, rapport.py says so
-      build_pdf.py      donnes + analyse JSON -> PDF; when « Vous êtes » is set, two first pages: « Vous face au champ » (below), then « La séance en un coup d'œil »
+      build_pdf.py      donnes + analyse JSON -> PDF; when « Vous êtes » is set, a first page « Vous face au champ » (below; « La séance en un coup d'œil », page_ensemble, tried and left out)
                         (page_ensemble, lignes_ensemble): one row per deal in the report's order, a 0–100 % scale seen from
                         your side, the field as a light box plot (quartiles, median, min–max), your % as a hollow orange circle
                         (#e67700, 2.5 pt outline) and the recommended contract's % as a solid green circle (the expert's green),
@@ -167,7 +167,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         the space between the two lines filled pale orange where you are above the recommended contract, pale green
                         where it is above you. (A dumbbell variant, style "haltere", was tried and left out.) « Vous face au champ » (page_champ, first): a bar from 50 %
                         (the field's average on each deal) to your %, red for a loss, blue for a gain (PERTE_C, GAIN_C), the gap in points
-                        on the right, the three costliest deals named under the title
+                        on the right replaced by your %, your contract and the best table's (« Meilleur », from your side: moi.ordre), the three costliest deals named under the title
                         (split where the lines cross: ecart_couleur); on the right your contract (pale red
                         when higher than the recommended one on the same side, pale blue when lower: sens_contrat, SENS), your %,
                         and the recommended contract (no %: the diamond shows it); a last « Séance » row: your session % (the

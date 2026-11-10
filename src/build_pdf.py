@@ -257,8 +257,9 @@ def nom(t, camp):
 FOND_RECO = "#e6efe9"                 # la ligne du contrat recommandé : le vert pâle de l'avis de l'expert
 
 # ---------------------------------------------------------------- la séance en un coup d'œil (première page)
-VOUS_C, RECO_C = "#1d4ed8", "#1f5f3a"      # vous : un rond bleu plein ; le contrat recommandé : un losange vert plein (la couleur
-                                            # de l'expert) ; une ligne relie les vôtres (pleine), une autre les siens (tirets)
+VOUS_C, RECO_C = "#f05a4f", "#1f5f3a"      # vous : un rond rouge plein ; le contrat recommandé : un losange vert plein (la couleur
+                                            # de l'expert) ; une ligne relie les vôtres (pleine), une autre les siens (tirets).
+                                            # Ce rouge-là reste distinct du vert pour toutes les vues des couleurs (OKLab 11,6+)
 CHAMP_FOND, CHAMP_TRAIT, CHAMP_MED = "#eef0f2", "#b4bbc3", "#7a828c"   # le champ, en retrait : la boîte, ses moustaches, la médiane
 
 
@@ -277,12 +278,13 @@ def lignes_ensemble(donnes, an):
         pcts = sorted(vue(x["pct_ns"]) for x in tables)
         q1, med, q3 = statistics.quantiles(pcts, n=4, method="inclusive")
         reco = table_recommandee(d, (an.get("donnes") or {}).get(str(d["n"])) or {})
-        texte = ""
-        if reco:
-            texte = "passe" if reco["contrat"] == "passe" else \
-                f"{reco['contrat']} {SEAT[reco['declarant']][0]} {reco['resultat'] or '='}".replace("-", "−")
+        dire = lambda x: "passe" if x["contrat"] == "passe" else \
+            f"{x['contrat']} {SEAT[x['declarant']][0]} {x['resultat'] or '='}".replace("-", "−")
+        cle = lambda x: "passe" if x["contrat"] == "passe" else (x["contrat"].rstrip("X"), x["declarant"])
+        sens = sens_contrat(cle(t), cle(reco)) if t and reco and cle(t) != cle(reco) else None
         out.append(dict(n=d["n"], vous=vue(t["pct_ns"]) if t else None, reco=vue(reco.get("pct_ns")) if reco else None,
-                        texte_reco=texte, champ=(pcts[0], q1, med, q3, pcts[-1])))
+                        texte_vous=dire(t) if t else "", texte_reco=dire(reco) if reco else "", sens=sens,
+                        champ=(pcts[0], q1, med, q3, pcts[-1])))
     return out
 
 
@@ -293,7 +295,7 @@ def couleur_ligne(qui):
 
 
 def symbole(D, qui, cx, y):
-    """Vous : un rond bleu plein ; le contrat recommandé : un losange vert plein ; chacun cerclé de blanc pour se
+    """Vous : un rond rouge plein ; le contrat recommandé : un losange vert plein ; chacun cerclé de blanc pour se
     détacher des lignes, des boîtes et de l'autre symbole."""
     from reportlab.graphics.shapes import Circle, Polygon
     if qui == "vous":
@@ -304,39 +306,80 @@ def symbole(D, qui, cx, y):
                       strokeColor=colors.white, strokeWidth=1.2))
 
 
+def ligne_seance(L):
+    """La séance entière : votre % (celui de votre paire dans la séance, sinon la moyenne de vos donnes : c'est la même
+    chose quand chaque donne compte autant), la moyenne du contrat recommandé sur les mêmes donnes, et le champ des
+    paires (leur % de séance). None si vous n'avez joué aucune donne."""
+    import statistics
+    jouees = [r for r in L if r["vous"] is not None]
+    if not jouees: return None
+    paires = DONNEES_SEANCE.get("paires") or {}
+    officiel = next((p.get("pct") for k, p in paires.items() if k in MES and p.get("pct") is not None), None)
+    vous = officiel if officiel is not None else sum(r["vous"] for r in jouees) / len(jouees)
+    recos = [r["reco"] for r in jouees if r["reco"] is not None]
+    pcts = sorted(p["pct"] for p in paires.values() if p.get("pct") is not None)
+    champ = None
+    if len(pcts) >= 2:
+        q1, med, q3 = statistics.quantiles(pcts, n=4, method="inclusive"); champ = (pcts[0], q1, med, q3, pcts[-1])
+    return dict(vous=vous, reco=sum(recos) / len(recos) if recos else None, champ=champ)
+
+
 def page_ensemble(donnes, an, largeur=17.4*cm):
     """La première page quand vous avez choisi « Vous êtes » : pour chaque donne, dans l'ordre du rapport, votre %,
     celui du contrat recommandé joué au double mort, et le champ en boîte à moustaches (quartiles, médiane, extrêmes)."""
     from reportlab.graphics.shapes import Drawing, Rect, Line, Circle, Polygon, String
     L = lignes_ensemble(donnes, an)
     if not L or not any(x["vous"] is not None for x in L): return []
-    G, X0, X1 = 1.4*cm, 1.4*cm, 11.2*cm                     # les numéros, puis l'échelle de 0 à 100 %, puis les chiffres
-    V, R = X1 + .9*cm, X1 + 2.3*cm                          # les colonnes de texte : vous, le contrat recommandé
-    h = min(.72*cm, 21.5*cm / len(L)); haut = .8*cm
-    D = Drawing(largeur, haut + h * len(L) + .2*cm)
+    import statistics
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    G, X0, X1 = 1.3*cm, 1.3*cm, 10.0*cm                     # les numéros, puis l'échelle de 0 à 100 %, puis deux colonnes
+    V0, R0, LC = 10.75*cm, 14.0*cm, 3.0*cm                  # chacune : le contrat à gauche, le % à droite (largeur LC)
+    seance = ligne_seance(L)                                # la dernière ligne : la séance entière, à part
+    h = min(.72*cm, 20.5*cm / (len(L) + 2)); haut = .8*cm; ecart = .45*cm if seance else 0
+    D = Drawing(largeur, haut + h * (len(L) + (1 if seance else 0)) + ecart + .2*cm)
     x = lambda p: X0 + (X1 - X0) * p / 100
     Y = D.height - haut
     for p in (0, 25, 50, 75, 100):                         # l'échelle : des traits légers, des % en haut
         D.add(Line(x(p), 0, x(p), Y, strokeColor=colors.HexColor("#dfe3e7" if p % 50 else "#c7ccd2"), strokeWidth=.5))
         D.add(String(x(p), Y + .25*cm, f"{p} %", fontName="DV", fontSize=7.5, fillColor=colors.HexColor(GREY), textAnchor="middle"))
-    D.add(String(V, Y + .25*cm, "Vous", fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK)))
-    D.add(String(R, Y + .25*cm, "Recommandé (DM)", fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK)))
+    D.add(String(V0, Y + .25*cm, "Vous", fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK)))
+    D.add(String(R0, Y + .25*cm, "Recommandé (DM)", fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK)))
     marques = []                                           # les symboles, posés à la fin : au-dessus des lignes et des boîtes
-    for k, r in enumerate(L):
-        y = Y - h * (k + .5)
-        if k % 2: D.add(Rect(0, y - h / 2, largeur, h, fillColor=colors.HexColor("#f7f8f9"), strokeColor=None))
-        D.add(String(G - .3*cm, y - 2.6, f"{r['n']}", fontName="DVB", fontSize=8.5, fillColor=colors.HexColor(INK), textAnchor="end"))
-        mn, q1, med, q3, mx = r["champ"]; b = min(h * .5, .34*cm)
+
+    def ligne(y, nom, r, gras=False):
+        """Une ligne : son nom, le champ en boîte à moustaches, vos deux symboles (posés plus tard), les deux %."""
+        D.add(String(G - .3*cm, y - 2.6, nom, fontName="DVB", fontSize=8.5, fillColor=colors.HexColor(INK), textAnchor="end"))
+        if r["champ"]: boite(y, r["champ"])
+        if r["reco"] is not None: marques.append(("reco", x(r["reco"]), y))
+        if r["vous"] is not None: marques.append(("vous", x(r["vous"]), y))
+        police = "DVB" if gras else "DV"
+        ecrire = lambda xx, t_, ancre="start": D.add(String(xx, y - 2.6, t_, fontName=police, fontSize=7.8,
+                                                            fillColor=colors.HexColor(INK), textAnchor=ancre))
+        if r.get("texte_vous"):                            # votre contrat : rouge plus haut, bleu plus bas que le recommandé
+            if r.get("sens"):
+                w = stringWidth(r["texte_vous"], police, 7.8)
+                D.add(Rect(V0 - 2, y - 4.6, w + 4, 11, fillColor=colors.HexColor(SENS[r["sens"]][0]), strokeColor=None, rx=2, ry=2))
+            ecrire(V0, r["texte_vous"])
+        ecrire(V0 + LC, f"{r['vous']:.0f} %" if r["vous"] is not None else "–", "end")
+        if r.get("texte_reco"): ecrire(R0, r["texte_reco"])   # son % se lit au losange : pas de chiffre (l'utilisateur)
+
+    def boite(y, champ):
+        mn, q1, med, q3, mx = champ; b = min(h * .5, .34*cm)
         D.add(Line(x(mn), y, x(mx), y, strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=1))      # les moustaches
         for v in (mn, mx): D.add(Line(x(v), y - b / 3, x(v), y + b / 3, strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=1))
         D.add(Rect(x(q1), y - b / 2, max(x(q3) - x(q1), 1), b, fillColor=colors.HexColor(CHAMP_FOND),
                    strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=.6, rx=1.5, ry=1.5))           # la boîte
         D.add(Line(x(med), y - b / 2, x(med), y + b / 2, strokeColor=colors.HexColor(CHAMP_MED), strokeWidth=1.4))
-        if r["reco"] is not None: marques.append(("reco", x(r["reco"]), y))
-        if r["vous"] is not None: marques.append(("vous", x(r["vous"]), y))
-        ecrire = lambda xx, t: D.add(String(xx, y - 2.6, t, fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
-        ecrire(V, f"{r['vous']:.0f} %" if r["vous"] is not None else "–")
-        if r["reco"] is not None: ecrire(R, f"{r['texte_reco']}  {r['reco']:.0f} %")
+
+    for k, r in enumerate(L):
+        y = Y - h * (k + .5)
+        if k % 2: D.add(Rect(0, y - h / 2, largeur, h, fillColor=colors.HexColor("#f7f8f9"), strokeColor=None))
+        ligne(y, str(r["n"]), r)
+    if seance:                                             # la séance : un trait, puis sa ligne, en gras
+        ys = Y - h * len(L) - ecart
+        D.add(Line(0, ys + h / 2 + ecart / 2, largeur, ys + h / 2 + ecart / 2, strokeColor=colors.HexColor("#c7ccd2"), strokeWidth=.8))
+        ys -= h / 2
+        ligne(ys, "Séance", seance, gras=True)
     for qui, style in (("vous", None), ("reco", [3, 2.2])):   # les lignes qui relient les donnes, coupées à une donne non jouée
         prec = None
         for k, r in enumerate(L):
@@ -362,7 +405,10 @@ def page_ensemble(donnes, an, largeur=17.4*cm):
             Paragraph(txt(f"Chaque ligne est une donne, dans l'ordre de ce rapport, vue de votre camp"
                           + (f" (votre paire : {paire})" if paire else "") + " : votre pourcentage, celui qu'aurait eu le "
                           "contrat recommandé joué au double mort face aux tables, et le champ, en boîte à moustaches. Une "
-                          "donne que vous n'avez pas jouée se lit de Nord-Sud."), S_sub),
+                          "donne que vous n'avez pas jouée se lit de Nord-Sud. À droite, votre contrat (en rouge s'il est plus "
+                          "haut que le recommandé, du même camp, en bleu s'il est plus bas), votre pourcentage, et le contrat "
+                          "recommandé. Dernière ligne, la séance : votre pourcentage, la moyenne du contrat recommandé sur les "
+                          "donnes que vous avez jouées (le losange), et le champ des paires."), S_sub),
             Spacer(1, 6), leg, Spacer(1, 4), D, PageBreak()]
 
 

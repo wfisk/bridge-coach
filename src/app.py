@@ -1111,7 +1111,7 @@ def page():
         if not data:
             with ui.column().classes("w-full max-w-xl mx-auto"):
                 ui.label("Aucune séance ouverte.").classes("text-base")
-                ui.label("Fichier, Ouvrir une séance… pour en ouvrir une ; Fichier, Nouveau… pour créer des donnes.").classes("text-base text-gray-600")
+                ui.label("Fichier, Ouvrir une séance pour en ouvrir une ; Fichier, Nouveau pour créer des donnes.").classes("text-base text-gray-600")
             return
         if vue["entree"] not in dict(entrees_de(data)): vue["entree"] = "seance"
         with ui.column().classes("w-full gap-3 min-w-0"):
@@ -1659,7 +1659,7 @@ def page():
     def vue_jouer():
         c = choix["chemin"]; data = lire_seance(c)
         if not data:
-            ui.label("Aucune séance ouverte : Fichier, Ouvrir une séance…").classes("text-base"); return
+            ui.label("Aucune séance ouverte : Fichier, Ouvrir une séance").classes("text-base"); return
         es = entrees_de(data) if sur_jouer() else []
         if not es: return
         e = entree_effective(data)
@@ -2016,21 +2016,24 @@ def page():
 
     vue_aide = {"k": int(PAGE.get("aide") or 0)}          # la section de l'aide montrée
 
-    PAGES = {"Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance"), ("bilan", "Toutes les séances")],
+    PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"), ("importer", "Importer"),
+                         ("exporter", "Exporter en PBN"), ("dossier", "Ouvrir le dossier de travail")],
+             "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance"), ("bilan", "Toutes les séances")],
              "Réglages": [("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
-    vue_page = {"Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance", "bilan") else "creer",
+    vue_page = {"Fichier": PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "importer", "exporter", "dossier") else "ouvrir",
+                "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance", "bilan") else "creer",
                 "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("dossiers", "maj") else "dossiers"}
 
     def retenir_page():
         """La page ouverte (onglet, entrée de la barre, version de l'analyse, page de l'aide) : rouverte au prochain lancement."""
         o = onglets.value; nom = o if isinstance(o, str) else o.props.get("name", "Donnes")
         ecrire_etat(page={"onglet": nom, "entree": vue.get("entree"), "version": vue.get("version"), "aide": vue_aide["k"],
-                          "rapports": vue_page["Rapports"], "reglages": vue_page["Réglages"],
+                          "fichier": vue_page["Fichier"], "rapports": vue_page["Rapports"], "reglages": vue_page["Réglages"],
                           "replis": replis})
 
     def onglet_a_pages():
-        """« Rapports » ou « Réglages » quand l'un d'eux est ouvert, sinon None."""
-        for nom, o in (("Rapports", o_rapports), ("Réglages", o_reglages)):
+        """« Fichier », « Rapports » ou « Réglages » quand l'un d'eux est ouvert, sinon None."""
+        for nom, o in (("Fichier", o_fichier), ("Rapports", o_rapports), ("Réglages", o_reglages)):
             if onglets.value in (o, nom): return nom
         return None
 
@@ -2039,11 +2042,18 @@ def page():
         try: pages_ui
         except NameError: return                           # la page se construit encore
         for nom, cles in PAGES.items():
-            for cle, _ in cles: pages_ui[cle].set_visibility(vue_page[nom] == cle)
+            for cle, _ in cles:
+                if cle in pages_ui: pages_ui[cle].set_visibility(vue_page[nom] == cle)   # (celles déjà construites)
 
     def voir_page(nom, cle):
         vue_page[nom] = cle; montrer_pages(); barre_seance.refresh(); retenir_page()
         if cle == "seance": resultats.refresh()
+        if nom == "Fichier": rafraichir_fichier()
+
+    def rafraichir_fichier():
+        """Les pages de Fichier se mettent à jour quand on y vient : les séances, les .bws, la séance à exporter."""
+        try: liste.refresh(); liste_i.refresh(); a_exporter.refresh()
+        except NameError: pass                             # la page se construit encore
 
     def voir_aide(k):
         vue_aide["k"] = k; page_aide.refresh(); barre_seance.refresh(); retenir_page()
@@ -2194,26 +2204,19 @@ def page():
 
     with ui.header(elevated=False).classes("bg-white text-primary px-2 py-0 border-b border-gray-300"):   # la barre de menus
         with ui.row().classes("w-full items-center justify-between no-wrap"):
-            with ui.button("Fichier").props("flat no-caps dense").classes("px-3"):
-                with ui.menu():
-                    ui.menu_item("Nouveau…", on_click=lambda: nouveau_fichier())
-                    ui.menu_item("Ouvrir une séance…", on_click=lambda: (liste.refresh(), dialogue.open()))
-                    ui.menu_item("Importer…", on_click=lambda: (liste_i.refresh(), dialogue_i.open()))
-                    ui.menu_item("Exporter en PBN…", on_click=lambda: exporter())
-                    ui.separator()
-                    ui.menu_item("Ouvrir le dossier de travail", on_click=lambda: ouvrir(rapport.DONNEES))
             with ui.tabs().props("no-caps dense inline-label align=left active-color=primary indicator-color=primary").classes("text-gray-700 grow") as onglets:   # les onglets, dans la barre
+                o_fichier = ui.tab("Fichier")                     # une page, comme Rapports et Réglages : sa barre à gauche
                 o_donnes = ui.tab("Donnes")
                 o_jouer = ui.tab("Jouer")
                 o_analyse = ui.tab("Analyse")
                 o_rapports = ui.tab("Rapports")
                 o_reglages = ui.tab("Réglages")
                 o_aide = ui.tab("Aide").classes("hidden")          # la page d'aide : montrée par le bouton de droite
-                o_nouveau = ui.tab("Nouveau").classes("hidden")    # Fichier, Nouveau… : la page de création des donnes
             aide = ui.button("Aide", on_click=lambda: onglets.set_value(o_aide)).props("flat no-caps dense").classes("px-3")
             onglets.on_value_change(lambda e: (aide.classes(add="bg-green-50 font-bold") if e.value in (o_aide, "Aide")
                                                else aide.classes(remove="bg-green-50 font-bold"), montrer_barre(), barre_seance.refresh(),
-                                               vue_analyse.refresh(), vue_jouer.refresh(), montrer_controles(), retenir_page()))
+                                               vue_analyse.refresh(), vue_jouer.refresh(), montrer_controles(), retenir_page(),
+                                               e.value in (o_fichier, "Fichier") and rafraichir_fichier()))
 
     with ui.left_drawer(value=False, fixed=True, bordered=True).props(f"width={LARGEUR_BARRE} behavior=desktop") \
             .classes("p-2 gap-0").style(f"background:{GRIS_BARRE}") as tiroir:      # la barre latérale de des onglets Donnes et Analyse : bord gauche, toute la hauteur
@@ -2346,10 +2349,9 @@ def page():
             with ui.tab_panel(o_aide).classes("px-0 pt-0 max-w-xl"):   # une page comme les autres : un onglet la quitte
                 page_aide()                                    # une section à la fois, choisie dans la barre de gauche
 
-            with ui.tab_panel(o_nouveau).classes("px-0 pt-0 max-w-3xl"):   # Fichier, Nouveau… : une page, comme l'aide
-                with ui.row().classes("w-full items-center justify-between no-wrap"):
-                    ui.label("Nouvelle séance").classes("text-lg font-bold")
-                    ui.button("Annuler", icon="close", on_click=lambda: annuler_nouveau()).props("outline")
+            with ui.tab_panel(o_fichier).classes("px-0 pt-0 max-w-3xl") as panneau_fichier, \
+                    ui.column().classes("w-full gap-0") as pages_ui["nouveau"]:   # Fichier : ses pages, la première Nouveau
+                ui.label("Nouvelle séance").classes("text-lg font-bold")
                 ui.label("Choisissez des thèmes et combien de donnes de chacun ; sans thème, la séance est vide et vous tapez "
                          "les mains dans l'onglet Donnes. Les thèmes d'enchères et de jeu de la carte choisis ensemble sont "
                          "réunis dans les mêmes donnes.").classes("text-base text-gray-600")
@@ -2439,24 +2441,23 @@ def page():
                         ui.label("Le fichier .pbn du dossier s'importe dans Bridgemate : Fichier, Importer.").classes("text-sm text-gray-600")
                     fichier_cree()
 
-    with ui.dialog() as dialogue, ui.card().classes("w-full max-w-lg"):
-        ui.label("Ouvrir une séance").classes("text-base font-bold")
+    with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["ouvrir"]:   # Fichier, Ouvrir une séance
+        ui.label("Ouvrir une séance").classes("text-lg font-bold")
         @ui.refreshable
         def liste():
             tout = seances_bc()
-            if not tout: ui.label("Aucune séance pour l'instant : Fichier, Importer…").classes("text-sm text-gray-600")
+            if not tout: ui.label("Aucune séance pour l'instant : Fichier, Importer").classes("text-sm text-gray-600")
             for c in tout[:15]:
                 date, source = infos_seance(c)
                 ui.button(f"{date}  –  {source + ' – ' if source else ''}{rapport.nom_seance(c)}", on_click=lambda c=c: choisir(c)) \
                     .props("flat align=left no-caps").classes("w-full")
         liste()
-        ui.label("Ou une séance Bridge Coach (.bc.json) ailleurs sur l'ordinateur :")
+        ui.label("Ou une séance Bridge Coach (.bc.json) ailleurs sur l'ordinateur :").classes("text-base mt-2")
         envoi = ui.upload(on_upload=lambda e: recu(e), auto_upload=True, max_files=1).props('accept=".json"').classes("hidden")
         ui.button("Choisir un fichier…", on_click=lambda: parcourir()).props("outline")
-        ui.button("Fermer", on_click=dialogue.close).props("flat")
 
-    with ui.dialog() as dialogue_i, ui.card().classes("w-full max-w-lg"):
-        ui.label("Importer un tournoi").classes("text-base font-bold")
+    with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["importer"]:   # Fichier, Importer
+        ui.label("Importer").classes("text-lg font-bold")
         ui.label("Le fichier devient une séance Bridge Coach ; le fichier d'origine n'est pas modifié.").classes("text-sm text-gray-600")
         @ui.refreshable
         def liste_i():
@@ -2467,10 +2468,10 @@ def page():
                 ui.button(f"{date_lisible(b)}  –  {os.path.basename(b)}{fait}", on_click=lambda b=b: importer(b)) \
                     .props("flat align=left no-caps").classes("w-full")
         liste_i()
-        ui.label("Ou un fichier ailleurs sur l'ordinateur (.bws de Bridgemate, feuille de route .pdf de FFBClubNet) :")
-        envoi_i = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".bws,.pdf"').classes("hidden")
+        ui.label("Ou un fichier ailleurs sur l'ordinateur (.bws de Bridgemate, feuille de route .pdf de FFBClubNet, "
+                 ".pbn) :").classes("text-base mt-2")
+        envoi_i = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".bws,.pdf,.pbn"').classes("hidden")
         ui.button("Choisir un fichier…", on_click=lambda: parcourir_i()).props("outline")
-        ui.button("Fermer", on_click=dialogue_i.close).props("flat")
 
     with ui.dialog() as confirmation_m, ui.card().classes("w-full max-w-md"):
         ui.label("Cette donne a une analyse de l'expert. Si vous la modifiez, cette analyse est mise de côté (gardée dans "
@@ -2487,14 +2488,30 @@ def page():
 
     envoi_x = ui.upload(on_upload=lambda e: recu_x(e), auto_upload=True, max_files=1).props('accept=".json"').classes("hidden")
 
-    with ui.dialog() as dialogue_e, ui.card().classes("w-full max-w-lg"):
-        ui.label("Exporter en PBN").classes("text-base font-bold")
-        msg_e = ui.label("").classes("text-sm break-all")
-        ui.label("Le .pbn s'importe dans Bridgemate (Fichier, Importer) et se lit dans la plupart des logiciels de bridge.").classes("text-sm text-gray-600")
-        with ui.row().classes("gap-3"):
-            exporte = {"f": None}
-            ui.button("Ouvrir le dossier", on_click=lambda: exporte["f"] and ouvrir(os.path.dirname(exporte["f"]))).props("outline")
-            ui.button("Fermer", on_click=dialogue_e.close).props("flat")
+    with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["exporter"]:   # Fichier, Exporter en PBN
+        ui.label("Exporter en PBN").classes("text-lg font-bold")
+        ui.label("Le .pbn s'importe dans Bridgemate (Fichier, Importer) et se lit dans la plupart des logiciels de bridge. "
+                 "Il est écrit à côté de la séance.").classes("text-base text-gray-600")
+        exporte = {"f": None}
+        @ui.refreshable
+        def a_exporter():
+            c = choix["chemin"]
+            if not c or not c.endswith(rapport.BC):
+                ui.label("Aucune séance ouverte : Fichier, Ouvrir une séance.").classes("text-base"); return
+            ui.label(f"Séance : {infos_seance(c)[0]} – {rapport.nom_seance(c)}").classes("text-base")
+            ui.button("Exporter en PBN", icon="file_download", on_click=lambda: exporter()).classes("mt-1")
+            if exporte["f"] and os.path.dirname(exporte["f"]) == os.path.dirname(c):
+                ui.label(f"Exporté : {exporte['f']}").classes("text-sm break-all")
+                ui.button("Ouvrir le dossier", on_click=lambda: ouvrir(os.path.dirname(exporte["f"]))).props("outline")
+        a_exporter()
+
+    with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["dossier"]:   # Fichier, Ouvrir le dossier de travail
+        ui.label("Le dossier de travail").classes("text-lg font-bold")
+        ui.label("Vos séances (seances), vos rapports (rapports) et les fichiers préparés pour Claude (pour-claude). "
+                 "Il se change dans Réglages, Dossiers.").classes("text-base text-gray-600")
+        ui.label(rapport.DONNEES).classes("text-base break-all")
+        ui.button("Ouvrir le dossier de travail", icon="folder_open", on_click=lambda: ouvrir(rapport.DONNEES)).props("outline")
+    montrer_pages()
 
     def montrer_titre():
         t_ = titre_fenetre(choix["chemin"])
@@ -2502,25 +2519,6 @@ def page():
         if app.native.main_window:                         # la barre de titre de la fenêtre
             try: app.native.main_window.set_title(t_)
             except Exception: pass
-
-    avant_nouveau = {}                                     # la séance et la page d'avant Fichier, Nouveau… (« Annuler »)
-
-    def nouveau_fichier():
-        """Fichier, Nouveau… : plus de séance ouverte (la séance retenue ne change qu'à la création de la nouvelle)."""
-        if onglets.value not in (o_nouveau, "Nouveau"):
-            avant_nouveau.clear(); avant_nouveau.update(chemin=choix["chemin"], onglet=onglets.value, entree=vue.get("entree"))
-        choix["chemin"] = None; montrer_titre(); expert_msg.update(texte="", faute=False)
-        vue_seance.refresh(); barre_seance.refresh(); vue_analyse.refresh(); resultats.refresh()
-        onglets.set_value(o_nouveau); montrer_barre(); montrer_controles()
-
-    def annuler_nouveau():
-        """« Annuler » sur la page Nouveau : la séance d'avant se rouvre, à la page où vous étiez."""
-        c = avant_nouveau.get("chemin")
-        choix["chemin"] = c if c and os.path.isfile(c) else seance_active()
-        montrer_titre(); vue["entree"] = avant_nouveau.get("entree") or "seance"
-        onglets.set_value(avant_nouveau.get("onglet") or o_donnes)
-        vue_seance.refresh(); barre_seance.refresh(); vue_analyse.refresh(); vue_jouer.refresh(); resultats.refresh()
-        montrer_barre(); montrer_controles(); retenir_page()
 
     maj_vue = {"version": None}
 
@@ -2552,31 +2550,29 @@ def page():
         ui.timer(1.5, app.shutdown, once=True)
 
     def choisir(c):
-        choix["chemin"] = c; dialogue.close(); faute.text = ""
+        choix["chemin"] = c; faute.text = ""
         retenir(c); montrer_titre(); vue["entree"] = "seance"; vue.pop("version", None); expert_msg.update(texte="", faute=False); vue_seance.refresh(); barre_seance.refresh(); montrer_barre(); montrer_controles()
         resultats.refresh(); vue_analyse.refresh()
         if onglets.value not in (o_donnes, o_analyse, o_rapports, "Donnes", "Analyse", "Rapports"): onglets.set_value(o_donnes)
 
     def importer(b):
         if T.actif or D.actif or I.actif: return
-        dialogue_i.close(); vu_i["fini"] = None; faute_i.text = ""
+        vu_i["fini"] = None; faute_i.text = ""
         onglets.set_value(o_donnes)
         lancer_import(b); nouveau.refresh()
 
     def exporter():
         c = choix["chemin"]
         if not c or not c.endswith(rapport.BC):
-            ui.notify("Ouvrez d'abord une séance (Fichier, Ouvrir une séance…)."); return
+            ui.notify("Ouvrez d'abord une séance (Fichier, Ouvrir une séance)."); return
         try:
             f = exporter_pbn(c)
         except Exception:
             ui.notify("Cette séance ne peut pas être exportée."); return
-        msg_e.text = f"Exporté : {f}"; exporte["f"] = f
-        dialogue_e.open()
+        exporte["f"] = f; a_exporter.refresh()
 
     async def parcourir_i():
         if not app.native.main_window: return envoi_i.run_method("pickFiles")
-        dialogue_i.close()
         r = await app.native.main_window.create_file_dialog(allow_multiple=False, file_types=TYPES_IMPORT)
         if r: importer(r[0])
 
@@ -2588,7 +2584,6 @@ def page():
     async def parcourir():
         """Dans la fenêtre, le dialogue de l'ordinateur : celui d'une page n'y s'ouvre pas. Le navigateur garde le sien."""
         if not app.native.main_window: return envoi.run_method("pickFiles")
-        dialogue.close()
         r = await app.native.main_window.create_file_dialog(allow_multiple=False, file_types=TYPES_SEANCES)
         if r: choisir(r[0])
 
@@ -2627,7 +2622,7 @@ def page():
         creer.set_enabled(not occupe and not D.actif and bool(choix["chemin"])); stop.set_visibility(analyse_)
         standard_ = bool(choix["chemin"]) and bool(lire_analyses(choix["chemin"])[0])
         creer_r.set_enabled(not occupe and not D.actif and standard_); stop_r.set_visibility(rapports_)
-        besoin_r.text = ("Aucune séance ouverte : Fichier, Ouvrir une séance…" if not choix["chemin"] else
+        besoin_r.text = ("Aucune séance ouverte : Fichier, Ouvrir une séance" if not choix["chemin"] else
                          "" if standard_ else "Lancez d'abord l'analyse, dans l'onglet Analyse.")
         actif_d = D.actif
         creer_d.set_enabled(not occupe and not actif_d); stop_d.set_visibility(actif_d)
@@ -2659,7 +2654,8 @@ def page():
 
     ui.timer(.4, rafraichir)
     ui.timer(.5, lambda: montrer_titre(), once=True)
-    depart = {"Jouer": o_jouer, "Analyse": o_analyse, "Rapports": o_rapports, "Réglages": o_reglages, "Aide": o_aide}.get(PAGE.get("onglet"))
+    depart = {"Fichier": o_fichier, "Jouer": o_jouer, "Analyse": o_analyse, "Rapports": o_rapports, "Réglages": o_reglages,
+              "Aide": o_aide}.get(PAGE.get("onglet"))
     if depart: ui.timer(.05, lambda: onglets.set_value(depart), once=True)   # l'onglet de la dernière fois
     montrer_barre(); montrer_controles()       # la fenêtre naît avec le titre du programme seul
     rafraichir()

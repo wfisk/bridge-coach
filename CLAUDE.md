@@ -55,13 +55,14 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (app chowned to the user). Both scripts take a local zip + SHA256SUMS for tests. Windows Setup.exe works on a
                         real PC (the user's work laptop, 2026-11-09); a club member is trying it; the Mac .pkg only on this Mac
     src/                Python code
-      app.py            the NiceGUI application: one bar across the top (ui.header: Fichier menu, the tabs, Aide; not the native bar: the window process leaves
-                        the Dock, so macOS would show none) with Ouvrir une séance (the .bc.json, by session date), Importer
+      app.py            the NiceGUI application: one bar across the top (ui.header: the tabs, Aide; not the native bar: the window process leaves
+                        the Dock, so macOS would show none). The first tab, Fichier, has a sidebar of pages like Rapports and Réglages
+                        (PAGES["Fichier"], panneau_fichier; it opens on Ouvrir une séance; no more drop-down menu or dialogs, 2026-11-10):
+                        Nouveau (the creation page; looking at it no longer closes the open session), Ouvrir une séance (the .bc.json, by session date), Importer
                         (rapport.py --importer: the .bc.json only, then it opens; .bws already imported are marked; the Rapports
                         tab offers a new .bws not yet imported), Exporter en PBN (donnes.pbn beside the .bc.json, with
-                        DoubleDummyTricks) and the working folder; the open session is remembered in etat.json beside
-                        bridge-coach.ini (retenir, seance_active) and named in the window title (titre_fenetre). The page open is saved too (etat.json "page": tab, sidebar entry, Standard | Expert, help section, Rapports and Réglages pages; retenir_page on every change) and reopened at start (PAGE). Fichier, Nouveau…: closes the open session (plain title; the
-                        remembered one changes only once a new file exists; « Annuler » reopens the session and page from before: avant_nouveau, annuler_nouveau), then a page (a hidden tab, like Aide): "Créer une séance vide" (edited in the Donnes tab with the deal editor, editeur_donne),
+                        DoubleDummyTricks) and Ouvrir le dossier de travail; the open session is remembered in etat.json beside
+                        bridge-coach.ini (retenir, seance_active) and named in the window title (titre_fenetre). The page open is saved too (etat.json "page": tab, sidebar entry, Standard | Expert, help section, Rapports and Réglages pages; retenir_page on every change) and reopened at start (PAGE). Fichier, Nouveau: "Créer une séance vide" (edited in the Donnes tab with the deal editor, editeur_donne),
                         then the theme drawing (a − / + count per kind of hand, 36 at most); either new file opens in the Donnes tab. Tabs: Donnes (opens on it) views the open
                         .bc.json with a sidebar (ui.left_drawer, light warm grey GRIS_BARRE like Claude's sidebar, the chosen entry a rounded darker pill, full height, Donnes tab only: Séance (alerts at its foot), Joueurs, a divider, one entry per deal (every tab has two entries then a divider, so Donne 1 stays in place): hands, each table's auction (encheres_html),
                         table results; vue_seance, page_donne…), view only so far. A deal page in Donnes, Analyse and Jouer has the same right sidebar (panneau_droit: fixed, LARGEUR_PANNEAU, the deal's name, a small board case, theme and par; Analyse adds the Standard | Expert toggle, the recommended contract, the lead and the double-dummy table (dm_html); Donnes the « Modifier la donne » button); Analyse: sidebar Analyse standard (status, date, "Lancer

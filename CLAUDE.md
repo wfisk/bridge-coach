@@ -202,7 +202,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         to the comment. rapport.py adds them to the
                         automatic analysis for the engine's contract; its rules are written
                         in systems/sef-2024/entames.md and systems/technique/jeu-de-la-carte.md
-      comparer.py       the -comparaison PDF: program vs Claude per deal, judged double-dummy, Expert always first.
+      comparer.py       the -comparaison PDF, « Le Coach face à l'Expert »: the program (called « Coach » throughout, never
+                        « Standard », 2026-11-10) vs Claude per deal, judged double-dummy, Expert always first.
                         Summary: same contract n/N and the Standard's IMP against the Expert first, par only as a
                         secondary table (par includes doubled sacrifices; a grand-slam par counts as the small slam,
                         par_pratique, shown "7♥ Sud (6♥)"). Then two tables like the summary page of

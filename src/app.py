@@ -28,7 +28,7 @@ LARGEUR_BARRE = 220                                        # la barre de gauche 
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
 NB_PDF = 2                                                 # l'analyse, la comparaison
 RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du coach et, si vous l'incluez, avis de l'expert"),
-            ("comparaison", "Comparaison", "programme et expert"))
+            ("comparaison", "Comparaison", "le Coach face à l'Expert"))
 TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.pbn;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
 TYPES_IMPORT = ("Bridgemate feuille de route ou PBN (*.bws;*.pdf;*.pbn)", "Tous les fichiers (*.*)")

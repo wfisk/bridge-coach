@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""PDF comparant l'analyse du programme (-standard.json) et l'analyse experte.
+"""PDF comparant le Coach (l'analyse du programme, « standard ») et l'Expert (l'analyse de Claude).
 
 Usage : python3 comparer.py <nom>.bc.json <nom>-standard.json <nom>-expert.json sortie-comparaison.pdf
 
 Pour chaque donne : contrat recommandé (gagnant ou non au double mort, écart au par en IMP)
 et entame recommandée (levées de la défense au double mort, comparées à la meilleure entame).
-Page de synthèse (IMP du Standard face à l'Expert, le par en second), contrats et entames qui
+Page de synthèse (IMP du Coach face à l'Expert, le par en second), contrats et entames qui
 diffèrent, puis les donnes où les deux analyses diffèrent : enchères côte à côte, le premier appel
-qui diffère encadré, la main de ce joueur, la raison du programme et les notes de l'expert.
+qui diffère encadré, la main de ce joueur, la raison du Coach et les notes de l'expert.
 """
 import sys, os, re, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -23,7 +23,7 @@ from jeu import levees_par_entame, LHO
 
 EN = {"SA": "NT", "♠": "S", "♥": "H", "♦": "D", "♣": "C"}
 ROT = ["N", "E", "S", "O"]; GRID = ["O", "N", "E", "S"]
-NOMS = {"auto": "Standard", "claude": "Expert"}
+NOMS = {"auto": "Coach", "claude": "Expert"}
 FOND_CONTRAT = colors.HexColor("#f5c2b3"); ROUGE = colors.HexColor("#c0392b")   # contrats différents
 FOND_ENTAME = colors.HexColor("#fbefb8")                                         # entames différentes
 S_c = st("cc", fontSize=8.6, leading=10.5)
@@ -121,8 +121,8 @@ def cases(enc):
 
 
 def premier_ecart(ea, ec):
-    """Le premier appel où les enchères du Standard (ea) et de l'Expert (ec) diffèrent :
-    (rang k, case du Standard, case de l'Expert, siège), ou None si l'une prolonge l'autre."""
+    """Le premier appel où les enchères du Coach (ea) et de l'Expert (ec) diffèrent :
+    (rang k, case du Coach, case de l'Expert, siège), ou None si l'une prolonge l'autre."""
     a, c = cases(ea), cases(ec)
     for k, (x, y) in enumerate(zip(a, c)):
         if x[2] != y[2]: return k, x[:2], y[:2], GRID[x[1]]
@@ -180,8 +180,8 @@ def camp_de(r):
 
 
 def imp_standard(a, c):
-    """IMP du Standard face à l'Expert, au double mort, vus du camp qui déclare chez l'Expert (sinon chez le
-    Standard) : positif, le Standard fait mieux ; négatif, il fait moins bien."""
+    """IMP du Coach face à l'Expert, au double mort, vus du camp qui déclare chez l'Expert (sinon chez le
+    Coach) : positif, le Coach fait mieux ; négatif, il fait moins bien."""
     camp = camp_de(c) or camp_de(a) or "NS"
     x = imp(a["ns"] - c["ns"])
     return x if camp == "NS" else -x
@@ -218,12 +218,12 @@ def main():
     total = sum(imp_standard(a, c) for _, a, c in differents)
     meme_c = N - len(differents)
     meme_e = sum(a["entame"] == c["entame"] for _, a, c in res if meme_contrat(a, c))
-    el = [Paragraph("Comparaison des analyses", S_title),
-          Paragraph(f"Séance du {date} · {N} donnes · analyse du programme et analyse experte, "
+    el = [Paragraph("Le Coach face à l'Expert", S_title),
+          Paragraph(f"Séance du {date} · {N} donnes · le Coach (le programme) face à l'Expert (Claude), "
                     "jugées au double mort", S_sub), Spacer(1, 8),
           Paragraph("Synthèse", S_h)]
-    bilan = (f"le Standard {'gagne' if total > 0 else 'perd'} <b>{abs(total)} IMP</b> face à l'Expert" if total
-             else "le Standard et l'Expert font jeu égal")
+    bilan = (f"le Coach {'gagne' if total > 0 else 'perd'} <b>{abs(total)} IMP</b> face à l'Expert" if total
+             else "le Coach et l'Expert font jeu égal")
     el.append(Paragraph(txt(
         f"Même contrat et même déclarant : <b>{meme_c}/{N}</b> ; parmi eux, même entame : <b>{meme_e}/{meme_c}</b>. "
         f"Sur les {len(differents)} donnes où les contrats diffèrent, {bilan}, au double mort." if differents else
@@ -240,7 +240,7 @@ def main():
         "vues, après coup, sans les chances réelles à la table."), S_note)]
     P = lambda x, s=S_c: Paragraph(x, s)
     S_d = ParagraphStyle("droite", parent=S_c, alignment=2)
-    contrats = [[P("<b>N°</b>"), P("<b>Par</b>"), P("<b>Expert</b>"), P("<b>Standard</b>"), P("<b>IMP</b>", S_d)]]
+    contrats = [[P("<b>N°</b>"), P("<b>Par</b>"), P("<b>Expert</b>"), P("<b>Coach</b>"), P("<b>IMP</b>", S_d)]]
     st_c, fonds = [], []; n_sens = {k: 0 for k in SENS}; memes = []
     for d, a, c in res:
         if meme_contrat(a, c): memes.append(str(d["n"])); continue
@@ -251,21 +251,21 @@ def main():
         sens = sens_contrat(cle_sens(a), cle_sens(c))
         if sens: fonds.append(("BACKGROUND", (3, i), (3, i), colors.HexColor(SENS[sens][0]))); n_sens[sens] += 1
         _groupe(st_c, i, i, (i - 1) % 2)
-    el.append(Paragraph("Contrats : Standard face à l'Expert", S_h2))
+    el.append(Paragraph("Contrats : Coach face à l'Expert", S_h2))
     el.append(Paragraph("Même camp : " + " ; ".join(
-        f"<font backColor='{SENS[k][0]}'> {('Standard plus haut' if k == 'plus' else 'Standard plus bas')} </font> ({n_sens[k]})" for k in SENS) +
+        f"<font backColor='{SENS[k][0]}'> {('Coach plus haut' if k == 'plus' else 'Coach plus bas')} </font> ({n_sens[k]})" for k in SENS) +
         ". Sans couleur : l'autre camp joue, ou le partenaire joue le même contrat. Après chaque contrat, ses levées au "
-        "double mort : = juste fait, +1 une levée de mieux, −1 en rouge une de chute. IMP : ce que le Standard gagne (+) "
-        "ou perd (−) face à l'Expert, au double mort, pour le camp qui déclare chez l'Expert ; en gras quand le Standard fait mieux.", S_note))
+        "double mort : = juste fait, +1 une levée de mieux, −1 en rouge une de chute. IMP : ce que le Coach gagne (+) "
+        "ou perd (−) face à l'Expert, au double mort, pour le camp qui déclare chez l'Expert ; en gras quand le Coach fait mieux.", S_note))
     el.append(Spacer(1, 3))
     if len(contrats) > 1:
         el.append(_grille(contrats, [1.0 * cm, 3.4 * cm, 4.9 * cm, 4.9 * cm, 1.6 * cm], st_c + fonds))
-        el.append(Paragraph(txt(f"Sur ces {len(contrats) - 1} donnes, le Standard {'gagne' if total > 0 else 'perd'} "
+        el.append(Paragraph(txt(f"Sur ces {len(contrats) - 1} donnes, le Coach {'gagne' if total > 0 else 'perd'} "
                                 f"<b>{abs(total)} IMP</b> en tout face à l'Expert." if total else
-                                f"Sur ces {len(contrats) - 1} donnes, le Standard et l'Expert font jeu égal."), S_body))
+                                f"Sur ces {len(contrats) - 1} donnes, le Coach et l'Expert font jeu égal."), S_body))
     if memes: el.append(Paragraph(f"Même contrat, même déclarant : donnes {', '.join(memes)}.", S_body))
 
-    entames = [[P("<b>N°</b>"), P("<b>Contrat</b>"), P("<b>Expert</b>"), P("<b>Standard</b>")]]
+    entames = [[P("<b>N°</b>"), P("<b>Contrat</b>"), P("<b>Expert</b>"), P("<b>Coach</b>")]]
     st_e, fonds_e = [], []; memes_e = []
     for d, a, c in res:
         if a["contrat"] == "passe" or a["contrat"][1:] != c["contrat"][1:] or a["decl"] != c["decl"]: continue
@@ -274,7 +274,7 @@ def main():
         entames.append([P(f"<b>{d['n']}</b>"), P(txt(suits(c["texte"] if c["contrat"] == a["contrat"] else f"{c['texte']} / {a['texte']}"))),
                         P(suits(case_entame(c))), P(suits(case_entame(a)))])
         fonds_e.append(("BACKGROUND", (3, i), (3, i), FOND_ENTAME)); _groupe(st_e, i, i, (i - 1) % 2)
-    el.append(Paragraph("Entames : Standard face à l'Expert", S_h2))
+    el.append(Paragraph("Entames : Coach face à l'Expert", S_h2))
     el.append(Paragraph("Seulement quand le même joueur entame dans la même dénomination. Entre parenthèses, au double "
                         "mort : les levées que la défense perd face à la meilleure entame ; rien si l'entame est la meilleure. "
                         "Les entames sont choisies à la table, sans voir les autres mains.", S_note))
@@ -288,7 +288,7 @@ def main():
     for d, a, c in diff:
         etiq = ""
         sens = None if meme_contrat(a, c) else sens_contrat(cle_sens(a), cle_sens(c))
-        if sens: etiq += f" <font backColor='{SENS[sens][0]}'> Standard plus {'haut' if sens == 'plus' else 'bas'} </font>"
+        if sens: etiq += f" <font backColor='{SENS[sens][0]}'> Coach plus {'haut' if sens == 'plus' else 'bas'} </font>"
         elif not meme_contrat(a, c): etiq += " <font backColor='#e4e4e4'> contrat différent </font>"
         if autre_entame(a, c): etiq += " <font backColor='#fbefb8'> entame différente </font>"
         bloc = [Paragraph(f"<b>Donne n° {d['n']}</b> · par : {txt(suits(par_texte(d)))}{etiq}", S_body), Spacer(1, 2)]
@@ -313,9 +313,9 @@ def main():
             ex, st_ = sequence(claude[n]["enc"], d["donneur"])[k], sequence(auto[n]["enc"], d["donneur"])[k]
             situ = f"après {' – '.join(avant)}" if avant else "en ouverture"
             pourquoi = raison_standard(d, auto[n], k)
-            lignes = [f"<b>Premier écart</b> : {SEAT[s]}, {situ} : Expert <b>{ex}</b>, Standard <b>{st_}</b>. "
+            lignes = [f"<b>Premier écart</b> : {SEAT[s]}, {situ} : Expert <b>{ex}</b>, Coach <b>{st_}</b>. "
                       f"Main de {SEAT[s]} : {main_txt(d, s)}."]
-            if pourquoi: lignes.append(f"<b>Standard {st_}</b> : {pourquoi}")
+            if pourquoi: lignes.append(f"<b>Coach {st_}</b> : {pourquoi}")
             if claude[n].get("notes"): lignes.append(f"<b>Expert</b> : {claude[n]['notes']}")
             bloc += [Spacer(1, 3)] + [Paragraph(suits(x), S_c) for x in lignes]
         el.append(KeepTogether(bloc + [Spacer(1, 10)]))

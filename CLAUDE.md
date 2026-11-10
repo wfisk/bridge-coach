@@ -160,11 +160,15 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         readable, rapport.py says so
       build_pdf.py      donnes + analyse JSON -> PDF; when « Vous êtes » is set, a first page « La séance en un coup d'œil »
                         (page_ensemble, lignes_ensemble): one row per deal in the report's order, a 0–100 % scale seen from
-                        your side, the field as a light box plot (quartiles, median, min–max), your % as a solid red circle
-                        (#f05a4f) joined deal to deal by a solid line, the recommended contract's % as a solid green diamond
-                        (the expert's green) joined by a dashed line (lines broken at unplayed deals; OKLab distances red–green
-                        11.6+ in every colour-vision type; the user's design, 2026-11-10), the space between the two lines
-                        filled pale red where you are above the recommended contract, pale green where it is above you
+                        your side, the field as a light box plot (quartiles, median, min–max), your % as a hollow orange circle
+                        (#e67700, 2.5 pt outline) and the recommended contract's % as a solid green circle (the expert's green),
+                        each joined deal to deal by a solid line (broken at unplayed deals; OKLab distances orange–green 17.8+ in
+                        every colour-vision type; red keeps its single meaning, a higher contract; the user's design, 2026-11-10),
+                        the space between the two lines filled pale orange where you are above the recommended contract, pale green
+                        where it is above you. Page 2 (style "haltere", on trial): the same rows as dumbbells, one bar per deal
+                        between you and the recommended contract. Page 3 « Vous face au champ » (page_champ): a bar from 50 %
+                        (the field's average on each deal) to your %, solid orange for a loss, pale for a gain, the gap in points
+                        on the right, the three costliest deals named under the title
                         (split where the lines cross: ecart_couleur); on the right your contract (pale red
                         when higher than the recommended one on the same side, pale blue when lower: sens_contrat, SENS), your %,
                         and the recommended contract (no %: the diamond shows it); a last « Séance » row: your session % (the

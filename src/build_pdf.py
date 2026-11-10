@@ -257,9 +257,10 @@ def nom(t, camp):
 FOND_RECO = "#e6efe9"                 # la ligne du contrat recommandé : le vert pâle de l'avis de l'expert
 
 # ---------------------------------------------------------------- la séance en un coup d'œil (première page)
-VOUS_C, RECO_C = "#f05a4f", "#1f5f3a"      # vous : un rond rouge plein ; le contrat recommandé : un losange vert plein (la couleur
+VOUS_C, RECO_C = "#e67700", "#1f5f3a"      # vous : un rond orange plein ; le contrat recommandé : un losange vert plein (la couleur
                                             # de l'expert) ; une ligne relie les vôtres (pleine), une autre les siens (tirets).
-                                            # Ce rouge-là reste distinct du vert pour toutes les vues des couleurs (OKLab 11,6+)
+                                            # L'orange reste distinct du vert pour toutes les vues des couleurs (OKLab 17,8+) ; le
+                                            # rouge et le bleu pâles gardent leur seul sens : contrat plus haut, plus bas (SENS)
 CHAMP_FOND, CHAMP_TRAIT, CHAMP_MED = "#eef0f2", "#b4bbc3", "#7a828c"   # le champ, en retrait : la boîte, ses moustaches, la médiane
 
 
@@ -289,7 +290,7 @@ def lignes_ensemble(donnes, an):
 
 
 def ecart_couleur(signe):
-    """L'espace entre vous et le contrat recommandé : rouge pâle quand vous êtes au-dessus, vert pâle en dessous."""
+    """L'espace entre vous et le contrat recommandé : orange pâle quand vous êtes au-dessus, vert pâle en dessous."""
     c = colors.HexColor(VOUS_C if signe > 0 else RECO_C)
     return colors.Color(c.red, c.green, c.blue, alpha=.2 if signe > 0 else .16)
 
@@ -301,15 +302,13 @@ def couleur_ligne(qui):
 
 
 def symbole(D, qui, cx, y):
-    """Vous : un rond rouge plein ; le contrat recommandé : un losange vert plein ; chacun cerclé de blanc pour se
-    détacher des lignes, des boîtes et de l'autre symbole."""
-    from reportlab.graphics.shapes import Circle, Polygon
+    """Vous : un rond creux, bord orange épais (2,5 pt) ; le contrat recommandé : un rond vert plein, cerclé de blanc
+    (le plein et le creux les distinguent, même sans les couleurs : l'utilisateur, 2026-11-10)."""
+    from reportlab.graphics.shapes import Circle
     if qui == "vous":
-        D.add(Circle(cx, y, 4.2, fillColor=colors.HexColor(VOUS_C), strokeColor=colors.white, strokeWidth=1.2))
+        D.add(Circle(cx, y, 4.0, fillColor=colors.white, strokeColor=colors.HexColor(VOUS_C), strokeWidth=2.5))
     else:
-        s_ = 5.0
-        D.add(Polygon([cx, y + s_, cx + s_, y, cx, y - s_, cx - s_, y], fillColor=colors.HexColor(RECO_C),
-                      strokeColor=colors.white, strokeWidth=1.2))
+        D.add(Circle(cx, y, 4.2, fillColor=colors.HexColor(RECO_C), strokeColor=colors.white, strokeWidth=1.2))
 
 
 def ligne_seance(L):
@@ -330,9 +329,75 @@ def ligne_seance(L):
     return dict(vous=vous, reco=sum(recos) / len(recos) if recos else None, champ=champ)
 
 
-def page_ensemble(donnes, an, largeur=17.4*cm):
+def page_champ(donnes, an, largeur=17.4*cm):
+    """Vous face au champ : sur chaque donne, 50 % est la moyenne des tables ; la barre va de 50 % à votre pourcentage,
+    à gauche ce que vous perdez face au champ (orange plein), à droite ce que vous gagnez (orange pâle), l'écart écrit à
+    droite en points ; la boîte du champ derrière, pour situer l'écart. Puis la séance, et les donnes qui coûtent le plus."""
+    from reportlab.graphics.shapes import Drawing, Rect, Line, String
+    L = [r for r in lignes_ensemble(donnes, an)]
+    jouees = [r for r in L if r["vous"] is not None]
+    if not jouees: return []
+    G, X0, X1 = 1.3*cm, 1.3*cm, 11.0*cm
+    C0, C1, C2 = 11.6*cm, 14.4*cm, 17.2*cm                 # votre contrat, votre %, l'écart (les deux derniers à droite)
+    seance = ligne_seance(L)
+    h = min(.72*cm, 20.5*cm / (len(L) + 2)); haut = .8*cm; ecart = .45*cm if seance else 0
+    D = Drawing(largeur, haut + h * (len(L) + (1 if seance else 0)) + ecart + .2*cm)
+    x = lambda p: X0 + (X1 - X0) * p / 100
+    Y = D.height - haut
+    orange = colors.HexColor(VOUS_C); pale = colors.Color(orange.red, orange.green, orange.blue, alpha=.35)
+    for p in (0, 25, 75, 100):
+        D.add(Line(x(p), 0, x(p), Y, strokeColor=colors.HexColor("#dfe3e7"), strokeWidth=.5))
+    for p in (0, 25, 50, 75, 100):
+        D.add(String(x(p), Y + .25*cm, f"{p} %", fontName="DVB" if p == 50 else "DV", fontSize=7.5,
+                     fillColor=colors.HexColor(INK if p == 50 else GREY), textAnchor="middle"))
+    for t_, xx, anc in (("Vous", C0, "start"), ("%", C1, "end"), ("Écart", C2, "end")):
+        D.add(String(xx, Y + .25*cm, t_, fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK), textAnchor=anc))
+
+    def rangée(y, nom, r, gras=False):
+        police = "DVB" if gras else "DV"
+        D.add(String(G - .3*cm, y - 2.6, nom, fontName="DVB", fontSize=8.5, fillColor=colors.HexColor(INK), textAnchor="end"))
+        b = min(h * .5, .34*cm)
+        if r.get("champ"):                                 # le champ, en retrait : moustaches et boîte
+            mn, q1, med, q3, mx = r["champ"]
+            D.add(Line(x(mn), y, x(mx), y, strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=.8))
+            D.add(Rect(x(q1), y - b / 2, max(x(q3) - x(q1), 1), b, fillColor=colors.HexColor(CHAMP_FOND),
+                       strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=.5, rx=1.5, ry=1.5))
+        if r["vous"] is None:
+            D.add(String(C1, y - 2.6, "–", fontName=police, fontSize=7.8, fillColor=colors.HexColor(GREY), textAnchor="end")); return
+        v = r["vous"]; perte = v < 50
+        D.add(Rect(min(x(v), x(50)), y - b * .45, abs(x(v) - x(50)), b * .9, fillColor=orange if perte else pale,
+                   strokeColor=None, rx=1.5, ry=1.5))      # la barre : de 50 % à vous
+        if r.get("texte_vous"):
+            D.add(String(C0, y - 2.6, r["texte_vous"], fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK)))
+        D.add(String(C1, y - 2.6, f"{v:.0f} %", fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK), textAnchor="end"))
+        e = round(v - 50)
+        D.add(String(C2, y - 2.6, ("+" if e > 0 else "") + str(e).replace("-", "−"), fontName="DVB" if perte or gras else "DV",
+                     fontSize=7.8, fillColor=colors.HexColor(INK), textAnchor="end"))
+
+    for k, r in enumerate(L):
+        y = Y - h * (k + .5)
+        if k % 2: D.add(Rect(0, y - h / 2, largeur, h, fillColor=colors.HexColor("#f7f8f9"), strokeColor=None))
+        rangée(y, str(r["n"]), r)
+    if seance:
+        ys = Y - h * len(L) - ecart
+        D.add(Line(0, ys + h / 2 + ecart / 2, largeur, ys + h / 2 + ecart / 2, strokeColor=colors.HexColor("#c7ccd2"), strokeWidth=.8))
+        rangée(ys - h / 2, "Séance", dict(seance, texte_vous=""), gras=True)
+    D.add(Line(x(50), 0, x(50), Y, strokeColor=colors.HexColor(INK), strokeWidth=1))   # le champ : 50 %, au-dessus de tout
+    pires = sorted((r for r in jouees if r["vous"] < 50), key=lambda r: r["vous"])[:3]
+    phrase = ("Les donnes qui vous coûtent le plus : " + ", ".join(f"{r['n']} ({round(r['vous'] - 50):d})".replace("-", "−")
+                                                              for r in pires) + ".") if pires else "Aucune donne sous le champ."
+    return [Paragraph("Vous face au champ", S_title),
+            Paragraph(txt("Sur chaque donne, 50 % est la moyenne des tables. La barre va de 50 % à votre pourcentage : à "
+                          "gauche, en orange plein, ce que vous perdez face au champ ; à droite, en orange pâle, ce que vous "
+                          "gagnez. L'écart est en points de pourcentage. " + phrase), S_sub),
+            Spacer(1, 8), D, PageBreak()]
+
+
+def page_ensemble(donnes, an, largeur=17.4*cm, style="lignes"):
     """La première page quand vous avez choisi « Vous êtes » : pour chaque donne, dans l'ordre du rapport, votre %,
-    celui du contrat recommandé joué au double mort, et le champ en boîte à moustaches (quartiles, médiane, extrêmes)."""
+    celui du contrat recommandé joué au double mort, et le champ en boîte à moustaches (quartiles, médiane, extrêmes).
+    style "lignes" : une ligne relie vos donnes, une autre celles du recommandé, l'espace entre elles en rouge ou vert pâle ;
+    "haltere" (page 2, à essayer) : sur chaque donne, une barre épaisse entre vous et le recommandé, rouge ou verte."""
     from reportlab.graphics.shapes import Drawing, Rect, Line, Circle, Polygon, String
     L = lignes_ensemble(donnes, an)
     if not L or not any(x["vous"] is not None for x in L): return []
@@ -386,7 +451,13 @@ def page_ensemble(donnes, an, largeur=17.4*cm):
         D.add(Line(0, ys + h / 2 + ecart / 2, largeur, ys + h / 2 + ecart / 2, strokeColor=colors.HexColor("#c7ccd2"), strokeWidth=.8))
         ys -= h / 2
         ligne(ys, "Séance", seance, gras=True)
-    for k in range(len(L) - 1):                            # l'espace entre vos deux lignes : rouge pâle où vous êtes au-dessus
+    if style == "haltere":                                 # une haltère par donne : la barre entre vous et le recommandé
+        for k, r in enumerate(L):
+            if r["vous"] is None or r["reco"] is None or r["vous"] == r["reco"]: continue
+            y = Y - h * (k + .5); c = ecart_couleur(r["vous"] - r["reco"])
+            D.add(Line(x(r["vous"]), y, x(r["reco"]), y, strokeColor=colors.Color(c.red, c.green, c.blue, alpha=.55),
+                       strokeWidth=6, strokeLineCap=1))
+    for k in range(len(L) - 1 if style == "lignes" else 0):   # l'espace entre vos deux lignes : rouge pâle où vous êtes au-dessus
         a_, b_ = L[k], L[k + 1]                            # du recommandé, vert pâle où il est au-dessus de vous
         if None in (a_["vous"], a_["reco"], b_["vous"], b_["reco"]): continue
         y1, y2 = Y - h * (k + .5), Y - h * (k + 1.5)
@@ -400,19 +471,20 @@ def page_ensemble(donnes, an, largeur=17.4*cm):
         for pts, signe in morceaux:
             if not signe: continue
             D.add(Polygon([v for pt in pts for v in pt], fillColor=ecart_couleur(signe), strokeColor=None))
-    for qui, style in (("vous", None), ("reco", [3, 2.2])):   # les lignes qui relient les donnes, coupées à une donne non jouée
+    for qui, tirets in (("vous", None), ("reco", None)) if style == "lignes" else ():   # les lignes qui relient les donnes, pleines
         prec = None
         for k, r in enumerate(L):
             y = Y - h * (k + .5)
             if r[qui] is None: prec = None; continue
             if prec: D.add(Line(prec[0], prec[1], x(r[qui]), y, strokeColor=couleur_ligne(qui), strokeWidth=1.4,
-                                strokeDashArray=style, strokeLineCap=1))
+                                strokeDashArray=tirets, strokeLineCap=1))
             prec = (x(r[qui]), y)
-    for qui, cx, y in marques: symbole(D, qui, cx, y)
+    for qui, cx, y in sorted(marques, key=lambda m: m[0] == "vous"): symbole(D, qui, cx, y)   # vous par-dessus
     leg = Drawing(largeur, .5*cm); yl = .22*cm                # la légende, au-dessus : symbole, bout de ligne, nom
-    leg.add(Line(0, yl, .6*cm, yl, strokeColor=couleur_ligne("vous"), strokeWidth=1.4)); symbole(leg, "vous", .3*cm, yl)
+    if style == "lignes": leg.add(Line(0, yl, .6*cm, yl, strokeColor=couleur_ligne("vous"), strokeWidth=1.4))
+    symbole(leg, "vous", .3*cm, yl)
     leg.add(String(.8*cm, yl - 2.6, "Vous", fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
-    leg.add(Line(2.0*cm, yl, 2.6*cm, yl, strokeColor=couleur_ligne("reco"), strokeWidth=1.4, strokeDashArray=[3, 2.2]))
+    if style == "lignes": leg.add(Line(2.0*cm, yl, 2.6*cm, yl, strokeColor=couleur_ligne("reco"), strokeWidth=1.4))
     symbole(leg, "reco", 2.3*cm, yl)
     leg.add(String(2.8*cm, yl - 2.6, "Contrat recommandé, joué au double mort", fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
     c = 9.0*cm; leg.add(Line(c, yl, c + 1.4*cm, yl, strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=1))
@@ -421,6 +493,11 @@ def page_ensemble(donnes, an, largeur=17.4*cm):
     leg.add(String(c + 1.6*cm, yl - 2.6, "Le champ : quartiles, médiane, du plus bas au plus haut", fontName="DV", fontSize=8,
                    fillColor=colors.HexColor(INK)))
     paire = next((p.get("nom") for k, p in (DONNEES_SEANCE.get("paires") or {}).items() if k in MES and p.get("nom")), "")
+    if style == "haltere":
+        return [Paragraph("Vous face au contrat recommandé", S_title),
+                Paragraph(txt("Sur chaque donne, la barre va de votre pourcentage à celui du contrat recommandé joué au double "
+                              "mort : orange quand vous faites mieux, verte quand il fait mieux que vous."), S_sub),
+                Spacer(1, 6), leg, Spacer(1, 4), D, PageBreak()]
     return [Paragraph("La séance en un coup d'œil", S_title),
             Paragraph(txt(f"Chaque ligne est une donne, dans l'ordre de ce rapport, vue de votre camp"
                           + (f" (votre paire : {paire})" if paire else "") + " : votre pourcentage, celui qu'aurait eu le "
@@ -428,7 +505,7 @@ def page_ensemble(donnes, an, largeur=17.4*cm):
                           "donne que vous n'avez pas jouée se lit de Nord-Sud. À droite, votre contrat (en rouge s'il est plus "
                           "haut que le recommandé, du même camp, en bleu s'il est plus bas), votre pourcentage, et le contrat "
                           "recommandé. Dernière ligne, la séance : votre pourcentage, la moyenne du contrat recommandé sur les "
-                          "donnes que vous avez jouées (le losange), et le champ des paires. Entre vos deux lignes, du rouge "
+                          "donnes que vous avez jouées (le rond vert), et le champ des paires. Entre vos deux lignes, de l'orange "
                           "quand vous faites mieux que le contrat recommandé, du vert quand il fait mieux que vous."), S_sub),
             Spacer(1, 6), leg, Spacer(1, 4), D, PageBreak()]
 
@@ -877,6 +954,8 @@ def main():
         doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
                                            onPage=footer, onPageEnd=suite)])
         story = page_ensemble(donnes, an or {"donnes": {}})   # vous avez choisi « Vous êtes » : la séance en un coup d'œil
+        if story: story += page_ensemble(donnes, an or {"donnes": {}}, style="haltere")   # page 2, à comparer (essai)
+        if story: story += page_champ(donnes, an or {"donnes": {}})                          # page 3 : vous face au champ
         for k, d in enumerate(donnes):
             story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
         parcours = page_parcours(data)             # à la fin : votre parcours, puis la synthèse

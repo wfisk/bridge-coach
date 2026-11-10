@@ -1131,6 +1131,8 @@ ouverture:
   - "*T": { si: "T 6+, non U est T, non W est T, palier(T) 3, H 11-16", montre: "6+ trèfles" }
   - 2SA: { si: "K 5+, T 5+, H 10-18, (U est C || U est P), (W est C || W est P)", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui }
   - contre: { si: "H 12+, (T 4+ || U est T || W est T), (K 4+ || U est K || W est K), (C 4+ || U est C || W est C), (P 4+ || U est P || W est P)", montre: "contre : 4+ cartes dans les deux couleurs restantes", nature: appel }
+  # une main forte (17+) : contrer d'abord, puis nommer sa couleur ; comme sur l'ouverture directe (07/11 donne 24)
+  - contre: { si: "H 17+", montre: "contre : 17+ H, main forte (puis sa couleur)", nature: appel }
   - passe: { montre: "pas d'intervention" }
 "(1x) passe (1SA)":
   - "*P": { si: "P 5+, non U est P, H 11-16, bonne P", montre: "5+ piques" }

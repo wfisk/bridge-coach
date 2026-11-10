@@ -344,8 +344,8 @@ def entame_et_defense(d, contrat, decl, encheres=None):
                                  declarant=nommees[decl], mort=nommees[PART[decl]])
     lecture = lecture_entame(d, contrat, decl, encheres, nommees, regle[0]) if encheres else ""
     raison = raison_detaillee(raison, regle, main)
-    if regle[0] in nommees[meneur]:                        # sa propre couleur, soutenue par le partenaire
-        raison = raison.replace("dans la couleur de son partenaire", "dans sa couleur, soutenue par son partenaire")
+    if regle[0] in nommees[meneur]:                        # une couleur que les deux ont nommée : le fit
+        raison = raison.replace("dans la couleur de son partenaire", "dans la couleur du fit, nommée par les deux")
     return {"entame": {"joueur": meneur, "carte": regle},
             "defense": " ".join(x for x in (f"{meneur} entame {regle}, {raison}.", lecture) if x),
             "pourquoi": f"{meneur} entame {regle}, {raison}."}   # la seule raison de l'entame : le coach dit la suite

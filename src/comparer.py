@@ -47,18 +47,30 @@ def final(enc, donneur):
     return last[0] + last[1], first[(last[2], last[1])], dbl
 
 
+def pct_face_aux_tables(tables, score_ns):
+    """Le % N-S qu'aurait ce score joué face aux tables : celles qu'il bat, plus la moitié de celles qu'il égale, sur
+    leur nombre (comme Bridgemate compte les points de match). None sans table."""
+    ts = [t.get("score_ns") or 0 for t in tables if not t.get("recommande")]
+    if not ts: return None
+    return round(100 * (sum(score_ns > x for x in ts) + sum(score_ns == x for x in ts) / 2) / len(ts), 2)
+
+
 def table_recommandee(d, a):
     """Le contrat recommandé de l'analyse a, comme une ligne du tableau des résultats : son résultat au double mort,
-    son score, l'entame recommandée ("recommande": True ; pas de paires, d'IMP ni de %). None sans enchères."""
+    son score, l'entame recommandée ("recommande": True ; pas de paires ni d'IMP) et le % qu'aurait ce score face aux
+    tables (pct_face_aux_tables). None sans enchères."""
     if not (a or {}).get("enc") or not d.get("dm"): return None
     c, decl, dbl = final(a["enc"], d["donneur"])
     e = a.get("entame"); carte = e.get("carte") if isinstance(e, dict) else ""
     t = dict(table="", paire_ns="", paire_eo="", recommande=True, entame=carte or "", imp_ns=None, pct_ns=None)
-    if c == "passe": return dict(t, contrat="passe", declarant="", resultat="", score_ns=0, entame="")
+    if c == "passe":
+        return dict(t, contrat="passe", declarant="", resultat="", score_ns=0, entame="",
+                    pct_ns=pct_face_aux_tables(d.get("tables") or [], 0))
     den = c[1:]; lev = d["dm"][den][decl]; camp = "NS" if decl in "NS" else "EW"
     v = score(int(c[0]), EN[den], dbl, vul_of(d["vul"], camp), lev); ecart = lev - int(c[0]) - 6
+    ns = v if camp == "NS" else -v
     return dict(t, contrat=c + "X" * dbl, declarant=decl, resultat="=" if ecart == 0 else f"{ecart:+d}",
-                score_ns=v if camp == "NS" else -v)
+                score_ns=ns, pct_ns=pct_face_aux_tables(d.get("tables") or [], ns))
 
 
 def evaluer(d, a, cache):

@@ -670,12 +670,14 @@ def tableau_resultats(d, mes, reco):
              "eo": x.get("nom_eo") or x.get("paire_eo", ""), "contrat": rouge(x.get("contrat", "")),
              "decl": SIEGE.get(x.get("declarant"), x.get("declarant") or ""), "res": x.get("resultat", ""),
              "entame": rouge(x.get("entame") or ""), "score": f"{x['score_ns']:+d}" if isinstance(x.get("score_ns"), int) else "",
+             "pct": f"{x['pct_ns']:.0f} %" if x.get("pct_ns") is not None else "",
              "moi": moi.a_joue(x, mes), "reco": bool(x.get("recommande"))}
             for i, x in enumerate(moi.ordre(d["tables"] + ([reco] if reco else []), mes))]   # le meilleur d'abord, vu de votre camp
     for x in rows:
         if x["reco"]: x.update(table="", ns="Recommandé", eo="au double mort")
     cols = [("table", "Table"), ("ns", "Nord-Sud"), ("eo", "Est-Ouest"), ("contrat", "Contrat"), ("decl", "Déclarant"),
-            ("res", "Résultat"), ("entame", "Entame"), ("score", "Score N-S")]
+            ("res", "Résultat"), ("entame", "Entame"), ("score", "Score N-S")] + \
+           ([("pct", "% N-S")] if len(d["tables"]) > 2 else [])   # le recommandé : son % face aux tables
     tb = ui.table(columns=[{"name": k, "label": l, "field": k, "align": "left"} for k, l in cols], rows=rows, row_key="k") \
         .props(f"flat dense :table-row-style-fn=\"r => r.moi ? 'background:{moi.SURLIGNE}' : r.reco ? 'background:{FOND_RECO};font-style:italic' : ''\"").classes("w-full")   # votre table
     for k in ("contrat", "entame"):                         # cœurs et carreaux en rouge, comme dans le PDF

@@ -36,3 +36,8 @@ assert x["plan"] == MARQUE_COACH + " Coach." + MARQUE_AVIS + " Expert." and x["d
 assert rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std)["enc_coach"] == grille
 assert MARQUE_COACH not in rapport.coach_pour_expert(dict(d, donneur="S"), dict(exp, entame={"joueur": "O", "carte": "♣2"}), std)["plan"]
 print("ok")
+# le % du contrat recommandé, joué face aux tables : celles qu'il bat, plus la moitié de celles qu'il égale
+from comparer import pct_face_aux_tables
+tabs = [{"score_ns": s} for s in (420, 420, 170, -50)]
+assert pct_face_aux_tables(tabs, 420) == 75.0 and pct_face_aux_tables(tabs, 450) == 100.0 and pct_face_aux_tables([], 0) is None
+print("ok")

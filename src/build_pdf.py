@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import moi
 TOURS = {}                       # donne -> « Tour 1 · table 4 · … » quand la séance décrit son mouvement (moi.tour_de)
 MES = set()                     # les paires de l'utilisateur dans cette séance (moi.py) : leurs lignes sont surlignées
+DONNEES_SEANCE = {}             # la séance du rapport (pour le nom de votre paire en tête de la vue d'ensemble)
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
@@ -255,6 +256,91 @@ def nom(t, camp):
 
 FOND_RECO = "#e6efe9"                 # la ligne du contrat recommandé : le vert pâle de l'avis de l'expert
 
+# ---------------------------------------------------------------- la séance en un coup d'œil (première page)
+VOUS_C, RECO_C = "#1f5f3a", "#1d4ed8"      # vous : un point vert plein ; le contrat recommandé : un losange bleu creux
+CHAMP_FOND, CHAMP_TRAIT, CHAMP_MED = "#e3e7eb", "#9aa3ad", "#555b66"   # le champ : la boîte, ses moustaches, la médiane
+
+
+def lignes_ensemble(donnes, an):
+    """Une ligne par donne, vue de votre camp (de Nord-Sud si vous ne l'avez pas jouée) : {n, vous, reco, texte_reco,
+    champ: (min, q1, médiane, q3, max)}. Les % du champ sont ceux des tables ; celui du contrat recommandé, son score au
+    double mort face aux tables (comparer.pct_face_aux_tables)."""
+    import statistics
+    from comparer import table_recommandee
+    out = []
+    for d in donnes:
+        tables = [t for t in d.get("tables") or [] if t.get("pct_ns") is not None]
+        if len(tables) < 2: continue
+        camp, t = moi.mon_camp(tables, MES)
+        vue = lambda p: None if p is None else (p if camp != "EO" else 100 - p)
+        pcts = sorted(vue(x["pct_ns"]) for x in tables)
+        q1, med, q3 = statistics.quantiles(pcts, n=4, method="inclusive")
+        reco = table_recommandee(d, (an.get("donnes") or {}).get(str(d["n"])) or {})
+        texte = ""
+        if reco:
+            texte = "passe" if reco["contrat"] == "passe" else \
+                f"{reco['contrat']} {SEAT[reco['declarant']][0]} {reco['resultat'] or '='}".replace("-", "−")
+        out.append(dict(n=d["n"], vous=vue(t["pct_ns"]) if t else None, reco=vue(reco.get("pct_ns")) if reco else None,
+                        texte_reco=texte, champ=(pcts[0], q1, med, q3, pcts[-1])))
+    return out
+
+
+def page_ensemble(donnes, an, largeur=17.4*cm):
+    """La première page quand vous avez choisi « Vous êtes » : pour chaque donne, dans l'ordre du rapport, votre %,
+    celui du contrat recommandé joué au double mort, et le champ en boîte à moustaches (quartiles, médiane, extrêmes)."""
+    from reportlab.graphics.shapes import Drawing, Rect, Line, Circle, Polygon, String
+    L = lignes_ensemble(donnes, an)
+    if not L or not any(x["vous"] is not None for x in L): return []
+    G, X0, X1 = 1.4*cm, 1.4*cm, 11.2*cm                     # les numéros, puis l'échelle de 0 à 100 %, puis les chiffres
+    V, R = X1 + .9*cm, X1 + 2.3*cm                          # les colonnes de texte : vous, le contrat recommandé
+    h = min(.72*cm, 21.5*cm / len(L)); haut = .8*cm
+    D = Drawing(largeur, haut + h * len(L) + .2*cm)
+    x = lambda p: X0 + (X1 - X0) * p / 100
+    Y = D.height - haut
+    for p in (0, 25, 50, 75, 100):                         # l'échelle : des traits légers, des % en haut
+        D.add(Line(x(p), 0, x(p), Y, strokeColor=colors.HexColor("#dfe3e7" if p % 50 else "#c7ccd2"), strokeWidth=.5))
+        D.add(String(x(p), Y + .25*cm, f"{p} %", fontName="DV", fontSize=7.5, fillColor=colors.HexColor(GREY), textAnchor="middle"))
+    D.add(String(V, Y + .25*cm, "Vous", fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK)))
+    D.add(String(R, Y + .25*cm, "Recommandé (DM)", fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK)))
+    for k, r in enumerate(L):
+        y = Y - h * (k + .5)
+        if k % 2: D.add(Rect(0, y - h / 2, largeur, h, fillColor=colors.HexColor("#f7f8f9"), strokeColor=None))
+        D.add(String(G - .3*cm, y - 2.6, f"{r['n']}", fontName="DVB", fontSize=8.5, fillColor=colors.HexColor(INK), textAnchor="end"))
+        mn, q1, med, q3, mx = r["champ"]; b = min(h * .5, .34*cm)
+        D.add(Line(x(mn), y, x(mx), y, strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=1))      # les moustaches
+        for v in (mn, mx): D.add(Line(x(v), y - b / 3, x(v), y + b / 3, strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=1))
+        D.add(Rect(x(q1), y - b / 2, max(x(q3) - x(q1), 1), b, fillColor=colors.HexColor(CHAMP_FOND),
+                   strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=.6, rx=1.5, ry=1.5))           # la boîte
+        D.add(Line(x(med), y - b / 2, x(med), y + b / 2, strokeColor=colors.HexColor(CHAMP_MED), strokeWidth=1.4))
+        if r["reco"] is not None:                          # le contrat recommandé : un losange creux, cerclé de blanc
+            c, s_ = x(r["reco"]), 4.2
+            pts = [c, y + s_, c + s_, y, c, y - s_, c - s_, y]
+            D.add(Polygon(pts, fillColor=colors.white, strokeColor=colors.HexColor(RECO_C), strokeWidth=1.6))
+        if r["vous"] is not None:                          # vous : un point plein, cerclé de blanc
+            D.add(Circle(x(r["vous"]), y, 3.6, fillColor=colors.HexColor(VOUS_C), strokeColor=colors.white, strokeWidth=1.2))
+        ecrire = lambda xx, t: D.add(String(xx, y - 2.6, t, fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
+        ecrire(V, f"{r['vous']:.0f} %" if r["vous"] is not None else "–")
+        if r["reco"] is not None: ecrire(R, f"{r['texte_reco']}  {r['reco']:.0f} %")
+    leg = Drawing(largeur, .5*cm); yl = .22*cm                # la légende, au-dessus
+    leg.add(Circle(.15*cm, yl, 3.6, fillColor=colors.HexColor(VOUS_C), strokeColor=colors.white, strokeWidth=1.2))
+    leg.add(String(.4*cm, yl - 2.6, "Vous", fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
+    c = 2.1*cm; leg.add(Polygon([c, yl + 4.2, c + 4.2, yl, c, yl - 4.2, c - 4.2, yl], fillColor=colors.white,
+                               strokeColor=colors.HexColor(RECO_C), strokeWidth=1.6))
+    leg.add(String(2.45*cm, yl - 2.6, "Contrat recommandé, joué au double mort", fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
+    c = 9.0*cm; leg.add(Line(c, yl, c + 1.4*cm, yl, strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=1))
+    leg.add(Rect(c + .35*cm, yl - 4, .7*cm, 8, fillColor=colors.HexColor(CHAMP_FOND), strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=.6))
+    leg.add(Line(c + .7*cm, yl - 4, c + .7*cm, yl + 4, strokeColor=colors.HexColor(CHAMP_MED), strokeWidth=1.4))
+    leg.add(String(c + 1.6*cm, yl - 2.6, "Le champ : quartiles, médiane, du plus bas au plus haut", fontName="DV", fontSize=8,
+                   fillColor=colors.HexColor(INK)))
+    paire = next((p.get("nom") for k, p in (DONNEES_SEANCE.get("paires") or {}).items() if k in MES and p.get("nom")), "")
+    return [Paragraph("La séance en un coup d'œil", S_title),
+            Paragraph(txt(f"Chaque ligne est une donne, dans l'ordre de ce rapport, vue de votre camp"
+                          + (f" (votre paire : {paire})" if paire else "") + " : votre pourcentage, celui qu'aurait eu le "
+                          "contrat recommandé joué au double mort face aux tables, et le champ, en boîte à moustaches. Une "
+                          "donne que vous n'avez pas jouée se lit de Nord-Sud."), S_sub),
+            Spacer(1, 6), leg, Spacer(1, 4), D, PageBreak()]
+
+
 def results_table(d, a=None):
     """Les tables, du meilleur résultat au moins bon vu de votre camp ; le contrat recommandé de l'analyse a y prend
     sa place (vert pâle, son résultat au double mort)."""
@@ -272,7 +358,7 @@ def results_table(d, a=None):
         if t.get("recommande"):
             row = [P("<i>Recommandé" + (" (DM)" if not passe else "") + "</i>"), P(suits(jeu)), P(suits(t["entame"])),
                    P(f"{t['score_ns']:+d}"), P("")]
-            if beaucoup: row = [P("")] + row + [P("")]
+            if beaucoup: row = [P("")] + row + [P(f"<i>{t['pct_ns']:.0f} %</i>" if t.get("pct_ns") is not None else "")]   # face aux tables
             rows.append(row); vous.append(("BACKGROUND", (0, len(rows) - 1), (-1, len(rows) - 1), colors.HexColor(FOND_RECO)))
             continue
         row = [P(_paires(t, None if passe else "NS" if t["declarant"] in "NS" else "EO")), P(suits(jeu)),
@@ -674,7 +760,7 @@ def _tables(tbs, total=None):
 def main():
     global MES, TOURS
     data = json.load(open(sys.argv[1])); an = json.load(open(sys.argv[2])); out = sys.argv[3]
-    MES = moi.paires(data)
+    MES = moi.paires(data); DONNEES_SEANCE.update(data)
     TOURS = {d["n"]: moi.tour_de(data, d["n"]) for d in data["donnes"]}
     date = data["session"]["date"]
     pied = an.get("titre_pied", f"Analyse des donnes – séance du {date} – Système SEF, marque IMP")
@@ -698,7 +784,7 @@ def main():
         doc._spans = {}
         doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
                                            onPage=footer, onPageEnd=suite)])
-        story = []
+        story = page_ensemble(donnes, an or {"donnes": {}})   # vous avez choisi « Vous êtes » : la séance en un coup d'œil
         for k, d in enumerate(donnes):
             story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
         parcours = page_parcours(data)             # à la fin : votre parcours, puis la synthèse

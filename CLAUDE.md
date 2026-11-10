@@ -158,10 +158,14 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         endplay; the club name is not kept); rapport.sh accepts the PDF directly.
                         FFBClubNet backups named .bws are password-protected 7z archives: not
                         readable, rapport.py says so
-      build_pdf.py      donnes + analyse JSON -> PDF; deals first (in the order played when the Rapports tab asks: moi.ordre_joue,
+      build_pdf.py      donnes + analyse JSON -> PDF; when « Vous êtes » is set, a first page « La séance en un coup d'œil »
+                        (page_ensemble, lignes_ensemble): one row per deal in the report's order, a 0–100 % scale seen from
+                        your side, the field as a box plot (quartiles, median, min–max), your % as a solid green dot, the
+                        recommended contract's % as a hollow blue diamond (#1d4ed8: OKLab distances to the green 9.7+ in every
+                        colour-vision type), numbers in text on the right; then the deals (in the order played when the Rapports tab asks: moi.ordre_joue,
                         moi.ordre_des_donnes), each with its round line (moi.tour_de); each results table holds the
                         recommended contract as a pale green row ranked among the tables (comparer.table_recommandee: its
-                        double-dummy result and score, no IMP or %; the app's Donnes tab shows it too, the expert's else the
+                        double-dummy result and score, and the % it would get against the tables, comparer.pct_face_aux_tables; no IMP; the app's Donnes tab shows it too, the expert's else the
                         standard's). Then at the end the pair's rounds (page_parcours) and, in -analyse, the summary
                         page, one line per deal: recommended contract, how many tables played it (same side, partner included),
                         higher (red), lower (blue), or let the other side play; your contract coloured the same way. Bidding

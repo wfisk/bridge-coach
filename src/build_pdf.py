@@ -262,6 +262,7 @@ VOUS_C, RECO_C = "#e67700", "#1f5f3a"      # vous : un rond orange plein ; le co
                                             # L'orange reste distinct du vert pour toutes les vues des couleurs (OKLab 17,8+) ; le
                                             # rouge et le bleu pâles gardent leur seul sens : contrat plus haut, plus bas (SENS)
 CHAMP_FOND, CHAMP_TRAIT, CHAMP_MED = "#eef0f2", "#b4bbc3", "#7a828c"   # le champ, en retrait : la boîte, ses moustaches, la médiane
+PERTE_C, GAIN_C = "#e03131", "#1971c2"     # vous face au champ : la perte en rouge, le gain en bleu (OKLab 21,8+ pour toutes les vues)
 
 
 def lignes_ensemble(donnes, an):
@@ -332,7 +333,8 @@ def ligne_seance(L):
 def page_champ(donnes, an, largeur=17.4*cm):
     """Vous face au champ : sur chaque donne, 50 % est la moyenne des tables ; la barre va de 50 % à votre pourcentage,
     à gauche ce que vous perdez face au champ (orange plein), à droite ce que vous gagnez (orange pâle), l'écart écrit à
-    droite en points ; la boîte du champ derrière, pour situer l'écart. Puis la séance, et les donnes qui coûtent le plus."""
+    droite en points ; la boîte du champ derrière, pour situer l'écart. Puis la séance, et les donnes qui coûtent le plus.
+    Les pertes en rouge, les gains en bleu (PERTE_C, GAIN_C : l'utilisateur, 2026-11-10)."""
     from reportlab.graphics.shapes import Drawing, Rect, Line, String
     L = [r for r in lignes_ensemble(donnes, an)]
     jouees = [r for r in L if r["vous"] is not None]
@@ -344,7 +346,7 @@ def page_champ(donnes, an, largeur=17.4*cm):
     D = Drawing(largeur, haut + h * (len(L) + (1 if seance else 0)) + ecart + .2*cm)
     x = lambda p: X0 + (X1 - X0) * p / 100
     Y = D.height - haut
-    orange = colors.HexColor(VOUS_C); pale = colors.Color(orange.red, orange.green, orange.blue, alpha=.35)
+    perdu, gagne = colors.HexColor(PERTE_C), colors.HexColor(GAIN_C)   # rouge ce que vous perdez, bleu ce que vous gagnez
     for p in (0, 25, 75, 100):
         D.add(Line(x(p), 0, x(p), Y, strokeColor=colors.HexColor("#dfe3e7"), strokeWidth=.5))
     for p in (0, 25, 50, 75, 100):
@@ -365,7 +367,7 @@ def page_champ(donnes, an, largeur=17.4*cm):
         if r["vous"] is None:
             D.add(String(C1, y - 2.6, "–", fontName=police, fontSize=7.8, fillColor=colors.HexColor(GREY), textAnchor="end")); return
         v = r["vous"]; perte = v < 50
-        D.add(Rect(min(x(v), x(50)), y - b * .45, abs(x(v) - x(50)), b * .9, fillColor=orange if perte else pale,
+        D.add(Rect(min(x(v), x(50)), y - b * .45, abs(x(v) - x(50)), b * .9, fillColor=perdu if perte else gagne,
                    strokeColor=None, rx=1.5, ry=1.5))      # la barre : de 50 % à vous
         if r.get("texte_vous"):
             D.add(String(C0, y - 2.6, r["texte_vous"], fontName=police, fontSize=7.8, fillColor=colors.HexColor(INK)))
@@ -388,8 +390,8 @@ def page_champ(donnes, an, largeur=17.4*cm):
                                                               for r in pires) + ".") if pires else "Aucune donne sous le champ."
     return [Paragraph("Vous face au champ", S_title),
             Paragraph(txt("Sur chaque donne, 50 % est la moyenne des tables. La barre va de 50 % à votre pourcentage : à "
-                          "gauche, en orange plein, ce que vous perdez face au champ ; à droite, en orange pâle, ce que vous "
-                          "gagnez. L'écart est en points de pourcentage. " + phrase), S_sub),
+                          "gauche, en rouge, ce que vous perdez face au champ ; à droite, en bleu, ce que vous gagnez. "
+                          "L'écart est en points de pourcentage. " + phrase), S_sub),
             Spacer(1, 8), D, PageBreak()]
 
 

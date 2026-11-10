@@ -167,7 +167,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         the space between the two lines filled pale orange where you are above the recommended contract, pale green
                         where it is above you. Page 2 (style "haltere", on trial): the same rows as dumbbells, one bar per deal
                         between you and the recommended contract. Page 3 « Vous face au champ » (page_champ): a bar from 50 %
-                        (the field's average on each deal) to your %, solid orange for a loss, pale for a gain, the gap in points
+                        (the field's average on each deal) to your %, red for a loss, blue for a gain (PERTE_C, GAIN_C), the gap in points
                         on the right, the three costliest deals named under the title
                         (split where the lines cross: ecart_couleur); on the right your contract (pale red
                         when higher than the recommended one on the same side, pale blue when lower: sens_contrat, SENS), your %,

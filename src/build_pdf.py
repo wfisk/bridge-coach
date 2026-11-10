@@ -257,8 +257,9 @@ def nom(t, camp):
 FOND_RECO = "#e6efe9"                 # la ligne du contrat recommandé : le vert pâle de l'avis de l'expert
 
 # ---------------------------------------------------------------- la séance en un coup d'œil (première page)
-VOUS_C, RECO_C = "#1f5f3a", "#1d4ed8"      # vous : un point vert plein ; le contrat recommandé : un losange bleu creux
-CHAMP_FOND, CHAMP_TRAIT, CHAMP_MED = "#e3e7eb", "#9aa3ad", "#555b66"   # le champ : la boîte, ses moustaches, la médiane
+VOUS_C, RECO_C = "#1d4ed8", "#1f5f3a"      # vous : un rond bleu plein ; le contrat recommandé : un losange vert plein (la couleur
+                                            # de l'expert) ; une ligne relie les vôtres (pleine), une autre les siens (tirets)
+CHAMP_FOND, CHAMP_TRAIT, CHAMP_MED = "#eef0f2", "#b4bbc3", "#7a828c"   # le champ, en retrait : la boîte, ses moustaches, la médiane
 
 
 def lignes_ensemble(donnes, an):
@@ -285,6 +286,24 @@ def lignes_ensemble(donnes, an):
     return out
 
 
+def couleur_ligne(qui):
+    """La ligne qui relie les donnes : la couleur du symbole, un peu transparente pour laisser voir le champ."""
+    c = colors.HexColor(VOUS_C if qui == "vous" else RECO_C)
+    return colors.Color(c.red, c.green, c.blue, alpha=.55)
+
+
+def symbole(D, qui, cx, y):
+    """Vous : un rond bleu plein ; le contrat recommandé : un losange vert plein ; chacun cerclé de blanc pour se
+    détacher des lignes, des boîtes et de l'autre symbole."""
+    from reportlab.graphics.shapes import Circle, Polygon
+    if qui == "vous":
+        D.add(Circle(cx, y, 4.2, fillColor=colors.HexColor(VOUS_C), strokeColor=colors.white, strokeWidth=1.2))
+    else:
+        s_ = 5.0
+        D.add(Polygon([cx, y + s_, cx + s_, y, cx, y - s_, cx - s_, y], fillColor=colors.HexColor(RECO_C),
+                      strokeColor=colors.white, strokeWidth=1.2))
+
+
 def page_ensemble(donnes, an, largeur=17.4*cm):
     """La première page quand vous avez choisi « Vous êtes » : pour chaque donne, dans l'ordre du rapport, votre %,
     celui du contrat recommandé joué au double mort, et le champ en boîte à moustaches (quartiles, médiane, extrêmes)."""
@@ -302,6 +321,7 @@ def page_ensemble(donnes, an, largeur=17.4*cm):
         D.add(String(x(p), Y + .25*cm, f"{p} %", fontName="DV", fontSize=7.5, fillColor=colors.HexColor(GREY), textAnchor="middle"))
     D.add(String(V, Y + .25*cm, "Vous", fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK)))
     D.add(String(R, Y + .25*cm, "Recommandé (DM)", fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK)))
+    marques = []                                           # les symboles, posés à la fin : au-dessus des lignes et des boîtes
     for k, r in enumerate(L):
         y = Y - h * (k + .5)
         if k % 2: D.add(Rect(0, y - h / 2, largeur, h, fillColor=colors.HexColor("#f7f8f9"), strokeColor=None))
@@ -312,21 +332,26 @@ def page_ensemble(donnes, an, largeur=17.4*cm):
         D.add(Rect(x(q1), y - b / 2, max(x(q3) - x(q1), 1), b, fillColor=colors.HexColor(CHAMP_FOND),
                    strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=.6, rx=1.5, ry=1.5))           # la boîte
         D.add(Line(x(med), y - b / 2, x(med), y + b / 2, strokeColor=colors.HexColor(CHAMP_MED), strokeWidth=1.4))
-        if r["reco"] is not None:                          # le contrat recommandé : un losange creux, cerclé de blanc
-            c, s_ = x(r["reco"]), 4.2
-            pts = [c, y + s_, c + s_, y, c, y - s_, c - s_, y]
-            D.add(Polygon(pts, fillColor=colors.white, strokeColor=colors.HexColor(RECO_C), strokeWidth=1.6))
-        if r["vous"] is not None:                          # vous : un point plein, cerclé de blanc
-            D.add(Circle(x(r["vous"]), y, 3.6, fillColor=colors.HexColor(VOUS_C), strokeColor=colors.white, strokeWidth=1.2))
+        if r["reco"] is not None: marques.append(("reco", x(r["reco"]), y))
+        if r["vous"] is not None: marques.append(("vous", x(r["vous"]), y))
         ecrire = lambda xx, t: D.add(String(xx, y - 2.6, t, fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
         ecrire(V, f"{r['vous']:.0f} %" if r["vous"] is not None else "–")
         if r["reco"] is not None: ecrire(R, f"{r['texte_reco']}  {r['reco']:.0f} %")
-    leg = Drawing(largeur, .5*cm); yl = .22*cm                # la légende, au-dessus
-    leg.add(Circle(.15*cm, yl, 3.6, fillColor=colors.HexColor(VOUS_C), strokeColor=colors.white, strokeWidth=1.2))
-    leg.add(String(.4*cm, yl - 2.6, "Vous", fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
-    c = 2.1*cm; leg.add(Polygon([c, yl + 4.2, c + 4.2, yl, c, yl - 4.2, c - 4.2, yl], fillColor=colors.white,
-                               strokeColor=colors.HexColor(RECO_C), strokeWidth=1.6))
-    leg.add(String(2.45*cm, yl - 2.6, "Contrat recommandé, joué au double mort", fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
+    for qui, style in (("vous", None), ("reco", [3, 2.2])):   # les lignes qui relient les donnes, coupées à une donne non jouée
+        prec = None
+        for k, r in enumerate(L):
+            y = Y - h * (k + .5)
+            if r[qui] is None: prec = None; continue
+            if prec: D.add(Line(prec[0], prec[1], x(r[qui]), y, strokeColor=couleur_ligne(qui), strokeWidth=1.4,
+                                strokeDashArray=style, strokeLineCap=1))
+            prec = (x(r[qui]), y)
+    for qui, cx, y in marques: symbole(D, qui, cx, y)
+    leg = Drawing(largeur, .5*cm); yl = .22*cm                # la légende, au-dessus : symbole, bout de ligne, nom
+    leg.add(Line(0, yl, .6*cm, yl, strokeColor=couleur_ligne("vous"), strokeWidth=1.4)); symbole(leg, "vous", .3*cm, yl)
+    leg.add(String(.8*cm, yl - 2.6, "Vous", fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
+    leg.add(Line(2.0*cm, yl, 2.6*cm, yl, strokeColor=couleur_ligne("reco"), strokeWidth=1.4, strokeDashArray=[3, 2.2]))
+    symbole(leg, "reco", 2.3*cm, yl)
+    leg.add(String(2.8*cm, yl - 2.6, "Contrat recommandé, joué au double mort", fontName="DV", fontSize=8, fillColor=colors.HexColor(INK)))
     c = 9.0*cm; leg.add(Line(c, yl, c + 1.4*cm, yl, strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=1))
     leg.add(Rect(c + .35*cm, yl - 4, .7*cm, 8, fillColor=colors.HexColor(CHAMP_FOND), strokeColor=colors.HexColor(CHAMP_TRAIT), strokeWidth=.6))
     leg.add(Line(c + .7*cm, yl - 4, c + .7*cm, yl + 4, strokeColor=colors.HexColor(CHAMP_MED), strokeWidth=1.4))

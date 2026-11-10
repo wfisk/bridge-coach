@@ -288,6 +288,12 @@ def lignes_ensemble(donnes, an):
     return out
 
 
+def ecart_couleur(signe):
+    """L'espace entre vous et le contrat recommandé : rouge pâle quand vous êtes au-dessus, vert pâle en dessous."""
+    c = colors.HexColor(VOUS_C if signe > 0 else RECO_C)
+    return colors.Color(c.red, c.green, c.blue, alpha=.2 if signe > 0 else .16)
+
+
 def couleur_ligne(qui):
     """La ligne qui relie les donnes : la couleur du symbole, un peu transparente pour laisser voir le champ."""
     c = colors.HexColor(VOUS_C if qui == "vous" else RECO_C)
@@ -380,6 +386,20 @@ def page_ensemble(donnes, an, largeur=17.4*cm):
         D.add(Line(0, ys + h / 2 + ecart / 2, largeur, ys + h / 2 + ecart / 2, strokeColor=colors.HexColor("#c7ccd2"), strokeWidth=.8))
         ys -= h / 2
         ligne(ys, "Séance", seance, gras=True)
+    for k in range(len(L) - 1):                            # l'espace entre vos deux lignes : rouge pâle où vous êtes au-dessus
+        a_, b_ = L[k], L[k + 1]                            # du recommandé, vert pâle où il est au-dessus de vous
+        if None in (a_["vous"], a_["reco"], b_["vous"], b_["reco"]): continue
+        y1, y2 = Y - h * (k + .5), Y - h * (k + 1.5)
+        d1, d2 = a_["vous"] - a_["reco"], b_["vous"] - b_["reco"]
+        A1, B1, A2, B2 = (x(a_["vous"]), y1), (x(a_["reco"]), y1), (x(b_["vous"]), y2), (x(b_["reco"]), y2)
+        if d1 * d2 < 0:                                    # les lignes se croisent : deux morceaux, chacun sa couleur
+            t = d1 / (d1 - d2); C = (A1[0] + (A2[0] - A1[0]) * t, y1 + (y2 - y1) * t)
+            morceaux = [((A1, C, B1), d1), ((C, A2, B2), d2)]
+        else:
+            morceaux = [((A1, A2, B2, B1), d1 if d1 else d2)]
+        for pts, signe in morceaux:
+            if not signe: continue
+            D.add(Polygon([v for pt in pts for v in pt], fillColor=ecart_couleur(signe), strokeColor=None))
     for qui, style in (("vous", None), ("reco", [3, 2.2])):   # les lignes qui relient les donnes, coupées à une donne non jouée
         prec = None
         for k, r in enumerate(L):
@@ -408,7 +428,8 @@ def page_ensemble(donnes, an, largeur=17.4*cm):
                           "donne que vous n'avez pas jouée se lit de Nord-Sud. À droite, votre contrat (en rouge s'il est plus "
                           "haut que le recommandé, du même camp, en bleu s'il est plus bas), votre pourcentage, et le contrat "
                           "recommandé. Dernière ligne, la séance : votre pourcentage, la moyenne du contrat recommandé sur les "
-                          "donnes que vous avez jouées (le losange), et le champ des paires."), S_sub),
+                          "donnes que vous avez jouées (le losange), et le champ des paires. Entre vos deux lignes, du rouge "
+                          "quand vous faites mieux que le contrat recommandé, du vert quand il fait mieux que vous."), S_sub),
             Spacer(1, 6), leg, Spacer(1, 4), D, PageBreak()]
 
 

@@ -163,7 +163,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         your side, the field as a light box plot (quartiles, median, min–max), your % as a solid red circle
                         (#f05a4f) joined deal to deal by a solid line, the recommended contract's % as a solid green diamond
                         (the expert's green) joined by a dashed line (lines broken at unplayed deals; OKLab distances red–green
-                        11.6+ in every colour-vision type; the user's design, 2026-11-10); on the right your contract (pale red
+                        11.6+ in every colour-vision type; the user's design, 2026-11-10), the space between the two lines
+                        filled pale red where you are above the recommended contract, pale green where it is above you
+                        (split where the lines cross: ecart_couleur); on the right your contract (pale red
                         when higher than the recommended one on the same side, pale blue when lower: sens_contrat, SENS), your %,
                         and the recommended contract (no %: the diamond shows it); a last « Séance » row: your session % (the
                         pair's official %, else the mean of your deals), the recommended contract's mean over the deals you

@@ -1036,7 +1036,7 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
         if any(x.get("encheres") for x in d["tables"]):
             with repli_("encheres", "Enchères aux tables", "view_list"):
                 encheres_tables(d)
-    titre_section("Enchères recommandées (SEF)")
+    titre_section("Enchères recommandées")
     notes = a.get("notes", "")
     expert = not (a.get("auto") or version == "Standard")
     with ui.row().classes("w-full no-wrap items-start gap-6"):

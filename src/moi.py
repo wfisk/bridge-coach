@@ -134,10 +134,13 @@ def tour_de(data, n):
     return ""
 
 
-def numero_tour(data, n):
-    """Le numéro du tour où la donne n se joue, ou None si le mouvement ne la place pas."""
+def tour_infos(data, n):
+    """Le tour de la donne n : {"tour": 1, "contre": "AP/EK", "relais": False}, ou None si le mouvement ne la place pas."""
     for t in ((data.get("session") or {}).get("mouvement") or {}).get("tours") or []:
-        if n in t["donnes"]: return t["tour"]
+        if n in t["donnes"]:
+            relais = bool(t.get("relais") or not t.get("adversaires"))
+            contre = "" if relais else _paire(data, t["adversaires"]).split(" (")[0]
+            return dict(tour=t["tour"], contre=contre, relais=relais)
     return None
 
 

@@ -383,7 +383,7 @@ Its `[dossiers]` section gives `bridgemate`, where the .bws are read, never writ
                         the original beside it (<name>.bws, the FFB .pdf…), versions/ (dated copies; also the old separate
                         -standard.json / -expert.json / -expert-avant-*.json, folded in once by rapport.fondre_analyses),
                         <name>-jeu.json (the Jouer tab's attempts)
-    rapports/AAAA-MM/   only the PDFs, ignored by git, with the date first: <date>-<name>-analyse.pdf,
+    rapports/AAAA-MM/   only the PDFs, ignored by git, with the date first: <date>-<name>-analyse.pdf (-analyse-SS-AR.pdf, the initials of the pair « Vous êtes » plays in, moi.initiales: each pair keeps its own copy, and the Rapports page lists them all as « Analyse pour SS/AR », app.rapports_de),
                         -comparaison.pdf (no spaces in names: dashes; a date already in the
                         name is not repeated and its time comes first, rapport.nom_court: 2026-11-01-224232-entrainement-comparaison.pdf)
 

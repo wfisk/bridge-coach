@@ -34,6 +34,16 @@ def paires(data, qui=None):
             if any((j.get("nom") or "").strip().lower() == qui for j in v)}
 
 
+def initiales(data, qui=None):
+    """Les initiales de la paire du joueur choisi dans « Vous êtes » (ou qui) dans cette séance (« SS/AR »), ou "" s'il
+    n'y joue pas. Le rapport est celui de la paire, pas d'un joueur (l'utilisateur, 2026-11-10)."""
+    for k in sorted(paires(data, qui)):
+        p = (data.get("paires") or {}).get(k) or {}
+        ini = p.get("nom") or "/".join(j.get("initiales", "") for j in (data.get("joueurs") or {}).get(k, []))
+        if ini: return ini
+    return ""
+
+
 def a_joue(t, mes_paires):
     """La table t est-elle une des siennes ?"""
     return bool(mes_paires) and (str(t.get("paire_ns")) in mes_paires or str(t.get("paire_eo")) in mes_paires)

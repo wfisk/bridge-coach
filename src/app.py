@@ -83,12 +83,19 @@ def message_erreur(sortie):
 
 
 def rapports_de(chemin):
-    """{niveau: pdf} déjà produits pour cette séance."""
+    """{niveau: [(pdf, paire)]} déjà produits pour cette séance : l'analyse une fois par paire (« -analyse-SS-AR.pdf »,
+    initiales "" sans « Vous êtes »), les plus récentes d'abord."""
     nom = rapport.nom_court(rapport.nom_seance(chemin)); out = {}
     ancien = {"expert": "analyse", "standard": "analyse", "diff": "comparaison"}   # les noms d'avant la 1.4, jusqu'aux rapports refaits
+    base = os.path.join(glob.escape(rapport.RAPPORTS), "*", f"*-{glob.escape(nom)}-")
     for quoi in [q for q, _, _ in RAPPORTS] + list(ancien):
-        x = sorted(glob.glob(os.path.join(glob.escape(rapport.RAPPORTS), "*", f"*-{glob.escape(nom)}-{quoi}.pdf")))
-        if x: out.setdefault(ancien.get(quoi, quoi), x[-1])
+        cle = ancien.get(quoi, quoi)
+        if cle in out and quoi in ancien: continue
+        trouves = [(f, "") for f in glob.glob(base + f"{quoi}.pdf")]
+        if quoi == "analyse":
+            trouves += [(f, f[:-4].split("-analyse-", 1)[1].replace("-", "/")) for f in glob.glob(base + "analyse-*.pdf")
+                        if ".provisoire" not in f]                 # « -analyse-SS-AR.pdf » : la paire SS/AR
+        if trouves: out.setdefault(cle, []).extend(sorted(trouves, key=lambda x: -os.path.getmtime(x[0])))
     return out
 
 
@@ -2318,9 +2325,10 @@ def page():
                     if not prets:
                         ui.label("Pas encore de rapport : « Créer les rapports », dans la barre de gauche.").classes("text-base text-gray-600")
                     for quoi, nom, detail in RAPPORTS:
-                        if quoi in prets: lien_pdf(prets[quoi], nom, detail)
+                        for f, pour in prets.get(quoi, []):        # l'analyse : une par paire (ses initiales)
+                            lien_pdf(f, f"{nom} pour {pour}" if pour else nom, detail)
                     if prets:
-                        ui.button("Ouvrir le dossier des rapports", on_click=lambda p=prets[next(iter(prets))]: ouvrir(os.path.dirname(p))) \
+                        ui.button("Ouvrir le dossier des rapports", on_click=lambda p=prets[next(iter(prets))][0][0]: ouvrir(os.path.dirname(p))) \
                             .props("flat no-caps").classes("mt-2 px-0")
 
                 with ui.column().classes("w-full gap-2") as pages_ui["seance"]:

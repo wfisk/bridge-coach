@@ -24,7 +24,7 @@ d'espace dans les noms (remplacés par des tirets) :
                      refaite à chaque fois ; "expert" : celle rédigée par Claude}), versions/ (copies datées)
   rapports/AAAA-MM/  seulement les PDF, précédés de la date (l'ordre alphabétique suit les niveaux,
                      diff entre les deux analyses qu'il compare) :
-                     <date>-<nom>-analyse.pdf (l'analyse du programme et le conseil du coach ; avec une analyse
+                     <date>-<nom>-analyse[-<initiales de la paire>].pdf (« -SS-AR » : la paire de « Vous êtes » ; l'analyse du programme et le conseil du coach ; avec une analyse
                          rédigée par Claude, la sienne et l'avis de l'expert, le coach avant lui),
                      <date>-<nom>-comparaison.pdf (programme et expert comparés, comparer.py ; seulement avec une analyse
                          rédigée ; -diff.pdf avant le 09/11/2026).
@@ -599,7 +599,9 @@ def main():
             chrono.ecrire(len(data["donnes"])); print("Analyse prête", flush=True)
             return
 
-    pdf = lambda quoi: os.path.join(SORTIE, f"{date}-{nom_court(nom)}-{quoi}.pdf")
+    import moi
+    pour = moi.initiales(data).replace("/", "-")           # le rapport d'une paire porte ses initiales (« SS-AR ») : celui de chacune reste
+    pdf = lambda quoi: os.path.join(SORTIE, f"{date}-{nom_court(nom)}-{quoi}{'-' + pour if pour and quoi == 'analyse' else ''}.pdf")
     an = analyse_de(seance, "expert")
     redigee = bool(an and an.get("donnes"))
     def anciens():                                         # avant la 1.4 : -standard et -expert, que -analyse remplace, et le

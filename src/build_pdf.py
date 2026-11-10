@@ -955,9 +955,8 @@ def main():
         doc._spans = {}
         doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
                                            onPage=footer, onPageEnd=suite)])
-        story = page_ensemble(donnes, an or {"donnes": {}})   # vous avez choisi « Vous êtes » : la séance en un coup d'œil
-        if story: story += page_ensemble(donnes, an or {"donnes": {}}, style="haltere")   # page 2, à comparer (essai)
-        if story: story += page_champ(donnes, an or {"donnes": {}})                          # page 3 : vous face au champ
+        story = page_champ(donnes, an or {"donnes": {}})    # vous avez choisi « Vous êtes » : vous face au champ, puis
+        story += page_ensemble(donnes, an or {"donnes": {}})  # la séance en un coup d'œil (lignes ; l'haltère, essayée, écartée)
         for k, d in enumerate(donnes):
             story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
         parcours = page_parcours(data)             # à la fin : votre parcours, puis la synthèse

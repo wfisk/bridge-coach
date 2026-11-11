@@ -24,7 +24,7 @@
 <h2>Démarrer</h2>
 
 <h3>Présentation</h3>
-<p>Bridge Coach lit le fichier d'un tournoi joué avec Bridgemate, l'analyse et en tire des rapports au format PDF. Il fait aussi des donnes d'entraînement, et vous fait jouer chaque donne contre le programme.</p>
+<p>Bridge Coach lit le fichier d'un tournoi joué avec Bridgemate, l'analyse et en tire des rapports au format PDF. Il fait aussi des donnes d'entraînement, et vous fait jouer chaque donne contre des robots.</p>
 <p>Tout est dans la barre en haut de la fenêtre : les onglets, de <b>Fichier</b> à <b>Réglages</b>, et l'<b>Aide</b> à droite.</p>
 <dl>
   <dt>Fichier</dt>
@@ -32,7 +32,7 @@
   <dt>Donnes</dt>
   <dd>La séance ouverte : à gauche, la liste de ce qu'elle contient (la séance, les joueurs, chaque donne), à droite le détail de l'entrée choisie.</dd>
   <dt>Jouer</dt>
-  <dd>Enchérir une donne, puis la jouer, comme déclarant ou en défense ; le programme tient les autres places.</dd>
+  <dd>Enchérir une donne, puis la jouer, comme déclarant ou en défense ; les robots tiennent les autres places.</dd>
   <dt>Analyse</dt>
   <dd>Lancer l'analyse de la séance, et la lire donne par donne.</dd>
   <dt>Rapports</dt>
@@ -88,7 +88,7 @@
   <li><b>Ajouter une donne</b>, en bas de la liste de gauche, en ajoute une ; <b>Supprimer la donne</b> en retire une. Le donneur et la vulnérabilité suivent le numéro de la donne et se changent en haut de la page.</li>
 </ol>
 <p>Tout est enregistré dès que vous quittez un champ. Avant les changements, Bridge Coach garde une copie de la séance (au plus une toutes les 10 minutes, les 20 dernières) : la page <b>Séance</b> les liste, et <b>Restaurer</b> en remet une. Une donne incomplète est marquée « à compléter » ; l'analyse et les rapports la laissent de côté.</p>
-<p>Une donne s'affiche d'abord telle quelle ; <b>Modifier la donne</b> ouvre la saisie, <b>Terminer</b> revient à l'affichage. Une donne modifiée perd son analyse standard (relancez l'analyse) ; si elle a une analyse de l'expert, Bridge Coach le demande d'abord, et cette analyse est mise de côté. Seules les séances créées dans Bridge Coach se modifient : les donnes d'un tournoi sont celles qui ont été jouées.</p>
+<p>Une donne s'affiche d'abord telle quelle ; <b>Modifier la donne</b> ouvre la saisie, <b>Terminer</b> revient à l'affichage. Une donne modifiée perd son analyse du coach (relancez l'analyse) ; si elle a une analyse de l'expert, Bridge Coach le demande d'abord, et cette analyse est mise de côté. Seules les séances créées dans Bridge Coach se modifient : les donnes d'un tournoi sont celles qui ont été jouées.</p>
 
 <h3>Créer des donnes sur des thèmes</h3>
 <ol>
@@ -102,41 +102,41 @@
 <h2>Jouer</h2>
 
 <h3>Enchérir une donne</h3>
-<p>Choisissez une donne à gauche. Vous êtes en bas de la table, à la place choisie dans <b>Options</b>, en haut de la liste : le déclarant (le choix de départ), le camp du déclarant, la défense, le donneur, une place fixe, au hasard, ou <b>comme un joueur de la séance</b> : choisissez-le (vous, ou un autre), et vous jouez chaque donne à la place où il était assis ; cochez <b>Dans l'ordre où ce joueur a joué les donnes</b> pour les reprendre tour après tour : <b>Aller à la première donne</b> ouvre la première, et <b>Donne suivante</b>, à la fin de chaque donne, suit cet ordre (la liste à gauche reste par numéro). Le nom des quatre joueurs de sa table s'affiche alors au-dessus de leurs cartes, sur fond vert (non vulnérables) ou rouge (vulnérables), avec leur photo s'il y en a une (<b>Réglages</b>, <b>Photos des joueurs</b> : les photos restent sur l'ordinateur). Le programme enchérit pour votre partenaire et pour les adversaires, selon le système ; leurs mains restent cachées jusqu'à la fin.</p>
+<p>Choisissez une donne à gauche. Vous êtes en bas de la table, à la place choisie dans <b>Options</b>, en haut de la liste : le déclarant (le choix de départ), le camp du déclarant, la défense, le donneur, une place fixe, au hasard, ou <b>comme un joueur de la séance</b> : choisissez-le (vous, ou un autre), et vous jouez chaque donne à la place où il était assis ; cochez <b>Dans l'ordre où ce joueur a joué les donnes</b> pour les reprendre tour après tour : <b>Aller à la première donne</b> ouvre la première, et <b>Donne suivante</b>, à la fin de chaque donne, suit cet ordre (la liste à gauche reste par numéro). Le nom des quatre joueurs de sa table s'affiche alors, discrètement, près de leurs cartes : la place (NORD, SUD…) en gras, puis le prénom et le NOM. La place est écrite près de chaque main, même sans les noms. Les robots enchérissent pour votre partenaire et pour les adversaires, selon le système ; leurs mains restent cachées jusqu'à la fin.</p>
 <ul>
   <li><b>Démo</b> (le choix <b>Jouer | Démo</b>, en haut de la barre de droite) : pour un cours sur grand écran. Les quatre mains sont ouvertes, le déclarant en bas. Les mêmes boutons que dans Jouer : <b>▶</b> avance d'un pas, <b>◀◀</b> recule d'un pas, <b>⏮</b> revient au début ; les flèches <b>→</b> et <b>←</b> du clavier (ou d'une télécommande de présentation) font de même. Un pas : une enchère, puis une carte : ce sont les enchères recommandées (de l'Expert, sinon du Coach), puis le jeu des robots aux quatre places. Pendant le jeu de la carte, les plis gardés sont posés devant chaque joueur comme dans Jouer, et une couleur qui manque à un joueur est écrite en gris pâle. La barre dit à chaque pas le sens de l'enchère, ou pourquoi le joueur a choisi sa carte et ce qu'il croit des mains cachées.</li>
   <li><b>Double mort</b>, dans la démonstration : sous chaque carte que le joueur au trait peut jouer, le nombre de levées du déclarant avec cette carte (en vert la meilleure, en rouge celles qui coûtent). Un clic sur une carte la joue à la place de celle des robots (« et si… ? ») ; ils reprennent de là.</li>
   <li>Au-dessus de la table : le numéro de la donne, le donneur et la vulnérabilité, et à droite le bouton carré <b>table seule</b> : sans les onglets ni la liste des donnes ; la barre de droite reste, avec la boîte à enchères. Le même bouton ramène les onglets. Les cartes grandissent avec la fenêtre : sur un grand écran ou une télévision, toute la table s'agrandit, et toutes les cartes ont la même taille.</li>
-  <li>En haut de la barre de droite, les boutons d'un magnétoscope : <b>▶</b> lance les enchères, qui ne partent pas toutes seules ; <b>⏮</b> revient au début de la donne ; <b>◀◀</b> reprend votre dernière enchère ou votre dernière carte, avec ce que le programme a joué après.</li>
+  <li>En haut de la barre de droite, les boutons d'un magnétoscope : <b>▶</b> lance les enchères, qui ne partent pas toutes seules ; <b>⏮</b> revient au début de la donne ; <b>◀◀</b> reprend votre dernière enchère ou votre dernière carte, avec ce que les robots ont joué après.</li>
   <li>La boîte à enchères est la vôtre : votre dernière enchère et tous les cartons en dessous en sont sortis (ils sont sur la table) ; ceux que les enchères des autres ont dépassés restent, en gris pâle ; devant, <b>PASS</b>, <b>X</b> et <b>XX</b> (les cartons disent PASS, comme les vrais, même en France). <b>STOP</b> et <b>ALERT</b> sont aussi dans la boîte, sur un second rang sous PASS, X et XX : ce ne sont pas des enchères. Comme à la table, chacun pose ses cartons devant lui de gauche à droite, tournés vers les autres joueurs : vous voyez les vôtres à l'envers, et ceux de votre partenaire se lisent de droite à gauche. Chaque carton glisse sur la table depuis le bord du joueur qui le pose.</li>
   <li><b>STOP</b> : avant un saut, cliquez sur <b>STOP</b>, puis sur l'enchère ; Bridge Coach vous le rappelle si vous l'oubliez.</li>
-  <li><b>ALERT</b> : posez-le <b>avant</b> votre enchère quand elle est artificielle (4e couleur forcing, Spoutnik, Drury, 2SA bicolore…). Si vous l'oubliez, le programme reprend votre enchère et vous le dit : posez l'Alerte, puis l'enchère. Les enchères artificielles des autres joueurs sont alertées par le programme, avec leur sens, sous la boîte.</li>
-  <li><b>Indice</b>, sous la boîte, à droite, dit ce que dirait le système, et pourquoi ; un second clic le masque.</li>
+  <li><b>ALERT</b> : posez-le <b>avant</b> votre enchère quand elle est artificielle (4e couleur forcing, Spoutnik, Drury, 2SA bicolore…). Si vous l'oubliez, le coach reprend votre enchère et vous le dit : posez l'Alerte, puis l'enchère. Les enchères artificielles des autres joueurs sont alertées par les robots, avec leur sens, sous la boîte.</li>
+  <li><b>Indice</b>, sous la boîte, dit ce que dirait le système, et pourquoi ; un second clic le masque.</li>
   <li><b>Le sens d'une enchère</b> : touchez-la dans la grille (ou passez la souris dessus) ; une bulle dit ce qu'elle montre, comme on le demande à la table. Un second clic la ferme. Une enchère alertée porte un petit <b>A</b> bleu. Si vous sortez du système, votre partenaire continue au mieux.</li>
 </ul>
-<p>Le programme prend un temps de réflexion avant chaque enchère, plus long plus on monte et quand la décision est serrée. Chaque donne garde où vous en êtes, même après avoir fermé Bridge Coach ; <b>⏮</b> repart du début. Changer de place dans <b>Options</b> fait repartir les donnes du début.</p>
+<p>Les robots prennent un temps de réflexion avant chaque enchère, plus long plus on monte et quand la décision est serrée. Chaque donne garde où vous en êtes, même après avoir fermé Bridge Coach ; <b>⏮</b> repart du début. Changer de place dans <b>Options</b> fait repartir les donnes du début.</p>
 <p>À la fin des enchères : <b>Jouer … par …</b> si votre camp déclare, <b>Défendre contre …</b> sinon, ou <b>Voir les mains sans jouer</b>. Les quatre mains apparaissent alors avec votre contrat face aux analyses : le résultat au double mort, les IMP gagnés ou perdus, la première enchère où les séquences diffèrent. Chaque essai est gardé à côté de la séance ; les analyses ne changent pas.</p>
 
 <h3>Jouer la carte</h3>
 <p>La défense entame selon les règles du système, puis le mort s'étale. Cliquez la carte à jouer dans la main dont c'est le tour, le déclarant ou le mort : seules les cartes possibles sont actives. Chaque défenseur imagine les mains qu'il ne voit pas, d'après les enchères et les cartes jouées, et joue la carte qui fait chuter le contrat le plus souvent ; il ne regarde jamais vos cartes.</p>
-<p>Chaque carte glisse sur la table depuis le bord de son joueur ; le pli reste un instant au centre. Comme en duplicate, chacun retourne ensuite sa carte devant lui : pointée vers le partenaire pour un pli gagné (dos vert), en travers pour un pli perdu (dos gris). Pendant le jeu, la barre de droite montre l'étui ; <b>Revoir les enchères</b> les rappelle.</p>
+<p>Chaque carte glisse sur la table depuis le bord de son joueur ; le pli reste un instant au centre. Comme en duplicate, chacun retourne ensuite sa carte devant lui : pointée vers le partenaire pour un pli gagné (vert pour votre camp, rouge pour l'autre), en travers pour un pli perdu (gris uni), avec le nombre de levées de chaque camp. Cliquez la dernière carte de ces plis : le dernier pli s'ouvre dans une petite fenêtre, posé comme à la table. À la fin de chaque pli, la carte gagnante luit un instant, puis les cartes vont vers le joueur qui l'a gagné. Quand c'est à vous d'enchérir ou de jouer, vos cartes (ou celles du mort, quand vous en jouez) sont surlignées en jaune. La liste des donnes se cache avec la petite flèche « en haut de la liste, et revient avec la flèche » au bord gauche de la page. Après les enchères, le jeu de la carte commence tout seul. Le petit carré en haut, à côté du numéro de la donne, dit le donneur et la vulnérabilité ; la grille des enchères reste dans la barre de droite. À la fin de la donne, la barre donne le résultat, votre contrat face à celui que recommande l'Expert (ou le Coach), votre jeu de la carte face au double mort, et <b>Voir pourquoi</b>, qui ouvre <b>Revoir</b> à la première carte de votre camp qui a coûté une levée ; puis <b>Donne suivante</b> ; le résumé de la donne est dans <b>Revoir</b>, à la dernière carte.</p>
 <ul>
-  <li><b>Indice</b> dit la carte que jouerait le programme à votre place.</li>
+  <li><b>Indice</b> dit la carte que jouerait le coach à votre place.</li>
   <li><b>Réclamer</b> donne toutes les levées qui restent, si la défense ne peut vraiment plus rien faire.</li>
-  <li><b>Plis joués</b> montre chaque pli, avec qui l'a gagné ; <b>Reprendre le jeu de la carte</b> repart de l'entame.</li>
+  <li>Comme à la table, rien ne dit quelles cartes sont permises : cliquez celle que vous voulez. Si elle ne peut pas être jouée (vous devez fournir), elle tremble et reste dans votre main ; au mort, choisissez-en une autre. Les levées de chaque camp sont comptées sur la table. <b>⏮</b> ramène au début du jeu de la carte, puis, une seconde fois, au début de la donne.</li>
 </ul>
 <p>À la fin : vos levées, le résultat et le double mort, le <b>Résumé de la donne</b>, puis la comparaison avec les analyses. <b>Rejouer la carte</b> recommence le jeu du même contrat.</p>
 
 <h3>Défendre</h3>
-<p>Quand l'autre camp gagne le contrat, vous défendez. Si c'est à vous d'entamer, choisissez votre carte : le mort s'étale ensuite. Il se pose sur votre gauche ou votre droite, sur la table contre son bord : une ligne par couleur, la plus forte carte vers le mort, l'atout à sa droite, comme à la table. Vous ne voyez que votre main et le mort ; le déclarant (le programme, qui ne voit pas vos cartes) joue ses deux mains, votre partenaire (le programme aussi) défend avec vous et vous signale ses cartes. <b>Indice</b> dit la carte que jouerait le programme à votre place ; on ne réclame pas en défense.</p>
+<p>Quand l'autre camp gagne le contrat, vous défendez. Si c'est à vous d'entamer, choisissez votre carte : le mort s'étale ensuite. Il se pose sur votre gauche ou votre droite, sur la table contre son bord : une ligne par couleur, la plus forte carte vers le mort, l'atout à sa droite, comme à la table. Vous ne voyez que votre main et le mort ; le déclarant (un robot, qui ne voit pas vos cartes) joue ses deux mains, votre partenaire (un robot aussi) défend avec vous et vous signale ses cartes. <b>Indice</b> dit la carte que jouerait le coach à votre place ; on ne réclame pas en défense.</p>
 
 <h3>Ce que pensent les joueurs du programme</h3>
-<p>Pendant le jeu, la barre de droite montre ce que pensait le dernier joueur du programme en choisissant sa carte : pourquoi cette carte (dans combien des donnes qu'il imagine elle fait gagner ou chuter le contrat, et les autres cartes), puis ce qu'il croit des mains qu'il ne voit pas : leurs points, la longueur probable de chaque couleur, les honneurs qu'il y voit.</p>
+<p>Pendant le jeu, comme à la table, vous n'entendez pas les autres réfléchir. Après la donne, <b>Revoir</b> (en haut de la barre de droite, à côté de Jouer et Démo) montre ce que pensait chaque joueur du programme en choisissant sa carte : pourquoi cette carte (dans combien des donnes qu'il imagine elle fait gagner ou chuter le contrat, et les autres cartes), puis ce qu'il croit des mains qu'il ne voit pas : leurs points, la longueur probable de chaque couleur, les honneurs qu'il y voit.</p>
 <ul>
   <li><b>Le plan</b> : le déclarant du programme annonce son plan avec sa première carte (levées sûres, perdantes, ordre des couleurs). À chaque pli qu'il entame, il dit si la suite passe par un squeeze ou une mise en main dans ses donnes imaginées.</li>
   <li><b>Les signaux</b> : les défenseurs signalent comme le prévoit le système (à confirmer) : appel ou refus sur l'entame du partenaire, parité quand le déclarant joue une couleur, appel en défausse. Ils ne signalent qu'entre des cartes aussi bonnes l'une que l'autre, et le partenaire lit ces signaux.</li>
   <li><b>Le résumé de la donne</b>, à la fin : le résultat face au double mort, les cartes qui ont coûté une levée (cartes vues), les coups qui se présentaient, joués ou manqués, les signaux, ce que croyaient les joueurs comparé aux vraies mains, et vos cartes.</li>
-  <li><b>Revoir la donne avec les pensées</b> rejoue la donne carte par carte (◀ ▶), les quatre mains visibles. Pour vos cartes, <b>Qu'aurait joué le programme ?</b> montre la carte qu'il aurait choisie à votre place.</li>
+  <li><b>Jouer | Revoir | Démo</b>, en haut de la barre de droite : <b>Revoir</b>, ouvert une fois la donne jouée jusqu'au bout, rejoue votre partie carte par carte (⏮ ◀◀ ▶), les quatre mains visibles, avec ce que pensait chaque robot, comme un film commenté par son réalisateur, et à la dernière carte le résumé de la donne ; <b>Donne suivante</b> ouvre toujours la donne suivante dans Jouer ; la <b>Démo</b> montre, elle, la donne recommandée. Pour vos cartes, <b>Qu'aurait joué le coach ?</b> montre la carte qu'il aurait choisie à votre place.</li>
 </ul>
 
 <h3>Le classement du tournoi rejoué</h3>
@@ -154,8 +154,8 @@
 <h3>Analyser une séance</h3>
 <ol>
   <li>Ouvrez ou importez la séance (onglet <b>Fichier</b>).</li>
-  <li>Dans l'onglet <b>Analyse</b>, choisissez <b>Analyse standard</b> en haut de la liste de gauche, puis <b>Lancer l'analyse</b>. Attendez la fin de la barre de progression, en général plusieurs minutes ; vous pouvez utiliser l'ordinateur pendant ce temps.</li>
-  <li>L'analyse se lit donne par donne dans l'onglet <b>Analyse</b>. Quand une analyse de l'expert existe, c'est elle qui s'affiche ; le bouton <b>Standard</b> montre l'analyse standard.</li>
+  <li>Dans l'onglet <b>Analyse</b>, choisissez <b>Analyse du coach</b> en haut de la liste de gauche, puis <b>Lancer l'analyse</b>. Attendez la fin de la barre de progression, en général plusieurs minutes ; vous pouvez utiliser l'ordinateur pendant ce temps.</li>
+  <li>L'analyse se lit donne par donne dans l'onglet <b>Analyse</b>. Quand une analyse de l'expert existe, c'est elle qui s'affiche ; le bouton <b>Coach</b> montre l'analyse du coach.</li>
 </ol>
 <p class="note">Lancez l'analyse une fois le tournoi terminé : le calcul occupe beaucoup l'ordinateur.</p>
 

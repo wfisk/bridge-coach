@@ -537,13 +537,13 @@ def _texte_pensee(pz, decl):
         m = a.get("mondes") or 0; sc = a.get("scores") or {}
         but = "faire chuter le contrat" if pz["role"] == "defense" else "gagner le contrat"
         if a["carte"] == pz["carte"] or (m and sc.get(a["carte"]) == sc.get(pz["carte"])):
-            raison = "Le programme aurait joué la même carte (ou une carte équivalente)."
-        elif not m: raison = f"Le programme aurait joué {a['carte']}."
+            raison = "Le coach aurait joué la même carte (ou une carte équivalente)."
+        elif not m: raison = f"Le coach aurait joué {a['carte']}."
         else:
             v, w = sc.get(pz["carte"], [0, 0]), sc.get(a["carte"], [0, 0])
-            raison = (f"À votre place, le programme aurait joué {a['carte']} : pour {but}, elle réussit dans {w[0]} mondes sur {m}, "
+            raison = (f"À votre place, le coach aurait joué {a['carte']} : pour {but}, elle réussit dans {w[0]} mondes sur {m}, "
                       f"la vôtre dans {v[0]}.")
-            if v[0] == w[0]: raison = (f"À votre place, le programme aurait joué {a['carte']} : autant de chances de {but} "
+            if v[0] == w[0]: raison = (f"À votre place, le coach aurait joué {a['carte']} : autant de chances de {but} "
                                        f"({w[0]} sur {m}), mais plus de levées en moyenne.")
         return dict(titre=titre, raison=raison, croyance=list(a.get("croyance") or []))
     sc, m = pz.get("scores") or {}, pz.get("mondes") or 0
@@ -585,6 +585,55 @@ def _texte_pensee(pz, decl):
     if pz.get("suit"):                                     # en tête, il suit la demande de son partenaire
         raison = (raison + " " if raison else "") + pz["suit"] + " Parmi les cartes qui se valent, il le suit."
     return dict(titre=titre, raison=raison, croyance=list(pz.get("croyance") or []), plan=pz.get("plan") or "")
+
+
+def justification(pz, decl):
+    """En une phrase simple, pourquoi cette carte plutôt qu'une autre (la Démo, au survol ; l'utilisateur, 2026-11-11) :
+    sans « mondes » ni croyances. pz : Partie.pensee d'un robot."""
+    sc, m, c = pz.get("scores") or {}, pz.get("mondes") or 0, pz["carte"]
+    if pz.get("force") or len(sc) <= 1: return "Il n'a pas le choix : c'est sa seule carte possible."
+    but = "fait chuter le contrat" if pz["role"] == "defense" else "fait gagner le contrat"
+    phrase = ""
+    if m and c in sc:
+        a, t = sc[c]
+        moins = sorted(((x, y, k) for k, (x, y) in sc.items() if k != c and x < a), reverse=True)
+        egales_moins_lev = sorted(((t - y, k) for k, (x, y) in sc.items() if k != c and x == a and y < t), reverse=True)
+        if moins:
+            x, _y, k = moins[0]
+            phrase = f"{c} plutôt que {k} : sur {m} donnes qu'il imagine, {c} {but} {a} fois, {k} seulement {x}."
+        elif egales_moins_lev:
+            ecart, k = egales_moins_lev[0]
+            plus = "une levée de plus" if ecart / m >= .75 else "parfois une levée de plus"
+            phrase = f"{c} plutôt que {k} : autant de chances, mais {plus}."
+        elif a in (0, m):
+            phrase = "Le contrat est déjà joué : ses cartes se valent, il joue la plus petite."
+        else:
+            phrase = "Ses cartes se valent : il joue la plus petite."
+    sig = pz.get("signal")
+    if sig and (not phrase or "se valent" in phrase):
+        phrase = f"Ses cartes se valent : il prend celle qui signale ({sens_signal(sig, c[0])})."
+    elif pz.get("habitude") and (not phrase or "se valent" in phrase):
+        phrase = "Ses cartes se valent ; l'habitude : " + pz["habitude"][0].lower() + pz["habitude"][1:]
+    elif pz.get("suit") and (not phrase or "se valent" in phrase):
+        phrase = "Ses cartes se valent : il suit la demande de son partenaire."
+    for co in pz.get("coups") or []:
+        quoi = "un squeeze sur" if co["type"] == "squeeze" else "une mise en main de"
+        phrase += f" Il prépare {quoi} {NOMS[co['joueur']]}."
+    return phrase.strip() or "Ses cartes se valent."
+
+
+def meilleure_carte(d, contrat, decl, cartes, k):
+    """Au double mort, la meilleure carte du joueur au trait avant la carte k (cartes : toutes, rangs anglais), en
+    français (« ♥9 »), ou None. Pour dire, dans Revoir, quelle carte gardait la levée."""
+    pos = Position(d["mains"], contrat[1:].rstrip("X"), decl)
+    for x in cartes[:k]: pos.jouer(*x)
+    try:
+        v = pos.valeurs()
+    except Exception:
+        return None
+    if not v: return None
+    s = pos.au_trait()
+    return carte_fr(*(max if pos.camp(s) else min)(v, key=lambda x: (v[x], -RANGS.index(x[1]))))
 
 
 def avis_programme(d, contrat, decl, encheres, humain, cartes, k):

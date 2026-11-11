@@ -290,8 +290,8 @@ CSS_CARTES = """
 .carton.bid { width: 84px; height: 50px; } .carton.bid .face { background: #fff; border: 1px solid #b8bfc6; }
 .carton.bid .grand { position: absolute; right: 5px; top: 0; bottom: 0; display: flex; align-items: center;
   font-weight: 700; line-height: 1; }                     /* le niveau, la couleur à sa droite : « 1♦ » sur une ligne */
-.carton.bid .grand b { font-size: 32px; } .carton.bid .grand i { font-style: normal; font-size: 30px; margin-left: 1px; }
-.carton.bid .grand i.sa { font-size: 22px; background: none; margin-left: 2px; }
+.carton.bid .grand b { font-size: 26px; } .carton.bid .grand i { font-style: normal; font-size: 24px; margin-left: 1px; }
+.carton.bid .grand i.sa { font-size: 26px; font-weight: 700; background: none; margin-left: 1px; }   /* SA de la taille du chiffre */
 .carton.bid.sa .grand { color: #2b2b2b; } .carton.bid.pique .grand { color: #1f3fa0; }
 .carton.bid.coeur .grand { color: #c0141c; } .carton.bid.carreau .grand { color: #c86a00; }
 .carton.bid.trefle .grand { color: #1d7a35; }

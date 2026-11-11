@@ -285,10 +285,10 @@ CSS_CARTES = """
    enchères plus larges que hautes, le niveau et la couleur sur la bande de droite ; PASS, X, XX presque carrés, le
    nom le long du bord droit, l'onglet (sans texte) sur le bord gauche. La bande de droite reste visible sous le suivant */
 .carton.bid { width: 84px; height: 50px; } .carton.bid .face { background: #fff; border: 1px solid #b8bfc6; }
-.carton.bid .grand { position: absolute; right: 3px; top: 0; bottom: 0; width: 30px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; font-weight: 700; line-height: 1; }
-.carton.bid .grand b { font-size: 24px; } .carton.bid .grand i { font-style: normal; font-size: 20px; margin-top: 1px; }
-.carton.bid .grand i.sa { font-size: 14px; background: none; margin-top: 2px; }
+.carton.bid .grand { position: absolute; right: 5px; top: 0; bottom: 0; display: flex; align-items: center;
+  font-weight: 700; line-height: 1; }                     /* le niveau, la couleur à sa droite : « 1♦ » sur une ligne */
+.carton.bid .grand b { font-size: 32px; } .carton.bid .grand i { font-style: normal; font-size: 30px; margin-left: 1px; }
+.carton.bid .grand i.sa { font-size: 22px; background: none; margin-left: 2px; }
 .carton.bid.sa .grand { color: #2b2b2b; } .carton.bid.pique .grand { color: #1f3fa0; }
 .carton.bid.coeur .grand { color: #c0141c; } .carton.bid.carreau .grand { color: #c86a00; }
 .carton.bid.trefle .grand { color: #1d7a35; }
@@ -1540,7 +1540,7 @@ def page():
     ETUI_PALE = {"fond": "#ece6db", "bord": "#e2dacc", "rouge": "#e0d8ca", "vert": "#e0d8ca", "encre": "#b3a796"}
 
     LARGEUR_CARTON = {"bid": 84, "carre": 56}             # .carton.bid, .carton.carre
-    VU_CARTON = {"bid": 44, "carre": 36}                   # ce qui dépasse d'un carton recouvert : son indice, ou son onglet
+    VU_CARTON = {"bid": 58, "carre": 36}                   # ce qui dépasse d'un carton recouvert : son indice, ou son onglet
 
     lettres = lambda m: "".join(f"<b>{c}</b>" for c in m)   # un mot écrit tout le long du bord du carton
 

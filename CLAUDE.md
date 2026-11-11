@@ -178,7 +178,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         the space between the two lines filled pale orange where you are above the recommended contract, pale green
                         where it is above you. (A dumbbell variant, style "haltere", was tried and left out.) « Vous face au champ » (page_champ, first): a bar from 50 %
                         (the field's average on each deal) to your %, red for a loss, blue for a gain (PERTE_C, GAIN_C), the gap in points
-                        on the right replaced by your %, your contract and the best table's (« Meilleur », from your side: moi.ordre), the three costliest deals named under the title; grouped by round when the movement is known (moi.tour_infos, page_champ tours=): a title line per round, « Tour 1 · contre AP/EK » with your round average « moy. 48 % » in the % column, every other round on a pale band lighter than the field boxes, a relay round as one grey line « Tour 3 · relais (donnes 7–9) »; the last column is « Meilleur » (the best result for your side, said in the subtitle); a two-line subtitle, the costliest deals on their own line; texts inside drawings go through build_pdf.chaine, which draws ♥ and ♦ in red like suits() does in paragraphs
+                        on the right replaced by your %, your contract and the best table's (« Meilleur », from your side: moi.ordre), the three costliest deals named under the title; grouped by round when the movement is known (moi.tour_infos, page_champ tours=): a title line per round, « Tour 1 · contre AP/EK » with your round average « moy. 48 % » in the % column, every other round on a pale band lighter than the field boxes, a relay round as one grey line « Tour 3 · relais (donnes 7–9) »; the last column is « Recommandé » (the recommended contract at its double-dummy result and what it would score at your table; « Meilleur », the best table, was dropped on 2026-11-11: it mostly shows another table's mistake); then « Où vous pouviez faire mieux » (paragraphe_couts, from src/couts.py, kept whole: on the next page when the chart fills this one); a two-line subtitle, the costliest deals on their own line; texts inside drawings go through build_pdf.chaine, which draws ♥ and ♦ in red like suits() does in paragraphs
                         (split where the lines cross: ecart_couleur); on the right your contract (pale red
                         when higher than the recommended one on the same side, pale blue when lower: sens_contrat, SENS), your %,
                         and the recommended contract (no %: the diamond shows it); a last « Séance » row: your session % (the
@@ -192,6 +192,13 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         higher (red), lower (blue), or let the other side play; your contract coloured the same way. Bidding
                         only, no leads, no IMP. Internal PDF links: the recommended contract goes to the deal's « Enchères
                         recommandées » (anchor reco<n>), the counts and the deal number to its « Résultats à la table » (res<n>)
+      couts.py          what each deal costs you against the field (2026-11-11; the user rejected the best table and par as the
+                        benchmark): bidding = the recommended contract minus yours, both double dummy (yours only when your side
+                        plays the higher of the two contracts or doubled theirs: else the opponents decided); card play = your
+                        contract double dummy minus your real result, as declarer or in defence, kept only when another table in
+                        the same denomination and side did better or none played it (« à revoir »); the rest = other tables.
+                        IMP against the datum, or % against the other tables. cout_donne, bilan (parts over SEUIL 3 IMP / 15 %,
+                        your best moves). build_pdf.paragraphe_couts writes it under « Vous face au champ ». tests/test_couts.py
       commentaires.py   automatic factual comment per deal (best contracts from double-dummy, a grand slam
                         noted as rarely bid, a small slam played not called a miss, missed games/slams, tricks vs double-dummy, IMP between tables);
                         rapport.py uses it for any deal without a written `comm`, so the

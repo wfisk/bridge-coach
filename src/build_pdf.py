@@ -388,7 +388,13 @@ def page_champ(donnes, an, largeur=17.4*cm, tours=None, marque="MP"):
     if not jouees: return []
     centre = 0 if imp else 50
     G, X0, X1 = 1.3*cm, 1.3*cm, 11.0*cm
-    C1, C0, C2 = 12.4*cm, 12.9*cm, 14.8*cm                 # votre % (aligné à droite), votre contrat, le meilleur pour vous
+    C1, C0, C2 = 12.4*cm, 12.9*cm, 14.8*cm                 # votre % (aligné à droite), votre contrat, le contrat recommandé
+    import couts
+    bil = couts.bilan(donnes, an, MES, marque)
+    valeur_reco = {c["n"]: c.get("valeur_reco") for c in bil["lignes"]}
+    for r in L:                                            # le recommandé et ce qu'il aurait marqué à votre table
+        v_ = valeur_reco.get(r["n"])
+        r["texte_meilleur"] = r["texte_reco"] + (f"  ({nombre_(v_, imp)})" if v_ is not None and r["texte_reco"] else "")
     seance = ligne_seance(L, imp=imp)
     tours = tours or {}
     par_tour = any(tours.get(r["n"]) for r in L)
@@ -417,7 +423,7 @@ def page_champ(donnes, an, largeur=17.4*cm, tours=None, marque="MP"):
     for p in graduations:
         D.add(String(x(p), Y + .25*cm, legende(p), fontName="DVB" if p == centre else "DV", fontSize=7.5,
                      fillColor=colors.HexColor(INK if p == centre else GREY), textAnchor="middle"))
-    for t_, xx, anc in (("IMP" if imp else "%", C1, "end"), ("Vous", C0, "start"), ("Meilleur", C2, "start")):
+    for t_, xx, anc in (("IMP" if imp else "%", C1, "end"), ("Vous", C0, "start"), ("Recommandé", C2, "start")):
         D.add(String(xx, Y + .25*cm, t_, fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK), textAnchor=anc))
 
     def rangée(y, nom, r, gras=False):
@@ -477,18 +483,83 @@ def page_champ(donnes, an, largeur=17.4*cm, tours=None, marque="MP"):
         D.add(Line(0, bas - ecart / 2, largeur, bas - ecart / 2, strokeColor=colors.HexColor("#c7ccd2"), strokeWidth=.5))
         rangée(bas - ecart - h / 2, "Séance", dict(seance, texte_vous="", texte_meilleur=""), gras=True)
     D.add(Line(x(centre), 0, x(centre), Y, strokeColor=colors.HexColor(INK), strokeWidth=1))   # le champ, au-dessus de tout
-    pires = sorted((r for r in jouees if r["vous"] < centre), key=lambda r: r["vous"])[:3]
-    phrase = ("<b>Les donnes qui vous coûtent le plus :</b> " + ", ".join(f"{r['n']} ({round(r['vous'] - centre):d}{' IMP' if imp else ''})".replace("-", "−")
-                                                                         for r in pires) + ".") if pires else "Aucune donne sous le champ."
     return [Paragraph("Vous face au champ", S_title),
             Paragraph(txt("Marque en IMP : 0 est le datum de chaque donne (la moyenne des tables) ; en rouge les IMP que vous "
                           "perdez, en bleu ceux que vous gagnez (la barre s'arrête à ±12) ; la boîte grise montre le champ. "
-                          "Les tours et la séance en totaux. « Meilleur » : le meilleur résultat de la donne pour votre camp." if imp else
+                          "Les tours et la séance en totaux. « Recommandé » : le contrat recommandé joué au double mort, et "
+                          "ses IMP à votre table." if imp else
                           "50 % est la moyenne des tables sur chaque donne : en rouge ce que vous perdez face au champ, "
-                          "en bleu ce que vous gagnez ; la boîte grise montre le champ. « Meilleur » : le meilleur résultat "
-                          "de la donne pour votre camp."), S_sub),
-            Paragraph(txt(phrase), S_sub),
-            Spacer(1, 8), DessinLiens(D, zones), PageBreak()]
+                          "en bleu ce que vous gagnez ; la boîte grise montre le champ. « Recommandé » : le contrat "
+                          "recommandé joué au double mort, et son % à votre table."), S_sub),
+            Spacer(1, 8), DessinLiens(D, zones), KeepTogether(paragraphe_couts(bil)), PageBreak()]
+
+
+def nombre_(v, imp):
+    """Une valeur vue de votre camp : « +5 », « −3 » (IMP) ou « 62 % »."""
+    if imp: return (f"{round(v):+d}" if round(v) else "0").replace("-", "−")
+    return f"{v:.0f} %"
+
+
+def paragraphe_couts(b):
+    """Où vous pouviez faire mieux (couts.bilan) : la perte face au champ partagée entre les enchères, le jeu de la
+    carte et le reste, les donnes coûteuses nommées, puis vos meilleurs coups. En IMP, des IMP ; en match-points, des
+    points de % sur la donne, et leur poids sur la séance (divisé par le nombre de donnes)."""
+    if not b["n"]: return []
+    imp = b["marque"] == "IMP"; n = b["n"]
+    signe = lambda v: (f"{v:+d}" if v else "0").replace("-", "−")
+    une = lambda v: signe(round(v)) + ("" if imp else " points")                    # un écart sur une donne
+    tot = (lambda v: signe(round(v)) + " IMP") if imp else \
+        (lambda v: (f"{v / n:+.1f}".replace(".", ",").replace("-", "−") + " % sur la séance"))
+    dire = lambda t: "passe générale" if t.get("contrat") in (None, "", "passe") else \
+        f"{t['contrat']} {SEAT[t['declarant']]}"
+    resu = lambda t: "" if t.get("contrat") in (None, "", "passe") else f" {t.get('resultat') or '='}".replace("-", "−")
+    gagne = -b["perte"]
+    enc, carte, gains = b["encheres"], b["carte"], b["gains"]
+    s_enc, s_carte, s_gains = sum(c["encheres"] for c in enc), sum(c["carte"] for c in carte), sum(g[2] for g in gains)
+    autre = gagne + s_enc + s_carte - s_gains
+    out = [Spacer(1, 10), Paragraph("Où vous pouviez faire mieux", S_h)]
+    debut = (f"Sur ces {n} donnes, vous {'gagnez' if gagne >= 0 else 'perdez'} "
+             + (f"{abs(round(gagne))} IMP" if imp else f"{abs(gagne) / n:.1f} %".replace(".", ","))
+             + " face au champ" + ("" if imp else f" (votre séance : {50 + gagne / n:.1f} %)".replace(".", ",")) + ". "
+             "Le repère : le contrat recommandé, enchéri sans voir les autres mains (pas la meilleure table, qui doit "
+             "souvent son score à une erreur ailleurs, ni le par).")
+    out.append(Paragraph(txt(debut), S_avis))
+    vous_marquez = lambda v, au_lieu: f"{nombre_(v, imp)} au lieu de {nombre_(au_lieu, imp)}"   # « 10 % au lieu de 90 % »
+    plus = lambda reste: f" ; et {len(reste)} autre{'s' if len(reste) > 1 else ''} donne{'s' if len(reste) > 1 else ''} " \
+        f"({', '.join(str(c['n']) for c in reste)})" if reste else ""
+    if enc:
+        L = [f"donne {c['n']}, {dire(c['table'])} au lieu de {dire(c['reco'])} "
+             f"({vous_marquez(c['valeur_dm'], c['valeur_reco'])} au double mort)" for c in enc[:3]]
+        t = f"<b>Aux enchères</b> ({tot(-s_enc)}) : " + " ; ".join(L) + plus(enc[3:]) + "."
+    else:
+        t = "<b>Aux enchères</b> : aucune donne ne vous coûte " + (f"{b['seuil']} IMP" if imp else f"{b['seuil']} points") + " ou plus."
+    out.append(Paragraph(txt(t), S_avis))
+    if carte:
+        L = []
+        for c in carte[:3]:
+            t_ = c["table"]
+            qui = f"jeu en {dire(t_)}" if c["role"] == "jeu" else f"défense contre {dire(t_)}"
+            if not c.get("memes"): cmp_ = "seule table dans ce contrat"
+            elif c["memes"] == 1: cmp_ = "l'autre table mieux"
+            else: cmp_ = f"{c['mieux']} tables sur {c['memes']} mieux"
+            L.append(f"donne {c['n']}, {qui} : {c['levees']} levées ({c['levees_dm']} au double mort ; {cmp_}), "
+                     f"{vous_marquez(c['vous'], c['valeur_dm'])}")
+        t = f"<b>Au jeu de la carte, à revoir</b> ({tot(-s_carte)}) : " + " ; ".join(L) + plus(carte[3:]) + "."
+    else:
+        t = "<b>Au jeu de la carte</b> : rien à revoir, ou vous avez fait comme les tables du même contrat."
+    out.append(Paragraph(txt(t), S_avis))
+    if gains:
+        L = []
+        for quoi, c, v in gains:
+            if quoi == "encheres": L.append(f"donne {c['n']}, {dire(c['table'])}{resu(c['table'])} plutôt que "
+                                            f"{dire(c['reco'])} ({une(v)})")
+            else: L.append(f"donne {c['n']}, {dire(c['table'])}{resu(c['table'])} : {c['levees']} levées au lieu de "
+                           f"{c['levees_dm']} au double mort ({une(v)})")
+        out.append(Paragraph(txt(f"<b>Vos meilleurs coups</b> ({tot(s_gains)}) : " + " ; ".join(L) + "."), S_avis))
+    out.append(Paragraph(txt(f"<b>Le reste</b> ({tot(autre)}) vient des autres tables (leurs erreurs, ou des décisions "
+                             "raisonnables qui n'ont pas réussi), des enchères adverses et des petits écarts. Une donne peut "
+                             "coûter plus que son total quand les enchères adverses vous avaient aidé."), S_avis))
+    return out
 
 
 def page_ensemble(donnes, an, largeur=17.4*cm, style="lignes"):

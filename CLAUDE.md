@@ -108,7 +108,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         vulnerable or green, the dealer's side white with a border of its colour and a D, as on the board case), then the dealer and vulnerability in words (VUL_TXT),
                         the seat played (chosen in « Options », the first entry of the deal list: jouer.PLACES, jouer.siege_choisi: declarer (default), declaring side, defence, dealer, a fixed seat or random; the declarer is the recommended auction's, else the engine's; saved in etat.json as place_jouer, ecrire_etat), the auction, then the bidding box drawn as a red box (bid cards standing behind in the
                         order ♣ ♦ ♥ ♠ SA, only the bids still possible, four levels, « … les autres enchères »; Passe, X, XX tabs in
-                        front) or the play buttons. The sidebar entry (vue["entree"]) is shared by Donnes, Jouer and
+                        front) or the play buttons. Jouer's sidebar starts with Options and Classement (classement.py). The sidebar entry (vue["entree"]) is shared by Donnes, Jouer and
                         Analyse: a deal chosen in one stays chosen in the others;
                         window 1200×850,
                         with Aide at the top. Rapports picks the .bws created last, runs rapport.py as a separate process
@@ -258,6 +258,16 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         system's call as the Indice; a call the engine would not make is read by encheres.interpreter from the
                         rule file, else as natural), comparer (contract, double-dummy result, IMP for the player against the
                         Expert / Standard, first differing call), attempts saved in <name>-jeu.json beside the session; the deal as left (seat, calls, cards played, claim) in its "en_cours" (garder_en_cours / en_cours; app: jeu_garder after every call and card, jeu_reprendre replays them; Recommencer les enchères / Reprendre le jeu de la carte reset; a seat change in Options clears them). A new bidding card slides in from its player's edge (arrive-bas/haut/gauche/droite, timed by jeu["arrive"] so redraws continue it); piles start at a fixed point so earlier cards never move. The bidding box's front row: Passe, X, XX, Stop (practice: a jump without Stop, or Stop without a jump, gets a note; saut), and Alerte only when partner's last call is marked « alerte: oui » in regles.yaml (alerte_due; encherir returns "alertes", jouer.avancer_alertes); Indice sits under the box, right above its text, and a second click hides it
+      classement.py     the tournament replay scoreboard (Jouer tab, sidebar entry « Classement » under Options, 2026-11-11;
+                        app.page_classement): for each deal the latest finished attempt in <name>-jeu.json (card play to the
+                        last trick, "levees", or a passed-out deal; bidding alone does not count: fini, dernier_fini), the score
+                        from the tricks really made (not double-dummy) seen from the seat played, then its MP % against the
+                        club tables (pct_face, as comparer.pct_face_aux_tables) or IMP against their datum (session.marque);
+                        the session line (mean %, or IMP total and per deal) ranked among the pairs' official results
+                        (paires[].pct / .imp, else from the tables; IMP ranked per deal played), « Vous : 54,2 % — 3e sur 11
+                        paires »; deals not replayed are listed, not counted (provisional ranking). The page: that line in
+                        large type on yellow, a row per deal (click opens it), then the pairs with you in place. The deal list
+                        marks « · jouée » (finished) or « · enchérie ». tests/test_classement.py
       carte.py          card play in the Jouer tab: Partie (coups.Position, lead from the rules, legal cards, tricks, claim
                         checked double-dummy); Partie(humain=seat): the player holds declarer and dummy, or one defender (en_defense; the
                         player then leads himself when on lead, the program plays declarer and dummy through indice() = lignes._carte and

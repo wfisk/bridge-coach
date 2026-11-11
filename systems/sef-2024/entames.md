@@ -86,9 +86,24 @@ règles).
   (« Avec les cartes vues, ♠V aurait fait mieux »), l'effet des entames des tables, et si les
   impasses du plan réussissent.
 
-## Signalisation (pas encore dans jeu.py, toute la section est à confirmer)
-- Sur l'entame du partenaire : appel (carte haute = j'aime) ou refus.
-- Défausse : appel ou refus dans la couleur défaussée.
-- Parité (« pair-impair ») quand le déclarant tire une couleur : grosse puis petite
-  avec un nombre pair de cartes.
-- Préférence de couleur sur une coupe donnée au partenaire.
+## Signalisation (le choix de l'utilisateur, 2026-11-11 ; src/signaux.py)
+Les robots signalent et lisent avec les mêmes règles (src/signaux.py) : un défenseur lit son partenaire comme il
+aurait signalé lui-même. Un signal ne se donne que parmi des cartes également bonnes : il ne coûte jamais de levée.
+
+- **Sur l'entame (ou la couleur menée) du partenaire, la première carte : pair-impair.** Une carte impaire demande
+  de continuer la couleur. Une carte paire demande de changer ; sa hauteur dit pour quelle couleur : paire haute
+  (7 ou plus) la plus chère des deux autres couleurs, paire basse (6 ou moins) la moins chère. À la couleur, les
+  deux autres sont les couleurs hors atout autres que celle menée ; à sans-atout, la plus chère et la moins chère
+  des trois autres.
+- **En défausse : préférence de couleur.** On défausse dans une couleur qu'on ne veut pas ; une carte haute (7 ou
+  plus) demande la plus chère des deux autres couleurs (hors atout), une basse (6 ou moins) la moins chère. À
+  sans-atout, les deux autres sont celles qui ne sont ni la défausse ni la couleur menée.
+- **Quand le déclarant mène : la parité.** Grosse puis petite avec un nombre pair de cartes, la plus petite avec un
+  nombre impair.
+- **Jamais à l'atout** : ni pair-impair ni parité dans la couleur d'atout.
+- **Ce qu'on veut ne vient pas d'une règle fixe sur les honneurs** : selon la situation (longueur à sans-atout,
+  doubleton pour couper, honneurs du mort placés devant les siens, urgence de changer), le défenseur le lit dans
+  ses donnes imaginées : si son partenaire avait la main, quelle couleur rapporterait le plus (carte.Partie.voeu).
+- **Le partenaire suit la demande** : quand il a la main, parmi ses cartes également bonnes, il joue la couleur
+  demandée ; ses pensées le disent.
+- **Les honneurs ne signalent pas** (ni A, R, D, V) : on ne lit que les cartes de 2 à 10.

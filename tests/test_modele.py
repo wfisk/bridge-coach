@@ -31,13 +31,26 @@ for mains, w in m2.mondes():
 m3 = m2.suite(jouees + [("N", "♦2")])
 assert all(mains["S"] == d["mains"]["S"] for mains, _ in m3.mondes())
 assert len(modele.Modele(d, "N", seq, jouees, mort="S", n=50, efficace=10, n_max=100).pensees()) == 2
-# les signaux : une grosse carte sur l'entame du partenaire dit « j'aime » ; la parité, un nombre pair
-main = "R95 X87 6543 D32"                                  # ♠R95 : on aime les piques
-assert modele.signal_plausible(main, ("♠", "9"), "attitude", "♠") == 1.0
-assert modele.signal_plausible(main, ("♠", "5"), "attitude", "♠") == modele.EPS_SIGNAL
+# les signaux (signaux.py) : pair-impair sur l'entame du partenaire, préférence en défausse, parité
+main = "R95 X87 6543 D32"                                  # ♠R95 : on veut que le partenaire continue les piques
+assert modele.signal_plausible(main, ("♠", "9"), "attitude", "♠", "♥", "♠") == 1.0          # impaire : continuez
+assert modele.signal_plausible(main, ("♠", "X"), "attitude", "♠", "♥", "♠") == 1.0          # pas de choix d'impaire ? neutre
+assert modele.signal_plausible("R96 X87 6543 D32", ("♠", "6"), "attitude", "♠", "♥", "♠") == modele.EPS_SIGNAL   # paire : changez ?
 assert modele.signal_plausible(main, ("♦", "6"), "parité", "♦") == 1.0       # quatre carreaux : grosse d'abord
 assert modele.signal_plausible(main, ("♦", "3"), "parité", "♦") == modele.EPS_SIGNAL
-assert modele.signal_plausible("R5 X87 65432 D32", ("♠", "5"), "attitude", "♠") == 1.0   # pas le choix : neutre
-sv = modele.signaux_vus([("E", "♥3"), ("S", "♥2"), ("O", "♥9"), ("N", "♥A")], "N")
-assert ("O", ("♥", "9"), "attitude", "♥") in sv
+assert modele.signal_plausible("R5 X87 65432 D32", ("♠", "5"), "attitude", "♠", "♥", "♠") == 1.0   # pas le choix : neutre
+# défausse : ♦8 (haute) refuse les ♦ et demande la plus chère des deux autres hors atout (♠ et ♣, atout ♥ : les ♠)
+assert modele.signal_plausible("A7 X8 8642 9532", ("♦", "8"), "défausse", "♦", "♥", "♥") == 1.0
+assert modele.signal_plausible("72 X8 8642 A532", ("♦", "8"), "défausse", "♦", "♥", "♥") == modele.EPS_SIGNAL  # l'as est à ♣
+sv = modele.signaux_vus([("E", "♥3"), ("S", "♥2"), ("O", "♥9"), ("N", "♥A")], "N", "♠")
+assert ("O", ("♥", "9"), "attitude", "♥", "♥") in sv
+assert not modele.signaux_vus([("E", "♠3"), ("S", "♠2"), ("O", "♠9"), ("N", "♠A")], "N", "♠")   # pas de signal à l'atout
+# le module partagé : la même lecture des deux côtés
+import signaux
+assert signaux.carte_attitude(list("972"), True) == ("7", "impair")
+assert signaux.carte_attitude(list("862"), False, "♠", ["♠", "♣"]) == ("8", "pair haut:♠")
+assert signaux.carte_attitude(list("862"), False, "♣", ["♠", "♣"]) == ("2", "pair bas:♣")
+assert signaux.lire("8", "attitude", "♦", "♥") == {"continuer": False, "prefere": "♠"}
+assert signaux.carte_defausse({"♦": list("852")}, ["♠", "♣", "♦"], "♥", "♥") == (("♦", "8"), "défausse haute:♦:♠")
+assert signaux.lire("8", "défausse", "♦", "♥", "♥") == {"refuse": "♦", "prefere": "♠"}
 print("ok")

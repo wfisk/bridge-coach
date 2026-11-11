@@ -97,6 +97,7 @@ class Partie:
                  ((k, v) for k, v in cv.items() if k != "n") if v * 3 >= cv.get("n", 99)]   # au moins un tiers des donnes
         return dict(n=len(self.pos.jouees), siege=s, carte=carte_fr(*x), humain=humain, plan=plan, coups=coups,
                     signal=(ch.get("signal") if ch and ch.get("role") == "defense" else None),
+                    suit=(ch.get("suit") if ch and ch.get("role") == "defense" else None),   # la demande du partenaire suivie
                     role="declarant" if self.camp(s) else "defense",
                     croyance=[] if humain else self.croyance(s), mondes=ch["mondes"] if ch else 0,
                     force=bool(ch and ch["force"]),
@@ -185,8 +186,8 @@ class Partie:
         s = self.au_trait(); leg = self.legales(); self.difficile = False
         self.dernier = dict(role="defense", siege=s, mondes=0, scores={}, force=len(leg) == 1)
         if len(leg) == 1: return leg[0]
-        dd = []
-        for m in self._mondes(s, MONDES):
+        dd = []; self._vus_mondes = self._mondes(s, MONDES)  # gardés pour le vœu du signal (voeu)
+        for m in self._vus_mondes:
             x = _donne_dds(m, self.den, self.decl)
             for j in self.pos.jouees: x.play(Card(j))
             dd.append(x)
@@ -203,8 +204,15 @@ class Partie:
         self.dernier.update(mondes=len(dd), scores={x: (chute[x], total[x]) for x in leg})
         cle = lambda x: (chute[x], total[x])
         meilleure = max(leg, key=lambda x: (chute[x], total[x], RANGS.index(x[1])))
-        if SIGNAUX:                                    # entre cartes aussi bonnes, celle qui renseigne le partenaire
-            egales = [x for x in leg if cle(x) == cle(meilleure)]
+        egales = [x for x in leg if cle(x) == cle(meilleure)]
+        if SIGNAUX and not self.pos.pli:                # en tête : parmi les cartes aussi bonnes, ce que le partenaire a demandé
+            dem = self.demande(s)
+            if dem:
+                suivies = [x for x in egales if x[0] == dem["couleur"]]
+                if suivies and meilleure[0] != dem["couleur"]:
+                    meilleure = max(suivies, key=lambda x: RANGS.index(x[1]))
+                if meilleure[0] == dem["couleur"]: self.dernier["suit"] = dem["texte"]
+        elif SIGNAUX:                                   # entre cartes aussi bonnes, celle qui renseigne le partenaire
             sig = self.signal(s, egales)
             if sig: meilleure, self.dernier["signal"] = sig
         # difficile : la meilleure carte ne fait chuter que dans un ou deux mondes de plus qu'une autre (l'application
@@ -213,42 +221,94 @@ class Partie:
         self.difficile = bool(moins) and chute[meilleure] - max(moins) <= max(1, len(dd) // 16)
         return meilleure
 
-    def aime(self, s, c):
-        """Le défenseur s aime-t-il la couleur c (pour l'appel) : l'as, le roi, ou la dame avec le valet."""
-        x = self.pos.reste[s].get(c, "")
-        return "A" in x or "K" in x or ("Q" in x and "J" in x)
+    def voeu(self, s):
+        """Ce que veut le défenseur s, lu dans ses donnes imaginées (pas une règle fixe : selon la situation) : si son
+        partenaire avait la main au début de ce pli, quelle couleur rapporterait le plus à la défense au double mort.
+        {couleur: levées moyennes de la défense}, la meilleure entame du partenaire dans chaque couleur."""
+        from endplay.dds import solve_board
+        from endplay.types import Player
+        import signaux
+        lettre = dict(zip("SHDC", COULEURS))
+        k = len(self.pos.jouees) - len(self.pos.pli)    # les plis finis
+        jouees = {}
+        for x, j in zip(self.pos.sieges[:k], self.pos.jouees[:k]): jouees.setdefault(x, set()).add(lettre[j[0]] + j[1:].translate(FR))
+        somme = {c: 0.0 for c in COULEURS}; n = {c: 0 for c in COULEURS}
+        for m in getattr(self, "_vus_mondes", [])[:MONDES]:
+            reste = {}
+            for x in ROT:
+                parts = m[x].split()
+                reste[x] = " ".join("".join(r for r in (parts[i] if parts[i] != "-" else "") if c + r not in jouees.get(x, ()))
+                                    or "-" for i, c in enumerate(COULEURS))
+            try:
+                deal = _donne_dds(reste, self.den, self.decl)
+                deal.first = {"N": Player.north, "E": Player.east, "S": Player.south, "O": Player.west}[PART[s]]
+                meilleur = {}
+                for carte, t in solve_board(deal):
+                    c = str(carte)[0]; meilleur[c] = max(meilleur.get(c, 0), t)
+            except Exception:
+                continue
+            for c, t in meilleur.items(): somme[c] += t; n[c] += 1
+        return {c: somme[c] / n[c] for c in COULEURS if n[c]}
 
     def signal(self, s, egales):
-        """(carte, sens) : le signal du défenseur s parmi des cartes également bonnes, ou None.
-        Sur l'entame (ou la couleur menée) du partenaire : appel (grosse) ou refus (petite). Couleur menée par le
-        déclarant ou le mort : parité, grosse puis petite avec un nombre pair. Défausse : grosse dans une couleur
-        aimée (appel), sinon la plus petite d'une couleur non aimée (refus). systems/sef-2024/entames.md (à confirmer)."""
+        """(carte, sens) : le signal du défenseur s parmi des cartes également bonnes, ou None (signaux.py, entames.md).
+        Sur la couleur du partenaire, la première fois : pair-impair (impaire = continuez ; paire = changez, haute ou
+        basse pour la couleur voulue). Défausse : préférence de couleur. Couleur du déclarant : la parité. Ce que le
+        défenseur veut vient de ses donnes imaginées (voeu), selon la situation."""
+        import signaux
         if len(egales) < 2: return None
-        petites = lambda xs: [x for x in xs if x[1] not in "AKQJ"] or xs
-        haute = lambda xs: min(xs, key=lambda x: RANGS.index(x[1]))
-        basse = lambda xs: max(xs, key=lambda x: RANGS.index(x[1]))
         pli = self.pos.pli
         if not pli: return None                         # en tête : pas de signal (le choix de la carte d'attaque)
         c0, meneur = pli[0][1], pli[0][0]
         memes = [x for x in egales if x[0] == c0]
         deja = any(x == s and j[0] == LETTRE[c0] for x, j in zip(self.pos.sieges, self.pos.jouees))
         if memes and deja: return None                  # le signal se donne la première fois qu'on joue la couleur
+        if memes and c0 == self.den: return None        # à l'atout : ni pair-impair ni parité
         if memes:
             if len(memes) < 2: return None
-            xs = petites(memes)
-            if len(xs) < 2: return None
-            if meneur == PART[s]:                       # le partenaire mène : appel ou refus
-                return (haute(xs), "appel") if self.aime(s, c0) else (basse(xs), "refus")
-            if self.camp(meneur):                       # le déclarant mène : la parité de la couleur
-                pair = len(self.pos.reste[s][c0]) % 2 == 0
-                return (haute(xs), "parité paire") if pair else (basse(xs), "parité impaire")
-            return None
+            rangs = [x[1] for x in memes]
+            if meneur == PART[s]:                       # le partenaire mène : pair-impair
+                v = self.voeu(s)
+                if c0 not in v: return None
+                deux = signaux.autres(self.den, c0, c0)
+                continuer = v[c0] >= max([v[c] for c in v if c != c0] or [0]) - 0.25
+                pref = max(deux, key=lambda c: v.get(c, -1)) if deux else None
+                choix = signaux.carte_attitude(rangs, continuer, pref, deux)
+            elif self.camp(meneur):                     # le déclarant mène : la parité
+                choix = signaux.carte_parite(rangs, len(self.pos.reste[s][c0]))
+            else:
+                return None
+            return ((c0, choix[0]), choix[1]) if choix else None
         if c0 != self.den and not any(x[0] == self.den for x in egales):   # une défausse (pas une coupe)
-            aimees = [x for x in petites(egales) if self.aime(s, x[0]) and x[1] not in "AKQJ"]
-            if aimees: return haute(aimees), "appel"
-            autres = [x for x in egales if not self.aime(s, x[0])]
-            if autres: return basse(autres), "refus"
+            par = {}
+            for c, r in egales: par.setdefault(c, []).append(r)
+            v = self.voeu(s)
+            ordre = sorted(COULEURS, key=lambda c: -v.get(c, -1))
+            choix = signaux.carte_defausse(par, ordre, self.den, c0)
+            return choix
         return None
+
+    def demande(self, s):
+        """La dernière demande du partenaire de s, lue dans ses signaux (signaux.lire) : {"couleur", "texte"} ou None."""
+        import signaux
+        p = PART[s]; out = None; vu = set()
+        for i in range(0, len(self.pos.jouees) - len(self.pos.pli), 4):
+            sieges = self.pos.sieges[i:i + 4]; cartes = self.pos.jouees[i:i + 4]
+            c0 = dict(zip("SHDC", COULEURS))[cartes[0][0]]; meneur = sieges[0]
+            for x, j in zip(sieges[1:], cartes[1:]):
+                if x != p: continue
+                c = dict(zip("SHDC", COULEURS))[j[0]]; rang = j[1:]
+                if c == c0:
+                    if (x, c0) in vu or c0 == self.den: continue
+                    vu.add((x, c0))
+                    if meneur != s: continue            # seule l'attitude sur notre couleur dit quoi rejouer
+                    m = signaux.lire(rang, "attitude", c0, self.den, c0)
+                    if m.get("continuer"): out = {"couleur": c0, "texte": signaux.phrase(NOMS[x], c + rang.translate(FR), "attitude", c0, self.den)}
+                    elif m.get("prefere"): out = {"couleur": m["prefere"], "texte": signaux.phrase(NOMS[x], c + rang.translate(FR), "attitude", c0, self.den)}
+                elif c != self.den:
+                    m = signaux.lire(rang, "défausse", c, self.den, c0)
+                    if m.get("prefere"): out = {"couleur": m["prefere"], "texte": signaux.phrase(NOMS[x], c + rang.translate(FR), "défausse", c, self.den, c0)}
+        return out
 
     def defendre(self, sur_carte=None):
         """Joue les cartes de la défense jusqu'au tour du déclarant (ou du mort), ou jusqu'à la fin."""
@@ -332,6 +392,24 @@ class Partie:
 NOMS = {"N": "Nord", "S": "Sud", "E": "Est", "O": "Ouest"}
 
 
+def sens_signal(sig, c):
+    """Ce que dit un signal (carte.Partie.signal, signaux.py), en français : « impaire à ♥ : il demande de continuer »."""
+    if sig == "impair": return f"impaire à {c} : il demande de continuer la couleur"
+    if sig == "pair": return f"paire à {c} : il demande de changer de couleur"
+    if sig.startswith("pair "):
+        h, x = sig[5:].split(":")
+        return f"paire {'haute' if h == 'haut' else 'basse'} à {c} : il demande de changer, pour {x}"
+    if sig.startswith("défausse"):
+        morceaux = sig.split(":")
+        if len(morceaux) == 3:
+            h = "haute" if morceaux[0].endswith("haute") else "basse"
+            return f"défausse {h} à {morceaux[1]} : il ne veut pas de {morceaux[1]} et préfère {morceaux[2]}"
+        return f"défausse à {morceaux[1]} : il ne veut pas de {morceaux[1]}"
+    return {"appel": f"un appel à {c} : il aime la couleur", "refus": f"un refus à {c} : il n'aime pas la couleur",
+            "parité paire": f"la parité à {c} : un nombre pair de cartes (grosse puis petite)",
+            "parité impaire": f"la parité à {c} : un nombre impair de cartes (la plus petite)"}.get(sig, sig)
+
+
 def texte_pensee(pz, decl):
     """La pensée d'une carte en français : {"titre", "raison", "croyance": [lignes]}. pz : Partie.pensee."""
     import re
@@ -389,14 +467,13 @@ def _texte_pensee(pz, decl):
                                                      f"{quoi} {NOMS[c['joueur']]} : il garde ses menaces et ses communications.")
     sig = pz.get("signal")
     if sig:
-        c = pz["carte"][0]
-        sens = {"appel": f"un appel à {c} : il aime la couleur", "refus": f"un refus à {c} : il n'aime pas la couleur",
-                "parité paire": f"la parité à {c} : un nombre pair de cartes (grosse puis petite)",
-                "parité impaire": f"la parité à {c} : un nombre impair de cartes (la plus petite)"}.get(sig, sig)
+        sens = sens_signal(sig, pz["carte"][0])
         if raison.endswith(" ; il joue la plus petite."):           # une seule phrase : ses cartes se valent, il signale
             raison = raison[:-len(" ; il joue la plus petite.")] + f" ; il choisit celle qui signale : {sens}."
         else:
             raison = (raison + " " if raison else "") + f"Parmi les cartes qui se valent, il choisit celle qui signale : {sens}."
+    if pz.get("suit"):                                     # en tête, il suit la demande de son partenaire
+        raison = (raison + " " if raison else "") + pz["suit"] + " Parmi les cartes qui se valent, il le suit."
     return dict(titre=titre, raison=raison, croyance=list(pz.get("croyance") or []), plan=pz.get("plan") or "")
 
 
@@ -487,7 +564,7 @@ def resume_donne(d, contrat, decl, humain, cartes, pensees, levees):
     if plan:
         import re as _re
         out.insert(1, "Le plan du déclarant, à sa première carte : " + _re.sub(r"<[^>]+>", " ", plan).replace("  ", " ").strip())
-    sig = [f"{NOMS[z['siege']]} : {z['signal']} à {z['carte'][0]} ({z['carte']})" for z in pensees if z.get("signal")]
+    sig = [f"{NOMS[z['siege']]} ({z['carte']}) : {sens_signal(z['signal'], z['carte'][0])}" for z in pensees if z.get("signal")]
     if sig: out.append("Les signaux de la défense : " + " ; ".join(sig[:8]) + ".")
     cr = []                                                # ce qu'ils croyaient, face aux vraies mains
     for z in pensees:

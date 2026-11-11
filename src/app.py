@@ -12,7 +12,7 @@ import asyncio, datetime, glob, json, os, re, shutil, signal, subprocess, sys, t
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import carte, donnes, edition, jouer, maj, moi, rapport
+import carte, classement, donnes, edition, jouer, maj, moi, rapport
 from nicegui import app, background_tasks, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -754,6 +754,71 @@ def tableau_resultats(d, mes, reco):
         tb.add_slot(f"body-cell-{k}", '<q-td :props="props"><span v-html="props.value"></span></q-td>')
 
 
+def page_classement(c, data, aller_donne):
+    """Le classement du tournoi rejoué (onglet Jouer, entrée Classement) : la ligne de la séance d'abord, en grand, puis
+    donne par donne votre contrat, votre résultat à la carte, votre score, votre % (ou vos IMP) et le meilleur de la
+    salle ; enfin les paires du club avec vous à votre place. Un clic sur une donne l'ouvre pour la rejouer."""
+    cl = classement.classement(data, jouer.lire_essais(base_seance(c)))
+    imp_ = cl["marque"] == "IMP"
+    ui.label("Classement du tournoi rejoué").classes("text-lg font-bold")
+    if not cl["a_compter"]:
+        ui.label("Cette séance n'a pas de résultats de club : il n'y a pas de classement à faire.").classes("text-base text-gray-700")
+        return
+    with ui.column().classes("gap-1 rounded-lg px-4 py-3 my-2").style(f"background:{moi.SURLIGNE}"):
+        if cl["rejouees"]:
+            ui.label(classement.ligne_seance(cl)).style("font-size:24px;font-weight:700;color:#222")
+        else:
+            ui.label("Aucune donne rejouée jusqu'au bout pour l'instant.").style("font-size:20px;font-weight:700;color:#222")
+        reste = cl["a_compter"] - cl["rejouees"]
+        ui.label(f"Toutes les donnes rejouées ({cl['rejouees']})." if cl["complet"] else
+                 f"{cl['rejouees']} donne{'s' if cl['rejouees'] > 1 else ''} rejouée{'s' if cl['rejouees'] > 1 else ''} sur "
+                 f"{cl['a_compter']} : classement provisoire, encore {reste} à rejouer.").classes("text-base text-gray-700")
+    ui.label("Chaque donne compte quand vous l'avez enchérie puis jouée jusqu'à la dernière levée (une passe générale "
+             "compte aussi) ; c'est le dernier essai fini qui compte. " +
+             ("Vos IMP se comptent contre la moyenne des tables du club (le datum), votre total par donne face à celui des paires."
+              if imp_ else "Votre % se compte face aux tables du club, comme Bridgemate compte les points de match.") +
+             " Un clic sur une donne l'ouvre.").classes("text-base text-gray-700 max-w-3xl")
+    def contrat_txt(x):
+        if x.get("contrat") == "passe": return "passe"
+        return rouge(f"{x['contrat']} {SIEGE.get(x.get('declarant'), x.get('declarant') or '')}")
+    rows = []
+    for x in cl["lignes"]:
+        r = dict(k=str(x["n"]), n=f"Donne {x['n']}", place="", contrat="", res="", score="", val="", meilleur="", fait=x["etat"] == "rejouee")
+        if x["etat"] == "rejouee":
+            m = x["meilleur"]
+            r.update(place=SIEGE.get(x["siege"], x["siege"]), contrat=contrat_txt(x), res=x["resultat"].replace("-", "−"),
+                     score=f"{x['score']:+d}".replace("-", "−"),
+                     val=(f"{x['imp']:+d}".replace("-", "−") if imp_ else f"{classement.fr(x['pct'], 0)} %"),
+                     meilleur=f"{contrat_txt(m)} {m['resultat']} ({m['score']:+d})".replace("-", "−"))
+        elif x["etat"] == "a_rejouer":
+            r.update(place="à rejouer")
+        else:
+            r.update(place="pas de table de club")
+        rows.append(r)
+    cols = [("n", "Donne"), ("place", "Votre place"), ("contrat", "Votre contrat"), ("res", "Rés."), ("score", "Votre score"),
+            ("val", "IMP" if imp_ else "%"), ("meilleur", "Meilleur de la salle")]
+    tb = ui.table(columns=[{"name": k, "label": l, "field": k, "align": "left"} for k, l in cols], rows=rows, row_key="k") \
+        .props("flat dense :table-row-style-fn=\"r => r.fait ? 'cursor:pointer' : 'cursor:pointer;color:#777;font-style:italic'\"") \
+        .classes("w-full max-w-4xl classement")
+    for k in ("contrat", "meilleur"):
+        tb.add_slot(f"body-cell-{k}", '<q-td :props="props"><span v-html="props.value"></span></q-td>')
+    tb.on("rowClick", lambda e: aller_donne(f"d{e.args[1]['k']}"))
+    if cl["paires"]:
+        ui.label("Les paires du club" + (" (IMP par donne)" if imp_ else "")).classes("text-base font-bold mt-4")
+        lignes = []
+        for i, p in enumerate(cl["paires"]):                # le rang avec vous parmi elles : 1 + celles devant
+            rang = 1 + sum(1 for q in cl["paires"] if q["valeur"] > p["valeur"] + 1e-9)
+            v = (("+" if p["valeur"] >= 0 else "−") + classement.fr(abs(p["valeur"]), 2)) if imp_ else f"{classement.fr(p['valeur'])} %"
+            lignes.append(dict(k=str(i), rang=classement.rang_txt(rang), nom=p["nom"] + (" (votre paire ce soir-là)" if p["la_votre"] else ""),
+                               val=v, vous=p["vous"], la_votre=p["la_votre"]))
+        ui.table(columns=[{"name": "rang", "label": "Rang", "field": "rang", "align": "left"},
+                          {"name": "nom", "label": "Paire", "field": "nom", "align": "left"},
+                          {"name": "val", "label": "IMP par donne" if imp_ else "%", "field": "val", "align": "left"}],
+                 rows=lignes, row_key="k") \
+            .props(f"flat dense :table-row-style-fn=\"r => r.vous ? 'background:{moi.SURLIGNE};font-weight:700' : r.la_votre ? 'font-weight:700' : ''\"") \
+            .classes("max-w-xl classement")
+
+
 def encheres_tables(d):
     with ui.row().classes("gap-6 items-start"):
         for x in d["tables"]:
@@ -1178,7 +1243,8 @@ def page():
                "body { font-size: 16px; } .q-btn { text-transform: none; } "
                # lisible de loin (des joueurs âgés, un écran de télévision en cours) : le contenu qui change en grand ; les
                # libellés fixes que chacun connaît (onglets, barres latérales, boutons) gardent leur taille (le choix de l'utilisateur)
-               ".q-table th, .q-table td { font-size: 15px !important; padding: 4px 6px !important; } .q-table th { font-weight: 700; }" + CSS_AIDE + CSS_CARTES)
+               ".q-table th, .q-table td { font-size: 15px !important; padding: 4px 6px !important; } .q-table th { font-weight: 700; }"
+               ".classement th, .classement td { font-size: 17px !important; padding: 6px 10px !important; }" + CSS_AIDE + CSS_CARTES)
     ui.add_head_html(JS_AJUSTE + JS_GLISSE)
     z = taille_texte()
     ui.add_head_html(f"<style>:root {{ zoom: {z}; --zoom: {z}; }}</style>")   # la taille du texte choisie dans Réglages
@@ -1210,6 +1276,8 @@ def page():
                 if ok: page_versions(c)
             elif e == "joueurs": page_joueurs(data)
             elif e == "alertes": page_alertes(data)
+            elif not any(f"d{x['n']}" == e for x in data["donnes"]):   # Options, Classement de l'onglet Jouer : la séance
+                page_seance(data, c)
             else:
                 d = next(d for d in data["donnes"] if f"d{d['n']}" == e)
                 if ok and (d.get("a_completer") or vue.get("edition") == d["n"]):
@@ -2026,6 +2094,8 @@ def page():
             ui.label("Quand l'autre camp gagne le contrat, vous jouez la carte en défense : le programme tient le déclarant, "
                      "son mort et votre partenaire.").classes("text-base text-gray-700")
             return
+        if e == "classement":
+            page_classement(c, data, aller); return
         d = next(x for x in data["donnes"] if f"d{x['n']}" == e)
         if jeu.get("mode") == "demo":                    # la démonstration, pour un cours : une vue à part
             vue_demo(c, d, data); return
@@ -2426,7 +2496,8 @@ def page():
         """Les entrées de la barre latérale : la séance, puis (onglet Donnes) les joueurs et les alertes, puis chaque donne."""
         if sur_jouer():                                   # Jouer : les donnes seules, et celles déjà enchéries
             faits = jouer.lire_essais(base_seance(choix["chemin"]))["donnes"]
-            return [("options", "Options")] + [(f"d{d['n']}", f"Donne {d['n']}" + (" · enchérie" if faits.get(str(d["n"])) else ""))
+            return [("options", "Options"), ("classement", "Classement")] + [(f"d{d['n']}", f"Donne {d['n']}" + (" · jouée" if classement.dernier_fini(faits.get(str(d["n"])))
+                                                                                       else " · enchérie" if faits.get(str(d["n"])) else ""))
                                                 for d in data["donnes"] if not d.get("a_completer")]
         haut = [("standard", "Analyse standard"), ("expert", "Analyse expert")] if sur_analyse() else \
             [("seance", "Séance"), ("joueurs", "Joueurs")]   # toujours deux entrées : Donne 1 à la même hauteur partout
@@ -2504,7 +2575,9 @@ def page():
         """L'entrée montrée : celle choisie si elle existe dans cet onglet, sinon la première."""
         es = entrees_de(data)
         if vue["entree"] in dict(es): return vue["entree"]
-        return es[1][0] if sur_jouer() and len(es) > 1 else es[0][0]     # Jouer : la première donne, pas les options
+        if sur_jouer():                                   # Jouer : la première donne, pas les options ni le classement
+            return next((k for k, _ in es if k.startswith("d")), es[0][0])
+        return es[0][0]
 
     def montrer_controles():
         """« Lancer l'analyse » : sur la page Analyse standard, ou partout pendant qu'une analyse tourne."""

@@ -31,7 +31,8 @@ RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du c
             ("comparaison", "Comparaison", "le Coach face à l'Expert"))
 TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.pbn;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
-TYPES_IMPORT = ("Bridgemate feuille de route ou PBN (*.bws;*.pdf;*.pbn)", "Tous les fichiers (*.*)")
+TYPES_BWS = ("Bridgemate ou feuille de route (*.bws;*.pdf)", "Tous les fichiers (*.*)")
+TYPES_PBN = ("PBN (*.pbn)", "Tous les fichiers (*.*)")
 TYPES_EXPERT = ("Analyse expert (*.json)", "Tous les fichiers (*.*)")   # pywebview : lettres et espaces seulement, pas d'apostrophe
 SOURCES = {"bws": "Bridgemate", "feuille-de-route": "Feuille de route", "entrainement": "Entraînement",
            "saisie": "Donnes saisies", "simulation": "Simulation"}
@@ -271,13 +272,41 @@ CSS_CARTES = """
 .sa { color: #2b2b2b; background: #eceff1; } .pique { color: #1f3fa0; background: #e3eaf8; }
 .coeur { color: #c0141c; background: #fbe4e4; } .carreau { color: #c86a00; background: #fff0d6; }
 .trefle { color: #1d7a35; background: #e1f2e5; }
-.carton { position: relative; width: 72px; height: 46px; padding: 2px 6px; border: 1px solid #8e99a4; border-radius: 5px;
-  font-size: 20px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.25); display: flex; align-items: flex-start;
-  justify-content: flex-start; line-height: 1.1; }
-.carton.passe { background: #2e7d32; border-color: #1f5e24; color: #fff; font-size: 17px; }
-.carton.contre { background: #c62828; border-color: #8e1b1b; color: #fff; }
-.carton.surcontre { background: #1565c0; border-color: #0d4a8f; color: #fff; }
-.carton.recent { outline: 2px solid #f2b705; }
+/* les cartons d'enchères posés sur la table, comme de vrais cartons de boîte à enchères : dessinés à l'endroit pour qui les
+   lit en face (.face), retournés pour celui qui les pose ; chaque joueur les pose de gauche à droite devant lui (.cadre,
+   tourné selon sa place), le dernier sur le précédent : on voit encore la bande de droite (pour le lecteur) des autres */
+.cadre { position: absolute; transform-origin: 0 100%; display: flex; align-items: flex-end; }
+.pile { display: flex; align-items: flex-end; }
+.pile .carton + .carton { margin-left: -30px; }
+.carton { position: relative; flex: none; }
+.carton .face { position: absolute; inset: 0; transform: rotate(180deg); border-radius: 5px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.carton.bid { width: 56px; height: 76px; } .carton.bid .face { background: #fff; border: 1px solid #b8bfc6; }
+.carton.bid .coin { position: absolute; top: 0; right: 0; padding: 1px 4px; font-size: 12px; font-weight: 700;
+  border-radius: 0 4px 0 4px; line-height: 1.2; }
+.carton.bid .grand { position: absolute; right: 2px; top: 20px; width: 26px; display: flex; flex-direction: column;
+  align-items: center; font-weight: 700; line-height: 1; }
+.carton.bid .grand b { font-size: 28px; } .carton.bid .grand i { font-style: normal; font-size: 26px; margin-top: 2px; }
+.carton.bid .grand i.sa { font-size: 15px; background: none; margin-top: 4px; }
+.carton.bid.sa .grand { color: #2b2b2b; } .carton.bid.pique .grand { color: #1f3fa0; }
+.carton.bid.coeur .grand { color: #c0141c; } .carton.bid.carreau .grand { color: #c86a00; }
+.carton.bid.trefle .grand { color: #1d7a35; }
+.carton.carre { width: 64px; height: 60px; } .carton.carre .face { color: #fff; }
+.carton.haut-carre { width: 60px; height: 70px; } .carton.haut-carre .face { color: #fff; }
+.carton .tab { position: absolute; top: -13px; right: 4px; height: 14px; min-width: 22px; padding: 0 4px;
+  border-radius: 3px 3px 0 0; font-size: 9px; font-weight: 700; line-height: 14px; text-align: center; background: inherit; }
+.carton .long { position: absolute; right: 3px; top: 3px; bottom: 3px; width: 26px; display: flex; align-items: center;
+  justify-content: center; writing-mode: vertical-rl; font-weight: 800; font-size: 16px; letter-spacing: 1px; }
+.carton .gros { position: absolute; right: 1px; top: 0; bottom: 0; width: 30px; display: flex; align-items: center;
+  justify-content: center; font-weight: 800; font-size: 28px; }
+.carton .gros.deux { font-size: 20px; writing-mode: vertical-rl; letter-spacing: -1px; }
+.carton.passe .face { background: #2e7d32; } .carton.contre .face { background: #c62828; }
+.carton.surcontre .face { background: #1565c0; } .carton.stop .face { background: #c62828; }
+.carton.alerte .face { background: #1565c0; }
+.carton.stop .long, .carton.alerte .long { right: 0; left: 0; width: auto; font-size: 15px; }
+.carton.recent .face { outline: 2px solid #f2b705; }
+.carton:not(.derniere) .face { filter: saturate(.5) brightness(1.06); }   /* la dernière enchère de chacun en clair */
+.cadre .a-part { margin-right: 14px; }      /* Stop et Alerte : posés à gauche de la rangée, pas parmi les enchères */
 @keyframes tourne { from { transform: rotate(180deg); } to { transform: none; } }   /* la table, d'un demi-tour (TOURNE) */
 .carton.arrive-bas, .carte.arrive-bas { animation: arrive-bas .5s ease-out; }
 .carton.arrive-haut, .carte.arrive-haut { animation: arrive-haut .5s ease-out; }
@@ -287,15 +316,6 @@ CSS_CARTES = """
 @keyframes arrive-haut { from { transform: translateY(-110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
 @keyframes arrive-gauche { from { transform: translateX(-110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
 @keyframes arrive-droite { from { transform: translateX(110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
-.carton:not(.derniere)::after { content: ""; position: absolute; inset: -1px; border-radius: 5px;
-  background: rgba(255, 255, 255, .4); }   /* la dernière enchère de chacun en clair, les précédentes voilées */
-.pile { display: flex; align-items: flex-start; justify-content: flex-start; min-height: 46px; min-width: 78px; }
-.pile.vers-bas { flex-direction: column; } .pile.vers-bas .carton + .carton { margin-top: -19px; }
-.pile.vers-haut { flex-direction: column-reverse; } .pile.vers-haut .carton { align-items: flex-end; }
-.pile.vers-haut .carton + .carton { margin-bottom: -17px; }
-.pile.vers-droite { flex-direction: row; } .pile.vers-droite .carton + .carton { margin-left: -22px; }
-.pile.vers-gauche { flex-direction: row-reverse; } .pile.vers-gauche .carton { justify-content: flex-end; }
-.pile.vers-gauche .carton + .carton { margin-right: -22px; }
 .boite-encheres { background: #c0392b; border-radius: 12px; padding: 8px; }
 .ratelier { background: #f4f5f6; border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
 .tirette { width: 40px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px;
@@ -304,13 +324,16 @@ CSS_CARTES = """
 .tirette.vide { visibility: hidden; }
 .tirette.autres { width: auto; color: #555; background: #fff; font-weight: 500; font-size: 13px; }
 .compartiment { margin-top: 8px; background: #a93226; border-radius: 6px; padding: 6px 6px 4px; justify-content: center; }
-.onglet { min-width: 44px; padding: 4px 8px; border-radius: 6px 6px 2px 2px; font-size: 14px; font-weight: 700; color: #fff;
-  text-align: center; cursor: pointer; }
+.onglet { position: relative; min-width: 46px; height: 36px; margin-top: 11px; padding: 0 6px; border-radius: 4px;
+  font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.onglet[data-tab]::before { content: attr(data-tab); position: absolute; top: -11px; right: 3px; height: 12px; min-width: 18px;
+  padding: 0 3px; border-radius: 3px 3px 0 0; font-size: 8px; line-height: 12px; background: inherit; color: inherit; }
+.a-cote { margin-top: 8px; justify-content: center; }     /* Stop et Alerte : hors de la boîte, ce ne sont pas des enchères */
+.a-cote .onglet { height: 44px; min-width: 56px; }
 .onglet.passe { background: #2e7d32; } .onglet.contre { background: #e53935; } .onglet.surcontre { background: #1565c0; }
 .onglet.eteint { cursor: default; }
-.onglet.stop { background: #fff; color: #c62828; border: 2px solid #c62828; padding: 2px 6px; }
-.onglet.stop.pose { background: #c62828; color: #fff; }
-.onglet.alerte { background: #f2b705; color: #3b2a00; animation: pense 1.2s ease-in-out infinite; }
+.onglet.stop { background: #c62828; } .onglet.stop.pose { outline: 3px solid #f2b705; }
+.onglet.alerte { background: #1565c0; animation: pense 1.2s ease-in-out infinite; }
 @keyframes pense { 50% { opacity: .35; } }
 .pense { animation: pense 1s ease-in-out infinite; }
 """
@@ -1145,7 +1168,8 @@ def page():
         if not data:
             with ui.column().classes("w-full max-w-xl mx-auto"):
                 ui.label("Aucune séance ouverte.").classes("text-base")
-                ui.label("Fichier, Ouvrir une séance pour en ouvrir une ; Fichier, Nouveau pour créer des donnes.").classes("text-base text-gray-600")
+                ui.label("Fichier, Ouvrir une séance pour en ouvrir une ; Fichier, Nouveau pour en créer une : depuis un tournoi "
+                         "Bridgemate, un fichier PBN, ou des donnes d'entraînement.").classes("text-base text-gray-600")
             return
         if vue["entree"] not in dict(entrees_de(data)): vue["entree"] = "seance"
         with ui.column().classes("w-full gap-3 min-w-0"):
@@ -1354,16 +1378,17 @@ def page():
                 if not tout:
                     ui.html("<div class='tirette autres'>… les autres enchères</div>", sanitize=False) \
                         .on("click", lambda: (jeu.update(tout_voir=True), vue_jouer.refresh()))
-            with ui.row().classes("gap-1 no-wrap compartiment"):         # devant : Passe, X, XX, Stop (et Alerte)
-                for b, nom in (("passe", "Passe"), ("contre", "X"), ("surcontre", "XX")):
-                    el = ui.html(f"<div class='onglet {b}{'' if b in ok else ' eteint'}'>{nom}</div>", sanitize=False)
+            with ui.row().classes("gap-1 no-wrap compartiment"):         # devant : Passe, X, XX, chacun avec son onglet
+                for b, nom, tab in (("passe", "Passe", "PASSE"), ("contre", "X", "X"), ("surcontre", "XX", "XX")):
+                    el = ui.html(f"<div class='onglet {b}{'' if b in ok else ' eteint'}' data-tab='{tab}'>{nom}</div>", sanitize=False)
                     if b in ok: el.on("click", lambda b=b: jeu_annonce(d, b))
-                ui.html(f"<div class='onglet stop{' pose' if jeu.get('stop') else ''}' title='Avant un saut'>Stop</div>", sanitize=False) \
-                    .on("click", lambda: (jeu.update(stop=not jeu.get("stop")), vue_jouer.refresh()))
-                a = alerte_due(d)
-                if a and jeu.get("alerte_faite") != a[0]:          # seulement quand l'enchère du partenaire s'alerte
-                    ui.html("<div class='onglet alerte' title='Votre partenaire a fait une enchère artificielle'>Alerte</div>", sanitize=False) \
-                        .on("click", lambda k=a[0]: (jeu.update(alerte_faite=k), vue_jouer.refresh()))
+        with ui.row().classes("gap-2 no-wrap a-cote"):                 # à côté de la boîte : Stop et Alerte, hors des enchères
+            ui.html(f"<div class='onglet stop{' pose' if jeu.get('stop') else ''}' data-tab='S' title='Avant un saut'>STOP</div>", sanitize=False) \
+                .on("click", lambda: (jeu.update(stop=not jeu.get("stop")), vue_jouer.refresh()))
+            a = alerte_due(d)
+            if a and jeu.get("alerte_faite") != a[0]:              # seulement quand l'enchère du partenaire s'alerte
+                ui.html("<div class='onglet alerte' data-tab='A' title='Votre partenaire a fait une enchère artificielle'>ALERTE</div>", sanitize=False) \
+                    .on("click", lambda k=a[0]: (jeu.update(alerte_faite=k), vue_jouer.refresh()))
 
     # ---------------------------------------------------------------- le jeu de la carte
     def carte_demarrer(d):
@@ -1526,29 +1551,52 @@ def page():
         n_, t_ = jeu.get("arrive") or (0, 0)
         ecoule = time.monotonic() - t_                       # la table se redessine souvent : le glissement reprend où il en était
         nouveau = n_ == len(vues) and ecoule < .5
-        cote = {places[0]: "haut", places[1]: "gauche", places[2]: "droite", places[3]: "bas"}
-        def carton(b, recent, k, derniere=False, x=None):
-            cls = {"passe": " passe", "contre": " contre", "surcontre": " surcontre"}.get(b) or " " + COUL_BOITE.get(b[1:], "sa")
-            cls += " derniere" * derniere
+        def carton(b, recent, k, derniere=False):
+            """Un carton, dessiné à l'endroit pour qui le lit en face : la bande de droite (le niveau et la couleur, ou le
+            nom) reste visible sous le carton suivant ; Passe, X et XX sont presque carrés, avec leur onglet."""
+            cls = " derniere" * derniere + " recent" * recent
             retard = ""
-            if recent and nouveau:                           # depuis le bord du joueur, comme posé sur la table
-                cls += f" arrive-{cote[x]}"; retard = f";animation-delay:-{ecoule:.2f}s"
-            texte = {"passe": "Passe", "contre": "X", "surcontre": "XX"}.get(b, b)
-            return f"<div class='carton{cls}{' recent' if recent else ''}' style='z-index:{k + 1}{retard}'>{texte}</div>"
-        def pile(x, sens, ou):
-            """Les cartons d'un joueur empilés, le dernier dessus : on voit encore le haut des précédents. Chaque pile part
-            d'un point fixe près du milieu de son bord, à la même distance du bord pour les quatre joueurs : un carton
-            de plus s'ajoute au bout, les autres ne bougent pas."""
+            if recent and nouveau:                           # depuis le bord du joueur (le cadre est tourné vers lui)
+                cls += " arrive-bas"; retard = f";animation-delay:-{ecoule:.2f}s"
+            if b in ("passe", "contre", "surcontre"):
+                tab, corps = {"passe": ("PASSE", "<span class='long'>PASSE</span>"), "contre": ("X", "<span class='gros'>X</span>"),
+                              "surcontre": ("XX", "<span class='gros deux'>XX</span>")}[b]
+                face = f"<span class='tab'>{tab}</span>{corps}"
+                cls = f" carre {b}" + cls
+            else:
+                n, den = b[0], b[1:]
+                c = COUL_BOITE.get(den, "sa")
+                face = (f"<span class='coin {c}'>{n}{den}</span><span class='grand'><b>{n}</b>"
+                        f"<i class='{'sa' if den == 'SA' else ''}'>{den}</i></span>")
+                cls = f" bid {c}" + cls
+            return f"<div class='carton{cls}' style='z-index:{k + 1}{retard}'><div class='face'>{face}</div></div>"
+        def a_part(x):
+            """Stop et Alerte : posés devant le joueur, à gauche de sa rangée, pas parmi les enchères."""
+            out = ""
+            if x == jeu["siege"] and jeu.get("stop"):
+                out += "<div class='carton haut-carre stop a-part derniere'><div class='face'><span class='tab'>S</span><span class='long'>STOP</span></div></div>"
+            a = alerte_due(d) if x == jeu["siege"] else None
+            if a and jeu.get("alerte_faite") == a[0]:
+                out += "<div class='carton haut-carre alerte a-part derniere'><div class='face'><span class='tab'>A</span><span class='long'>ALERTE</span></div></div>"
+            return out
+        def pile(x, ou):
+            """Les cartons d'un joueur, posés de gauche à droite devant lui, retournés (à l'endroit pour son partenaire,
+            qui les lit de droite à gauche), le dernier dessus. La rangée part d'un point fixe, à la même distance du bord
+            pour les quatre joueurs : un carton de plus s'ajoute au bout, les autres ne bougent pas. Le cadre est dessiné
+            comme pour le joueur du bas, puis tourné vers la place du joueur (origine : le coin bas-gauche de la rangée)."""
             bs = devant[x]
-            cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1, x) for k, b in enumerate(bs))
-            return f"<div class='pile {sens}' style='position:absolute;{ou}'>{cartons}</div>"
+            cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1) for k, b in enumerate(bs))
+            sep = a_part(x)
+            dec = 120 + (76 if sep else 0)                   # Stop ou Alerte posé : la rangée commence un peu plus à gauche
+            pos = {"bas": f"left:calc(50% - {dec}px);bottom:{bord}px",
+                   "haut": f"left:calc(50% + {dec}px);bottom:calc(100% - {bord}px);transform:rotate(180deg)",
+                   "gauche": f"left:{bord}px;bottom:calc(50% + {dec}px);transform:rotate(90deg)",
+                   "droite": f"left:calc(100% - {bord}px);bottom:calc(50% - {dec}px);transform:rotate(-90deg)"}[ou]
+            return f"<div class='cadre' style='{pos}'>{sep}<div class='pile'>{cartons}</div></div>"
         haut, gauche, droite, bas = places
-        bord = 18                                          # la distance au bord de la table
+        bord = 24                                          # la distance au bord de la table (l'onglet dépasse un peu)
         return (f"<div style='position:absolute;inset:0'>"
-                f"{pile(haut, 'vers-droite', f'top:{bord}px;left:calc(50% - 110px)')}"
-                f"{pile(bas, 'vers-droite', f'bottom:{bord}px;left:calc(50% - 110px)')}"
-                f"{pile(gauche, 'vers-bas', f'left:{bord}px;top:calc(50% - 60px)')}"
-                f"{pile(droite, 'vers-bas', f'right:{bord}px;top:calc(50% - 60px)')}"
+                f"{pile(haut, 'haut')}{pile(bas, 'bas')}{pile(gauche, 'gauche')}{pile(droite, 'droite')}"
                 f"<div style='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)'>{etui(d, places)}</div></div>")
 
     ORDRE_MAIN = "♠♥♣♦"                                    # noir, rouge, noir, rouge
@@ -2050,20 +2098,24 @@ def page():
 
     vue_aide = {"k": int(PAGE.get("aide") or 0)}          # la section de l'aide montrée
 
-    PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"), ("importer", "Importer"),
+    PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"),   # (Importer : une des trois façons de Nouveau)
                          ("exporter", "Exporter en PBN"), ("dossier", "Ouvrir le dossier de travail")],
              "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance")],   # (le bilan : bilan.py, à la main)
              "Réglages": [("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
-    vue_page = {"Fichier": PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "importer", "exporter", "dossier") else "ouvrir",
+    vue_page = {"Fichier": "nouveau" if PAGE.get("fichier") == "importer" else
+                           PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "exporter", "dossier") else "ouvrir",
                 "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance") else "creer",
                 "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("dossiers", "maj") else "dossiers"}
+
+    facon = {"k": PAGE.get("nouveau") if PAGE.get("nouveau") in ("bws", "pbn", "themes") else   # Fichier, Nouveau : la façon choisie
+             ("bws" if PAGE.get("fichier") == "importer" else "themes")}
 
     def retenir_page():
         """La page ouverte (onglet, entrée de la barre, version de l'analyse, page de l'aide) : rouverte au prochain lancement."""
         o = onglets.value; nom = o if isinstance(o, str) else o.props.get("name", "Donnes")
         ecrire_etat(page={"onglet": nom, "entree": vue.get("entree"), "version": vue.get("version"), "aide": vue_aide["k"],
                           "fichier": vue_page["Fichier"], "rapports": vue_page["Rapports"], "reglages": vue_page["Réglages"],
-                          "replis": replis})
+                          "nouveau": facon["k"], "replis": replis})
 
     def onglet_a_pages():
         """« Fichier », « Rapports » ou « Réglages » quand l'un d'eux est ouvert, sinon None."""
@@ -2374,101 +2426,128 @@ def page():
             with ui.tab_panel(o_fichier).classes("px-0 pt-0 max-w-3xl") as panneau_fichier, \
                     ui.column().classes("w-full gap-0") as pages_ui["nouveau"]:   # Fichier : ses pages, la première Nouveau
                 ui.label("Nouvelle séance").classes("text-lg font-bold")
-                ui.label("Choisissez des thèmes et combien de donnes de chacun ; sans thème, la séance est vide et vous tapez "
-                         "les mains dans l'onglet Donnes. Les thèmes d'enchères et de jeu de la carte choisis ensemble sont "
-                         "réunis dans les mêmes donnes.").classes("text-base text-gray-600")
-                quotas = {x: 0 for x in donnes.themes_tries()}
-                niveaux = set(lire_etat().get("niveaux") or [1])   # les niveaux montrés, gardés d'une fois sur l'autre
-                total = lambda: sum(k for _, k in donnes.combiner([(t, k) for t, k in quotas.items() if k]))
+                ui.label("Trois façons de créer une séance :").classes("text-base text-gray-600")
+                FACONS = [("bws", "Un tournoi Bridgemate", "le fichier .bws du tournoi", "table_restaurant"),
+                          ("pbn", "Un fichier PBN", "des donnes de BBO, Funbridge, d'un autre logiciel…", "description"),
+                          ("themes", "Des donnes d'entraînement", "sur des thèmes choisis, ou une séance vide", "school")]
+                sections_n = {}
 
-                def changer(x, k):
-                    avant = quotas[x]; quotas[x] = max(0, quotas[x] + k)
-                    if total() > 36: quotas[x] = avant          # 36 donnes au plus
-                    liste_themes.refresh(); bouton_creer()
-
-                def basculer(n):
-                    niveaux.symmetric_difference_update({n})
-                    if not niveaux: niveaux.add(n)
-                    ecrire_etat(niveaux=sorted(niveaux)); liste_themes.refresh()
-
-                def theme_ligne(x):
-                    k = quotas[x]
-                    with ui.row().classes("w-full items-center justify-between no-wrap"):
-                        ui.label(x).classes("text-base" + (" font-bold text-primary" if k else ""))
-                        with ui.row().classes("items-center no-wrap gap-0"):
-                            ui.button(icon="remove", on_click=lambda x=x: changer(x, -1)).props("flat round dense").set_enabled(k > 0)
-                            ui.label(str(k)).classes("w-7 text-center text-base" + (" font-bold" if k else " text-gray-400"))
-                            ui.button(icon="add", on_click=lambda x=x: changer(x, 1)).props("flat round dense")
+                def choisir_facon(k):
+                    facon["k"] = k; cartes_facon.refresh()
+                    for x, col in sections_n.items(): col.set_visibility(x == k)
+                    retenir_page()
 
                 @ui.refreshable
-                def liste_themes():
-                    with ui.row().classes("gap-2 mt-2"):            # les niveaux montrés
-                        for n, nom in donnes.NIVEAUX.items():
-                            ui.button(nom, on_click=lambda n=n: basculer(n)) \
-                                .props(("unelevated" if n in niveaux else "outline") + " dense no-caps rounded").classes("px-3")
-                    with ui.row().classes("w-full no-wrap items-start gap-4 mt-2"):
-                        for f, titre in donnes.FAMILLES.items():
-                            with ui.column().classes("gap-0 grow basis-0 p-3").style(
-                                    "background:#fff;border:1px solid #e3e7ea;border-radius:10px"):
-                                ui.label(titre).classes("text-base font-bold mb-1")
-                                caches = []
-                                for n, nom in donnes.NIVEAUX.items():
-                                    ts = donnes.themes_de(f, n)
-                                    vus = ts if n in niveaux else [t for t in ts if quotas[t]]   # un thème choisi reste visible
-                                    if n not in niveaux and len(vus) < len(ts):
-                                        m = len(ts) - len(vus)
-                                        caches.append(f"{m} " + {1: "de 1re année", 2: "intermédiaire" + "s" * (m > 1),
-                                                                 3: "avancé" + "s" * (m > 1)}[n])
-                                    if not vus: continue
-                                    ui.label(nom).classes("text-sm text-gray-600 mt-2")
-                                    for t in vus: theme_ligne(t)
-                                if caches: ui.label("Autres thèmes : " + ", ".join(caches)).classes("text-sm text-gray-500 mt-2")
-                    with ui.row().classes("w-full items-center justify-between no-wrap mt-2").style("max-width:50%"):
-                        ui.label("Donnes au hasard").classes("text-base")
-                        with ui.row().classes("items-center no-wrap gap-0"):
-                            k = quotas[donnes.ALEATOIRE]
-                            ui.button(icon="remove", on_click=lambda: changer(donnes.ALEATOIRE, -1)).props("flat round dense").set_enabled(k > 0)
-                            ui.label(str(k)).classes("w-7 text-center text-base" + (" font-bold" if k else " text-gray-400"))
-                            ui.button(icon="add", on_click=lambda: changer(donnes.ALEATOIRE, 1)).props("flat round dense")
-                    choisis = donnes.combiner([(t, k) for t, k in quotas.items() if k])
-                    n = total()
-                    resume = " ; ".join(f"{t} {k}" for t, k in choisis)
-                    ui.label(f"{n} donne{'s' if n > 1 else ''} : {resume}" if n else "Aucun thème choisi : la séance sera vide.") \
-                        .classes("text-base mt-3 pt-2 w-full").style("border-top:1px solid #e3e7ea")
-                liste_themes()
+                def cartes_facon():
+                    with ui.row().classes("w-full no-wrap gap-3 mt-2 mb-4"):
+                        for k, titre, sous, icone in FACONS:
+                            choisi = facon["k"] == k
+                            with ui.column().classes("grow basis-0 gap-1 p-3 cursor-pointer").style(
+                                    "border-radius:10px;" + ("background:#eef4fb;border:2px solid #1976d2" if choisi else
+                                                             "background:#fff;border:2px solid #e3e7ea")) \
+                                    .on("click", lambda k=k: choisir_facon(k)):
+                                with ui.row().classes("items-center no-wrap gap-2"):
+                                    ui.icon(icone, size="22px").classes("text-primary" if choisi else "text-gray-500")
+                                    ui.label(titre).classes("text-base font-bold")
+                                ui.label(sous).classes("text-sm text-gray-600")
+                cartes_facon()
 
-                def bouton_creer():
-                    n = total()
-                    creer_d.text = f"Créer {n} donne{'s' if n > 1 else ''}" if n else "Créer une séance vide"
-                    creer_d.set_enabled(not (T.actif or D.actif or I.actif))
+                with ui.column().classes("w-full gap-0") as sections_n["themes"]:
+                  ui.label("Choisissez des thèmes et combien de donnes de chacun ; sans thème, la séance est vide et vous tapez "
+                           "les mains dans l'onglet Donnes. Les thèmes d'enchères et de jeu de la carte choisis ensemble sont "
+                           "réunis dans les mêmes donnes.").classes("text-base text-gray-600")
+                  quotas = {x: 0 for x in donnes.themes_tries()}
+                  niveaux = set(lire_etat().get("niveaux") or [1])   # les niveaux montrés, gardés d'une fois sur l'autre
+                  total = lambda: sum(k for _, k in donnes.combiner([(t, k) for t, k in quotas.items() if k]))
 
-                with ui.column().classes("w-full gap-4"):
-                    creer_d = ui.button("Créer une séance vide", icon="add", on_click=lambda: demarrer_donnes() if total() else creer_vide()) \
-                        .props("unelevated").classes("text-base self-start")
-                    barre_d = ui.linear_progress(value=0, show_value=False).props("size=16px rounded")
-                    texte_d = ui.label("").classes("text-base")
-                    stop_d = ui.button("Annuler", on_click=lambda: annuler(D)).props("outline")
-                    faute_d = ui.label("").classes("text-base text-red-800")
+                  def changer(x, k):
+                      avant = quotas[x]; quotas[x] = max(0, quotas[x] + k)
+                      if total() > 36: quotas[x] = avant          # 36 donnes au plus
+                      liste_themes.refresh(); bouton_creer()
 
-                    @ui.refreshable
-                    def fichier_cree():
-                        if not D.fichier or D.actif: return
-                        ui.label("Donnes créées").classes("text-base font-bold")
-                        ui.label(os.path.basename(D.fichier)).classes("text-sm text-gray-600 break-all")
-                        if D.notes:
-                            ui.label("Tirées au hasard faute de temps : " + " ; ".join(D.notes) + ".").classes("text-sm text-red-800")
-                        with ui.row().classes("gap-3"):
-                            ui.button("Analyser ces donnes", on_click=lambda: analyser_donnes())
-                            ui.button("Ouvrir le dossier", on_click=lambda: ouvrir(os.path.dirname(D.fichier))).props("outline")
-                        ui.label("Le fichier .pbn du dossier s'importe dans Bridgemate : Fichier, Importer.").classes("text-sm text-gray-600")
-                    fichier_cree()
+                  def basculer(n):
+                      niveaux.symmetric_difference_update({n})
+                      if not niveaux: niveaux.add(n)
+                      ecrire_etat(niveaux=sorted(niveaux)); liste_themes.refresh()
+
+                  def theme_ligne(x):
+                      k = quotas[x]
+                      with ui.row().classes("w-full items-center justify-between no-wrap"):
+                          ui.label(x).classes("text-base" + (" font-bold text-primary" if k else ""))
+                          with ui.row().classes("items-center no-wrap gap-0"):
+                              ui.button(icon="remove", on_click=lambda x=x: changer(x, -1)).props("flat round dense").set_enabled(k > 0)
+                              ui.label(str(k)).classes("w-7 text-center text-base" + (" font-bold" if k else " text-gray-400"))
+                              ui.button(icon="add", on_click=lambda x=x: changer(x, 1)).props("flat round dense")
+
+                  @ui.refreshable
+                  def liste_themes():
+                      with ui.row().classes("gap-2 mt-2"):            # les niveaux montrés
+                          for n, nom in donnes.NIVEAUX.items():
+                              ui.button(nom, on_click=lambda n=n: basculer(n)) \
+                                  .props(("unelevated" if n in niveaux else "outline") + " dense no-caps rounded").classes("px-3")
+                      with ui.row().classes("w-full no-wrap items-start gap-4 mt-2"):
+                          for f, titre in donnes.FAMILLES.items():
+                              with ui.column().classes("gap-0 grow basis-0 p-3").style(
+                                      "background:#fff;border:1px solid #e3e7ea;border-radius:10px"):
+                                  ui.label(titre).classes("text-base font-bold mb-1")
+                                  caches = []
+                                  for n, nom in donnes.NIVEAUX.items():
+                                      ts = donnes.themes_de(f, n)
+                                      vus = ts if n in niveaux else [t for t in ts if quotas[t]]   # un thème choisi reste visible
+                                      if n not in niveaux and len(vus) < len(ts):
+                                          m = len(ts) - len(vus)
+                                          caches.append(f"{m} " + {1: "de 1re année", 2: "intermédiaire" + "s" * (m > 1),
+                                                                   3: "avancé" + "s" * (m > 1)}[n])
+                                      if not vus: continue
+                                      ui.label(nom).classes("text-sm text-gray-600 mt-2")
+                                      for t in vus: theme_ligne(t)
+                                  if caches: ui.label("Autres thèmes : " + ", ".join(caches)).classes("text-sm text-gray-500 mt-2")
+                      with ui.row().classes("w-full items-center justify-between no-wrap mt-2").style("max-width:50%"):
+                          ui.label("Donnes au hasard").classes("text-base")
+                          with ui.row().classes("items-center no-wrap gap-0"):
+                              k = quotas[donnes.ALEATOIRE]
+                              ui.button(icon="remove", on_click=lambda: changer(donnes.ALEATOIRE, -1)).props("flat round dense").set_enabled(k > 0)
+                              ui.label(str(k)).classes("w-7 text-center text-base" + (" font-bold" if k else " text-gray-400"))
+                              ui.button(icon="add", on_click=lambda: changer(donnes.ALEATOIRE, 1)).props("flat round dense")
+                      choisis = donnes.combiner([(t, k) for t, k in quotas.items() if k])
+                      n = total()
+                      resume = " ; ".join(f"{t} {k}" for t, k in choisis)
+                      ui.label(f"{n} donne{'s' if n > 1 else ''} : {resume}" if n else "Aucun thème choisi : la séance sera vide.") \
+                          .classes("text-base mt-3 pt-2 w-full").style("border-top:1px solid #e3e7ea")
+                  liste_themes()
+
+                  def bouton_creer():
+                      n = total()
+                      creer_d.text = f"Créer {n} donne{'s' if n > 1 else ''}" if n else "Créer une séance vide"
+                      creer_d.set_enabled(not (T.actif or D.actif or I.actif))
+
+                  with ui.column().classes("w-full gap-4"):
+                      creer_d = ui.button("Créer une séance vide", icon="add", on_click=lambda: demarrer_donnes() if total() else creer_vide()) \
+                          .props("unelevated").classes("text-base self-start")
+                      barre_d = ui.linear_progress(value=0, show_value=False).props("size=16px rounded")
+                      texte_d = ui.label("").classes("text-base")
+                      stop_d = ui.button("Annuler", on_click=lambda: annuler(D)).props("outline")
+                      faute_d = ui.label("").classes("text-base text-red-800")
+
+                      @ui.refreshable
+                      def fichier_cree():
+                          if not D.fichier or D.actif: return
+                          ui.label("Donnes créées").classes("text-base font-bold")
+                          ui.label(os.path.basename(D.fichier)).classes("text-sm text-gray-600 break-all")
+                          if D.notes:
+                              ui.label("Tirées au hasard faute de temps : " + " ; ".join(D.notes) + ".").classes("text-sm text-red-800")
+                          with ui.row().classes("gap-3"):
+                              ui.button("Analyser ces donnes", on_click=lambda: analyser_donnes())
+                              ui.button("Ouvrir le dossier", on_click=lambda: ouvrir(os.path.dirname(D.fichier))).props("outline")
+                          ui.label("Le fichier .pbn du dossier s'importe dans Bridgemate : Fichier, Importer.").classes("text-sm text-gray-600")
+                      fichier_cree()
 
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["ouvrir"]:   # Fichier, Ouvrir une séance
         ui.label("Ouvrir une séance").classes("text-lg font-bold")
         @ui.refreshable
         def liste():
             tout = seances_bc()
-            if not tout: ui.label("Aucune séance pour l'instant : Fichier, Importer").classes("text-sm text-gray-600")
+            if not tout: ui.label("Aucune séance pour l'instant : Fichier, Nouveau").classes("text-sm text-gray-600")
             for c in tout[:15]:
                 date, source = infos_seance(c)
                 ui.button(f"{date}  –  {source + ' – ' if source else ''}{rapport.nom_seance(c)}", on_click=lambda c=c: choisir(c)) \
@@ -2478,9 +2557,9 @@ def page():
         envoi = ui.upload(on_upload=lambda e: recu(e), auto_upload=True, max_files=1).props('accept=".json"').classes("hidden")
         ui.button("Choisir un fichier…", on_click=lambda: parcourir()).props("outline")
 
-    with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["importer"]:   # Fichier, Importer
-        ui.label("Importer").classes("text-lg font-bold")
-        ui.label("Le fichier devient une séance Bridge Coach ; le fichier d'origine n'est pas modifié.").classes("text-sm text-gray-600")
+    with pages_ui["nouveau"], ui.column().classes("w-full gap-2") as sections_n["bws"]:   # Nouveau, depuis un tournoi Bridgemate
+        ui.label("Les tournois du dossier de Bridgemate, les plus récents d'abord. Le fichier devient une séance Bridge "
+                 "Coach ; le fichier d'origine n'est pas modifié.").classes("text-base text-gray-600")
         @ui.refreshable
         def liste_i():
             bws = reglages()[0][:10]
@@ -2490,10 +2569,18 @@ def page():
                 ui.button(f"{date_lisible(b)}  –  {os.path.basename(b)}{fait}", on_click=lambda b=b: importer(b)) \
                     .props("flat align=left no-caps").classes("w-full")
         liste_i()
-        ui.label("Ou un fichier ailleurs sur l'ordinateur (.bws de Bridgemate, feuille de route .pdf de FFBClubNet, "
-                 ".pbn) :").classes("text-base mt-2")
-        envoi_i = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".bws,.pdf,.pbn"').classes("hidden")
-        ui.button("Choisir un fichier…", on_click=lambda: parcourir_i()).props("outline")
+        ui.label("Ou un tournoi ailleurs sur l'ordinateur : un .bws, ou la feuille de route .pdf de FFBClubNet "
+                 "(les mains et les résultats, sans les enchères).").classes("text-base mt-2")
+        envoi_i = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".bws,.pdf"').classes("hidden")
+        ui.button("Choisir un fichier…", icon="folder_open", on_click=lambda: parcourir_i(TYPES_BWS, envoi_i)).props("outline").classes("self-start")
+
+    with pages_ui["nouveau"], ui.column().classes("w-full gap-2") as sections_n["pbn"]:   # Nouveau, depuis un fichier PBN
+        ui.label("Un fichier .pbn (Portable Bridge Notation) : les donnes d'un tournoi, de BBO, de Funbridge ou d'un autre "
+                 "logiciel. Bridge Coach garde les mains, le donneur et la vulnérabilité, et, quand le fichier les donne, le "
+                 "contrat, les enchères, l'entame et le résultat d'une table. Le fichier d'origine n'est pas modifié.").classes("text-base text-gray-600")
+        envoi_p = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".pbn"').classes("hidden")
+        ui.button("Choisir un fichier .pbn…", icon="folder_open", on_click=lambda: parcourir_i(TYPES_PBN, envoi_p)).props("unelevated").classes("self-start")
+    for x, col in sections_n.items(): col.set_visibility(x == facon["k"])
 
     with ui.dialog() as confirmation_m, ui.card().classes("w-full max-w-md"):
         ui.label("Cette donne a une analyse de l'expert. Si vous la modifiez, cette analyse est mise de côté (gardée dans "
@@ -2593,9 +2680,9 @@ def page():
             ui.notify("Cette séance ne peut pas être exportée."); return
         exporte["f"] = f; a_exporter.refresh()
 
-    async def parcourir_i():
-        if not app.native.main_window: return envoi_i.run_method("pickFiles")
-        r = await app.native.main_window.create_file_dialog(allow_multiple=False, file_types=TYPES_IMPORT)
+    async def parcourir_i(types, envoi):
+        if not app.native.main_window: return envoi.run_method("pickFiles")
+        r = await app.native.main_window.create_file_dialog(allow_multiple=False, file_types=types)
         if r: importer(r[0])
 
     async def recu_i(e):

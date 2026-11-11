@@ -19,7 +19,7 @@ from jeu import COULEURS, LHO, RHO, PART, ROT, PTS, _donne_dds, lire_encheres, e
 
 LETTRE = dict(zip(COULEURS, "SHDC"))
 MONDES = 16                                               # mondes imaginés par carte de la défense
-MODELE = False                                            # vrai : les mondes viennent du modèle des mains cachées (modele.py)
+MODELE = True                                             # les mondes de la défense viennent du modèle des mains cachées (modele.py), qui lit les signaux du partenaire : face à notre déclarant simulé, 598 donnes, +0,135 levée par donne (± 0,037) et 216 chutes au lieu de 201 (essai_defense.py, 2026-11-11)
 MONDES_DECLARANT = 12                                     # mondes imaginés par carte du déclarant simulé
 COUPS_A_VENIR = True                                      # le déclarant regarde si la suite passe par un squeeze, une mise en main
 SIGNAUX = True                                            # les défenseurs signalent (appel, parité) entre cartes équivalentes

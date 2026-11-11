@@ -258,7 +258,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         « Revoir la donne avec les pensées » replays the deal card by card (vue_revoir). Signals (carte.SIGNAUX; the user's system, 2026-11-11, written in entames.md and coded once in src/signaux.py, used to give and to read): among cards equally good in its
                         worlds, a defender signals (Partie.signal): pair-impair as its first card on partner's lead (odd: continue; even: switch, high even = the higher of the two other suits, low = the lower; 7+ high, 6- low), suit preference on discards (discard a suit you don't want, high/low for the other two), count when declarer leads, never in trumps. What it wants comes from its imagined worlds, not an honour rule (Partie.voeu: partner on lead at the start of the trick, best lead per suit double dummy). On lead, among equally good cards, it follows partner's last request (Partie.demande; pensee « suit »). The model reads the same meanings (modele.signaux_vus with the suit led, signal_plausible: the spirit on the imagined hand, EPS_SIGNAL) and its beliefs list them (« Est a fourni le ♥7, impair : il demande de continuer à ♥ ») ; carte.sens_signal words them in thoughts and the end-of-deal summary. essai_modele.banc_signaux, 240 deals against a double-dummy declarer: old
                         defence 9.59 tricks / 54 sets, model + signals 9.52 / 53: kept for the commentary and for you (signals cost
-                        nothing: only among equal cards), but carte.MODELE stays off. analyse_jeu reviews the play double-dummy (cost of each
+                        nothing: only among equal cards), and carte.MODELE was left off then; it is on since 2026-11-11, measured against our own declarer (essai_defense.py). analyse_jeu reviews the play double-dummy (cost of each
                         card, squeeze / mise en main / laisser-passer found or missed); resume_donne writes the end-of-deal summary
                         shown under the result. The robot declarer announces its plan with its first card (jeu.plan_de_jeu,
                         declarer's view, no simulation; pensee "plan", in the thoughts, replay and summary); at each trick it leads,
@@ -288,7 +288,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         EPS_ENCHERE; the lead rule must give the card led (EPS_ENTAME). Draws until EFFICACE deals count. Tried
                         and dropped: a milder penalty for calls the system named as possible too, softening the weights. prediction(): H range, length distribution per suit, place of each A R D V X 9; pensees(): the same in
                         French; suite(cards): updated card by card from the same pool (0.07 s a card). carte.MODELE switches the
-                        defence's imagined worlds to it (off: 160 deals against a double-dummy declarer, 0.03 trick a deal better, same sets); carte.MODELE_DECLARANT feeds the simulated declarer's worlds from it (True: once after the lead; "suivi": refreshed
+                        defence's imagined worlds to it: ON since 2026-11-11 (against our own simulated declarer, src/essai_defense.py, 598 fresh deals: +0.135 trick a deal ± 0.037 and 216 sets instead of 201; signals alone, without it, 0.00; against a double-dummy declarer it had shown only +0.03, since nothing can mislead or help there), about 0.2 s more a defender's card; carte.MODELE_DECLARANT feeds the simulated declarer's worlds from it (True: once after the lead; "suivi": refreshed
                         every card); off too: 240 deals against a double-dummy defence, +0.05 trick a deal, the same contracts made
                         (essai_modele.banc_declarant)
       essai_modele.py   bench of modele.py: random deals (engine auctions, random play) and the real 23/10 auctions (banc_reel),
@@ -305,6 +305,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         conseil_encheres (the engine's close decisions; not used in the standard analysis, whose notes
                         already say « … convenait aussi »). Finesses the auction does not place are one sentence, left out
                         when the plan says the contract does not depend on a finesse (a deal stays within two pages). tests/test_coach.py
+      essai_defense.py  bench of the defence against our own simulated declarer (who cannot see the hidden cards): the same fresh
+                        random deals played by each variant (sans: no signals; signaux; modele: signals read by the hand model),
+                        declarer's tricks, sets, and the gain per deal with its margin: .venv/bin/python -I -X utf8 src/essai_defense.py 600
       essai_jeu.py      bench: the simulated declarer on the real deal against double-dummy
                         (rerun after changing lignes.py; two sessions: 45 of the 52 makeable contracts; --aleatoire N for
                         fresh deals: 89 of 107, and the announced rate against the real result)

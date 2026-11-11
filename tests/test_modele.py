@@ -53,4 +53,21 @@ assert signaux.carte_attitude(list("862"), False, "♣", ["♠", "♣"]) == ("2"
 assert signaux.lire("8", "attitude", "♦", "♥") == {"continuer": False, "prefere": "♠"}
 assert signaux.carte_defausse({"♦": list("852")}, ["♠", "♣", "♦"], "♥", "♥") == (("♦", "8"), "défausse haute:♦:♠")
 assert signaux.lire("8", "défausse", "♦", "♥", "♥") == {"refuse": "♦", "prefere": "♠"}
+# la coupe donnée : haute demande la plus chère des deux autres couleurs hors atout, basse la moins chère
+assert signaux.carte_coupe(list("852"), "♠", ["♠", "♣"]) == ("8", "coupe haute:♠")
+assert signaux.carte_coupe(list("852"), "♣", ["♠", "♣"]) == ("2", "coupe basse:♣")
+assert signaux.lire("8", "coupe", "♦", "♥", "♦") == {"prefere": "♠"}
+# les honneurs : il fournit le plus bas de cartes équivalentes, il mène le plus haut d'une séquence
+vues = frozenset()
+assert modele.signal_plausible("DV5 X87 6543 D32", ("♠", "D"), "honneur suivi", "♠", "♥", vues) == modele.EPS_HONNEUR
+assert modele.signal_plausible("D95 X87 6543 D32", ("♠", "D"), "honneur suivi", "♠", "♥", vues) == 1.0
+assert modele.signal_plausible("RD5 X87 6543 D32", ("♠", "D"), "honneur mené", "♠", "♥", vues) == modele.EPS_HONNEUR
+assert modele.signal_plausible("R95 X87 6543 D32", ("♠", "R"), "honneur suivi", "♠", "♥", frozenset({("♠", "D"), ("♠", "V")})) == 1.0
+assert modele.signal_plausible("RX5 X87 6543 D32", ("♠", "R"), "honneur suivi", "♠", "♥", frozenset({("♠", "D"), ("♠", "V")})) == modele.EPS_HONNEUR
+modele.LIRE_HONNEURS = True                                # écrit, éteint par défaut (sans gain au banc)
+sv = modele.signaux_vus([("E", "♥3"), ("S", "♥2"), ("O", "♥D"), ("N", "♥A")], "N", "♠")
+modele.LIRE_HONNEURS = False
+assert ("O", ("♥", "D"), "honneur suivi", "♥", frozenset({("♥", "3"), ("♥", "2")})) in sv
+assert modele.phrase_honneur("Ouest", ("♥", "D"), "honneur suivi", frozenset()) == "Ouest a fourni la dame ♥ : il n'a pas le valet ♥."
+assert modele.phrase_honneur("Ouest", ("♥", "D"), "honneur suivi", frozenset(), {("♥", "V")}) == ""   # le valet est vu
 print("ok")

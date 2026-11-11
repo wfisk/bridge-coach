@@ -62,4 +62,18 @@ z = next(z for z in p.pensees if not z["humain"] and z["role"] == "declarant")
 assert z["plan"] and "Compte" in z["plan"] and carte.texte_pensee(z, "N")["plan"]
 from coups import coups_a_venir
 assert isinstance(coups_a_venir(d["mains"], "♦", "N", []), list)
+# les habitudes ne départagent que des cartes presque égales dans les mondes ; troisième en main : la plus petite qui suffit
+from coups import RANGS
+p = carte.Partie(d, "6♦", "N", seq)
+p.poser(p.legales()[-1])                                   # le mort (Sud) fournit petit
+s = p.au_trait(); leg = p.legales()
+assert s == "O" and p.pos.pli[0][0] == "E"
+egal = {x: 0 for x in leg}
+h = p.habitude(s, leg, egal, egal, leg[-1], 16)
+gagne = max((x for x in p.pos.pli if x[1] == p.pos.pli[0][1]), key=lambda x: -RANGS.index(x[2]))
+plus = [x for x in leg if x[0] == gagne[1] and RANGS.index(x[1]) < RANGS.index(gagne[2])]
+if gagne[0] == "S" and plus: assert h[0] == plus[-1] and h[1].startswith("Troisième"), h
+autre = {x: (1 if x == leg[0] else 0) for x in leg}         # une carte fait chuter dans un monde de plus : elle seule compte
+h = p.habitude(s, leg, autre, egal, leg[0], 16)
+assert h is None or h[0] == leg[0]
 print("ok")

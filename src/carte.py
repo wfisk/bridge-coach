@@ -23,6 +23,16 @@ MODELE = True                                             # les mondes de la dé
 MONDES_DECLARANT = 12                                     # mondes imaginés par carte du déclarant simulé
 COUPS_A_VENIR = True                                      # le déclarant regarde si la suite passe par un squeeze, une mise en main
 SIGNAUX = True                                            # les défenseurs signalent (appel, parité) entre cartes équivalentes
+HABITUDES = True                                          # les habitudes classiques (second en main petit, troisième haut, couvrir un
+                                                          # honneur) départagent des cartes presque égales ; les mondes décident d'abord.
+                                                          # Neutre (essai_defense.py, 2 × 600 donnes : +0,015 ± 0,013 et −0,007 ± 0,012),
+                                                          # gardé : le jeu paraît naturel et les pensées nomment l'habitude
+TOLERANCE_LEVEES = 1 / 16                                 # « presque égales » : autant de chutes, au plus 1/16 de levée de moins par monde
+SEQUENCE = True                                           # en tête (hors entame), la plus haute d'une séquence d'honneurs : neutre
+                                                          # (0,000 ± 0,014), gardé : un partenaire humain le lit comme à la table
+MONDES_DIFFICILE = 16                                     # > MONDES : sur une carte difficile, plus de mondes ; 48 essayé (600 donnes,
+                                                          # essai_defense.py, 2026-11-11) : −0,005 levée (± 0,030), plus lent : non gardé
+PREF_COUPE = False                                        # en donnant une coupe, la hauteur demande le retour : rare, −0,005 (± 0,004) : non gardé
 MODELE_DECLARANT = False                                  # vrai : la réserve du déclarant simulé vient aussi du modèle ;
                                                           # « suivi » : renouvelée à chaque carte par le modèle mis à jour
 
@@ -98,6 +108,7 @@ class Partie:
         return dict(n=len(self.pos.jouees), siege=s, carte=carte_fr(*x), humain=humain, plan=plan, coups=coups,
                     signal=(ch.get("signal") if ch and ch.get("role") == "defense" else None),
                     suit=(ch.get("suit") if ch and ch.get("role") == "defense" else None),   # la demande du partenaire suivie
+                    habitude=(ch.get("habitude") if ch and ch.get("role") == "defense" else None),
                     role="declarant" if self.camp(s) else "defense",
                     croyance=[] if humain else self.croyance(s), mondes=ch["mondes"] if ch else 0,
                     force=bool(ch and ch["force"]),
@@ -126,7 +137,7 @@ class Partie:
         self.pos.sieges.append(s); self.pos.jouer(c, r)
         if not self.pos.pli: self.plis.append((en_cours, self.pos.tete))
 
-    def _mondes_modele(self, s, k):
+    def _mondes_modele(self, s, k, encore=False):
         """k donnes tirées, selon leur poids, dans le modèle des mains cachées vu du défenseur s (modele.py) :
         les enchères refaites par le moteur, l'entame, les cartes jouées, les chicanes. Le modèle de chaque défenseur
         est gardé d'une carte à l'autre et seulement mis à jour."""
@@ -135,7 +146,8 @@ class Partie:
         jouees = [(x, lettre[j[0]] + j[1:].translate(FR)) for x, j in zip(self.pos.sieges, self.pos.jouees)]
         if not hasattr(self, "_modeles"): self._modeles = {}
         m = self._modeles.get(s)
-        m = m.suite(jouees) if m else modele.Modele(self.d, s, self.encheres, jouees, mort=self.mort(),
+        if encore and m: pass                             # mêmes cartes jouées : le même modèle, d'autres tirages
+        else: m = m.suite(jouees) if m else modele.Modele(self.d, s, self.encheres, jouees, mort=self.mort(),
                                                      graine=self.rnd.random())
         self._modeles[s] = m
         ms = m.mondes(); ws = m.poids()
@@ -143,8 +155,8 @@ class Partie:
         return [mains for mains in self.rnd.choices([x for x, _ in ms], weights=ws, k=k)]
 
     # ---------------------------------------------------------------- la défense
-    def _mondes(self, s, k):
-        if MODELE: return self._mondes_modele(s, k)
+    def _mondes(self, s, k, encore=False):
+        if MODELE: return self._mondes_modele(s, k, encore)
         """k donnes complètes imaginées par le défenseur s : sa main et le mort tels quels, les deux autres mains
         réparties au hasard, fidèles aux cartes jouées, aux chicanes montrées et, autant que possible, aux enchères."""
         caches = [x for x in ROT if x not in (s, self.mort())]
@@ -179,21 +191,19 @@ class Partie:
                 mondes.append(m)
         return mondes
 
-    def carte_defense(self):
-        """La carte du défenseur au trait : celle qui fait chuter le contrat dans le plus de mondes imaginés."""
+    def _scores(self, mondes, leg):
+        """Chaque carte légale jouée dans chaque monde, résolu au double mort : {carte: chutes}, {carte: levées de la
+        défense}, nombre de mondes résolus."""
         from endplay.dds import solve_all_boards
         from endplay.types import Card
-        s = self.au_trait(); leg = self.legales(); self.difficile = False
-        self.dernier = dict(role="defense", siege=s, mondes=0, scores={}, force=len(leg) == 1)
-        if len(leg) == 1: return leg[0]
-        dd = []; self._vus_mondes = self._mondes(s, MONDES)  # gardés pour le vœu du signal (voeu)
-        for m in self._vus_mondes:
+        dd = []
+        for m in mondes:
             x = _donne_dds(m, self.den, self.decl)
             for j in self.pos.jouees: x.play(Card(j))
             dd.append(x)
-        if not dd: return leg[-1]
-        reste = max(sum(len(p) for p in self.pos.reste[x].values()) for x in ROT)   # levées à jouer, pli en cours compris
         chute = {c: 0 for c in leg}; total = {c: 0 for c in leg}
+        if not dd: return chute, total, 0
+        reste = max(sum(len(p) for p in self.pos.reste[x].values()) for x in ROT)   # levées à jouer, pli en cours compris
         for sol in solve_all_boards(dd):
             v = {(str(a)[0], str(a)[1:]): t for a, t in sol}
             prec = {}
@@ -201,25 +211,113 @@ class Partie:
                 t = v.get((c, r), prec.get(c, 0)); prec[c] = t
                 decl_final = self.pos.gagnes + (reste - t)  # t : levées de la défense à partir d'ici
                 chute[(c, r)] += decl_final < self.besoin; total[(c, r)] += t
-        self.dernier.update(mondes=len(dd), scores={x: (chute[x], total[x]) for x in leg})
+        return chute, total, len(dd)
+
+    def _difficile(self, leg, chute, meilleure, n):
+        """La meilleure carte ne fait chuter que dans un ou deux mondes de plus qu'une autre."""
+        moins = [chute[x] for x in leg if chute[x] < chute[meilleure]]
+        return bool(moins) and chute[meilleure] - max(moins) <= max(1, n // 16)
+
+    def _touche(self, s, c, haut, bas):
+        """Les rangs haut et bas (anglais) de la couleur c se touchent pour s : chaque rang entre les deux est déjà
+        joué ou dans sa main."""
+        i, j = RANGS.index(haut), RANGS.index(bas)
+        return all(LETTRE[c] + r in self.pos.jouees or r in self.pos.reste[s][c] for r in RANGS[i + 1:j])
+
+    def habitude(self, s, leg, chute, total, meilleure, n):
+        """(carte, texte) : l'habitude classique, si elle choisit une carte presque aussi bonne dans les mondes (même
+        nombre de chutes, au plus TOLERANCE_LEVEES levée de moins par monde) ; None sinon. Les habitudes ne sont pas
+        toujours justes : elles ne départagent que ce que les mondes laissent ouvert."""
+        pli = self.pos.pli
+        if not pli or len(pli) == 3: return None
+        proches = [x for x in leg if chute[x] == chute[meilleure] and total[x] >= total[meilleure] - TOLERANCE_LEVEES * n]
+        c0 = pli[0][1]
+        miennes = sorted((x for x in proches if x[0] == c0), key=lambda x: RANGS.index(x[1]))   # de la plus haute
+        if not miennes: return None
+        haut = lambda r, q: RANGS.index(r) < RANGS.index(q)
+        if len(pli) == 1 and self.camp(pli[0][0]):     # second en main
+            r0 = pli[0][2]
+            if r0 in "KQJT":
+                du_mort = pli[0][0] == self.mort()
+                suivante = RANGS[RANGS.index(r0) + 1]
+                if not (du_mort and suivante in self.pos.reste[self.mort()][c0]):   # couvrir le dernier des honneurs
+                    plus = [x for x in miennes if haut(x[1], r0) and x[1] in "AKQJ"]
+                    if plus: return plus[-1], "Il couvre l'honneur par un honneur."
+            return miennes[-1], "Second en main, il joue petit."
+        if len(pli) == 2 and pli[0][0] == PART[s]:     # troisième en main, sur l'entame du partenaire
+            atout = self.den if self.den in COULEURS else None
+            gagne = max(pli, key=lambda x: (x[1] == atout, x[1] == c0, -RANGS.index(x[2])))
+            if gagne[1] != c0: return None              # coupé : rien à monter
+            if self.camp(gagne[0]) or pli[0][2] not in "AKQJT":
+                plus = [x for x in miennes if haut(x[1], gagne[2])]
+                if plus:
+                    x = plus[-1]                         # la plus petite qui suffit (la plus basse de ses équivalentes)
+                    if self.camp(gagne[0]) or x != miennes[-1]:
+                        return x, "Troisième en main, il joue haut (la plus petite qui suffit)."
+            return miennes[-1], None
+        return None
+
+    def carte_defense(self):
+        """La carte du défenseur au trait : celle qui fait chuter le contrat dans le plus de mondes imaginés."""
+        s = self.au_trait(); leg = self.legales(); self.difficile = False
+        self.dernier = dict(role="defense", siege=s, mondes=0, scores={}, force=len(leg) == 1)
+        if len(leg) == 1: return leg[0]
+        mondes = self._mondes(s, MONDES)
+        chute, total, n = self._scores(mondes, leg)
+        if not n: return leg[-1]
         cle = lambda x: (chute[x], total[x])
         meilleure = max(leg, key=lambda x: (chute[x], total[x], RANGS.index(x[1])))
+        if MONDES_DIFFICILE > MONDES and self._difficile(leg, chute, meilleure, n):   # une carte difficile : plus de mondes
+            plus = self._mondes(s, MONDES_DIFFICILE - MONDES, encore=True)
+            c2, t2, n2 = self._scores(plus, leg)
+            for x in leg: chute[x] += c2[x]; total[x] += t2[x]
+            n += n2; mondes = mondes + plus
+            meilleure = max(leg, key=lambda x: (chute[x], total[x], RANGS.index(x[1])))
+        self._vus_mondes = mondes                        # gardés pour le vœu du signal (voeu)
+        self.dernier.update(mondes=n, scores={x: (chute[x], total[x]) for x in leg})
+        avec_signal = True
+        if HABITUDES:
+            h = self.habitude(s, leg, chute, total, meilleure, n)
+            if h and h[0] != meilleure:
+                meilleure = h[0]
+                if h[1]: self.dernier["habitude"] = h[1]
+                if h[1] and not h[1].startswith("Second"): avec_signal = False   # couvrir, monter : pas de signal
         egales = [x for x in leg if cle(x) == cle(meilleure)]
-        if SIGNAUX and not self.pos.pli:                # en tête : parmi les cartes aussi bonnes, ce que le partenaire a demandé
-            dem = self.demande(s)
-            if dem:
-                suivies = [x for x in egales if x[0] == dem["couleur"]]
-                if suivies and meilleure[0] != dem["couleur"]:
-                    meilleure = max(suivies, key=lambda x: RANGS.index(x[1]))
-                if meilleure[0] == dem["couleur"]: self.dernier["suit"] = dem["texte"]
-        elif SIGNAUX:                                   # entre cartes aussi bonnes, celle qui renseigne le partenaire
+        if not self.pos.pli and self.pos.jouees:         # en tête, hors entame
+            if SIGNAUX:                                  # parmi les cartes aussi bonnes, ce que le partenaire a demandé
+                dem = self.demande(s)
+                if dem:
+                    suivies = [x for x in egales if x[0] == dem["couleur"]]
+                    if suivies and meilleure[0] != dem["couleur"]:
+                        meilleure = max(suivies, key=lambda x: RANGS.index(x[1]))
+                    if meilleure[0] == dem["couleur"]: self.dernier["suit"] = dem["texte"]
+            c = meilleure[0]
+            memes = sorted((x for x in egales if x[0] == c), key=lambda x: RANGS.index(x[1]))
+            if SEQUENCE and len(memes) >= 2 and memes[0][1] in "AKQJT" and self._touche(s, c, memes[0][1], memes[1][1]):
+                meilleure = memes[0]; self.dernier["habitude"] = "En tête, il mène la plus haute de sa séquence."
+            elif PREF_COUPE and SIGNAUX:
+                sig = self.signal_coupe(s, memes)
+                if sig: meilleure, self.dernier["signal"] = sig
+        elif SIGNAUX and avec_signal and self.pos.pli:   # entre cartes aussi bonnes, celle qui renseigne le partenaire
             sig = self.signal(s, egales)
             if sig: meilleure, self.dernier["signal"] = sig
-        # difficile : la meilleure carte ne fait chuter que dans un ou deux mondes de plus qu'une autre (l'application
-        # réfléchit plus longtemps) ; si toutes chutent aussi souvent, rien ne se décide ici
-        moins = [chute[x] for x in leg if chute[x] < chute[meilleure]]
-        self.difficile = bool(moins) and chute[meilleure] - max(moins) <= max(1, len(dd) // 16)
+        # difficile : l'application réfléchit plus longtemps ; si toutes chutent aussi souvent, rien ne se décide ici
+        self.difficile = self._difficile(leg, chute, meilleure, n)
         return meilleure
+
+    def signal_coupe(self, s, memes):
+        """En menant une couleur que le partenaire va couper : la hauteur de la carte demande le retour (haute : la plus
+        chère des deux autres couleurs hors atout ; basse : la moins chère), selon les donnes imaginées (voeu)."""
+        import signaux
+        if self.den not in COULEURS or len(memes) < 2: return None
+        c = memes[0][0]; p = PART[s]
+        if c == self.den or c not in self.vides[p] or self.den in self.vides[p]: return None
+        deux = signaux.autres(self.den, c, c)
+        if len(deux) < 2: return None
+        v = self.voeu(s)
+        pref = max(deux, key=lambda k: v.get(k, -1))
+        choix = signaux.carte_coupe([x[1] for x in memes], pref, deux)
+        return ((c, choix[0]), choix[1]) if choix else None
 
     def voeu(self, s):
         """Ce que veut le défenseur s, lu dans ses donnes imaginées (pas une règle fixe : selon la situation) : si son
@@ -295,6 +393,13 @@ class Partie:
         for i in range(0, len(self.pos.jouees) - len(self.pos.pli), 4):
             sieges = self.pos.sieges[i:i + 4]; cartes = self.pos.jouees[i:i + 4]
             c0 = dict(zip("SHDC", COULEURS))[cartes[0][0]]; meneur = sieges[0]
+            if PREF_COUPE and meneur == p and self.den in COULEURS and c0 != self.den:   # il m'a donné une coupe
+                j = cartes[sieges.index(s)]
+                if dict(zip("SHDC", COULEURS))[j[0]] == self.den:
+                    rang = cartes[0][1:]
+                    m = signaux.lire(rang, "coupe", c0, self.den, c0)
+                    if m.get("prefere"):
+                        out = {"couleur": m["prefere"], "texte": signaux.phrase(NOMS[p], c0 + rang.translate(FR), "coupe", c0, self.den)}
             for x, j in zip(sieges[1:], cartes[1:]):
                 if x != p: continue
                 c = dict(zip("SHDC", COULEURS))[j[0]]; rang = j[1:]
@@ -399,6 +504,9 @@ def sens_signal(sig, c):
     if sig.startswith("pair "):
         h, x = sig[5:].split(":")
         return f"paire {'haute' if h == 'haut' else 'basse'} à {c} : il demande de changer, pour {x}"
+    if sig.startswith("coupe "):
+        h, x = sig[6:].split(":")
+        return f"{c} {'haut' if h == 'haute' else 'bas'} pour la coupe : il demande le retour à {x}"
     if sig.startswith("défausse"):
         morceaux = sig.split(":")
         if len(morceaux) == 3:
@@ -472,6 +580,8 @@ def _texte_pensee(pz, decl):
             raison = raison[:-len(" ; il joue la plus petite.")] + f" ; il choisit celle qui signale : {sens}."
         else:
             raison = (raison + " " if raison else "") + f"Parmi les cartes qui se valent, il choisit celle qui signale : {sens}."
+    if pz.get("habitude"):                                 # une habitude classique départage des cartes presque égales
+        raison = (raison + " " if raison else "") + pz["habitude"][:-1] + " : ses donnes imaginées laissent le choix."
     if pz.get("suit"):                                     # en tête, il suit la demande de son partenaire
         raison = (raison + " " if raison else "") + pz["suit"] + " Parmi les cartes qui se valent, il le suit."
     return dict(titre=titre, raison=raison, croyance=list(pz.get("croyance") or []), plan=pz.get("plan") or "")

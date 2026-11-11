@@ -6,15 +6,27 @@ défense joue la même donne contre le même déclarant.
 
     .venv/bin/python -I -X utf8 src/essai_defense.py 200 [graine] [variantes…]
 
-Variantes : sans (ni signal ni demande suivie), signaux (carte.SIGNAUX, le réglage d'aujourd'hui), modele (signaux et
-le modèle des mains cachées pour les mondes de la défense, carte.MODELE). On compte les levées du déclarant (moins =
+Variantes : sans (ni signal ni demande suivie), signaux (carte.SIGNAUX), modele = base (signaux et le modèle des mains
+cachées, carte.MODELE), puis chacun des ajouts du 2026-11-11 sur la base : habitudes (carte.HABITUDES), sequence
+(carte.SEQUENCE et modele.LIRE_HONNEURS), difficile (carte.MONDES_DIFFICILE), coupe (carte.PREF_COUPE), et tout. On compte les levées du déclarant (moins =
 mieux pour la défense) et les chutes, donne par donne, puis l'écart moyen de chaque variante à la première.
 """
 import os, random, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-VARIANTES = {"sans": dict(SIGNAUX=False, MODELE=False), "signaux": dict(SIGNAUX=True, MODELE=False),
-             "modele": dict(SIGNAUX=True, MODELE=True)}
+NEUF_OFF = {"HABITUDES": False, "SEQUENCE": False, "PREF_COUPE": False, "MONDES_DIFFICILE": 16,
+            "modele.LIRE_HONNEURS": False}
+VARIANTES = {"sans": dict(NEUF_OFF, SIGNAUX=False, MODELE=False), "signaux": dict(NEUF_OFF, SIGNAUX=True, MODELE=False),
+             "modele": dict(NEUF_OFF, SIGNAUX=True, MODELE=True)}
+VARIANTES["base"] = VARIANTES["modele"]                    # le réglage du 2026-11-11 (signaux et modèle)
+VARIANTES["habitudes"] = dict(VARIANTES["base"], HABITUDES=True)
+VARIANTES["sequence"] = dict(VARIANTES["base"], SEQUENCE=True, **{"modele.LIRE_HONNEURS": True})
+VARIANTES["menee"] = dict(VARIANTES["base"], SEQUENCE=True)          # mener le haut d'une séquence, sans le lire
+VARIANTES["lecture"] = dict(VARIANTES["base"], **{"modele.LIRE_HONNEURS": True})   # lire les honneurs fournis, seulement
+VARIANTES["difficile"] = dict(VARIANTES["base"], MONDES_DIFFICILE=48)
+VARIANTES["coupe"] = dict(VARIANTES["base"], PREF_COUPE=True)
+VARIANTES["tout"] = dict(SIGNAUX=True, MODELE=True, HABITUDES=True, SEQUENCE=True, PREF_COUPE=True,
+                         MONDES_DIFFICILE=48, **{"modele.LIRE_HONNEURS": True})
 
 
 def une(arg):
@@ -23,7 +35,9 @@ def une(arg):
     graine, variante = arg
     import carte as C, donnes, encheres
     C.COUPS_A_VENIR = False                                # le banc ne lit pas les pensées
-    for k, v in VARIANTES[variante].items(): setattr(C, k, v)
+    import modele as M
+    for k, v in VARIANTES[variante].items():                # « modele.X » : un réglage du modèle, sinon de carte.py
+        setattr(M, k[7:], v) if k.startswith("modele.") else setattr(C, k, v)
     rnd = random.Random(graine)
     d = donnes.donne_complete(graine % 100000 + 1, "Aléatoire", donnes.tirer(rnd), True)
     r = encheres.encherir(d)

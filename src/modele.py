@@ -21,6 +21,9 @@ EPS_ENCHERE = 0.05                                         # une enchère que no
 EFFICACE = 150                                             # on imagine des donnes jusqu'à en avoir autant qui comptent
 EPS_SIGNAL = 0.35                                          # un signal du partenaire que sa main imaginée n'aurait pas donné
 LIRE_SIGNAUX = True                                        # un défenseur lit les signaux de son partenaire
+LIRE_HONNEURS = False                                      # lire les honneurs du partenaire (le plus bas de cartes équivalentes en fournissant,
+EPS_HONNEUR = 0.2                                          # le plus haut d'une séquence en menant, carte.SEQUENCE) : essayé le 2026-11-11,
+                                                           # −0,008 levée (± 0,018) seul, −0,028 (± 0,019) avec SEQUENCE : non gardé
 EPS_ENTAME = 0.05                                           # une entame que la règle n'aurait pas choisie
 
 
@@ -228,12 +231,31 @@ class Modele:
             out.append(t)
         import signaux                                     # ce que disent les signaux du partenaire (signaux.py)
         for x, carte, sens, c, c0 in self.signaux:
+            if sens.startswith("honneur"):                 # « Est a fourni la ♥D : il n'a pas le ♥V. »
+                connues = set().union(*self.connues.values())
+                ph = phrase_honneur(NOMS[x], carte, sens, c0, connues)
+                if ph: out.append(ph)
+                continue
             ph = signaux.phrase(NOMS[x], carte[0] + carte[1], sens, c, self.den, c0)
             if ph: out.append(ph)
         return out
 
 
 NOMS = {"N": "Nord", "S": "Sud", "E": "Est", "O": "Ouest"}
+
+
+def phrase_honneur(nom, carte, sens, vues, connues=()):
+    """Ce que dit un honneur du partenaire (le plus bas de cartes équivalentes en fournissant, le plus haut d'une
+    séquence en menant) : l'honneur voisin qu'il n'a pas, ou "" s'il n'y en a pas, si ce n'est pas un honneur ou si
+    l'observateur le voit déjà (connues : sa main et le mort)."""
+    ordre = "ARDVX98765432"
+    pas = 1 if sens == "honneur suivi" else -1
+    i = ordre.index(carte[1]) + pas
+    while 0 <= i < len(ordre) and (carte[0], ordre[i]) in vues: i += pas
+    if not 0 <= i < len(ordre) or ordre[i] not in "ARDVX" or (carte[0], ordre[i]) in connues: return ""
+    nomme = lambda r: {"A": "l'as", "R": "le roi", "D": "la dame", "V": "le valet", "X": "le 10"}.get(r, f"le {r}")
+    verbe = "a fourni" if sens == "honneur suivi" else "a mené"
+    return f"{nom} {verbe} {nomme(carte[1])} {carte[0]} : il n'a pas {nomme(ordre[i])} {carte[0]}."
 
 
 def aime(tenue):
@@ -247,11 +269,18 @@ def signaux_vus(jouees, decl, den=None):
     Seulement la première carte d'un défenseur dans la couleur menée, jamais à l'atout ; une défausse hors atout.
     Comme carte.Partie.signal, vu de l'extérieur (signaux.py)."""
     from jeu import PART as P, LHO as G
-    out, deja = [], set()
+    out, deja, vues = [], set(), set()
     for i in range(0, len(jouees), 4):
         pli = jouees[i:i + 4]
         if not pli: continue
         meneur, c0 = pli[0][0], pli[0][1][0]
+        if LIRE_HONNEURS:                                  # les honneurs : (siège, carte, sens, couleur, cartes vues avant)
+            for k, (x, c) in enumerate(pli):
+                carte = carte_fr(c)
+                if x in (G[decl], P[G[decl]]) and carte[1] in "ARDV" and carte[0] == c0 and (i or k):
+                    out.append((x, carte, "honneur mené" if k == 0 else "honneur suivi", c0,
+                                frozenset(vues | {carte_fr(y) for _, y in pli[:k]})))
+            vues |= {carte_fr(c) for _, c in pli}
         for x, c in pli[1:]:
             if x not in (G[decl], P[G[decl]]): continue
             carte = carte_fr(c)
@@ -273,6 +302,12 @@ def signal_plausible(main, carte, sens, c, den=None, c0=None):
     import signaux
     tenues = [("" if t == "-" else t) for t in main.split()]
     tenue = tenues[COULEURS.index(c)]
+    if sens in ("honneur suivi", "honneur mené"):          # c0 : les cartes vues avant celle-ci
+        ordre = "ARDVX98765432"
+        pas = 1 if sens == "honneur suivi" else -1         # suivi : il n'a pas la suivante plus basse ; mené : la plus haute
+        i = ordre.index(carte[1]) + pas
+        while 0 <= i < len(ordre) and (c, ordre[i]) in c0: i += pas
+        return EPS_HONNEUR if 0 <= i < len(ordre) and ordre[i] in tenue else 1.0
     petites = [r for r in tenue if r not in "ARDV"]
     if len(petites) < 2 or carte[1] not in petites: return 1.0
     if sens == "parité":

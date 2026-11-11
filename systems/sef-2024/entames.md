@@ -107,3 +107,16 @@ aurait signalé lui-même. Un signal ne se donne que parmi des cartes également
 - **Le partenaire suit la demande** : quand il a la main, parmi ses cartes également bonnes, il joue la couleur
   demandée ; ses pensées le disent.
 - **Les honneurs ne signalent pas** (ni A, R, D, V) : on ne lit que les cartes de 2 à 10.
+- **En donnant une coupe au partenaire** (il n'a plus la couleur et peut avoir de l'atout) : la hauteur de la carte
+  demande le retour, haute (7 ou plus) la plus chère des deux autres couleurs hors atout, basse la moins chère.
+  Écrit (carte.PREF_COUPE) mais éteint : rare, et sans gain sur 600 donnes.
+
+## Honneurs équivalents et habitudes classiques (2026-11-11 ; src/carte.py)
+- **Honneurs équivalents** : en fournissant, le plus bas de cartes équivalentes (la dame de DV : elle nie le valet) ;
+  en menant en cours de coup (pas à l'entame, qui suit les règles ci-dessus), le plus haut d'une séquence (le roi de
+  RD ; une dame menée nie le roi). Le modèle des mains sait le lire (modele.LIRE_HONNEURS, « Ouest a
+  fourni la dame ♥ : il n'a pas le valet ♥ ») mais cette lecture est éteinte : sans gain sur 600 donnes.
+- **Les habitudes ne sont pas toujours justes** : second en main petit, troisième en main haut (la plus petite qui
+  suffit), couvrir un honneur par un honneur (pas le premier de deux honneurs qui se suivent au mort). Le défenseur
+  ne les suit que parmi les cartes que ses donnes imaginées jugent presque égales (autant de chutes, au plus 1/16 de
+  levée de moins en moyenne) : quand les mondes disent autrement, les mondes gagnent.

@@ -9,6 +9,8 @@ passent par ces fonctions : un robot lit son partenaire comme il aurait signalé
   - En défausse : préférence de couleur. On défausse dans une couleur qu'on ne veut pas ; une carte haute demande la
     plus chère des deux autres couleurs, une basse la moins chère.
   - Quand le déclarant mène : la parité, grosse puis petite avec un nombre pair de cartes.
+  - En donnant une coupe au partenaire : la hauteur de la carte demande le retour (haute : la plus chère des deux
+    autres couleurs hors atout ; basse : la moins chère).
 
 Ce que le défenseur veut (continuer, ou quelle couleur) ne vient pas d'une règle fixe sur ses honneurs : il le lit
 dans ses donnes imaginées (carte.Partie.voeu), selon la situation. Les cartes sont en rangs anglais (« T » = 10) ou
@@ -73,7 +75,17 @@ def carte_defausse(par_couleur, voeu_ordre, den, c_menee):
         if pref == deux[1] and bas: return (d, bas[0]), f"défausse basse:{d}:{pref}"
         continue                                           # cette couleur ne sait pas dire la préférence : une autre
     return None
-    return None
+
+
+def carte_coupe(rangs, prefere, deux):
+    """En menant une couleur que le partenaire coupe : haute (7 et plus) pour la plus chère des deux autres couleurs
+    hors atout, basse pour la moins chère. (rang, sens) ou None."""
+    p = sorted((r for r in rangs if petite(r)), key=lambda r: VALEUR[r])
+    if prefere == deux[0]:
+        h = [r for r in p if VALEUR[r] >= HAUTE]
+        return (h[-1], f"coupe haute:{prefere}") if h else None
+    b = [r for r in p if VALEUR[r] < HAUTE]
+    return (b[0], f"coupe basse:{prefere}") if b else None
 
 
 def carte_parite(rangs, nombre):
@@ -101,8 +113,9 @@ def lire(rang, sens, couleur, den, c_menee=None, tenue_vue=""):
         out = {"refuse": couleur}
         if len(deux) == 2: out["prefere"] = deux[0] if VALEUR[rang] >= HAUTE else deux[1]
         return out
-    if sens == "parité":
-        return {}
+    if sens == "coupe":                                    # la carte menée pour la coupe du partenaire
+        deux = autres(den, couleur, couleur)
+        return {"prefere": deux[0] if VALEUR[rang] >= HAUTE else deux[1]} if len(deux) == 2 else {}
     return {}
 
 
@@ -115,6 +128,8 @@ def phrase(nom, carte, sens, couleur, den, c_menee=None):
         if m["continuer"]: return f"{nom} a fourni le {carte}, impair : il demande de continuer à {c}."
         return (f"{nom} a fourni le {carte}, pair : il demande de changer" +
                 (f", pour {m['prefere']} ({'haut' if m['prefere'] == autres(den, c, c)[0] else 'bas'})." if m.get("prefere") else "."))
+    if sens == "coupe" and m:
+        return f"{nom} mène le {carte} pour ma coupe : il demande le retour à {m['prefere']}."
     if sens == "défausse" and m:
         t = f"{nom} défausse le {carte} : il ne veut pas de {c}"
         return t + (f", et préfère {m['prefere']}." if m.get("prefere") else ".")

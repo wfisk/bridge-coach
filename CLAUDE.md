@@ -458,6 +458,11 @@ user's folder, never in git. Only `--avec-noms` shows full names in a report: an
 
 ## Working notes
 
+- Readability (the user, 2026-11-11): players are mostly seniors, and the app may be shown on a classroom TV. Content that
+  changes (auctions, results tables, robots' thoughts, messages, explanations) is 15–16 px or more in dark grey (text-gray-700,
+  no text-sm for it); fixed labels everyone knows (tabs, sidebars at Claude's sidebar size, buttons, a PASS card) keep
+  their normal size. Results tables use short headings (N-S, E-O, Décl., Rés.) so they fit whole at 15 px.
+
 - Language: Python 3. Run Python with `-I`.
 - File names use dashes and yyyy-mm-dd dates.
 - Never commit `.bws` files, session JSON or generated reports: they hold

@@ -299,7 +299,7 @@ CSS_CARTES = """
 .carton .base { position: absolute; right: 3px; top: 3px; bottom: 3px; width: 22px; display: flex; flex-direction: column;
   align-items: center; justify-content: space-between; font-weight: 800; line-height: 1; }
 .carton .base b { writing-mode: vertical-rl; }            /* chaque lettre tournée : le mot se lit le long du bord droit */
-.carton .base.mot { font-size: 12px; } .carton .base.croix { font-size: 22px; justify-content: space-around; }
+.carton .base.mot { font-size: 13px; } .carton .base.croix { font-size: 22px; justify-content: space-around; }
 .carton .base.croix b + b { margin-top: -2px; }
 .carton.passe .face { background: #2e7d32; } .carton.contre .face { background: #c62828; }
 .carton.surcontre .face { background: #1565c0; } .carton.stop .face { background: #c62828; }
@@ -317,14 +317,14 @@ CSS_CARTES = """
 @keyframes arrive-droite { from { transform: translateX(110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
 .boite-encheres { background: #c0392b; border-radius: 12px; padding: 8px; }
 .ratelier { background: #f4f5f6; border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
-.tirette { width: 40px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px;
-  font-size: 14px; font-weight: 700; border: 1px solid rgba(0,0,0,.18); cursor: pointer; }
+.tirette { width: 46px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px;
+  font-size: 16px; font-weight: 700; border: 1px solid rgba(0,0,0,.18); cursor: pointer; }
 .tirette:hover { filter: brightness(.93); transform: translateY(-2px); }
 .tirette.vide { visibility: hidden; }
-.tirette.autres { width: auto; color: #555; background: #fff; font-weight: 500; font-size: 13px; }
+.tirette.autres { width: auto; color: #555; background: #fff; font-weight: 600; font-size: 15px; color: #333; }
 .compartiment { margin-top: 8px; background: #a93226; border-radius: 6px; padding: 6px 6px 4px; justify-content: center; }
-.onglet { position: relative; min-width: 54px; height: 34px; margin-top: 11px; padding: 0 6px; border-radius: 4px;
-  font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.onglet { position: relative; min-width: 58px; height: 38px; margin-top: 11px; padding: 0 6px; border-radius: 4px;
+  font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .onglet[data-tab]::before { content: ""; position: absolute; top: -9px; right: 3px; height: 10px; min-width: 20px;
   padding: 0 3px; border-radius: 3px 3px 0 0; font-size: 8px; line-height: 12px; background: inherit; color: inherit; }
 .a-cote { margin-top: 8px; justify-content: center; }     /* Stop et Alerte : hors de la boîte, ce ne sont pas des enchères */
@@ -583,11 +583,11 @@ def page_seance(data, c):
     with ui.grid(columns="auto 1fr").classes("gap-x-6 gap-y-1 text-base"):
         for k, v in lignes:
             if v:
-                ui.label(k).classes("text-gray-600"); ui.label(v).classes("break-all")
-        ui.label("Marque").classes("text-gray-600")          # lue à l'import, devinée sinon ; corrigeable ici
+                ui.label(k).classes("text-gray-700"); ui.label(v).classes("break-all")
+        ui.label("Marque").classes("text-gray-700")          # lue à l'import, devinée sinon ; corrigeable ici
         with ui.row().classes("items-center gap-3"):
             choix_m = ui.toggle({"MP": "Match-points", "IMP": "IMP"}, value=moi.marque(data)).props("dense no-caps")
-            devinee = ui.label("devinée d'après le nombre de tables").classes("text-sm text-gray-500")
+            devinee = ui.label("devinée d'après le nombre de tables").classes("text-base text-gray-600")
             devinee.set_visibility(not s.get("marque"))
             choix_m.on_value_change(lambda e: (changer_marque(c, e.value), devinee.set_visibility(False)))
 
@@ -613,7 +613,7 @@ def page_joueurs(data):
     ui.label("Joueurs").classes("text-lg font-bold")
     j = data.get("joueurs") or {}
     if not j:
-        ui.label("Pas de joueurs dans cette séance : les donnes n'ont pas été jouées.").classes("text-base text-gray-600"); return
+        ui.label("Pas de joueurs dans cette séance : les donnes n'ont pas été jouées.").classes("text-base text-gray-700"); return
     cle = lambda k: (len(re.sub(r"\D", "", k)), k)        # 2 avant 10
     rows = [{"paire": k, "initiales": "/".join(x.get("initiales", "") for x in v),
              "noms": " – ".join(x.get("nom", "") for x in v if x.get("nom")) or "—"} for k, v in sorted(j.items(), key=lambda x: cle(x[0]))]
@@ -670,7 +670,7 @@ def dm_html(d):
     corps = "".join(f"<tr><td style='{cell};font-weight:700'>{rouge(x)}</td>" + "".join(case(x, s) for s in "NSEO") + "</tr>"
                     for x in ("SA", "♠", "♥", "♦", "♣"))
     carre = lambda style: f"<span style='display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin:0 4px 0 0;{style}'></span>"
-    legende = (f"<div style='font-size:13px;color:#555b66;margin-top:4px;line-height:1.6'>{carre(f'background:{FOND_MANCHE}')}manche "
+    legende = (f"<div style='font-size:15px;color:#3f4651;margin-top:4px;line-height:1.6'>{carre(f'background:{FOND_MANCHE}')}manche "
                f"&nbsp;{carre(f'background:{FOND_CHELEM}')}chelem &nbsp;{carre('box-shadow:inset 0 0 0 2px #1f5f3a')}par</div>")
     return (f"<div style='font-size:15px;width:100%'><div style='font-weight:700;margin-bottom:4px'>Double mort</div>"
             f"<table style='width:100%;table-layout:fixed;border-collapse:collapse;background:#fff;border:1px solid #9fb5a8;"
@@ -719,9 +719,10 @@ def tableau_resultats(d, mes, reco):
              "moi": moi.a_joue(x, mes), "reco": bool(x.get("recommande"))}
             for i, x in enumerate(moi.ordre(d["tables"] + ([reco] if reco else []), mes))]   # le meilleur d'abord, vu de votre camp
     for x in rows:
-        if x["reco"]: x.update(table="", ns="Recommandé", eo="au double mort")
-    cols = [("table", "Table"), ("ns", "Nord-Sud"), ("eo", "Est-Ouest"), ("contrat", "Contrat"), ("decl", "Déclarant"),
-            ("res", "Résultat"), ("entame", "Entame"), ("score", "Score N-S")] + \
+        if x["reco"]: x.update(table="", ns="Recommandé", eo="")   # « Recommandé » seul, comme dans les PDF
+    # des titres courts : le tableau tient en entier en 15 px
+    cols = [("table", "Table"), ("ns", "N-S"), ("eo", "E-O"), ("contrat", "Contrat"), ("decl", "Décl."),
+            ("res", "Rés."), ("entame", "Entame"), ("score", "Score N-S")] + \
            ([("pct", "% N-S")] if len(d["tables"]) > 2 else [])   # le recommandé : son % face aux tables
     tb = ui.table(columns=[{"name": k, "label": l, "field": k, "align": "left"} for k, l in cols], rows=rows, row_key="k") \
         .props(f"flat dense :table-row-style-fn=\"r => r.moi ? 'background:{moi.SURLIGNE}' : r.reco ? 'background:{FOND_RECO};font-style:italic' : ''\"").classes("w-full")   # votre table
@@ -785,7 +786,7 @@ def lien_pdf(f, nom, detail):
     """Un rapport : son nom comme un lien qui l'ouvre, ce qu'il contient, le fichier et sa date."""
     with ui.column().classes("gap-0"):
         ui.label(nom).classes("text-base text-primary underline cursor-pointer").on("click", lambda f=f: ouvrir(f))
-        ui.html(f"<div class='text-sm text-gray-600'>{detail} · <span style='word-break:break-all'>{os.path.basename(f)}</span> · "
+        ui.html(f"<div class='text-base text-gray-700'>{detail} · <span style='word-break:break-all'>{os.path.basename(f)}</span> · "
                 f"<span style='white-space:nowrap'>{quand(f)}</span></div>", sanitize=False)
 
 
@@ -802,13 +803,13 @@ def page_analyse_resume(data, an, expert):
         lignes += [("Faite le", fait_le(an)), ("Système", an.get("systeme", "sef-2024"))]
     with ui.grid(columns="auto 1fr").classes("gap-x-6 gap-y-1 text-base"):
         for a, b in lignes:
-            ui.label(a).classes("text-gray-600"); ui.label(b).classes("break-all")
+            ui.label(a).classes("text-gray-700"); ui.label(b).classes("break-all")
     if expert:
         ui.label("L'analyse de l'expert est rédigée par Claude, d'après les règles du projet ; le programme ne la modifie "
-                 "jamais.").classes("text-sm text-gray-600")
+                 "jamais.").classes("text-base text-gray-700")
     else:
         ui.label("« Lancer l'analyse » refait l'analyse standard ; vous la lisez ici, donne par donne. Les rapports PDF "
-                 "se font ensuite dans l'onglet Rapports.").classes("text-sm text-gray-600")
+                 "se font ensuite dans l'onglet Rapports.").classes("text-base text-gray-700")
 
 
 # ---------------------------------------------------------------- l'analyse de l'expert, demandée à Claude sur le web
@@ -972,7 +973,7 @@ def grille_html(enc, vul=None, qui=None):
     tete = "".join(f"<th style='padding:2px 10px;text-align:center{trait(s)}{fond}'>{SIEGE[s]}</th>" for s in "ONES")
     corps = "".join("<tr>" + "".join(f"<td style='padding:1px 10px;text-align:center'>{rouge(c)}</td>" for c in r) + "</tr>" for r in enc)
     large = "" if vul is None else ";width:100%;table-layout:fixed"          # quatre colonnes égales
-    return f"<table style='border-collapse:collapse;font-size:15px{large}'><tr>{tete}</tr>{corps}</table>"
+    return f"<table style='border-collapse:collapse;font-size:16px{large}'><tr>{tete}</tr>{corps}</table>"
 
 
 VERT, ROUGE_VUL, ENCRE = "#1f5f3a", "#c0141c", "#3b424f"      # les couleurs du PDF (build_pdf)
@@ -1028,7 +1029,7 @@ def diagramme_html(d, a):
     rose = (f"<div style='display:grid;grid-template:repeat(3,30px)/repeat(3,30px);border:1px solid #1d2430;width:92px'>"
             f"<div></div>{case('N', c_ns)}<div></div>{case('O', c_eo)}<div></div>{case('E', c_eo)}<div></div>{case('S', c_ns)}<div></div></div>")
     rond = lambda style: f"<span style='display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:8px;{style}'></span>"
-    legende = "<div style='font-size:14px;color:#555b66;line-height:1.9;white-space:nowrap'><div style='font-weight:700'>Entame</div>"
+    legende = "<div style='font-size:15px;color:#3f4651;line-height:1.9;white-space:nowrap'><div style='font-weight:700'>Entame</div>"
     if d.get("tables"):
         legende += (f"<div>{rond(f'border:1.3px solid {ENCRE}')}jouée à une table</div>"
                     f"<div>{rond(f'border:1.3px solid {ENCRE};box-shadow:0 0 0 2px #fff,0 0 0 3.3px {ENCRE}')}jouée à plusieurs tables</div>")
@@ -1121,11 +1122,11 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
 def pensee_html(t, ouvert=True):
     """Une pensée (carte.texte_pensee) : qui joue quoi, pourquoi, et ce qu'il croit des mains cachées."""
     h = f"<div style='font-size:15px;font-weight:700'>{rouge(t['titre'])}</div>"
-    if t["raison"]: h += f"<div style='font-size:14px;margin-top:2px'>{rouge(t['raison'])}</div>"
+    if t["raison"]: h += f"<div style='font-size:16px;margin-top:2px'>{rouge(t['raison'])}</div>"
     if t.get("plan"):
-        h += f"<div style='font-size:13px;margin-top:4px'><b>Son plan :</b> {rouge(t['plan'])}</div>"
+        h += f"<div style='font-size:15px;margin-top:4px'><b>Son plan :</b> {rouge(t['plan'])}</div>"
     if t["croyance"]:
-        h += ("<div style='font-size:13px;color:#555b66;margin-top:4px'><b>Ce qu'il croit :</b>"
+        h += ("<div style='font-size:15px;color:#3f4651;margin-top:4px'><b>Ce qu'il croit :</b>"
               + "".join(f"<div>{rouge(x)}</div>" for x in t["croyance"]) + "</div>")
     return f"<div style='background:#e6efe9;border-left:3px solid #1f5f3a;padding:6px 8px;border-radius:4px'>{h}</div>"
 
@@ -1150,7 +1151,10 @@ def encheres_html(d, x):
 def page():
     ui.colors(primary="#1f6b45")
     ui.add_css("body, .q-layout, .q-page, .q-page-container, .q-tab-panels, .q-tab-panel { background: #fff; } "   # une page toute blanche
-               "body { font-size: 16px; } .q-btn { text-transform: none; }" + CSS_AIDE + CSS_CARTES)
+               "body { font-size: 16px; } .q-btn { text-transform: none; } "
+               # lisible de loin (des joueurs âgés, un écran de télévision en cours) : le contenu qui change en grand ; les
+               # libellés fixes que chacun connaît (onglets, barres latérales, boutons) gardent leur taille (le choix de l'utilisateur)
+               ".q-table th, .q-table td { font-size: 15px !important; padding: 4px 6px !important; } .q-table th { font-weight: 700; }" + CSS_AIDE + CSS_CARTES)
     ui.add_head_html(JS_AJUSTE + JS_GLISSE)
     seances, dossier = reglages()
     deja = seances_bc()
@@ -1168,7 +1172,7 @@ def page():
             with ui.column().classes("w-full max-w-xl mx-auto"):
                 ui.label("Aucune séance ouverte.").classes("text-base")
                 ui.label("Fichier, Ouvrir une séance pour en ouvrir une ; Fichier, Nouveau pour en créer une : depuis un tournoi "
-                         "Bridgemate, un fichier PBN, ou des donnes d'entraînement.").classes("text-base text-gray-600")
+                         "Bridgemate, un fichier PBN, ou des donnes d'entraînement.").classes("text-base text-gray-700")
             return
         if vue["entree"] not in dict(entrees_de(data)): vue["entree"] = "seance"
         with ui.column().classes("w-full gap-3 min-w-0"):
@@ -1209,7 +1213,7 @@ def page():
         versions = [v for v, a in (("Standard", std), ("Expert", exp)) if a and (a.get("donnes") or {}).get(n, {}).get("enc")]
         if not versions:
             ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
-            ui.label("Pas encore d'analyse : « Analyse standard », puis « Lancer l'analyse ».").classes("text-base text-gray-600"); return
+            ui.label("Pas encore d'analyse : « Analyse standard », puis « Lancer l'analyse ».").classes("text-base text-gray-700"); return
         if vue.get("version") not in versions: vue["version"] = "Expert" if "Expert" in versions else versions[0]
         a = (exp if vue["version"] == "Expert" else std)["donnes"][n]
         if vue["version"] == "Expert":                    # le conseil du coach avant l'avis de l'expert (même contrat)
@@ -1243,7 +1247,7 @@ def page():
                 ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
                 with ui.row().classes("w-full justify-center"):
                     ui.html(etui(d, ("N", "O", "E", "S"), petit=True), sanitize=False)
-                if d.get("theme"): ui.label(f"Thème : {d['theme']}").classes("text-sm text-gray-600")
+                if d.get("theme"): ui.label(f"Thème : {d['theme']}").classes("text-base text-gray-700")
                 if par and d.get("par"): ui.html(f"<div style='font-size:15px'>{par_html(d)}</div>", sanitize=False)
         return col
 
@@ -1758,7 +1762,7 @@ def page():
             ui.label("La place que vous jouez").classes("text-base font-bold mt-2")
             ui.label("Le déclarant est celui de la séquence recommandée (l'analyse de l'expert, sinon la standard, sinon "
                      "les enchères du programme). Le choix vaut pour toutes les donnes et reste d'une fois sur l'autre.") \
-                .classes("text-base text-gray-600 max-w-2xl")
+                .classes("text-base text-gray-700 max-w-2xl")
             def changer(ev):
                 ecrire_etat(place_jouer=ev.value); jeu["cle"] = None   # les donnes repartent du début, à la nouvelle place
                 x = jouer.lire_essais(base_seance(c))
@@ -1766,7 +1770,7 @@ def page():
                     json.dump(x, open(jouer.fichier_jeu(base_seance(c)), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
             ui.radio(dict(jouer.PLACES), value=place_jouer(), on_change=changer).classes("text-base")
             ui.label("Quand l'autre camp gagne le contrat, vous jouez la carte en défense : le programme tient le déclarant, "
-                     "son mort et votre partenaire.").classes("text-sm text-gray-600")
+                     "son mort et votre partenaire.").classes("text-base text-gray-700")
             return
         d = next(x for x in data["donnes"] if f"d{x['n']}" == e)
         if jeu["cle"] != (c, d["n"]): jeu_depart(c, d)
@@ -1803,7 +1807,7 @@ def page():
                           tour=jeu["pense"] if attente else (s if not fini else None))
             with panneau_droit():                                                         # la barre de droite : l'essentiel
                 ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
-                ui.label(f"Vous jouez {SIEGE[s]}").classes("text-sm text-gray-600")
+                ui.label(f"Vous jouez {SIEGE[s]}").classes("text-base text-gray-700")
                 if p and not p.fini():                          # pendant le jeu, les cartons sont rangés : l'étui reste sur la table
                     with ui.row().classes("w-full justify-center"):
                         ui.html(etui(d, places, petit=True), sanitize=False)
@@ -1820,7 +1824,7 @@ def page():
                             with ui.expansion("Le sens des enchères").props("dense header-class='text-primary text-sm px-1'") \
                                     .classes("w-full mt-1"):
                                 for x, b, t_ in autres:
-                                    ui.html(f"<div style='font-size:14px'><b>{SIEGE[x]} {rouge(b)}</b> : {rouge(t_)}</div>", sanitize=False)
+                                    ui.html(f"<div style='font-size:16px'><b>{SIEGE[x]} {rouge(b)}</b> : {rouge(t_)}</div>", sanitize=False)
                 if p:
                     vous, defense = p.levees()
                     ui.label(f"{p.contrat} par {SIEGE[p.decl]}").classes("text-base font-bold")
@@ -1831,14 +1835,14 @@ def page():
                             ui.button("Indice", icon="lightbulb", on_click=lambda: carte_indice()).props("outline dense no-caps")
                             if not p.en_defense():
                                 ui.button("Réclamer", icon="done_all", on_click=lambda: carte_reclamer()).props("outline dense no-caps")
-                        if jeu["msg"]: ui.label(jeu["msg"]).classes("text-sm")
+                        if jeu["msg"]: ui.label(jeu["msg"]).classes("text-base")
                     robots = [z for z in p.pensees if not z["humain"]]
                     if robots and not p.fini():                 # ce que pense le dernier joueur du programme
                         ui.html(pensee_html(carte.texte_pensee(robots[-1], p.decl)), sanitize=False).classes("w-full")
                     if p.plis:
-                        with ui.expansion(f"Plis joués ({len(p.plis)})", icon="list").props("dense").classes("w-full text-sm"):
+                        with ui.expansion(f"Plis joués ({len(p.plis)})", icon="list").props("dense").classes("w-full text-base"):
                             for k, (pli, g) in enumerate(p.plis, 1):
-                                ui.html(f"<div style='font-size:14px'>Pli {k} : " + " · ".join(f"{SIEGE[x][0]} {rouge(carte.carte_fr(cc, r))}" for x, cc, r in pli)
+                                ui.html(f"<div style='font-size:16px'>Pli {k} : " + " · ".join(f"{SIEGE[x][0]} {rouge(carte.carte_fr(cc, r))}" for x, cc, r in pli)
                                         + f" — {SIEGE[g]}</div>", sanitize=False)
                 elif not fini and not attente:
                     boite_encheres(d)
@@ -1925,7 +1929,7 @@ def page():
                       sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == q.mort()])
             with panneau_droit():
                 ui.label(f"Donne {d['n']} · relecture").classes("text-lg font-bold")
-                ui.label(f"{p.contrat} par {SIEGE[p.decl]} · carte {k + 1} sur {len(cartes)} · pli {k // 4 + 1}").classes("text-sm text-gray-600")
+                ui.label(f"{p.contrat} par {SIEGE[p.decl]} · carte {k + 1} sur {len(cartes)} · pli {k // 4 + 1}").classes("text-base text-gray-700")
                 with ui.row().classes("gap-2"):
                     ui.button(icon="chevron_left", on_click=lambda: (jeu.update(revoir=k - 1), vue_jouer.refresh())).props("outline dense").set_enabled(k > 0)
                     ui.button(icon="chevron_right", on_click=lambda: (jeu.update(revoir=k + 1), vue_jouer.refresh())).props("unelevated dense").set_enabled(k < len(cartes) - 1)
@@ -1938,7 +1942,7 @@ def page():
                         z["avis"] = await run.io_bound(carte.avis_programme, d, p.contrat, p.decl, p.encheres, p.humain, cartes, k)
                         jeu["msg"] = ""; jeu_garder(); vue_jouer.refresh()
                     ui.button("Qu'aurait joué le programme ?", icon="psychology", on_click=avis).props("outline dense no-caps")
-                    if jeu.get("msg"): ui.label(jeu["msg"]).classes("text-sm")
+                    if jeu.get("msg"): ui.label(jeu["msg"]).classes("text-base")
                 elif k == 0: ui.html(pensee_html(dict(titre=f"{SIEGE[carte.LHO[p.decl]]} entame {carte.carte_fr(*cartes[0])}",
                                                       raison="L'entame suit les règles du système (entames.yaml).", croyance=[])),
                                      sanitize=False).classes("w-full")
@@ -1957,7 +1961,7 @@ def page():
         ui.html("<table style='font-size:15px;border-collapse:collapse'><tr><th></th><th style='padding:2px 12px;text-align:left'>Contrat</th>"
                 "<th style='padding:2px 12px'>Double mort</th><th style='padding:2px 12px'>IMP pour vous</th></tr>" + "".join(lignes) + "</table>",
                 sanitize=False)
-        ui.label("IMP pour vous : ce que votre contrat gagne (+) ou perd (−) face à celui de l'analyse, au double mort.").classes("text-sm text-gray-600")
+        ui.label("IMP pour vous : ce que votre contrat gagne (+) ou perd (−) face à celui de l'analyse, au double mort.").classes("text-base text-gray-700")
         if r["ecart"]:
             k = r["ecart"]
             ui.html(f"<div style='font-size:15px;margin-top:6px'>Première différence : <b>{SIEGE[k['siege']]}</b> dit {rouge(k['vous'])}, "
@@ -1978,8 +1982,8 @@ def page():
         vs = edition.versions(c)
         ui.label("Versions précédentes").classes("text-base font-bold mt-4")
         ui.label("Chaque modification est enregistrée aussitôt. Une copie de la séance est gardée avant les changements, "
-                 "au plus toutes les 10 minutes (les 20 dernières).").classes("text-sm text-gray-600")
-        if not vs: ui.label("Aucune pour l'instant.").classes("text-sm text-gray-600")
+                 "au plus toutes les 10 minutes (les 20 dernières).").classes("text-base text-gray-700")
+        if not vs: ui.label("Aucune pour l'instant.").classes("text-base text-gray-700")
         for v in vs[:20]:
             try: nb = len(edition.lire(v)["donnes"])
             except Exception: nb = 0
@@ -2004,12 +2008,12 @@ def page():
             ui.select(["Personne", "N-S", "E-O", "Tous"], value=d["vul"], label="Vulnérabilité",
                       on_change=lambda e: (edition.regler(c, n, vul=e.value), maj(), resultat.refresh())).classes("w-36")
         ui.label("Tapez les cartes de chaque couleur (A R D V X 9 … 2, ou 10) ; une couleur vide est une chicane. "
-                 "Tout est enregistré dès que vous quittez un champ.").classes("text-sm text-gray-600")
+                 "Tout est enregistré dès que vous quittez un champ.").classes("text-base text-gray-700")
         tetes = {}
 
         def main_ed(s):
             with ui.column().classes("gap-1"):
-                tetes[s] = ui.label("").classes("text-sm font-bold text-gray-600")
+                tetes[s] = ui.label("").classes("text-base font-bold text-gray-700")
                 for k, coul in enumerate("♠♥♦♣"):
                     v = d["mains"][s].split()[k]
                     champ = ui.input(value="" if v == "-" else v).props(f'dense outlined prefix="{coul}"').classes("w-44")
@@ -2018,7 +2022,7 @@ def page():
 
         with ui.grid(columns="repeat(3, 190px)").classes("gap-3 items-start mt-2"):
             ui.label(""); main_ed("N"); ui.label("")
-            main_ed("O"); centre = ui.label("").classes("text-sm text-gray-600 whitespace-pre-line self-center"); main_ed("E")
+            main_ed("O"); centre = ui.label("").classes("text-base text-gray-700 whitespace-pre-line self-center"); main_ed("E")
             ui.label(""); main_ed("S"); ui.label("")
         msg = ui.label("").classes("text-base text-red-800")
         with ui.row().classes("gap-3 mt-1"):
@@ -2157,7 +2161,7 @@ def page():
     def page_aide():
         s = sections_aide()
         cat, _, h = s[min(vue_aide["k"], len(s) - 1)]
-        ui.label(cat).classes("text-sm text-gray-500 uppercase tracking-wide")   # la catégorie, au-dessus du sujet
+        ui.label(cat).classes("text-sm text-gray-600 uppercase tracking-wide")   # la catégorie, au-dessus du sujet
         ui.html(h, sanitize=False).classes("aide w-full pb-8")
 
     def entrees_de(data):
@@ -2177,7 +2181,7 @@ def page():
         nom = nom_pour_claude(lire_seance(c))
         ui.label("Obtenir l'analyse de l'expert avec Claude").classes("text-base font-bold mt-4")
         ui.label("L'analyse de l'expert est écrite par Claude (claude.ai, dans votre navigateur). Comptez une "
-                 "conversation par séance ; pour 24 donnes, Claude peut répondre en plusieurs fois.").classes("text-sm text-gray-600")
+                 "conversation par séance ; pour 24 donnes, Claude peut répondre en plusieurs fois.").classes("text-base text-gray-700")
         etape = lambda k, texte: ui.html(f"<div style='font-size:16px'><b>{k}.</b> {texte}</div>", sanitize=False)
         with ui.column().classes("gap-3 max-w-2xl"):
             etape(1, "Préparez le fichier : Bridge Coach met dans un seul fichier tout ce dont Claude a besoin (la séance, "
@@ -2267,7 +2271,7 @@ def page():
             avant = None
             for k, (cat, titre, _) in enumerate(sections_aide()):
                 if cat != avant:                              # le titre de la catégorie, puis ses sujets
-                    ui.label(cat).classes("text-xs text-gray-500 uppercase tracking-wide font-bold px-2 " +
+                    ui.label(cat).classes("text-xs text-gray-600 uppercase tracking-wide font-bold px-2 " +
                                           ("mt-1" if avant is None else "mt-4")).style("letter-spacing:.06em")
                     avant = cat
                 ui.button(titre, on_click=lambda k=k: voir_aide(k)).props("flat no-caps align=left dense color=grey-10") \
@@ -2327,7 +2331,7 @@ def page():
                     with ui.row().classes("w-full max-w-xl items-center justify-between no-wrap bg-green-50 rounded px-3 py-2 mb-3"):
                         with ui.column().classes("gap-0"):
                             ui.label(f"Nouveau tournoi dans Bridgemate, du {date_lisible(neuf)}").classes("text-base")
-                            ui.label(os.path.basename(neuf)).classes("text-sm text-gray-600 break-all")
+                            ui.label(os.path.basename(neuf)).classes("text-base text-gray-700 break-all")
                         ui.button("Importer", on_click=lambda b=neuf: importer(b)).classes("shrink-0")
                 nouveau()
                 barre_i = ui.linear_progress(value=0, show_value=False).props("size=16px rounded indeterminate").classes("max-w-xl")
@@ -2360,17 +2364,17 @@ def page():
                     ui.select({"": "—"} | {x: x for x in noms_}, value=actuel or "", with_input=True,
                               on_change=lambda e: (ecrire_etat(moi=e.value or None), vue_seance.refresh())).classes("w-full").props("outlined dense")
                     ui.label("Votre table est surlignée dans les tableaux des résultats : dans l'onglet Donnes tout de suite, dans les "
-                             "rapports quand ils sont refaits.").classes("text-sm text-gray-600")
+                             "rapports quand ils sont refaits.").classes("text-base text-gray-700")
                     ui.checkbox("Les donnes dans l'ordre où vous les avez jouées", value=moi.ordre_joue(),
                                 on_change=lambda e: ecrire_etat(ordre_joue=e.value)).classes("text-base")
-                    ui.label("Quand la séance décrit votre parcours (tour, table, adversaires) ; sinon par numéro.").classes("text-sm text-gray-600 -mt-2")
+                    ui.label("Quand la séance décrit votre parcours (tour, table, adversaires) ; sinon par numéro.").classes("text-base text-gray-700 -mt-2")
                     ui.checkbox("Inclure l'avis de l'expert", value=avec_expert(),
                                 on_change=lambda e: ecrire_etat(avec_expert=e.value)).classes("text-base")
                     ui.label("Quand Claude a rédigé l'analyse de la séance (onglet Analyse, « Analyse expert ») : son avis, en "
-                             "vert, après le conseil du coach.").classes("text-sm text-gray-600 -mt-2")
+                             "vert, après le conseil du coach.").classes("text-base text-gray-700 -mt-2")
                     noms = ui.checkbox("Ajouter une page avec le nom des joueurs").classes("text-base")
                     creer_r = ui.button("Créer les rapports", icon="picture_as_pdf", on_click=lambda: maj_rapports()).classes("text-base px-6 mt-2")
-                    besoin_r = ui.label("").classes("text-sm text-gray-600")
+                    besoin_r = ui.label("").classes("text-base text-gray-700")
                     barre_r = ui.linear_progress(value=0, show_value=False).props("size=16px rounded")
                     texte_r = ui.label("").classes("text-base")
                     stop_r = ui.button("Annuler", on_click=annuler).props("outline")
@@ -2383,7 +2387,7 @@ def page():
                     prets = rapports_de(c)
                     ui.label(f"Rapports de la séance du {infos_seance(c)[0]}").classes("text-lg font-bold")
                     if not prets:
-                        ui.label("Pas encore de rapport : « Créer les rapports », dans la barre de gauche.").classes("text-base text-gray-600")
+                        ui.label("Pas encore de rapport : « Créer les rapports », dans la barre de gauche.").classes("text-base text-gray-700")
                     for quoi, nom, detail in RAPPORTS:
                         for f, pour in prets.get(quoi, []):        # l'analyse : une par paire (ses initiales)
                             lien_pdf(f, f"{nom} pour {pour}" if pour else nom, detail)
@@ -2403,13 +2407,13 @@ def page():
                     with ui.row().classes("w-full items-center justify-between no-wrap"):
                         with ui.column().classes("gap-0"):
                             ui.label(titre).classes("text-base")
-                            ui.label(chemin).classes("text-sm text-gray-600 break-all")
+                            ui.label(chemin).classes("text-base text-gray-700 break-all")
                         if os.path.isdir(chemin):
                             ui.button("Ouvrir", on_click=lambda c=chemin: ouvrir(c)).props("outline").classes("shrink-0")
                         else:
-                            ui.label("Dossier introuvable").classes("text-sm text-red-800 shrink-0")
+                            ui.label("Dossier introuvable").classes("text-base text-red-800 shrink-0")
                 ui.button("Modifier les réglages", on_click=ouvrir_reglages).classes("w-full text-base py-3")
-                ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-sm text-gray-600")
+                ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-base text-gray-700")
 
               with ui.column().classes("w-full gap-3") as pages_ui["maj"]:
                 ui.label("Mise à jour du programme").classes("text-lg font-bold")
@@ -2418,13 +2422,13 @@ def page():
                     ui.button("Rechercher une mise à jour", on_click=lambda: chercher_maj()).props("outline")
                     bouton_maj = ui.button("", on_click=lambda: lancer_maj()).props("unelevated")
                     bouton_maj.set_visibility(False)
-                etat_maj = ui.label("Bridge Coach ne contacte GitHub que si vous cliquez ; il n'envoie rien.").classes("text-sm text-gray-600")
+                etat_maj = ui.label("Bridge Coach ne contacte GitHub que si vous cliquez ; il n'envoie rien.").classes("text-base text-gray-700")
                 journal = os.path.join(rapport.RAPPORTS, maj.JOURNAL)
                 if os.path.exists(journal):
                     lignes_j = [x for x in open(journal, encoding="utf-8").read().splitlines() if x.strip()]
                     if lignes_j:
                         le = datetime.datetime.fromtimestamp(os.path.getmtime(journal)).strftime("%d/%m/%Y")   # pas « quand » : la fonction
-                        ui.label(f"Dernière mise à jour, le {le} : {lignes_j[0]} — {lignes_j[-1]}").classes("text-sm text-gray-600")
+                        ui.label(f"Dernière mise à jour, le {le} : {lignes_j[0]} — {lignes_j[-1]}").classes("text-base text-gray-700")
 
             montrer_pages()                                # chaque onglet à pages s'ouvre sur sa première page
 
@@ -2435,7 +2439,7 @@ def page():
                     ui.column().classes("w-full gap-0") as pages_ui["nouveau"]:   # Fichier : ses pages, la première Nouveau
                 ui.label("Nouvelle séance").classes("text-lg font-bold")
                 ui.html("Une séance Bridge Coach est un seul fichier, <b>.bc.json</b> : les donnes, les joueurs, les "
-                        "résultats et les analyses. Trois façons d'en créer une :", sanitize=False).classes("text-base text-gray-600")
+                        "résultats et les analyses. Trois façons d'en créer une :", sanitize=False).classes("text-base text-gray-700")
                 FACONS = [("bws", "Importer un tournoi Bridgemate", "depuis le fichier .bws du tournoi", "table_restaurant"),
                           ("pbn", "Importer un fichier PBN", "des donnes de BBO, Funbridge, d'un autre logiciel…", "description"),
                           ("themes", "Créer des donnes d'entraînement", "sur des thèmes choisis, ou une séance vide", "school")]
@@ -2456,16 +2460,16 @@ def page():
                                                              "background:#fff;border:2px solid #e3e7ea")) \
                                     .on("click", lambda k=k: choisir_facon(k)):
                                 with ui.row().classes("items-start no-wrap gap-2"):
-                                    ui.icon(icone, size="22px").classes("text-primary" if choisi else "text-gray-500")
+                                    ui.icon(icone, size="22px").classes("text-primary" if choisi else "text-gray-600")
                                     ui.label(titre).classes("text-base font-bold")
-                                ui.label(sous).classes("text-sm text-gray-600")
+                                ui.label(sous).classes("text-base text-gray-700")
                 cartes_facon()
 
                 with ui.column().classes("w-full gap-0") as sections_n["themes"]:
                   ui.label("Choisissez des thèmes et combien de donnes de chacun ; sans thème, la séance est vide et vous tapez "
                            "les mains dans l'onglet Donnes. Les thèmes d'enchères et de jeu de la carte choisis ensemble sont "
                            "réunis dans les mêmes donnes. Elles sont créées dans une nouvelle séance .bc.json, avec un .pbn à côté "
-                           "pour Bridgemate.").classes("text-base text-gray-600")
+                           "pour Bridgemate.").classes("text-base text-gray-700")
                   quotas = {x: 0 for x in donnes.themes_tries()}
                   niveaux = set(lire_etat().get("niveaux") or [1])   # les niveaux montrés, gardés d'une fois sur l'autre
                   total = lambda: sum(k for _, k in donnes.combiner([(t, k) for t, k in quotas.items() if k]))
@@ -2509,9 +2513,9 @@ def page():
                                           caches.append(f"{m} " + {1: "de 1re année", 2: "intermédiaire" + "s" * (m > 1),
                                                                    3: "avancé" + "s" * (m > 1)}[n])
                                       if not vus: continue
-                                      ui.label(nom).classes("text-sm text-gray-600 mt-2")
+                                      ui.label(nom).classes("text-base text-gray-700 mt-2")
                                       for t in vus: theme_ligne(t)
-                                  if caches: ui.label("Autres thèmes : " + ", ".join(caches)).classes("text-sm text-gray-500 mt-2")
+                                  if caches: ui.label("Autres thèmes : " + ", ".join(caches)).classes("text-base text-gray-600 mt-2")
                       with ui.row().classes("w-full items-center justify-between no-wrap mt-2").style("max-width:50%"):
                           ui.label("Donnes au hasard").classes("text-base")
                           with ui.row().classes("items-center no-wrap gap-0"):
@@ -2543,13 +2547,13 @@ def page():
                       def fichier_cree():
                           if not D.fichier or D.actif: return
                           ui.label("Donnes créées").classes("text-base font-bold")
-                          ui.label(os.path.basename(D.fichier)).classes("text-sm text-gray-600 break-all")
+                          ui.label(os.path.basename(D.fichier)).classes("text-base text-gray-700 break-all")
                           if D.notes:
-                              ui.label("Tirées au hasard faute de temps : " + " ; ".join(D.notes) + ".").classes("text-sm text-red-800")
+                              ui.label("Tirées au hasard faute de temps : " + " ; ".join(D.notes) + ".").classes("text-base text-red-800")
                           with ui.row().classes("gap-3"):
                               ui.button("Analyser ces donnes", on_click=lambda: analyser_donnes())
                               ui.button("Ouvrir le dossier", on_click=lambda: ouvrir(os.path.dirname(D.fichier))).props("outline")
-                          ui.label("Le fichier .pbn du dossier s'importe dans Bridgemate : Fichier, Importer.").classes("text-sm text-gray-600")
+                          ui.label("Le fichier .pbn du dossier s'importe dans Bridgemate : Fichier, Importer.").classes("text-base text-gray-700")
                       fichier_cree()
 
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["ouvrir"]:   # Fichier, Ouvrir une séance
@@ -2557,7 +2561,7 @@ def page():
         @ui.refreshable
         def liste():
             tout = seances_bc()
-            if not tout: ui.label("Aucune séance pour l'instant : Fichier, Nouveau").classes("text-sm text-gray-600")
+            if not tout: ui.label("Aucune séance pour l'instant : Fichier, Nouveau").classes("text-base text-gray-700")
             for c in tout[:15]:
                 date, source = infos_seance(c)
                 ui.button(f"{date}  –  {source + ' – ' if source else ''}{rapport.nom_seance(c)}", on_click=lambda c=c: choisir(c)) \
@@ -2570,12 +2574,12 @@ def page():
     with pages_ui["nouveau"], ui.column().classes("w-full gap-2") as sections_n["bws"]:   # Nouveau, depuis un tournoi Bridgemate
         ui.html("Bridge Coach <b>importe</b> les données du tournoi (donnes, joueurs, enchères, résultats) dans une "
                 "nouvelle séance <b>.bc.json</b>. Le fichier .bws est seulement lu : Bridge Coach n'y écrit jamais, et la "
-                "séance n'en a plus besoin ensuite (une copie est rangée avec elle).", sanitize=False).classes("text-base text-gray-600")
+                "séance n'en a plus besoin ensuite (une copie est rangée avec elle).", sanitize=False).classes("text-base text-gray-700")
         ui.label("Les tournois du dossier de Bridgemate, les plus récents d'abord :").classes("text-base mt-1")
         @ui.refreshable
         def liste_i():
             bws = reglages()[0][:10]
-            if not bws: ui.label(f"Aucun fichier .bws dans {dossier}.").classes("text-sm text-gray-600")
+            if not bws: ui.label(f"Aucun fichier .bws dans {dossier}.").classes("text-base text-gray-700")
             for b in bws:
                 fait = " (déjà importé)" if deja_importe(b) else ""
                 ui.button(f"{date_lisible(b)}  –  {os.path.basename(b)}{fait}", on_click=lambda b=b: importer(b)) \
@@ -2591,7 +2595,7 @@ def page():
                 "logiciel. Bridge Coach <b>importe</b> les mains, le donneur et la vulnérabilité, et, quand le fichier les donne, "
                 "le contrat, les enchères, l'entame et le résultat d'une table, dans une nouvelle séance <b>.bc.json</b>. Le "
                 "fichier .pbn est seulement lu : Bridge Coach n'y écrit jamais (une copie est rangée avec la séance).",
-                sanitize=False).classes("text-base text-gray-600")
+                sanitize=False).classes("text-base text-gray-700")
         envoi_p = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".pbn"').classes("hidden")
         ui.button("Choisir un fichier .pbn…", icon="folder_open", on_click=lambda: parcourir_i(TYPES_PBN, envoi_p)).props("unelevated").classes("self-start")
     for x, col in sections_n.items(): col.set_visibility(x == facon["k"])
@@ -2614,7 +2618,7 @@ def page():
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["exporter"]:   # Fichier, Exporter en PBN
         ui.label("Exporter en PBN").classes("text-lg font-bold")
         ui.label("Le .pbn s'importe dans Bridgemate (Fichier, Importer) et se lit dans la plupart des logiciels de bridge. "
-                 "Il est écrit à côté de la séance.").classes("text-base text-gray-600")
+                 "Il est écrit à côté de la séance.").classes("text-base text-gray-700")
         exporte = {"f": None}
         @ui.refreshable
         def a_exporter():
@@ -2624,14 +2628,14 @@ def page():
             ui.label(f"Séance : {infos_seance(c)[0]} – {rapport.nom_seance(c)}").classes("text-base")
             ui.button("Exporter en PBN", icon="file_download", on_click=lambda: exporter()).classes("mt-1")
             if exporte["f"] and os.path.dirname(exporte["f"]) == os.path.dirname(c):
-                ui.label(f"Exporté : {exporte['f']}").classes("text-sm break-all")
+                ui.label(f"Exporté : {exporte['f']}").classes("text-base break-all")
                 ui.button("Ouvrir le dossier", on_click=lambda: ouvrir(os.path.dirname(exporte["f"]))).props("outline")
         a_exporter()
 
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["dossier"]:   # Fichier, Ouvrir le dossier de travail
         ui.label("Le dossier de travail").classes("text-lg font-bold")
         ui.label("Vos séances (seances), vos rapports (rapports) et les fichiers préparés pour Claude (pour-claude). "
-                 "Il se change dans Réglages, Dossiers.").classes("text-base text-gray-600")
+                 "Il se change dans Réglages, Dossiers.").classes("text-base text-gray-700")
         ui.label(rapport.DONNEES).classes("text-base break-all")
         ui.button("Ouvrir le dossier de travail", icon="folder_open", on_click=lambda: ouvrir(rapport.DONNEES)).props("outline")
     montrer_pages()

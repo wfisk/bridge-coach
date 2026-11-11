@@ -258,6 +258,16 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         system's call as the Indice; a call the engine would not make is read by encheres.interpreter from the
                         rule file, else as natural), comparer (contract, double-dummy result, IMP for the player against the
                         Expert / Standard, first differing call), attempts saved in <name>-jeu.json beside the session; the deal as left (seat, calls, cards played, claim) in its "en_cours" (garder_en_cours / en_cours; app: jeu_garder after every call and card, jeu_reprendre replays them; Recommencer les enchères / Reprendre le jeu de la carte reset; a seat change in Options clears them). A new bidding card slides in from its player's edge (arrive-bas/haut/gauche/droite, timed by jeu["arrive"] so redraws continue it); piles start at a fixed point so earlier cards never move. The bidding box's front row: Passe, X, XX, Stop (practice: a jump without Stop, or Stop without a jump, gets a note; saut), and Alerte only when partner's last call is marked « alerte: oui » in regles.yaml (alerte_due; encherir returns "alertes", jouer.avancer_alertes); Indice sits under the box, right above its text, and a second click hides it
+      demo.py           the Jouer tab's « Démonstration » (for a class on a big screen; app.vue_demo, mode saved in etat.json
+                        mode_jouer): Demo(d, analyses) holds the recommended auction (Expert, else Coach, else the engine) with the
+                        meaning of each call (encherir explications), then the robots' play at all four seats, one card at a time
+                        when the teacher steps forward (calculer, carte.Partie.carte_robot, thoughts kept); position(j), dm(j)
+                        (each playable card's tricks for declarer, double dummy, at any point), essayer(j, carte) (« et si… »: the
+                        teacher plays another card, the robots carry on from there). Data only, no screen: a later web version
+                        (students answering a quiz on their phones, the user's long-term plan) can serve the same steps.
+                        All four hands open, declarer at the bottom; the controls (Jouer | Démonstration, ⏮ ← →, Double mort,
+                        the current step's explanation) in the right sidebar; ← → and PageUp/PageDown on the keyboard
+                        (demo_touche); double-mort counts as badges on the cards' top corner (marques_dm, .carte .dm). tests/test_demo.py
       carte.py          card play in the Jouer tab: Partie (coups.Position, lead from the rules, legal cards, tricks, claim
                         checked double-dummy); Partie(humain=seat): the player holds declarer and dummy, or one defender (en_defense; the
                         player then leads himself when on lead, the program plays declarer and dummy through indice() = lignes._carte and
@@ -467,7 +477,10 @@ user's folder, never in git. Only `--avec-noms` shows full names in a report: an
   "zoom", app.TAILLES, taille_texte; set in the head at load and by JS on change). Anything sized from the window must divide by
   the zoom: COTE_TABLE uses 100vw / var(--zoom), JS_AJUSTE divides innerHeight by --zoom and measures with offsetTop. Checked in
   the browser pane (Chromium), 1200×850 and 1920×1080; not yet in the pywebview window (WebKit).
-- Jouer, top right of the table (outils_table): A− / A+ step the same text size (pas_taille → changer_taille), and « table
+- Réglages, « Votre nom » (etat.json mon_nom): the player pickers list « Aucun (tous les joueurs) », then that name
+  « (vous) », a disabled line (SEPARATEUR), then everyone else A–Z (app.options_joueurs); choosing it fills an empty
+  « Vous êtes ». Controls go in the right sidebar near the top or above the table, never below content (the user, 2026-11-11).
+- Jouer, above the table on its own line (outils_table): A− / A+ step the same text size (pas_taille → changer_taille), and « table
   seule » (plein, basculer_plein) hides the header tabs (entete) and the left deal list (montrer_barre) but keeps the right
   sidebar (the bidding box and controls: the user's choice, for the classroom); appliquer_plein sets --reserve-l/-h,
   --table-max and --haut-panneau so the table grows (up to 820 px).

@@ -157,7 +157,7 @@ print("ok")
 
 # les filtres de fichiers sont acceptés par pywebview (une apostrophe dans la description les fait refuser sans bruit)
 from webview.util import parse_file_type
-for types in (app.TYPES_FICHIERS, app.TYPES_SEANCES, app.TYPES_IMPORT, app.TYPES_EXPERT):
+for types in (app.TYPES_FICHIERS, app.TYPES_SEANCES, app.TYPES_BWS, app.TYPES_PBN, app.TYPES_EXPERT):
     for f in types: parse_file_type(f)
 # « Vous êtes » : vos tables sont repérées par votre nom complet, dans chaque séance
 import moi

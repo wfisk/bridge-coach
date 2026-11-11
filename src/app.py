@@ -279,24 +279,28 @@ CSS_CARTES = """
 .pile { display: flex; align-items: flex-end; }
 .carton { position: relative; flex: none; }
 .carton .face { position: absolute; inset: 0; transform: rotate(180deg); border-radius: 5px;
-  box-shadow: 0 1px 2px rgba(0,0,0,.3); }
-.carton.bid { width: 50px; height: 88px; } .carton.bid .face { background: #fff; border: 1px solid #b8bfc6; }   /* longs, comme les vrais */
-.carton.bid .grand { position: absolute; right: 2px; top: 8px; width: 26px; display: flex; flex-direction: column;
-  align-items: center; font-weight: 700; line-height: 1; }
-.carton.bid .grand b { font-size: 28px; } .carton.bid .grand i { font-style: normal; font-size: 26px; margin-top: 2px; }
-.carton.bid .grand i.sa { font-size: 15px; background: none; margin-top: 4px; }
+  box-shadow: 0 0 3px rgba(0,0,0,.25); }   /* une ombre égale de tous côtés : les cadres tournent */
+.carton.derniere .face { box-shadow: 0 0 9px 1px rgba(0,0,0,.32); }   /* la dernière enchère de chacun ressort un peu */
+/* posés sur la table comme les vrais : tournés d'un quart de tour par rapport à la boîte. Vu du lecteur (.face) : les
+   enchères plus larges que hautes, le niveau et la couleur sur la bande de droite ; PASS, X, XX presque carrés, le
+   nom le long du bord droit, l'onglet (sans texte) sur le bord gauche. La bande de droite reste visible sous le suivant */
+.carton.bid { width: 84px; height: 50px; } .carton.bid .face { background: #fff; border: 1px solid #b8bfc6; }
+.carton.bid .grand { position: absolute; right: 3px; top: 0; bottom: 0; width: 30px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; font-weight: 700; line-height: 1; }
+.carton.bid .grand b { font-size: 24px; } .carton.bid .grand i { font-style: normal; font-size: 20px; margin-top: 1px; }
+.carton.bid .grand i.sa { font-size: 14px; background: none; margin-top: 2px; }
 .carton.bid.sa .grand { color: #2b2b2b; } .carton.bid.pique .grand { color: #1f3fa0; }
 .carton.bid.coeur .grand { color: #c0141c; } .carton.bid.carreau .grand { color: #c86a00; }
 .carton.bid.trefle .grand { color: #1d7a35; }
-.carton.carre { width: 72px; height: 60px; } .carton.carre .face { color: #fff; border: 2px solid #f1f1ec; }   /* plus larges que hauts ; le bord blanc sépare deux cartons pareils */
-/* comme sortis de la boîte : l'onglet vers le milieu de la table, le nom le long du bord du côté du joueur qui le pose
-   (à l'envers pour lui) ; vu du lecteur (.face) : le nom en haut, le long du bord, et l'onglet en bas */
-.carton .tab { position: absolute; bottom: -11px; right: 4px; height: 11px; min-width: 24px;
-  border-radius: 0 0 3px 3px; background: inherit; border: 2px solid #f1f1ec; border-top: 0; }
-.carton .tab.gauche { right: auto; left: 4px; }
-.carton .base { position: absolute; left: 6px; right: 6px; top: 3px; display: flex; justify-content: space-between;
-  font-weight: 800; line-height: 1; }
-.carton .base.mot { font-size: 17px; } .carton .base.mot.petit { font-size: 13px; } .carton .base.croix { font-size: 32px; justify-content: space-around; }
+.carton.carre { width: 56px; height: 50px; }   /* même hauteur que les enchères */ .carton.carre .face { color: #fff; border: 2px solid #f1f1ec; }   /* le bord presque blanc sépare deux cartons pareils */
+.carton .tab { position: absolute; left: -10px; top: 6px; width: 10px; min-height: 20px;
+  border-radius: 3px 0 0 3px; background: inherit; border: 2px solid #f1f1ec; border-right: 0; }
+.carton .tab.gauche { top: auto; bottom: 6px; }
+.carton .base { position: absolute; right: 3px; top: 3px; bottom: 3px; width: 22px; display: flex; flex-direction: column;
+  align-items: center; justify-content: space-between; font-weight: 800; line-height: 1; }
+.carton .base b { writing-mode: vertical-rl; }            /* chaque lettre tournée : le mot se lit le long du bord droit */
+.carton .base.mot { font-size: 12px; } .carton .base.croix { font-size: 22px; justify-content: space-around; }
+.carton .base.croix b + b { margin-top: -2px; }
 .carton.passe .face { background: #2e7d32; } .carton.contre .face { background: #c62828; }
 .carton.surcontre .face { background: #1565c0; } .carton.stop .face { background: #c62828; }
 .carton.alerte .face { background: #1565c0; }
@@ -1535,8 +1539,8 @@ def page():
     # l'étui en filigrane pendant le jeu de la carte : quelques nuances de la table (#f3efe7), sans rouge ni vert
     ETUI_PALE = {"fond": "#ece6db", "bord": "#e2dacc", "rouge": "#e0d8ca", "vert": "#e0d8ca", "encre": "#b3a796"}
 
-    LARGEUR_CARTON = {"bid": 50, "carre": 72}             # .carton.bid, .carton.carre
-    VU_CARTON = {"bid": 40, "carre": 56}                   # ce qui dépasse d'un carton recouvert : son indice, ou son onglet
+    LARGEUR_CARTON = {"bid": 84, "carre": 56}             # .carton.bid, .carton.carre
+    VU_CARTON = {"bid": 44, "carre": 36}                   # ce qui dépasse d'un carton recouvert : son indice, ou son onglet
 
     lettres = lambda m: "".join(f"<b>{c}</b>" for c in m)   # un mot écrit tout le long du bord du carton
 
@@ -1591,7 +1595,7 @@ def page():
             cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1, forme(bs[k - 1]) if k else None)
                               for k, b in enumerate(bs))
             sep = a_part(x)
-            dec = 120 + (98 if sep else 0)                   # Stop ou Alerte posé : la rangée commence un peu plus à gauche
+            dec = 120 + (86 if sep else 0)                   # Stop ou Alerte posé : la rangée commence un peu plus à gauche
             pos = {"bas": f"left:calc(50% - {dec}px);bottom:{bord}px",
                    "haut": f"left:calc(50% + {dec}px);bottom:calc(100% - {bord}px);transform:rotate(180deg)",
                    "gauche": f"left:{bord}px;bottom:calc(50% + {dec}px);transform:rotate(90deg)",
@@ -2443,14 +2447,14 @@ def page():
 
                 @ui.refreshable
                 def cartes_facon():
-                    with ui.row().classes("w-full no-wrap gap-3 mt-2 mb-4"):
+                    with ui.row().classes("w-full no-wrap gap-3 mt-2 mb-4 items-stretch"):   # trois cartes de même taille
                         for k, titre, sous, icone in FACONS:
                             choisi = facon["k"] == k
-                            with ui.column().classes("grow basis-0 gap-1 p-3 cursor-pointer").style(
-                                    "border-radius:10px;" + ("background:#eef4fb;border:2px solid #1976d2" if choisi else
+                            with ui.column().classes("gap-1 p-3 cursor-pointer").style(
+                                    "flex:1 1 0;min-width:0;border-radius:10px;" + ("background:#eef4fb;border:2px solid #1976d2" if choisi else
                                                              "background:#fff;border:2px solid #e3e7ea")) \
                                     .on("click", lambda k=k: choisir_facon(k)):
-                                with ui.row().classes("items-center no-wrap gap-2"):
+                                with ui.row().classes("items-start no-wrap gap-2"):
                                     ui.icon(icone, size="22px").classes("text-primary" if choisi else "text-gray-500")
                                     ui.label(titre).classes("text-base font-bold")
                                 ui.label(sous).classes("text-sm text-gray-600")

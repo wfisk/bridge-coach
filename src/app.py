@@ -277,35 +277,30 @@ CSS_CARTES = """
    tourné selon sa place), le dernier sur le précédent : on voit encore la bande de droite (pour le lecteur) des autres */
 .cadre { position: absolute; transform-origin: 0 100%; display: flex; align-items: flex-end; }
 .pile { display: flex; align-items: flex-end; }
-.pile .carton + .carton { margin-left: -30px; }
 .carton { position: relative; flex: none; }
 .carton .face { position: absolute; inset: 0; transform: rotate(180deg); border-radius: 5px;
   box-shadow: 0 1px 2px rgba(0,0,0,.3); }
-.carton.bid { width: 56px; height: 76px; } .carton.bid .face { background: #fff; border: 1px solid #b8bfc6; }
-.carton.bid .coin { position: absolute; top: 0; right: 0; padding: 1px 4px; font-size: 12px; font-weight: 700;
-  border-radius: 0 4px 0 4px; line-height: 1.2; }
-.carton.bid .grand { position: absolute; right: 2px; top: 20px; width: 26px; display: flex; flex-direction: column;
+.carton.bid { width: 50px; height: 88px; } .carton.bid .face { background: #fff; border: 1px solid #b8bfc6; }   /* longs, comme les vrais */
+.carton.bid .grand { position: absolute; right: 2px; top: 8px; width: 26px; display: flex; flex-direction: column;
   align-items: center; font-weight: 700; line-height: 1; }
 .carton.bid .grand b { font-size: 28px; } .carton.bid .grand i { font-style: normal; font-size: 26px; margin-top: 2px; }
 .carton.bid .grand i.sa { font-size: 15px; background: none; margin-top: 4px; }
 .carton.bid.sa .grand { color: #2b2b2b; } .carton.bid.pique .grand { color: #1f3fa0; }
 .carton.bid.coeur .grand { color: #c0141c; } .carton.bid.carreau .grand { color: #c86a00; }
 .carton.bid.trefle .grand { color: #1d7a35; }
-.carton.carre { width: 64px; height: 60px; } .carton.carre .face { color: #fff; }
-.carton.haut-carre { width: 60px; height: 70px; } .carton.haut-carre .face { color: #fff; }
-.carton .tab { position: absolute; top: -13px; right: 4px; height: 14px; min-width: 22px; padding: 0 4px;
-  border-radius: 3px 3px 0 0; font-size: 9px; font-weight: 700; line-height: 14px; text-align: center; background: inherit; }
-.carton .long { position: absolute; right: 3px; top: 3px; bottom: 3px; width: 26px; display: flex; align-items: center;
-  justify-content: center; writing-mode: vertical-rl; font-weight: 800; font-size: 16px; letter-spacing: 1px; }
-.carton .gros { position: absolute; right: 1px; top: 0; bottom: 0; width: 30px; display: flex; align-items: center;
-  justify-content: center; font-weight: 800; font-size: 28px; }
-.carton .gros.deux { font-size: 20px; writing-mode: vertical-rl; letter-spacing: -1px; }
+.carton.carre { width: 72px; height: 60px; } .carton.carre .face { color: #fff; border: 2px solid #f1f1ec; }   /* plus larges que hauts ; le bord blanc sépare deux cartons pareils */
+/* comme sortis de la boîte : l'onglet vers le milieu de la table, le nom le long du bord du côté du joueur qui le pose
+   (à l'envers pour lui) ; vu du lecteur (.face) : le nom en haut, le long du bord, et l'onglet en bas */
+.carton .tab { position: absolute; bottom: -11px; right: 4px; height: 11px; min-width: 24px;
+  border-radius: 0 0 3px 3px; background: inherit; border: 2px solid #f1f1ec; border-top: 0; }
+.carton .tab.gauche { right: auto; left: 4px; }
+.carton .base { position: absolute; left: 6px; right: 6px; top: 3px; display: flex; justify-content: space-between;
+  font-weight: 800; line-height: 1; }
+.carton .base.mot { font-size: 17px; } .carton .base.mot.petit { font-size: 13px; } .carton .base.croix { font-size: 32px; justify-content: space-around; }
 .carton.passe .face { background: #2e7d32; } .carton.contre .face { background: #c62828; }
 .carton.surcontre .face { background: #1565c0; } .carton.stop .face { background: #c62828; }
 .carton.alerte .face { background: #1565c0; }
-.carton.stop .long, .carton.alerte .long { right: 0; left: 0; width: auto; font-size: 15px; }
-.carton.recent .face { outline: 2px solid #f2b705; }
-.carton:not(.derniere) .face { filter: saturate(.5) brightness(1.06); }   /* la dernière enchère de chacun en clair */
+.carton:not(.derniere) .face { filter: saturate(.75) brightness(1.04) contrast(.88); }   /* les précédentes un peu effacées, sans cadre */
 .cadre .a-part { margin-right: 14px; }      /* Stop et Alerte : posés à gauche de la rangée, pas parmi les enchères */
 @keyframes tourne { from { transform: rotate(180deg); } to { transform: none; } }   /* la table, d'un demi-tour (TOURNE) */
 .carton.arrive-bas, .carte.arrive-bas { animation: arrive-bas .5s ease-out; }
@@ -324,12 +319,12 @@ CSS_CARTES = """
 .tirette.vide { visibility: hidden; }
 .tirette.autres { width: auto; color: #555; background: #fff; font-weight: 500; font-size: 13px; }
 .compartiment { margin-top: 8px; background: #a93226; border-radius: 6px; padding: 6px 6px 4px; justify-content: center; }
-.onglet { position: relative; min-width: 46px; height: 36px; margin-top: 11px; padding: 0 6px; border-radius: 4px;
+.onglet { position: relative; min-width: 54px; height: 34px; margin-top: 11px; padding: 0 6px; border-radius: 4px;
   font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.onglet[data-tab]::before { content: attr(data-tab); position: absolute; top: -11px; right: 3px; height: 12px; min-width: 18px;
+.onglet[data-tab]::before { content: ""; position: absolute; top: -9px; right: 3px; height: 10px; min-width: 20px;
   padding: 0 3px; border-radius: 3px 3px 0 0; font-size: 8px; line-height: 12px; background: inherit; color: inherit; }
 .a-cote { margin-top: 8px; justify-content: center; }     /* Stop et Alerte : hors de la boîte, ce ne sont pas des enchères */
-.a-cote .onglet { height: 44px; min-width: 56px; }
+.a-cote .onglet { height: 38px; min-width: 64px; }
 .onglet.passe { background: #2e7d32; } .onglet.contre { background: #e53935; } .onglet.surcontre { background: #1565c0; }
 .onglet.eteint { cursor: default; }
 .onglet.stop { background: #c62828; } .onglet.stop.pose { outline: 3px solid #f2b705; }
@@ -1379,7 +1374,7 @@ def page():
                     ui.html("<div class='tirette autres'>… les autres enchères</div>", sanitize=False) \
                         .on("click", lambda: (jeu.update(tout_voir=True), vue_jouer.refresh()))
             with ui.row().classes("gap-1 no-wrap compartiment"):         # devant : Passe, X, XX, chacun avec son onglet
-                for b, nom, tab in (("passe", "Passe", "PASSE"), ("contre", "X", "X"), ("surcontre", "XX", "XX")):
+                for b, nom, tab in (("passe", "PASS", "PASS"), ("contre", "X", "X"), ("surcontre", "XX", "XX")):
                     el = ui.html(f"<div class='onglet {b}{'' if b in ok else ' eteint'}' data-tab='{tab}'>{nom}</div>", sanitize=False)
                     if b in ok: el.on("click", lambda b=b: jeu_annonce(d, b))
         with ui.row().classes("gap-2 no-wrap a-cote"):                 # à côté de la boîte : Stop et Alerte, hors des enchères
@@ -1387,7 +1382,7 @@ def page():
                 .on("click", lambda: (jeu.update(stop=not jeu.get("stop")), vue_jouer.refresh()))
             a = alerte_due(d)
             if a and jeu.get("alerte_faite") != a[0]:              # seulement quand l'enchère du partenaire s'alerte
-                ui.html("<div class='onglet alerte' data-tab='A' title='Votre partenaire a fait une enchère artificielle'>ALERTE</div>", sanitize=False) \
+                ui.html("<div class='onglet alerte' data-tab='A' title='Votre partenaire a fait une enchère artificielle'>ALERT</div>", sanitize=False) \
                     .on("click", lambda k=a[0]: (jeu.update(alerte_faite=k), vue_jouer.refresh()))
 
     # ---------------------------------------------------------------- le jeu de la carte
@@ -1540,6 +1535,11 @@ def page():
     # l'étui en filigrane pendant le jeu de la carte : quelques nuances de la table (#f3efe7), sans rouge ni vert
     ETUI_PALE = {"fond": "#ece6db", "bord": "#e2dacc", "rouge": "#e0d8ca", "vert": "#e0d8ca", "encre": "#b3a796"}
 
+    LARGEUR_CARTON = {"bid": 50, "carre": 72}             # .carton.bid, .carton.carre
+    VU_CARTON = {"bid": 40, "carre": 56}                   # ce qui dépasse d'un carton recouvert : son indice, ou son onglet
+
+    lettres = lambda m: "".join(f"<b>{c}</b>" for c in m)   # un mot écrit tout le long du bord du carton
+
     def tapis_encheres(d, places):
         """Les enchères posées devant chaque joueur, comme les cartons d'une boîte à enchères ; la dernière ressort."""
         vues = jeu["seq"][:jeu["affiche"]]
@@ -1551,33 +1551,35 @@ def page():
         n_, t_ = jeu.get("arrive") or (0, 0)
         ecoule = time.monotonic() - t_                       # la table se redessine souvent : le glissement reprend où il en était
         nouveau = n_ == len(vues) and ecoule < .5
-        def carton(b, recent, k, derniere=False):
+        def carton(b, recent, k, derniere=False, avant=None):
             """Un carton, dessiné à l'endroit pour qui le lit en face : la bande de droite (le niveau et la couleur, ou le
             nom) reste visible sous le carton suivant ; Passe, X et XX sont presque carrés, avec leur onglet."""
             cls = " derniere" * derniere + " recent" * recent
             retard = ""
             if recent and nouveau:                           # depuis le bord du joueur (le cadre est tourné vers lui)
                 cls += " arrive-bas"; retard = f";animation-delay:-{ecoule:.2f}s"
-            if b in ("passe", "contre", "surcontre"):
-                tab, corps = {"passe": ("PASSE", "<span class='long'>PASSE</span>"), "contre": ("X", "<span class='gros'>X</span>"),
-                              "surcontre": ("XX", "<span class='gros deux'>XX</span>")}[b]
-                face = f"<span class='tab'>{tab}</span>{corps}"
+            if b in ("passe", "contre", "surcontre"):        # le nom écrit le long de la base, l'onglet en haut à droite
+                tab, corps = {"passe": ("PASS", f"<span class='base mot'>{lettres('PASS')}</span>"),   # PASS, même en France
+                              "contre": ("X", "<span class='base croix'><b>X</b></span>"),
+                              "surcontre": ("XX", f"<span class='base croix'>{lettres('XX')}</span>")}[b]
+                face = f"<span class='tab'></span>{corps}"   # l'onglet sans texte : rien à choisir dans une boîte ici
                 cls = f" carre {b}" + cls
             else:
                 n, den = b[0], b[1:]
                 c = COUL_BOITE.get(den, "sa")
-                face = (f"<span class='coin {c}'>{n}{den}</span><span class='grand'><b>{n}</b>"
+                face = (f"<span class='grand'><b>{n}</b>"
                         f"<i class='{'sa' if den == 'SA' else ''}'>{den}</i></span>")
                 cls = f" bid {c}" + cls
-            return f"<div class='carton{cls}' style='z-index:{k + 1}{retard}'><div class='face'>{face}</div></div>"
+            marge = f";margin-left:-{LARGEUR_CARTON[avant] - VU_CARTON[avant]}px" if avant else ""   # le carton d'avant en dépasse de VU_CARTON
+            return f"<div class='carton{cls}' style='z-index:{k + 1}{marge}{retard}'><div class='face'>{face}</div></div>"
         def a_part(x):
             """Stop et Alerte : posés devant le joueur, à gauche de sa rangée, pas parmi les enchères."""
             out = ""
             if x == jeu["siege"] and jeu.get("stop"):
-                out += "<div class='carton haut-carre stop a-part derniere'><div class='face'><span class='tab'>S</span><span class='long'>STOP</span></div></div>"
+                out += "<div class='carton carre stop a-part derniere'><div class='face'><span class='tab gauche'></span><span class='base mot'>"+lettres('STOP')+"</span></div></div>"
             a = alerte_due(d) if x == jeu["siege"] else None
             if a and jeu.get("alerte_faite") == a[0]:
-                out += "<div class='carton haut-carre alerte a-part derniere'><div class='face'><span class='tab'>A</span><span class='long'>ALERTE</span></div></div>"
+                out += "<div class='carton carre alerte a-part derniere'><div class='face'><span class='tab'></span><span class='base mot'>"+lettres('ALERT')+"</span></div></div>"
             return out
         def pile(x, ou):
             """Les cartons d'un joueur, posés de gauche à droite devant lui, retournés (à l'endroit pour son partenaire,
@@ -1585,9 +1587,11 @@ def page():
             pour les quatre joueurs : un carton de plus s'ajoute au bout, les autres ne bougent pas. Le cadre est dessiné
             comme pour le joueur du bas, puis tourné vers la place du joueur (origine : le coin bas-gauche de la rangée)."""
             bs = devant[x]
-            cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1) for k, b in enumerate(bs))
+            forme = lambda b: "carre" if b in ("passe", "contre", "surcontre") else "bid"
+            cartons = "".join(carton(b, x == dernier and k == len(bs) - 1, k, k == len(bs) - 1, forme(bs[k - 1]) if k else None)
+                              for k, b in enumerate(bs))
             sep = a_part(x)
-            dec = 120 + (76 if sep else 0)                   # Stop ou Alerte posé : la rangée commence un peu plus à gauche
+            dec = 120 + (98 if sep else 0)                   # Stop ou Alerte posé : la rangée commence un peu plus à gauche
             pos = {"bas": f"left:calc(50% - {dec}px);bottom:{bord}px",
                    "haut": f"left:calc(50% + {dec}px);bottom:calc(100% - {bord}px);transform:rotate(180deg)",
                    "gauche": f"left:{bord}px;bottom:calc(50% + {dec}px);transform:rotate(90deg)",

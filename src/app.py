@@ -28,6 +28,7 @@ LARGEUR_BARRE = 220                                        # la barre de gauche 
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
 NB_PDF = 2                                                 # l'analyse, la comparaison
 RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du coach et, si vous l'incluez, avis de l'expert"),
+            ("a-revoir", "Donnes à revoir", "« Vous face au champ », puis seulement les donnes où vous pouviez faire mieux"),
             ("comparaison", "Comparaison", "le Coach face à l'Expert"))
 TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.pbn;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
@@ -93,8 +94,8 @@ def rapports_de(chemin):
         cle = ancien.get(quoi, quoi)
         if cle in out and quoi in ancien: continue
         trouves = [(f, "") for f in glob.glob(base + f"{quoi}.pdf")]
-        if quoi == "analyse":
-            trouves += [(f, f[:-4].split("-analyse-", 1)[1].replace("-", "/")) for f in glob.glob(base + "analyse-*.pdf")
+        if quoi in ("analyse", "a-revoir"):
+            trouves += [(f, f[:-4].split(f"-{quoi}-", 1)[1].replace("-", "/")) for f in glob.glob(base + f"{quoi}-*.pdf")
                         if ".provisoire" not in f]                 # « -analyse-SS-AR.pdf » : la paire SS/AR
         if trouves: out.setdefault(cle, []).extend(sorted(trouves, key=lambda x: -os.path.getmtime(x[0])))
     return out
@@ -107,14 +108,25 @@ def date_lisible(chemin):
 
 GRIS_BARRE = "#f3f3f1"
 LARGEUR_PANNEAU = 300                                     # la barre de droite de l'onglet Jouer
-# le côté de la table de l'onglet Jouer : ce que laissent la largeur (barres, mains des côtés) et la hauteur (mains du
-# haut et du bas), 420px au moins : en dessous, toute la table rétrécit (JS_AJUSTE)
-COTE_TABLE = ("clamp(420px, min(100vw / var(--zoom, 1) - var(--reserve-l, 740px), 100vh / var(--zoom, 1) - var(--reserve-h, 420px)), "
-              "var(--table-max, 640px))")   # les --reserve : ce que prennent les barres ; « table seule » les libère (app.appliquer_plein)   # --zoom : la taille du texte   # 420 : une main cachée en haut et la vôtre en bas
+# le côté de la table de l'onglet Jouer, dans les unités du dessin : la table, les mains autour et les cartons forment un
+# seul bloc, que JS_AJUSTE agrandit ou rétrécit pour remplir la place (ECHELLE_MAX) ; sur un grand écran ou une
+# télévision, les cartes grandissent avec, la table garde la même proportion (l'utilisateur, 2026-11-11 : lire les cartes
+# de loin, pas une grande table)
+COTE_TABLE = "440px"
 # pendant le jeu de la carte, avec le mort sur un côté (en défense) : une table rectangulaire, de la même hauteur, plus
 # large de la colonne de la main du mort (vide : ses cartes sont sur la table). Les cartes gardent leur taille.
 LARGEUR_TABLE_LARGE = f"calc({COTE_TABLE} + 84px)"
 HAUTEUR_BARRE = 37                                        # la barre de menus du haut                                    # le gris clair des barres latérales, comme celle de Claude
+
+JS_SENS = """<script>
+// Le sens d'une enchère de la grille : la bulle s'ouvre au survol (CSS) ; un clic la garde ouverte, un autre clic (sur elle
+// ou ailleurs) la ferme. Utile au doigt, à la télécommande, et pour les mains moins sûres.
+document.addEventListener('click', function (e) {
+  var td = e.target.closest && e.target.closest('.enc-sens');
+  document.querySelectorAll('.enc-sens.ouverte').forEach(function (x) { if (x !== td) x.classList.remove('ouverte'); });
+  if (td) td.classList.toggle('ouverte');
+});
+</script>"""
 
 JS_GLISSE = """<script>
 // Une carte qui change de place glisse de l'ancienne à la nouvelle : celle que vous jouez de votre main ou du mort vers la
@@ -191,8 +203,13 @@ JS_AJUSTE = """<script>
       var z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--zoom')) || 1;
       var haut = marge;
       for (var p = parent; p; p = p.offsetParent) haut += p.offsetTop;
-      var e = Math.min(1, parent.clientWidth / w, (window.innerHeight / z - haut - 8) / h);
+      var e = Math.min(2.4, (parent.clientWidth - 16) / w, (window.innerHeight / z - haut - 24) / h);   // ECHELLE_MAX : jusqu'à 2,4 fois
       e = Math.max(e, 0.45);
+      // pas de va-et-vient : agrandir fait parfois apparaître une barre de défilement, qui fait rétrécir, qui la fait
+      // disparaître… (la table tremblait). On ne regrandit que d'un vrai pas ; un petit écart ne change rien.
+      var avant = parseFloat(el.dataset.echelle || '0');
+      if (avant && (Math.abs(e - avant) < 0.01 || (e > avant && e - avant < 0.06))) e = avant;
+      el.dataset.echelle = e;
       el.style.transform = 'scale(' + e + ')';
       el.style.marginLeft = Math.max(0, (parent.clientWidth - w * e) / 2) + 'px';
       parent.style.height = Math.ceil(h * e + marge) + 'px';
@@ -223,11 +240,12 @@ CSS_CARTES = """
 .entree-barre.choisie { background: #e4e3df; font-weight: 600; }
 .entree-barre .q-btn__content { text-align: left; justify-content: flex-start; line-height: 1.3; padding: 2px 0; }
 .entree-barre.aide-sujet { height: auto; min-height: 32px; padding-top: 6px; padding-bottom: 6px; flex-shrink: 0; }   /* un sujet sur deux lignes ne déborde pas */
-.carte { width: 46px; height: 66px; margin-right: -18px; padding: 3px 5px; background: #fff; border: 1px solid #b9c0c7;
-  border-radius: 6px; font-size: 18px; line-height: 1.05; font-weight: 600; color: #1b1b1b; }
+.carte { width: 55px; height: 79px; margin-right: -22px; padding: 3px 5px; background: #fff; border: 1px solid #b9c0c7;
+  border-radius: 6px; font-size: 20px; line-height: 1.05; font-weight: 600; color: #1b1b1b; }   /* une seule taille partout :
+   les mains, le mort, le pli (l'utilisateur, 2026-11-11) ; le bloc de la table grandit avec la fenêtre (JS_AJUSTE) */
 .carte.r { color: #c0141c; }
 .carte { position: relative; }
-.carte .dm { position: absolute; left: -6px; top: -12px; min-width: 26px; padding: 1px 5px;   /* le coin visible, même recouverte
+.carte .dm { position: absolute; left: -6px; top: -12px; min-width: 26px; padding: 1px 5px;   /* le coin visible, même recouverte */
   border-radius: 9px; font-size: 15px; font-weight: 800; color: #fff; text-align: center; line-height: 1.25; z-index: 2;
   box-shadow: 0 0 0 2px #fff; }   /* démonstration, double mort : les levées du déclarant avec cette carte */
 .carte .dm.mieux { background: #1f6b45; } .carte .dm.moins { background: #c0141c; }
@@ -237,18 +255,29 @@ CSS_CARTES = """
    les cartes en dessous ne se voient pas au travers */
 .carte.r.terne { color: #d6a3a6; }
 .colonne-mort .carte { margin-right: 0; }
-.colonne-mort > * + * { margin-top: -42px; }
-.mort-table .carte { width: 42px; height: 60px; font-size: 17px; }
-.mort-table .colonne-mort > * + * { margin-top: -42px; }
+.colonne-mort > * + * { margin-top: -53px; }
 .ligne-mort > :last-child .carte { margin-right: 0; }   /* le mort sur un côté : une ligne par couleur, chevauchée comme une main
    (chaque carte est seule dans son enveloppe : c'est la dernière enveloppe de la ligne qui compte) */
-.carte.vide { width: 22px; border: none; background: none; margin-right: 0; padding: 3px 0; }
+.plaque { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 5px; border-radius: 8px; color: #fff;
+  min-width: 150px; margin-bottom: 6px; line-height: 1.15; }   /* le nom du joueur au-dessus de ses cartes (comme la FFB) */
+.plaque.nv { background: #2e7d32; } .plaque.v { background: #c62828; }
+.plaque img, .plaque .rond { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; flex: none; }
+.plaque .rond { background: rgba(255,255,255,.25); }
+.plaque .nom { font-size: 15px; font-weight: 700; } .plaque .prenom { font-size: 14px; }
+.enc-sens { position: relative; cursor: pointer; text-decoration: underline dotted #9aa3ad; text-underline-offset: 4px; }
+.enc-sens .bulle { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; width: 230px; padding: 8px 10px;
+  background: #fff; border: 1px solid #cfd5db; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18); text-align: left;
+  font-size: 16px; line-height: 1.35; font-weight: 400; color: #2b2b2b; white-space: normal; }
+.enc-sens.c1 .bulle { left: -60px; } .enc-sens.c2 .bulle { left: auto; right: -60px; } .enc-sens.c3 .bulle { left: auto; right: 0; }
+.enc-sens:hover .bulle, .enc-sens.ouverte .bulle { display: block; }
+.marque-alerte { display: inline-block; margin-left: 3px; padding: 0 4px; border-radius: 4px; background: #1565c0; color: #fff;
+  font-size: 11px; font-weight: 700; line-height: 15px; vertical-align: 2px; }
+.carte.vide { width: 22px; border: none; background: none; margin-right: 0; padding: 3px 0; color: #c9c7c1; }   /* une chicane : la couleur en gris pâle */
 .eventail .groupe { margin-right: 26px; }
 .eventail .groupe:last-child { margin-right: 16px; }
-.groupe.colonne .carte { width: 34px; height: 46px; margin-right: -15px; padding: 2px 4px; font-size: 15px; }
 .groupe.colonne > :last-child .carte { margin-right: 0; }
 .ajuste .carte { position: relative; z-index: 1; }      /* sur la table, les cartes passent au-dessus de l'étui en filigrane */
-.groupe.colonne .dix { letter-spacing: -2.5px; }           /* le 10 tient dans la part visible d'une petite carte */  /* sinon la ligne paraît plus courte : à gauche, elle passerait sous la table */
+.groupe.colonne .dix { letter-spacing: -1px; }             /* le 10 tient dans la part visible de la carte */  /* sinon la ligne paraît plus courte : à gauche, elle passerait sous la table */
 .dos { width: 32px; height: 46px; border-radius: 4px; border: 2px solid #fff; outline: 1px solid #c3cbd4;
   background: repeating-linear-gradient(45deg, #9aa8b8 0 3px, #b0bccA 3px 6px); }
 .plis-gardes { display: flex; align-items: center; min-height: 30px; }
@@ -261,7 +290,6 @@ CSS_CARTES = """
   padding: 0 6px; border-radius: 12px; background: #2e7d32; color: #fff; font-size: 15px; font-weight: 700; line-height: 24px;
   text-align: center; box-sizing: border-box; }   /* hors de la rangée : elle reste centrée */
 .plis-gardes.colonne .dos + .dos { margin-left: 0; margin-top: -9px; }
-.main-grande .carte { width: 55px; height: 79px; font-size: 20px; margin-right: -22px; }
 .main-grande .groupe { margin-right: 30px; }
 .main-grande .groupe:last-child { margin-right: 22px; }   /* juste ce que dépasse la dernière carte : le trait s'arrête avec elle */
 /* à vous d'enchérir ou de jouer : les cartes à jouer (votre main, ou le mort quand vous en jouez) luisent en jaune */
@@ -330,18 +358,20 @@ CSS_CARTES = """
   font-size: 16px; font-weight: 700; border: 1px solid rgba(0,0,0,.18); cursor: pointer; }
 .tirette:hover { filter: brightness(.93); transform: translateY(-2px); }
 .tirette.vide { visibility: hidden; }
+.tirette.depassee { background: #eeede9; color: #c2c0ba; border-color: #e2e0da; cursor: default; }   /* dépassée : en gris pâle */
+.tirette.depassee:hover { filter: none; transform: none; }
 .tirette.autres { width: auto; color: #555; background: #fff; font-weight: 600; font-size: 15px; color: #333; }
-.compartiment { margin-top: 8px; background: #a93226; border-radius: 6px; padding: 6px 6px 4px; justify-content: center; }
+.compartiment { margin-top: 8px; background: #a93226; border-radius: 6px; padding: 6px 6px 6px; align-items: center; }
 .onglet { position: relative; min-width: 58px; height: 38px; margin-top: 11px; padding: 0 6px; border-radius: 4px;
   font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .onglet[data-tab]::before { content: ""; position: absolute; top: -9px; right: 3px; height: 10px; min-width: 20px;
   padding: 0 3px; border-radius: 3px 3px 0 0; font-size: 8px; line-height: 12px; background: inherit; color: inherit; }
-.a-cote { margin-top: 8px; justify-content: center; }     /* Stop et Alerte : hors de la boîte, ce ne sont pas des enchères */
-.a-cote .onglet { height: 38px; min-width: 64px; }
+.compartiment > :last-child .onglet { min-width: 72px; }   /* le second rang : Stop et Alerte, sous Passe, X, XX */
 .onglet.passe { background: #2e7d32; } .onglet.contre { background: #e53935; } .onglet.surcontre { background: #1565c0; }
 .onglet.eteint { cursor: default; }
-.onglet.stop { background: #c62828; } .onglet.stop.pose { outline: 3px solid #f2b705; }
-.onglet.alerte { background: #1565c0; animation: pense 1.2s ease-in-out infinite; }
+.onglet:not(.eteint):hover { filter: brightness(.93); transform: translateY(-2px); }   /* comme les cartons d'enchères au survol */
+.onglet.stop { background: #c62828; border: 2px solid #fff; }   /* bordé de blanc : il se voit sur le rouge de la boîte */ .onglet.stop.pose { outline: 3px solid #f2b705; }
+.onglet.alerte { background: #1565c0; } .onglet.alerte.pose { outline: 3px solid #f2b705; }
 @keyframes pense { 50% { opacity: .35; } }
 .pense { animation: pense 1s ease-in-out infinite; }
 """
@@ -421,11 +451,11 @@ def avec_expert():
     return lire_etat().get("avec_expert", True)
 
 
-def lancer_rapports(chemin, noms):
+def lancer_rapports(chemin, noms, revoir=False):
     """Les PDF seulement, depuis les analyses enregistrées (rapport.py --rapports) : la barre avance rapport par rapport."""
     T.__init__(0.0, "Écriture des rapports"); T.genre = "rapports"; T.seance = chemin; T.texte = "Écriture des rapports"
     demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--rapports"] + (["--avec-noms"] if noms else [])
-                     + ([] if avec_expert() else ["--sans-analyse"]))
+                     + ([] if avec_expert() else ["--sans-analyse"]) + (["--a-revoir"] if revoir else []))
 
 
 def lancer_import(chemin):
@@ -515,6 +545,62 @@ def seance_active():
 def retenir(c):
     """La séance ouverte devient celle qu'on retrouve au prochain lancement."""
     ecrire_etat(seance=c)
+
+
+# ---------------------------------------------------------------- les photos des joueurs (Réglages, « Photos des joueurs »)
+# Gardées sur l'ordinateur seulement, à côté des réglages (jamais dans les séances, jamais envoyées) ; une par nom complet.
+def dossier_photos():
+    return os.path.join(moi.dossier_des_reglages(), "photos")
+
+
+def fichier_photo(nom):
+    import unicodedata
+    cle = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", nom or "").encode("ascii", "ignore").decode().lower()).strip("-")
+    return os.path.join(dossier_photos(), (cle or "sans-nom") + ".jpg")
+
+
+_PHOTOS = {}
+
+
+def photo_uri(nom):
+    """La photo du joueur en data: URI (pour une balise img), ou None."""
+    f = fichier_photo(nom)
+    try: mt = os.path.getmtime(f)
+    except OSError: return None
+    if _PHOTOS.get(f, (None,))[0] != mt:
+        import base64
+        _PHOTOS[f] = (mt, "data:image/jpeg;base64," + base64.b64encode(open(f, "rb").read()).decode())
+    return _PHOTOS[f][1]
+
+
+def enregistrer_photo(nom, contenu):
+    """Une image (n'importe quel format que Pillow lit) recadrée en carré de 160 px, en JPEG."""
+    from PIL import Image, ImageOps
+    import io
+    im = ImageOps.exif_transpose(Image.open(io.BytesIO(contenu))).convert("RGB")
+    im = ImageOps.fit(im, (160, 160))
+    os.makedirs(dossier_photos(), exist_ok=True)
+    im.save(fichier_photo(nom), "JPEG", quality=85)
+
+
+def plaque_html(nom, vul):
+    """Le nom d'un joueur au-dessus de ses cartes, comme sur le site de la FFB : blanc sur vert (non vulnérable) ou rouge
+    (vulnérable), le nom de famille en capitales puis le prénom, sa photo s'il en a une."""
+    import html as h_
+    mots = (nom or "").split()                          # « LA ROCCA Daniele » : les mots en capitales font le nom de famille
+    k = next((i for i, m in enumerate(mots) if not m.isupper()), len(mots)) or 1
+    nom_, prenom = " ".join(mots[:k]), " ".join(mots[k:])
+    img = photo_uri(nom)
+    photo = f"<img src='{img}' alt=''>" if img else "<span class='rond'></span>"
+    return (f"<div class='plaque {'v' if vul else 'nv'}'>{photo}<div><div class='nom'>{h_.escape(nom_.upper())}</div>"
+            + (f"<div class='prenom'>{h_.escape(prenom)}</div>" if prenom else "") + "</div></div>")
+
+
+def joueur_jouer(data=None):
+    """Option « Comme un joueur de la séance » : le nom choisi (etat.json joueur_jouer), sinon « Vous êtes », sinon
+    « Votre nom »."""
+    e = lire_etat()
+    return e.get("joueur_jouer") or e.get("moi") or e.get("mon_nom") or ""
 
 
 def place_jouer():
@@ -1049,10 +1135,13 @@ def importer_expert(c, chemin):
             f"l'expert couvre maintenant {len(fusion['donnes'])} donnes sur {len(nums)}.")
 
 
-def grille_html(enc, vul=None, qui=None):
+def grille_html(enc, vul=None, qui=None, sens=None):
     """Une grille d'enchères Ouest Nord Est Sud (lignes d'une analyse, standard ou expert). vul : la vulnérabilité de
     la donne ; chaque place est alors soulignée d'un trait épais, rouge si vulnérable, vert sinon. qui : "coach" ou
-    "expert", l'en-tête au fond de qui recommande ces enchères (build_pdf.AVIS), comme dans le PDF."""
+    "expert", l'en-tête au fond de qui recommande ces enchères (build_pdf.AVIS), comme dans le PDF.
+    sens : {rang dans la séquence: (siège, texte, alertée)} ; une enchère qui a un sens s'ouvre en bulle au survol, et
+    reste ouverte d'un clic (JS_SENS) ; une enchère alertée porte un petit « A » bleu (l'utilisateur, 2026-11-11 : le sens
+    sur l'enchère elle-même, plutôt qu'une liste à part)."""
     trait = lambda s: "" if vul is None else \
         f";width:25%;border-bottom:6px solid {'#c0141c' if vul == 'Tous' or vul == ('N-S' if s in 'NS' else 'E-O') else '#2e7d32'}"
     fond = ""
@@ -1060,7 +1149,19 @@ def grille_html(enc, vul=None, qui=None):
         from build_pdf import GRILLE
         fond = f";background:{GRILLE[qui][0]}"
     tete = "".join(f"<th style='padding:2px 10px;text-align:center{trait(s)}{fond}'>{SIEGE[s]}</th>" for s in "ONES")
-    corps = "".join("<tr>" + "".join(f"<td style='padding:1px 10px;text-align:center'>{rouge(c)}</td>" for c in r) + "</tr>" for r in enc)
+    import html as h_
+    debut = sum(1 for c in (enc[0] if enc else []) if c == "–")      # les cases avant le donneur
+    def case(i, c):
+        x = (sens or {}).get(i - debut) if c not in ("", "–", "?") else None
+        if not x or not (x[1] or x[2]):
+            return f"<td style='padding:1px 10px;text-align:center'>{rouge(c)}</td>"
+        siege, texte, alerte = x
+        a = "<span class='marque-alerte' title='Alerte'>A</span>" if alerte else ""
+        bulle = (f"<b>{'Alerte — ' if alerte else ''}{SIEGE[siege]} {rouge(c)}</b>" + (f" : {rouge(h_.escape(texte))}" if texte else ""))
+        cote = f" c{i % 4}"                                     # la colonne : la bulle reste dans la grille
+        return (f"<td class='enc-sens{cote}' style='padding:1px 10px;text-align:center'>{rouge(c)}{a}"
+                f"<span class='bulle'>{bulle}</span></td>")
+    corps = "".join("<tr>" + "".join(case(ri * 4 + ci, c) for ci, c in enumerate(r)) + "</tr>" for ri, r in enumerate(enc))
     large = "" if vul is None else ";width:100%;table-layout:fixed"          # quatre colonnes égales
     return f"<table style='border-collapse:collapse;font-size:16px{large}'><tr>{tete}</tr>{corps}</table>"
 
@@ -1245,7 +1346,7 @@ def page():
                # libellés fixes que chacun connaît (onglets, barres latérales, boutons) gardent leur taille (le choix de l'utilisateur)
                ".q-table th, .q-table td { font-size: 15px !important; padding: 4px 6px !important; } .q-table th { font-weight: 700; }"
                ".classement th, .classement td { font-size: 17px !important; padding: 6px 10px !important; }" + CSS_AIDE + CSS_CARTES)
-    ui.add_head_html(JS_AJUSTE + JS_GLISSE)
+    ui.add_head_html(JS_AJUSTE + JS_GLISSE + JS_SENS)
     z = taille_texte()
     ui.add_head_html(f"<style>:root {{ zoom: {z}; --zoom: {z}; }}</style>")   # la taille du texte choisie dans Réglages
     seances, dossier = reglages()
@@ -1375,12 +1476,66 @@ def page():
                 return jeu_reprendre(c, d, x)
             except Exception:
                 pass                                       # un état illisible : la donne repart du début
+        if not siege and place_jouer() == "joueur":        # comme un joueur de la séance : sa place à cette donne
+            pj = moi.place_du_joueur(lire_seance(c), d, joueur_jouer())
+            siege = pj["siege"] if pj else None
         siege = siege or jouer.siege_choisi(place_jouer(), d, lire_analyses(c))   # l'option choisie dans Options
         seq, ex, ind, al = jouer.avancer_alertes(d, [], siege)
         jeu.update(cle=(c, d["n"]), siege=siege, seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, garde=False, d=d,
-                   affiche=0, vus=0, revele=False, pense=None, partie=None, pli_vu=None, revoir=None, msg="", garde_jeu=False, sans_jouer=False)
+                   affiche=0, vus=0, revele=False, pense=None, partie=None, pli_vu=None, revoir=None, msg="", garde_jeu=False, sans_jouer=False,
+                   attend=True)                            # les enchères partent quand vous appuyez sur « Commencer » (magneto)
         jeu_garder()
+
+    def jeu_commencer():
+        """« Commencer » : les enchères du programme apparaissent une à une jusqu'à votre tour."""
+        if not jeu.get("attend"): return
+        jeu["attend"] = False; jeu_garder(); vue_jouer.refresh()   # gardé : en revenant, la donne est commencée
         background_tasks.create(reveler())
+
+    def jeu_au_debut(c, d):
+        """⏮ : la donne au début, avant les enchères ; elles repartent avec « Commencer »."""
+        jeu_depart(c, d, jeu["siege"], reprendre=False); vue_jouer.refresh()
+
+    def jeu_reculer(c, d):
+        """◀ : votre dernière enchère ou votre dernière carte reprise, avec ce que le programme a joué après elle. Au
+        début du jeu de la carte : la fin des enchères ; avant votre première enchère : le début de la donne."""
+        p, s = jeu["partie"], jeu["siege"]
+        if jeu.get("pense") or jeu.get("pli_vu") or jeu["affiche"] < len(jeu["seq"]): return   # le programme réfléchit
+        if p:
+            cartes = [(cc, r) for pli, _ in p.plis for _x, cc, r in pli] + [(cc, r) for _x, cc, r in p.pos.pli]
+            q = carte.Partie(d, p.contrat, p.decl, jeu["seq"], humain=s)
+            debut = len(q.pos.jouees)                   # l'entame du programme, déjà posée
+            miennes = []
+            for k, x in enumerate(cartes[debut:], debut):
+                if q.au_joueur(): miennes.append(k)
+                q.poser(x)
+            garde = cartes[:miennes[-1]] if miennes else []
+            jeu_reprendre(c, d, dict(siege=s, seq=list(jeu["seq"]), cartes=[cc + r for cc, r in garde],
+                                     pensees=[z for z in p.pensees if z.get("n", 0) < len(garde)]))
+            jeu["garde_jeu"] = False
+        else:
+            ks = [k for k in range(len(jeu["seq"])) if siege_de(d, k) == s]
+            if not ks: jeu_au_debut(c, d); return
+            seq, ex, ind, al = jouer.avancer_alertes(d, jeu["seq"][:ks[-1]], s)
+            jeu.update(seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, tout_voir=False, affiche=len(seq), garde=False,
+                       sans_jouer=False, attend=False, note="")
+        jeu_garder(); vue_jouer.refresh()
+
+    def magneto(c, d):
+        """Les commandes d'un magnétoscope, en haut de la barre de droite : ⏮ au début de la donne, ◀◀ reprendre votre
+        dernière enchère ou carte, ▶ commencer (les enchères ne partent pas toutes seules : l'utilisateur, 2026-11-11)."""
+        p = jeu["partie"]
+        occupe = bool(jeu.get("pense") or jeu.get("pli_vu") or jeu["affiche"] < len(jeu["seq"]))
+        rien = jeu.get("attend") and not p
+        with ui.row().classes("gap-2 items-center no-wrap"):
+            ui.button(icon="skip_previous", on_click=lambda: jeu_au_debut(c, d)).props("outline") \
+                .tooltip("Au début de la donne").set_enabled(not rien and not occupe)
+            ui.button(icon="fast_rewind", on_click=lambda: jeu_reculer(c, d)).props("outline") \
+                .tooltip("Reprendre votre dernière enchère ou votre dernière carte").set_enabled(not rien and not occupe)
+            if rien:
+                ui.button(icon="play_arrow", on_click=jeu_commencer).props("unelevated").tooltip("Commencer les enchères")
+            else:
+                ui.button(icon="play_arrow").props("outline").set_enabled(False)
 
     def jeu_reprendre(c, d, x):
         """La donne telle qu'elle était : enchères refaites par le moteur, puis les cartes reposées une à une."""
@@ -1394,7 +1549,8 @@ def page():
             p.pensees = list(x.get("pensees") or [])       # ce que pensaient les joueurs, gardé avec la donne
         jeu.update(cle=(c, d["n"]), siege=x["siege"], seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, garde=ind is None, d=d,
                    affiche=len(seq), vus=len(seq), revele=False, pense=None, partie=p, pli_vu=None, revoir=None, msg="", garde_jeu=bool(p and p.fini()),
-                   sans_jouer=bool(x.get("sans_jouer")))
+                   sans_jouer=bool(x.get("sans_jouer")), attend=bool(x.get("attend")) and not x.get("cartes"))
+        if jeu["attend"]: jeu["affiche"] = 0            # pas encore commencé : rien sur la table
         if p and not p.fini(): background_tasks.create(carte_defense())   # si le programme avait la main
 
     def jeu_garder():
@@ -1405,7 +1561,7 @@ def page():
         try:
             jouer.garder_en_cours(base_seance(c), n, dict(siege=jeu["siege"], seq=list(jeu["seq"]), cartes=cartes,
                                   reclame=bool(p and p.reclame), gagnes=p.pos.gagnes if p else 0, sans_jouer=bool(jeu.get("sans_jouer")),
-                                  pensees=list(p.pensees) if p else []))
+                                  pensees=list(p.pensees) if p else [], attend=bool(jeu.get("attend") and not p)))
         except OSError:
             pass
 
@@ -1436,14 +1592,10 @@ def page():
         finally:
             jeu["revele"] = False
 
-    def alerte_due(d):
-        """(rang, enchère, sens) de la dernière enchère du partenaire si elle s'alerte (« alerte: oui » dans regles.yaml :
-        4e couleur forcing, Spoutnik, Drury, 2SA bicolore…), sinon None."""
-        seq = jeu["seq"]; part = jouer.PART[jeu["siege"]]
-        ks = [k for k in range(len(seq)) if siege_de(d, k) == part]
-        if not ks or ks[-1] not in (jeu.get("alertes") or []): return None
-        k = ks[-1]
-        return k, seq[k], next((t_ for x, bb, t_ in jeu["ex"][k:k + 1] if t_), "")
+    def sens_jouer(jusqu_a=None):
+        """{rang: (siège, sens, alertée)} des enchères de la donne en cours, pour grille_html."""
+        al = set(jeu.get("alertes") or [])
+        return {k: (x, t_ or "", k in al) for k, (x, b, t_) in enumerate(jeu["ex"][:jusqu_a])}
 
     def saut(d, b):
         """L'enchère b saute-t-elle un palier ? (plus haut que le plus bas possible dans sa dénomination)"""
@@ -1454,19 +1606,30 @@ def page():
     async def jeu_annonce(d, b):
         if jeu["affiche"] < len(jeu["seq"]) or b not in jouer.legales(jeu["seq"], d["donneur"]): return
         notes = []                                          # l'entraînement à l'alerte et au Stop
-        a = alerte_due(d)
-        if a and jeu.get("alerte_faite") != a[0]:
-            notes.append(f"Votre partenaire a dit {a[1]} : une enchère artificielle, à alerter" + (f" ({a[2]})" if a[2] else "") + ".")
+        k = len(jeu["seq"])
+        seq, ex, ind, al = await run.io_bound(jouer.avancer_alertes, d, jeu["seq"] + [b], jeu["siege"])
+        if k in al and not jeu.get("alerte"):              # une enchère artificielle sans le carton Alerte : reprise
+            sens = next((t_ for x, bb, t_ in ex[k:k + 1] if t_), "")
+            jeu["note"] = (f"{b} est une enchère artificielle" + (f" ({sens})" if sens else "") +
+                           " : posez d'abord le carton Alerte, puis votre enchère.")
+            vue_jouer.refresh(); return
+        if jeu.get("alerte") and k not in al: notes.append(f"{b} n'est pas une enchère artificielle : pas besoin d'alerter.")
         if saut(d, b) and not jeu.get("stop"): notes.append(f"{b} est un saut : on pose d'abord le Stop.")
         elif jeu.get("stop") and not saut(d, b): notes.append("Le Stop annonce un saut ; cette enchère n'en est pas un.")
-        jeu.update(note=" ".join(notes), stop=False)
-        seq, ex, ind, al = await run.io_bound(jouer.avancer_alertes, d, jeu["seq"] + [b], jeu["siege"])
+        jeu.update(note=" ".join(notes), stop=False, alerte=False)
         jeu.update(seq=seq, ex=ex, indice=ind, alertes=al, voir_indice=False, tout_voir=False, affiche=jeu["affiche"] + 1); vue_jouer.refresh()
         jeu_garder()
         await reveler()
 
+    def ordre_jouer(data):
+        """Les donnes dans l'ordre où les jouer : celui où le joueur choisi les a jouées (Options), sinon par numéro."""
+        donnes = data["donnes"]
+        if place_jouer() == "joueur" and lire_etat().get("ordre_joueur"):
+            donnes = moi.ordre_des_donnes(data, moi.paires(data, joueur_jouer()))
+        return [x["n"] for x in donnes if not x.get("a_completer")]
+
     def jeu_suivante(data, d):
-        ns = [x["n"] for x in data["donnes"] if not x.get("a_completer")]
+        ns = ordre_jouer(data)
         k = ns.index(d["n"]); aller(f"d{ns[(k + 1) % len(ns)]}")
 
     COUL_BOITE = {"SA": "sa", "♠": "pique", "♥": "coeur", "♦": "carreau", "♣": "trefle"}   # les couleurs des cartons
@@ -1475,7 +1638,15 @@ def page():
         """Les enchères encore possibles, à partir du palier le plus bas, quatre paliers au plus ; le dernier bouton,
         « … », montre les autres. Les enchères dépassées ne s'affichent pas."""
         ok = jouer.legales(jeu["seq"], d["donneur"])
-        niveaux = sorted({int(b[0]) for b in ok if b[0].isdigit()})
+        rang = lambda b: int(b[0]) * 5 + jouer.DENOMS.index(b[1:])
+        # comme une vraie boîte (l'utilisateur, 2026-11-11) : votre dernière enchère et tous les cartons en dessous sont
+        # sortis (posés sur la table) ; ceux que les enchères des autres ont dépassés restent, en gris pâle
+        miennes = [b for k, b in enumerate(jeu["seq"]) if siege_de(d, k) == jeu["siege"] and b and b[:1].isdigit()]
+        sortis = rang(miennes[-1]) if miennes else 0
+        legaux = sorted({int(b[0]) for b in ok if b[0].isdigit()})
+        if not legaux: return
+        presents = [n for n in range(1, 8) if any(rang(f"{n}{den}") > sortis for den in jouer.DENOMS)]
+        niveaux = [n for n in presents if n >= legaux[0] - 1]   # au plus un palier tout en gris au-dessus des cartons
         tout = jeu.get("tout_voir") or len(niveaux) <= 4
         montres = niveaux if tout else niveaux[:4]
         with ui.element("div").classes("boite-encheres"):              # une boîte à enchères : les cartons debout, derrière
@@ -1487,22 +1658,26 @@ def page():
                             if b in ok:
                                 ui.html(f"<div class='tirette {COUL_BOITE[den]}'>{n}{den}</div>", sanitize=False) \
                                     .on("click", lambda b=b: jeu_annonce(d, b))
+                            elif rang(b) > sortis:              # dépassée par les autres : encore dans la boîte, en gris
+                                ui.html(f"<div class='tirette depassee'>{n}{den}</div>", sanitize=False)
                             else:
                                 ui.html("<div class='tirette vide'></div>", sanitize=False)
                 if not tout:
                     ui.html("<div class='tirette autres'>… les autres enchères</div>", sanitize=False) \
                         .on("click", lambda: (jeu.update(tout_voir=True), vue_jouer.refresh()))
-            with ui.row().classes("gap-1 no-wrap compartiment"):         # devant : Passe, X, XX, chacun avec son onglet
+            with ui.column().classes("gap-1 compartiment"):             # devant : Passe, X, XX, chacun avec son onglet
+              with ui.row().classes("gap-1 no-wrap justify-center w-full"):
                 for b, nom, tab in (("passe", "PASS", "PASS"), ("contre", "X", "X"), ("surcontre", "XX", "XX")):
                     el = ui.html(f"<div class='onglet {b}{'' if b in ok else ' eteint'}' data-tab='{tab}'>{nom}</div>", sanitize=False)
                     if b in ok: el.on("click", lambda b=b: jeu_annonce(d, b))
-        with ui.row().classes("gap-2 no-wrap a-cote"):                 # à côté de la boîte : Stop et Alerte, hors des enchères
-            ui.html(f"<div class='onglet stop{' pose' if jeu.get('stop') else ''}' data-tab='S' title='Avant un saut'>STOP</div>", sanitize=False) \
-                .on("click", lambda: (jeu.update(stop=not jeu.get("stop")), vue_jouer.refresh()))
-            a = alerte_due(d)
-            if a and jeu.get("alerte_faite") != a[0]:              # seulement quand l'enchère du partenaire s'alerte
-                ui.html("<div class='onglet alerte' data-tab='A' title='Votre partenaire a fait une enchère artificielle'>ALERT</div>", sanitize=False) \
-                    .on("click", lambda k=a[0]: (jeu.update(alerte_faite=k), vue_jouer.refresh()))
+              # Stop et Alerte : dans la boîte aussi, sur un second rang (l'utilisateur, 2026-11-11) : ce ne sont pas des enchères
+              with ui.row().classes("gap-1 no-wrap justify-center w-full"):
+                ui.html(f"<div class='onglet stop{' pose' if jeu.get('stop') else ''}' data-tab='S' title='Avant un saut'>STOP</div>", sanitize=False) \
+                    .on("click", lambda: (jeu.update(stop=not jeu.get("stop")), vue_jouer.refresh()))
+                # Alerte : posée avant votre enchère artificielle (l'utilisateur, 2026-11-11) ; sans elle, l'enchère est reprise
+                ui.html(f"<div class='onglet alerte{' pose' if jeu.get('alerte') else ''}' data-tab='A' "
+                        "title='Avant une enchère artificielle'>ALERT</div>", sanitize=False) \
+                    .on("click", lambda: (jeu.update(alerte=not jeu.get("alerte")), vue_jouer.refresh()))
 
     # ---------------------------------------------------------------- le jeu de la carte
     def carte_demarrer(d):
@@ -1699,8 +1874,7 @@ def page():
             if demo_: return out
             if x == jeu["siege"] and jeu.get("stop"):
                 out += "<div class='carton carre stop a-part derniere'><div class='face'><span class='tab gauche'></span><span class='base mot'>"+lettres('STOP')+"</span></div></div>"
-            a = alerte_due(d) if x == jeu["siege"] else None
-            if a and jeu.get("alerte_faite") == a[0]:
+            if x == jeu["siege"] and jeu.get("alerte"):
                 out += "<div class='carton carre alerte a-part derniere'><div class='face'><span class='tab'></span><span class='base mot'>"+lettres('ALERT')+"</span></div></div>"
             return out
         def pile(x, ou):
@@ -1758,7 +1932,7 @@ def page():
                             rangs = list(cartes.get(coul, "")) or [None]
                             if cote == "droite": rangs = rangs[::-1]    # à droite, la plus forte contre le bord
                             for r in rangs:
-                                if r is None: ui.html(f"<div class='carte vide'>{rouge(coul)}</div>", sanitize=False)
+                                if r is None: ui.html(f"<div class='carte vide'>{coul}</div>", sanitize=False)
                                 else: carte_el(coul, r, jouables, sur_clic)
                 if cote == "gauche" and posee: ui.html(posee, sanitize=False)
             return
@@ -1768,7 +1942,7 @@ def page():
                 for coul in ordre:
                     with ui.column().classes("gap-0 colonne-mort"):
                         if not cartes.get(coul):
-                            ui.html(f"<div class='carte vide'>{rouge(coul)}</div>", sanitize=False)
+                            ui.html(f"<div class='carte vide'>{coul}</div>", sanitize=False)
                         for r in cartes.get(coul, ""):
                             carte_el(coul, r, jouables, sur_clic)
             if posee and cote != "bas": ui.html(posee, sanitize=False)
@@ -1782,7 +1956,7 @@ def page():
             for coul in ORDRE_MAIN:
                 rangs = cartes.get(coul, "")
                 if colonnes and not rangs:
-                    ui.html(f"<div class='carte vide'>{rouge(coul)}</div>", sanitize=False); continue
+                    ui.html(f"<div class='carte vide'>{coul}</div>", sanitize=False); continue
                 if not rangs: continue                         # une chicane en ligne : rien, pas même une marge
                 with ui.row().classes("no-wrap gap-0 groupe" + (" colonne" if colonnes else "")):
                     for r in rangs: carte_el(coul, r, jouables, sur_clic)
@@ -1811,31 +1985,36 @@ def page():
                     .props(f'data-donne="{d["n"]}-{bas}"'):             # rétrécit avec la fenêtre (JS_AJUSTE) ; JS_GLISSE
             ecoule = time.monotonic() - jeu.get("tourne", -99)   # la table qui tourne : le demi-tour reprend où il en était
             tourne = f"animation:tourne {TOURNE}s ease-in-out;animation-delay:-{ecoule:.2f}s" if ecoule < TOURNE else ""
+            noms = jeu.get("noms") or {}
+            v = d["vul"]; vul = lambda x: v == "Tous" or v == ("N-S" if x in "NS" else "E-O")
+            def place(x, ou):                            # le nom du joueur (s'il est connu), puis sa main
+                if noms.get(x): ui.html(plaque_html(noms[x], vul(x)), sanitize=False)
+                contenu(x, ou)
             with ui.grid(columns="auto auto auto" if large else "1fr auto 1fr").style(tourne) \
                     .classes("items-center gap-x-2 gap-y-4"):            # les mains des côtés contre la table
                 with ui.column().classes("items-center").style("grid-column: 1 / 4"):
-                    if "haut" not in sur_table: contenu(haut, "haut")
+                    if "haut" not in sur_table: place(haut, "haut")
                 with ui.column().classes("items-end"):
-                    if "gauche" not in sur_table: contenu(gauche, "gauche")
+                    if "gauche" not in sur_table: place(gauche, "gauche")
                 with ui.column().classes("items-center gap-4").style(       # la table, carrée comme une vraie, à la taille de la fenêtre
                         f"{forme}background:#f3efe7;border:1px solid #e3dccf;border-radius:28px;padding:12px 16px;"
                         "justify-content:space-between;position:relative"):
-                    if "haut" in sur_table: contenu(haut, "haut")
+                    if "haut" in sur_table: place(haut, "haut")
                     for ou, x in (("gauche", gauche), ("droite", droite)):   # le mort d'un côté : sur la table, contre son bord
                         if ou in sur_table:
                             with ui.element("div").style(f"position:absolute;{'left' if ou == 'gauche' else 'right'}:14px;"
                                                          "top:50%;transform:translateY(-50%);z-index:2"):
-                                contenu(x, ou)
+                                place(x, ou)
                     if centre: centre()
                     if tour in places:
                         ui.html(f"<div class='fleche-tour {dict(zip(places, ('haut', 'gauche', 'droite', 'bas')))[tour]}'></div>",
                                 sanitize=False)
-                    if "bas" in sur_table: contenu(bas, "bas")
+                    if "bas" in sur_table: place(bas, "bas")
                 with ui.column().classes("items-start"):
-                    if "droite" not in sur_table: contenu(droite, "droite")
+                    if "droite" not in sur_table: place(droite, "droite")
                 with ui.column().classes("items-center").style(
                         "grid-column: 1 / 4" + ("" if "bas" in sur_table else ";margin-top:12px")):
-                    if "bas" not in sur_table: contenu(bas, "bas")             # votre main, un peu en retrait de la table
+                    if "bas" not in sur_table: place(bas, "bas")             # votre main, un peu en retrait de la table
 
     def mains_fr(d, x):
         return dict(zip(carte.COULEURS, ("" if m == "-" else m for m in d["mains"][x].split())))
@@ -1883,14 +2062,8 @@ def page():
         return out
 
     def tete_donne(d):
-        """En haut de la barre de droite de Jouer : la donne, son carré (comme sur le site de la FFB), donneur et
-        vulnérabilité, puis le choix Jouer | Démonstration."""
-        with ui.row().classes("w-full items-center justify-between no-wrap"):
-            ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
-            ui.html(carre_donne(d), sanitize=False)
-        ui.html(f"<div style='font-size:16px;line-height:1.5'>Donneur : <b>{SIEGE[d['donneur']]}</b><br>"
-                f"Vulnérabilité : <b>{VUL_TXT.get(d.get('vul'), d.get('vul', ''))}</b></div>", sanitize=False)
-        ui.toggle({"jouer": "Jouer", "demo": "Démonstration"}, value=jeu.get("mode") or "jouer",
+        """En haut de la barre de droite de Jouer : le choix Jouer | Démonstration (la donne est au-dessus de la table)."""
+        ui.toggle({"jouer": "Jouer", "demo": "Démo"}, value=jeu.get("mode") or "jouer",
                   on_change=lambda ev: (jeu.update(mode=ev.value), ecrire_etat(mode_jouer=ev.value), vue_jouer.refresh())) \
             .props("no-caps unelevated toggle-color=primary color=white text-color=grey-9").classes("text-base")
 
@@ -1956,7 +2129,7 @@ def page():
         clic = lambda y: demo_essayer(m, j, (y[0], y[1].translate(carte.EN)))
         with ui.row().classes("w-full no-wrap items-start gap-4").style(f"padding-right:{LARGEUR_PANNEAU}px"):
             with ui.column().classes("grow min-w-0 gap-2 relative"):
-                outils_table()
+                outils_table(d)
                 if q is None or not en_jeu:                 # les enchères : les mains entières, les cartons sur la table
                     def contenu(x, ou):
                         if q is not None and voir_dm and x == q.au_trait():   # l'entame au double mort
@@ -1971,7 +2144,10 @@ def page():
                     def centre():
                         ui.html(f"<div style='position:absolute;inset:0;pointer-events:none'><div style='position:absolute;left:50%;top:50%;"
                                 f"transform:translate(-50%,-50%);z-index:0'>{etui(d, places, petit=True, pale=True)}</div>"
-                                f"{pli_cartes(q, places, posees, mort=q.mort())}</div>", sanitize=False)
+                                f"{pli_cartes(q, places, posees, mort=q.mort())}"
+                                + "".join(plis_gardes(q, x, ou) for x, ou in zip(places, ("haut", "gauche", "droite", "bas"))
+                                          if x != q.mort())      # les plis gardés devant chacun, comme dans Jouer (pas le mort)
+                                + "</div>", sanitize=False)
                     tour = None if q.fini() else q.au_trait()
                     def contenu(x, ou):
                         reste = {kk: "".join(r_.translate(carte.FR) for r_ in vv) for kk, vv in q.pos.reste[x].items()}
@@ -1986,24 +2162,27 @@ def page():
             with panneau_droit():
                 appliquer_plein()
                 tete_donne(d)
+                fin = m.fini() and k >= m.n_pas()
+                # les mêmes boutons de magnétoscope que Jouer (magneto), au même endroit ; ici ⏮ le début, ◀◀ un pas en
+                # arrière, ▶ un pas en avant (l'utilisateur, 2026-11-11 : la même allure, pas forcément le même sens)
+                with ui.row().classes("gap-2 items-center no-wrap"):
+                    ui.button(icon="skip_previous", on_click=lambda: demo_aller(0)).props("outline") \
+                        .tooltip("Au début").set_enabled(k > 0 and not jeu.get("demo_occupe"))
+                    ui.button(icon="fast_rewind", on_click=lambda: demo_aller(k - 1)).props("outline") \
+                        .tooltip("Un pas en arrière (flèche ←)").set_enabled(k > 0 and not jeu.get("demo_occupe"))
+                    ui.button(icon="play_arrow", on_click=lambda: demo_aller(k + 1)).props("unelevated") \
+                        .tooltip("Un pas en avant (flèche →)").set_enabled(not fin and not jeu.get("demo_occupe"))
                 if not m.decl:
                     ui.label("La donne se passe : rien à montrer au jeu de la carte.").classes("text-base")
                 else:
                     src = {"expert": "de l'Expert", "standard": "du Coach", "moteur": "du moteur"}[m.source]
                     ui.html(f"<div style='font-size:16px'><b>{rouge(m.contrat)}</b> par {SIEGE[m.decl]} · enchères {src}</div>",
                             sanitize=False)
-                # où l'on en est, et les flèches
+                # où l'on en est
                 if k == 0: ou_txt = "Avant les enchères"
                 elif k <= m.n_encheres: ou_txt = f"Enchère {k} sur {m.n_encheres}"
                 else: ou_txt = f"Pli {j // 4 + 1} · carte {j % 4 + 1}"
                 ui.label(ou_txt).classes("text-base font-bold")
-                fin = m.fini() and k >= m.n_pas()
-                with ui.row().classes("gap-2 no-wrap items-center"):
-                    ui.button(icon="first_page", on_click=lambda: demo_aller(0)).props("outline").tooltip("Au début").set_enabled(k > 0)
-                    ui.button(icon="chevron_left", on_click=lambda: demo_aller(k - 1)).props("outline size=lg") \
-                        .tooltip("Reculer (flèche ←)").set_enabled(k > 0 and not jeu.get("demo_occupe"))
-                    ui.button(icon="chevron_right", on_click=lambda: demo_aller(k + 1)).props("unelevated size=lg") \
-                        .tooltip("Avancer (flèche →)").set_enabled(not fin and not jeu.get("demo_occupe"))
                 if jeu.get("demo_msg"): ui.label(jeu["demo_msg"]).classes("text-base pense")
                 if m.decl:
                     ui.switch("Double mort", value=bool(jeu.get("demo_dm")),
@@ -2033,7 +2212,10 @@ def page():
                             "meilleure ; un clic sur une carte l'essaie.</div>", sanitize=False)
                 if 0 < k:
                     with ui.expansion("Les enchères").props("dense header-class='text-primary text-sm px-1'").classes("w-full"):
-                        ui.html(grille_html(jouer.grille(m.seq[:min(k, m.n_encheres)], d["donneur"]), d.get("vul")), sanitize=False)
+                        n_ = min(k, m.n_encheres); i0 = jouer.ROT.index(d["donneur"])
+                        ui.html(grille_html(jouer.grille(m.seq[:n_], d["donneur"]), d.get("vul"),
+                                            sens={i: (jouer.ROT[(i0 + i) % 4], m.explications[i] if i < len(m.explications) else "", False)
+                                                  for i in range(n_)}), sanitize=False)
         marques_dm.clear()
 
     plein = {"on": False}                                 # Jouer, « table seule » : sans les barres ni les onglets
@@ -2053,20 +2235,21 @@ def page():
         plein["on"] = not plein["on"]
         entete.set_value(not plein["on"]); montrer_barre(); vue_jouer.refresh()
 
-    def pas_taille(k):
-        """A− / A+ à côté de la table : la taille du texte d'un cran, la même que dans Réglages."""
-        tailles = [t for t, _ in TAILLES]
-        i = max(0, min(len(tailles) - 1, tailles.index(taille_texte()) + k))
-        changer_taille(tailles[i])
-
-    def outils_table():
-        """En haut à droite de la table : la taille du texte (A− A+) et « table seule » (sans les barres)."""
-        z = taille_texte(); tailles = [t for t, _ in TAILLES]
-        with ui.row().classes("w-full gap-1 no-wrap items-center justify-end").style("margin-bottom:-8px"):   # sa ligne à lui, au-dessus de la table
-            ui.button("A−", on_click=lambda: pas_taille(-1)).props("flat dense no-caps color=grey-8") \
-                .classes("text-base font-bold").tooltip("Texte plus petit").set_enabled(z > tailles[0])
-            ui.button("A+", on_click=lambda: pas_taille(1)).props("flat dense no-caps color=grey-8") \
-                .classes("text-lg font-bold").tooltip("Texte plus grand").set_enabled(z < tailles[-1])
+    def outils_table(d):
+        """Au-dessus de la table, sur sa ligne : la donne, son donneur et sa vulnérabilité (ôtés de la barre de droite pour
+        lui laisser la place ; le petit carré de la FFB aussi : il répétait l'étui), et à droite « table seule » (sans les
+        barres). Les cartes grandissent avec la place (l'utilisateur, 2026-11-11)."""
+        with ui.row().classes("w-full gap-4 no-wrap items-center").style("margin-bottom:-8px;white-space:nowrap"):
+            ui.label(f"Donne {d['n']}").classes("text-xl font-bold")
+            ui.html(f"<div style='font-size:17px'>Donneur : <b>{SIEGE[d['donneur']]}</b> · "
+                    f"Vulnérabilité : <b>{VUL_TXT.get(d.get('vul'), d.get('vul', ''))}</b></div>", sanitize=False)
+            if place_jouer() == "joueur":                  # comme un joueur de la séance : son tour, ses adversaires
+                pj = jeu.get("place_joueur")
+                if pj:                                     # les noms sont sur les plaques, au-dessus des mains
+                    if pj.get("tour"): ui.html(f"<div style='font-size:17px'>Tour <b>{pj['tour']}</b></div>", sanitize=False)
+                else:
+                    ui.html(f"<div style='font-size:17px;color:#6b6b6b'>{joueur_jouer()} n'a pas joué cette donne</div>", sanitize=False)
+            ui.space()
             ui.button(icon="fullscreen_exit" if plein["on"] else "fullscreen", on_click=basculer_plein) \
                 .props("flat dense round color=grey-8 size=lg") \
                 .tooltip("Revenir aux onglets et à la liste des donnes" if plein["on"] else "Table seule : sans les onglets ni la liste des donnes")
@@ -2085,12 +2268,44 @@ def page():
             ui.label("Le déclarant est celui de la séquence recommandée (l'analyse de l'expert, sinon la standard, sinon "
                      "les enchères du programme). Le choix vaut pour toutes les donnes et reste d'une fois sur l'autre.") \
                 .classes("text-base text-gray-700 max-w-2xl")
-            def changer(ev):
-                ecrire_etat(place_jouer=ev.value); jeu["cle"] = None   # les donnes repartent du début, à la nouvelle place
+            def repartir():
+                jeu["cle"] = None                            # les donnes repartent du début, à la nouvelle place
                 x = jouer.lire_essais(base_seance(c))
                 if x.pop("en_cours", None) is not None:
                     json.dump(x, open(jouer.fichier_jeu(base_seance(c)), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-            ui.radio(dict(jouer.PLACES), value=place_jouer(), on_change=changer).classes("text-base")
+            def changer(ev):
+                if ev.value is None: return                   # l'autre liste de choix qui se vide
+                ecrire_etat(place_jouer=ev.value); repartir(); barre_seance.refresh(); vue_jouer.refresh()
+            places_ = dict(jouer.PLACES); cle1 = next(iter(places_))   # « comme un joueur » en premier, ses réglages juste dessous
+            ui.radio({cle1: places_[cle1]}, value=place_jouer() if place_jouer() == cle1 else None, on_change=changer).classes("text-base")
+            if place_jouer() == "joueur":                    # quel joueur, et dans quel ordre
+                noms_seance = sorted({j["nom"].strip() for v in (data.get("joueurs") or {}).values() for j in v
+                                      if (j.get("nom") or "").strip()}, key=str.lower)
+                if not noms_seance:
+                    ui.label("Cette séance ne garde pas le nom des joueurs : le choix n'est pas possible.").classes("text-base text-gray-700")
+                else:
+                    actuel = joueur_jouer() if joueur_jouer() in noms_seance else noms_seance[0]
+                    mien = lire_etat().get("mon_nom")
+                    opts = ({mien: f"{mien} (vous)", SEPARATEUR: "──────────"} if mien in noms_seance else {})
+                    opts.update({x: x for x in noms_seance if x != mien})
+                    def choisir_joueur(ev):
+                        if ev.value == SEPARATEUR: ev.sender.value = joueur_jouer(); return
+                        ecrire_etat(joueur_jouer=ev.value); repartir(); barre_seance.refresh(); vue_jouer.refresh()
+                    with ui.column().classes("gap-2 ml-8 max-w-md"):
+                        ui.select(opts, value=actuel, with_input=True, on_change=choisir_joueur).classes("w-full") \
+                            .props("outlined dense") \
+                            .props(":option-disable=\"o => typeof o.label === 'string' && o.label.startsWith('───')\"")
+                        ui.checkbox("Dans l'ordre où ce joueur a joué les donnes", value=bool(lire_etat().get("ordre_joueur")),
+                                    on_change=lambda ev: (ecrire_etat(ordre_joueur=ev.value), vue_jouer.refresh())).classes("text-base")
+                        ui.label("Tour après tour : « Donne suivante », à la fin de chaque donne, suit cet ordre ; les donnes qu'il "
+                                 "n'a pas jouées viennent à la fin, jouées à la place du déclarant. Au-dessus des cartes : le nom "
+                                 "des quatre joueurs de sa table.").classes("text-base text-gray-700")
+                        premiere = (ordre_jouer(data) or [None])[0]
+                        if premiere is not None:
+                            ui.button(f"Aller à la première donne (donne {premiere})", icon="arrow_forward",
+                                      on_click=lambda n=premiere: aller(f"d{n}")).props("unelevated no-caps").classes("text-base mt-1")
+            ui.radio({k: v for k, v in places_.items() if k != cle1}, value=place_jouer() if place_jouer() != cle1 else None,
+                     on_change=changer).classes("text-base")
             ui.label("Quand l'autre camp gagne le contrat, vous jouez la carte en défense : le programme tient le déclarant, "
                      "son mort et votre partenaire.").classes("text-base text-gray-700")
             return
@@ -2098,8 +2313,12 @@ def page():
             page_classement(c, data, aller); return
         d = next(x for x in data["donnes"] if f"d{x['n']}" == e)
         if jeu.get("mode") == "demo":                    # la démonstration, pour un cours : une vue à part
+            pj = moi.place_du_joueur(data, d, joueur_jouer()) if place_jouer() == "joueur" else None
+            jeu["noms"] = (pj or {}).get("noms") or {}; jeu["place_joueur"] = pj
             vue_demo(c, d, data); return
         if jeu["cle"] != (c, d["n"]): jeu_depart(c, d)
+        pj = moi.place_du_joueur(data, d, joueur_jouer()) if place_jouer() == "joueur" else None
+        jeu["noms"] = (pj or {}).get("noms") or {}; jeu["place_joueur"] = pj
         s = jeu["siege"]; part = jouer.PART[s]
         p = jeu["partie"]
         # vos cartes toujours en bas ; la table et l'étui tournent avec vous. Vous tenez le déclarant et son mort, et vous
@@ -2121,38 +2340,35 @@ def page():
 
         with ui.row().classes("w-full no-wrap items-start gap-4").style(f"padding-right:{LARGEUR_PANNEAU}px"):
             with ui.column().classes("grow min-w-0 gap-2 relative"):     # la table
-                outils_table()
+                outils_table(d)
                 if p:
                     vue_carte(c, d, data, places)
                 else:
                     def contenu(x, ou):
                         if x == s or montrer:
                             eventail(mains_fr(d, x), colonnes=ou in ("gauche", "droite"), grande=x == s,
-                                     a_vous=x == s and not fini and not attente)
+                                     a_vous=x == s and not fini and not attente and not jeu.get("attend"))
                         else: dos(ou, 13)
                     table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False),
-                          tour=jeu["pense"] if attente else (s if not fini else None))
+                          tour=None if jeu.get("attend") else jeu["pense"] if attente else (s if not fini else None))
             with panneau_droit():                                                         # la barre de droite : l'essentiel
                 appliquer_plein()
                 tete_donne(d)
-                ui.label(f"Vous jouez {SIEGE[s]}").classes("text-base text-gray-700")
+                magneto(c, d)
                 if p and not p.fini():                          # pendant le jeu, les cartons sont rangés : l'étui reste sur la table
                     with ui.row().classes("w-full justify-center"):
                         ui.html(etui(d, places, petit=True), sanitize=False)
                     with ui.expansion("Revoir les enchères").props("dense header-class='text-primary text-sm px-1'").classes("w-full"):
-                        ui.html(grille_html(jouer.grille(jeu["seq"], d["donneur"]), d["vul"])
+                        ui.html(grille_html(jouer.grille(jeu["seq"], d["donneur"]), d["vul"], sens=sens_jouer())
                                 .replace("border-collapse:collapse", "border-collapse:separate;border-spacing:4px 0"), sanitize=False)
                 else:
                     with ui.element("div").classes("w-full rounded-xl border border-gray-200 bg-white p-2"):
                         vues = jeu["seq"] if p else jeu["seq"][:jeu["affiche"]]
-                        ui.html(grille_html(jouer.grille(vues, d["donneur"], not fini and not attente and not p), d["vul"])
+                        ui.html(grille_html(jouer.grille(vues, d["donneur"], not fini and not attente and not p), d["vul"],
+                                            sens=sens_jouer(len(vues)))
                                 .replace("border-collapse:collapse", "border-collapse:separate;border-spacing:4px 0"), sanitize=False)
-                        autres = [(x, b, t_) for x, b, t_ in jeu["ex"][:jeu["affiche"]] if x != s and t_]
-                        if autres:                                  # un petit lien sous la grille
-                            with ui.expansion("Le sens des enchères").props("dense header-class='text-primary text-sm px-1'") \
-                                    .classes("w-full mt-1"):
-                                for x, b, t_ in autres:
-                                    ui.html(f"<div style='font-size:16px'><b>{SIEGE[x]} {rouge(b)}</b> : {rouge(t_)}</div>", sanitize=False)
+                        if any(t_ for _x, _b, t_ in jeu["ex"][:len(vues)]):
+                            ui.label("Touchez une enchère pour son sens.").classes("text-sm text-gray-600 mt-1 px-1")
                 if p:
                     vous, defense = p.levees()
                     ui.label(f"{p.contrat} par {SIEGE[p.decl]}").classes("text-base font-bold")
@@ -2172,31 +2388,26 @@ def page():
                             for k, (pli, g) in enumerate(p.plis, 1):
                                 ui.html(f"<div style='font-size:16px'>Pli {k} : " + " · ".join(f"{SIEGE[x][0]} {rouge(carte.carte_fr(cc, r))}" for x, cc, r in pli)
                                         + f" — {SIEGE[g]}</div>", sanitize=False)
+                elif jeu.get("attend"):
+                    ui.label("Appuyez sur ▶ pour commencer : les enchères partent du donneur.").classes("text-base text-gray-700")
                 elif not fini and not attente:
                     boite_encheres(d)
-                    ui.button("Masquer l'indice" if jeu["voir_indice"] else "Indice", icon="lightbulb",
-                              on_click=lambda: (jeu.update(voir_indice=not jeu["voir_indice"]), vue_jouer.refresh())) \
-                        .props(("unelevated" if jeu["voir_indice"] else "outline") + " dense no-caps")   # sous la boîte, juste au-dessus de son texte
+                    with ui.row().classes("w-full justify-end"):  # sous la boîte, à droite : son texte se lit juste dessous
+                        ui.button("Masquer l'indice" if jeu["voir_indice"] else "Indice", icon="lightbulb",
+                                  on_click=lambda: (jeu.update(voir_indice=not jeu["voir_indice"]), vue_jouer.refresh())) \
+                            .props(("unelevated" if jeu["voir_indice"] else "outline") + " dense no-caps")
                     if jeu["voir_indice"]:
                         ui.html(f"<div style='font-size:15px'>Le système dirait <b>{rouge(jeu['indice']['enchere'])}</b> : "
                                 f"{rouge(jeu['indice']['texte'])}</div>", sanitize=False)
-                    a = alerte_due(d)
-                    if a and jeu.get("alerte_faite") == a[0]:
-                        ui.html(f"<div style='font-size:15px'><b>Alerte</b> : {rouge(a[1])} de votre partenaire"
-                                + (f" — {rouge(a[2])}" if a[2] else "") + "</div>", sanitize=False)
                     if jeu.get("note"):
                         ui.html(f"<div style='font-size:15px;color:#8a5a00'>{rouge(jeu['note'])}</div>", sanitize=False)
                 elif a_jouer:
                     ui.button(f"Jouer {c_} par {SIEGE[decl]}" if jouer.camp(decl) == jouer.camp(s) else f"Défendre contre {c_} par {SIEGE[decl]}",
                               icon="style", on_click=lambda: carte_demarrer(d)).classes("w-full")
                     ui.button("Voir les mains sans jouer", on_click=lambda: (jeu.update(sans_jouer=True), jeu_garder(), vue_jouer.refresh())).props("flat no-caps dense")
-                if (p and not p.fini()) or (not p and not fini and any(siege_de(d, k) == s for k in range(len(jeu["seq"])))):   # revenir au début, en cours de route
-                    with ui.column().classes("w-full gap-1 mt-3"):
-                        if p:
-                            ui.button("Reprendre le jeu de la carte", icon="replay", on_click=lambda: carte_demarrer(d)) \
-                                .props("flat no-caps dense align=left").classes("text-sm")
-                        ui.button("Recommencer les enchères", icon="restart_alt", on_click=lambda: jeu_recommencer_encheres(c, d)) \
-                            .props("flat no-caps dense align=left").classes("text-sm")
+                if p and not p.fini():                          # le jeu de la carte depuis la première carte (⏮ : toute la donne)
+                    ui.button("Reprendre le jeu de la carte", icon="replay", on_click=lambda: carte_demarrer(d)) \
+                        .props("flat no-caps dense align=left").classes("text-sm mt-3")
 
         if fini and not jeu["garde"]:
             jouer.enregistrer(base_seance(c), d["n"], s, jeu["seq"], d["donneur"]); jeu["garde"] = True; barre_seance.refresh()
@@ -2245,8 +2456,9 @@ def page():
         posees = {x: (cc, r_.translate(carte.FR)) for x, cc, r_ in pli}
         def centre():
             ui.html(f"<div style='position:absolute;inset:0;pointer-events:none'><div style='position:absolute;left:50%;top:50%;"
-                    f"transform:translate(-50%,-50%);z-index:0'>{etui(d, places, petit=True, pale=True)}</div>{pli_cartes(q, places, posees, mort=q.mort())}</div>",
-                    sanitize=False)
+                    f"transform:translate(-50%,-50%);z-index:0'>{etui(d, places, petit=True, pale=True)}</div>{pli_cartes(q, places, posees, mort=q.mort())}"
+                    + "".join(plis_gardes(q, x, ou) for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x != q.mort())
+                    + "</div>", sanitize=False)
         def contenu(x, ou):
             reste = {kk: "".join(r_.translate(carte.FR) for r_ in v) for kk, v in q.pos.reste[x].items()}
             if x == q.mort(): mort_etale(reste, None, None, q.den, ou, carte_posee(*posees[x]) if x in posees else "")
@@ -2441,7 +2653,7 @@ def page():
     PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"),   # (Importer : une des trois façons de Nouveau)
                          ("exporter", "Exporter en PBN"), ("dossier", "Ouvrir le dossier de travail")],
              "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance")],   # (le bilan : bilan.py, à la main)
-             "Réglages": [("affichage", "Taille du texte"), ("nom", "Votre nom"), ("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
+             "Réglages": [("affichage", "Taille du texte"), ("nom", "Votre nom"), ("photos", "Photos des joueurs"), ("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
     vue_page = {"Fichier": "nouveau" if PAGE.get("fichier") == "importer" else
                            PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "exporter", "dossier") else "ouvrir",
                 "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance") else "creer",
@@ -2496,9 +2708,10 @@ def page():
         """Les entrées de la barre latérale : la séance, puis (onglet Donnes) les joueurs et les alertes, puis chaque donne."""
         if sur_jouer():                                   # Jouer : les donnes seules, et celles déjà enchéries
             faits = jouer.lire_essais(base_seance(choix["chemin"]))["donnes"]
+            donnes = data["donnes"]                   # par numéro, toujours (l'ordre joué : Options et « Donne suivante »)
             return [("options", "Options"), ("classement", "Classement")] + [(f"d{d['n']}", f"Donne {d['n']}" + (" · jouée" if classement.dernier_fini(faits.get(str(d["n"])))
                                                                                        else " · enchérie" if faits.get(str(d["n"])) else ""))
-                                                for d in data["donnes"] if not d.get("a_completer")]
+                                                for d in donnes if not d.get("a_completer")]
         haut = [("standard", "Analyse standard"), ("expert", "Analyse expert")] if sur_analyse() else \
             [("seance", "Séance"), ("joueurs", "Joueurs")]   # toujours deux entrées : Donne 1 à la même hauteur partout
         return haut + [(f"d{d['n']}", f"Donne {d['n']}") for d in data["donnes"]]
@@ -2535,7 +2748,7 @@ def page():
     def maj_rapports():
         if T.actif or D.actif or I.actif or not choix["chemin"]: return
         vu["fini"] = None; faute.text = ""; faute_r.text = ""; fait_a.text = ""
-        lancer_rapports(choix["chemin"], noms.value)
+        lancer_rapports(choix["chemin"], noms.value, revoir.value)
         resultats.refresh(); montrer_controles()
 
     def preparer_expert(c):
@@ -2671,7 +2884,7 @@ def page():
                 faute_i = ui.label("").classes("text-base text-red-800")
                 vue_seance()
 
-            with ui.tab_panel(o_jouer).classes("px-0"):
+            with ui.tab_panel(o_jouer).classes("px-0 pt-0"):   # en haut, la marge de gauche seulement (l'utilisateur, 2026-11-11)
                 vue_jouer()
 
             with ui.tab_panel(o_analyse).classes("px-0 gap-3"):
@@ -2708,6 +2921,10 @@ def page():
                     ui.label("Quand Claude a rédigé l'analyse de la séance (onglet Analyse, « Analyse expert ») : son avis, en "
                              "vert, après le conseil du coach.").classes("text-base text-gray-700 -mt-2")
                     noms = ui.checkbox("Ajouter une page avec le nom des joueurs").classes("text-base")
+                    revoir = ui.checkbox("Seulement les donnes à revoir").classes("text-base")
+                    ui.label("Quand « Vous êtes » est choisi : « Vous face au champ », puis seulement les donnes où vous "
+                             "pouviez faire mieux, la plus coûteuse d'abord. Un rapport à part : l'analyse complète reste.") \
+                        .classes("text-base text-gray-700 -mt-2")
                     creer_r = ui.button("Créer les rapports", icon="picture_as_pdf", on_click=lambda: maj_rapports()).classes("text-base px-6 mt-2")
                     besoin_r = ui.label("").classes("text-base text-gray-700")
                     barre_r = ui.linear_progress(value=0, show_value=False).props("size=16px rounded")
@@ -2768,6 +2985,43 @@ def page():
                 if lire_etat().get("mon_nom") and lire_etat()["mon_nom"] not in noms_tous: noms_tous[lire_etat()["mon_nom"]] = lire_etat()["mon_nom"]
                 ui.select(noms_tous, value=lire_etat().get("mon_nom") or "", with_input=True, on_change=choisir_mon_nom) \
                     .classes("w-full").props("outlined dense")
+
+              with ui.column().classes("w-full gap-3") as pages_ui["photos"]:
+                ui.label("Photos des joueurs").classes("text-lg font-bold")
+                ui.label("Une photo pour vous ou pour un autre joueur : elle s'affiche dans son nom, au-dessus de ses cartes, quand "
+                         "vous jouez une donne « comme un joueur de la séance » (Jouer, Options). Les photos restent sur cet "
+                         "ordinateur.").classes("text-base text-gray-700")
+                photo_choix = {"nom": lire_etat().get("mon_nom") or ""}
+
+                @ui.refreshable
+                def photo_apercu():
+                    n_ = photo_choix["nom"]
+                    if not n_: ui.label("Choisissez d'abord un joueur.").classes("text-base text-gray-700"); return
+                    with ui.row().classes("items-center gap-4"):
+                        ui.html(plaque_html(n_, False), sanitize=False)
+                        if photo_uri(n_):
+                            def enlever(n_=n_):
+                                try: os.remove(fichier_photo(n_))
+                                except OSError: pass
+                                photo_apercu.refresh(); vue_jouer.refresh()
+                            ui.button("Enlever la photo", icon="delete", on_click=enlever).props("flat no-caps")
+
+                    async def recue(e, n_=n_):
+                        try:
+                            enregistrer_photo(n_, await e.file.read())
+                        except Exception:
+                            ui.notify("Cette image n'a pas pu être lue (JPEG, PNG, HEIC…).", type="warning"); return
+                        photo_apercu.refresh(); vue_jouer.refresh()
+                    ui.upload(label="Choisir une photo", on_upload=recue, auto_upload=True, max_files=1) \
+                        .props("accept=image/* flat bordered").classes("w-full max-w-md")
+
+                def choisir_photo(e):
+                    if e.value == SEPARATEUR: e.sender.value = photo_choix["nom"]; return
+                    photo_choix["nom"] = e.value or ""; photo_apercu.refresh()
+                ui.select(options_joueurs(), value=photo_choix["nom"], with_input=True, on_change=choisir_photo) \
+                    .classes("w-full max-w-md").props("outlined dense") \
+                    .props(":option-disable=\"o => typeof o.label === 'string' && o.label.startsWith('───')\"")
+                photo_apercu()
 
               with ui.column().classes("w-full gap-5") as pages_ui["dossiers"]:
                 ui.label("Dossiers").classes("text-lg font-bold")

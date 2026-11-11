@@ -203,3 +203,30 @@ def ordre_des_donnes(data, mes_paires):
     if str(m.get("paire", "")) not in {str(x) for x in mes_paires}: return donnes
     rang = {n: k for k, n in enumerate(n for t in m.get("tours") or [] for n in t["donnes"])}
     return sorted(donnes, key=lambda d: (rang.get(d["n"], len(rang)), d["n"]))
+
+
+def place_du_joueur(data, d, qui):
+    """Où était assis le joueur qui (son nom complet) à la donne d : {"siege": "N"|"S"|"E"|"O", "paire", "adversaires":
+    [deux noms], "tour": n° du tour ou None, "noms": {siège: nom} des quatre joueurs de sa table}, ou None s'il ne l'a pas jouée. Dans une paire, le premier joueur est Nord
+    (ou Est), le second Sud (ou Ouest), comme à la table de départ. Les noms complets restent sur l'ordinateur : l'onglet
+    Jouer les montre, rien ne part ailleurs (les initiales à défaut de nom)."""
+    q = (qui or "").strip().lower()
+    if not q: return None
+    joueurs = data.get("joueurs") or {}
+    for t in d.get("tables") or []:
+        for cote, autre, sieges in (("paire_ns", "paire_eo", "NS"), ("paire_eo", "paire_ns", "EO")):
+            k = str(t.get(cote))
+            noms = [(j.get("nom") or "").strip().lower() for j in joueurs.get(k, [])]
+            if q in noms:
+                i = noms.index(q)
+                adv = [j.get("nom") or j.get("initiales") or "?" for j in joueurs.get(str(t.get(autre)), [])]
+                tour = next((r["tour"] for r in (data.get("session") or {}).get("rondes") or []
+                             if d["n"] in r.get("donnes", []) and k in (str(r["ns"]), str(r["eo"]))), None)
+                nom_de = lambda j: j.get("nom") or j.get("initiales") or ""
+                noms = {}                                  # les quatre places : {siège: nom}
+                for paire, (a1, a2) in ((k, sieges), (str(t.get(autre)), "EO" if sieges == "NS" else "NS")):
+                    js = joueurs.get(paire, [])
+                    if len(js) > 0: noms[a1] = nom_de(js[0])
+                    if len(js) > 1: noms[a2] = nom_de(js[1])
+                return dict(siege=sieges[min(i, 1)], paire=k, adversaires=adv, tour=tour, noms=noms)
+    return None

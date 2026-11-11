@@ -84,10 +84,11 @@ def siege_par_defaut(d, analyses):
         return "S"
 
 
-PLACES = [("declarant", "Toujours le déclarant"), ("camp", "Toujours le camp du déclarant (déclarant ou mort)"),
+PLACES = [("joueur", "Comme un joueur de la séance (vous, ou un autre) : sa place à chaque donne"),   # en premier : le cas courant
+          ("declarant", "Toujours le déclarant"), ("camp", "Toujours le camp du déclarant (déclarant ou mort)"),
           ("defense", "Toujours en défense"), ("donneur", "Toujours le donneur"),
           ("N", "Toujours Nord"), ("S", "Toujours Sud"), ("E", "Toujours Est"), ("O", "Toujours Ouest"),
-          ("hasard", "Au hasard")]
+          ("hasard", "Au hasard")]   # « joueur » : app, moi.place_du_joueur
 
 
 def siege_choisi(mode, d, analyses, rnd=random):

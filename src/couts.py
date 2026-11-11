@@ -115,3 +115,18 @@ def bilan(donnes, an, mes, marque="MP"):
     gains.sort(key=lambda g: -g[2])
     return dict(perte=perte, encheres=enc, carte=carte, reste=reste, gains=gains[:3], n=len(lignes), seuil=seuil,
                 marque=marque, lignes=lignes)
+
+
+def a_revoir(b):
+    """Les donnes à revoir de bilan(b), la plus coûteuse d'abord : [(quoi "encheres"|"carte", ligne, coût)], une donne
+    pouvant y être deux fois (enchères et carte)."""
+    out = [("encheres", c, c["encheres"]) for c in b["encheres"]] + [("carte", c, c["carte"]) for c in b["carte"]]
+    return sorted(out, key=lambda x: -x[2])
+
+
+def numeros_a_revoir(b):
+    """Les numéros des donnes à revoir, dans l'ordre de a_revoir, chacun une fois."""
+    vus = []
+    for _, c, _ in a_revoir(b):
+        if c["n"] not in vus: vus.append(c["n"])
+    return vus

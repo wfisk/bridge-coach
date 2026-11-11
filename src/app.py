@@ -2434,10 +2434,11 @@ def page():
             with ui.tab_panel(o_fichier).classes("px-0 pt-0 max-w-3xl") as panneau_fichier, \
                     ui.column().classes("w-full gap-0") as pages_ui["nouveau"]:   # Fichier : ses pages, la première Nouveau
                 ui.label("Nouvelle séance").classes("text-lg font-bold")
-                ui.label("Trois façons de créer une séance :").classes("text-base text-gray-600")
-                FACONS = [("bws", "Un tournoi Bridgemate", "le fichier .bws du tournoi", "table_restaurant"),
-                          ("pbn", "Un fichier PBN", "des donnes de BBO, Funbridge, d'un autre logiciel…", "description"),
-                          ("themes", "Des donnes d'entraînement", "sur des thèmes choisis, ou une séance vide", "school")]
+                ui.html("Une séance Bridge Coach est un seul fichier, <b>.bc.json</b> : les donnes, les joueurs, les "
+                        "résultats et les analyses. Trois façons d'en créer une :", sanitize=False).classes("text-base text-gray-600")
+                FACONS = [("bws", "Importer un tournoi Bridgemate", "depuis le fichier .bws du tournoi", "table_restaurant"),
+                          ("pbn", "Importer un fichier PBN", "des donnes de BBO, Funbridge, d'un autre logiciel…", "description"),
+                          ("themes", "Créer des donnes d'entraînement", "sur des thèmes choisis, ou une séance vide", "school")]
                 sections_n = {}
 
                 def choisir_facon(k):
@@ -2463,7 +2464,8 @@ def page():
                 with ui.column().classes("w-full gap-0") as sections_n["themes"]:
                   ui.label("Choisissez des thèmes et combien de donnes de chacun ; sans thème, la séance est vide et vous tapez "
                            "les mains dans l'onglet Donnes. Les thèmes d'enchères et de jeu de la carte choisis ensemble sont "
-                           "réunis dans les mêmes donnes.").classes("text-base text-gray-600")
+                           "réunis dans les mêmes donnes. Elles sont créées dans une nouvelle séance .bc.json, avec un .pbn à côté "
+                           "pour Bridgemate.").classes("text-base text-gray-600")
                   quotas = {x: 0 for x in donnes.themes_tries()}
                   niveaux = set(lire_etat().get("niveaux") or [1])   # les niveaux montrés, gardés d'une fois sur l'autre
                   total = lambda: sum(k for _, k in donnes.combiner([(t, k) for t, k in quotas.items() if k]))
@@ -2566,8 +2568,10 @@ def page():
         ui.button("Choisir un fichier…", on_click=lambda: parcourir()).props("outline")
 
     with pages_ui["nouveau"], ui.column().classes("w-full gap-2") as sections_n["bws"]:   # Nouveau, depuis un tournoi Bridgemate
-        ui.label("Les tournois du dossier de Bridgemate, les plus récents d'abord. Le fichier devient une séance Bridge "
-                 "Coach ; le fichier d'origine n'est pas modifié.").classes("text-base text-gray-600")
+        ui.html("Bridge Coach <b>importe</b> les données du tournoi (donnes, joueurs, enchères, résultats) dans une "
+                "nouvelle séance <b>.bc.json</b>. Le fichier .bws est seulement lu : Bridge Coach n'y écrit jamais, et la "
+                "séance n'en a plus besoin ensuite (une copie est rangée avec elle).", sanitize=False).classes("text-base text-gray-600")
+        ui.label("Les tournois du dossier de Bridgemate, les plus récents d'abord :").classes("text-base mt-1")
         @ui.refreshable
         def liste_i():
             bws = reglages()[0][:10]
@@ -2583,9 +2587,11 @@ def page():
         ui.button("Choisir un fichier…", icon="folder_open", on_click=lambda: parcourir_i(TYPES_BWS, envoi_i)).props("outline").classes("self-start")
 
     with pages_ui["nouveau"], ui.column().classes("w-full gap-2") as sections_n["pbn"]:   # Nouveau, depuis un fichier PBN
-        ui.label("Un fichier .pbn (Portable Bridge Notation) : les donnes d'un tournoi, de BBO, de Funbridge ou d'un autre "
-                 "logiciel. Bridge Coach garde les mains, le donneur et la vulnérabilité, et, quand le fichier les donne, le "
-                 "contrat, les enchères, l'entame et le résultat d'une table. Le fichier d'origine n'est pas modifié.").classes("text-base text-gray-600")
+        ui.html("Un fichier .pbn (Portable Bridge Notation) : les donnes d'un tournoi, de BBO, de Funbridge ou d'un autre "
+                "logiciel. Bridge Coach <b>importe</b> les mains, le donneur et la vulnérabilité, et, quand le fichier les donne, "
+                "le contrat, les enchères, l'entame et le résultat d'une table, dans une nouvelle séance <b>.bc.json</b>. Le "
+                "fichier .pbn est seulement lu : Bridge Coach n'y écrit jamais (une copie est rangée avec la séance).",
+                sanitize=False).classes("text-base text-gray-600")
         envoi_p = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".pbn"').classes("hidden")
         ui.button("Choisir un fichier .pbn…", icon="folder_open", on_click=lambda: parcourir_i(TYPES_PBN, envoi_p)).props("unelevated").classes("self-start")
     for x, col in sections_n.items(): col.set_visibility(x == facon["k"])

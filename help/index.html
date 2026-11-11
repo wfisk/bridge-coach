@@ -45,13 +45,13 @@
 <h3>L'onglet Fichier et les séances</h3>
 <dl>
   <dt>Nouveau</dt>
-  <dd>Créer une séance, de trois façons :
+  <dd>Créer une séance : un seul fichier <code>.bc.json</code>, qui contient tout (donnes, joueurs, résultats, analyses). Trois façons :
     <ul>
-      <li><b>Un tournoi Bridgemate</b> : un <code>.bws</code> du dossier de Bridgemate (ceux déjà importés sont marqués), ou, par <b>Choisir un fichier…</b>, un <code>.bws</code> ou une feuille de route <code>.pdf</code> de FFBClubNet ailleurs sur l'ordinateur. Après un tournoi, l'onglet <b>Donnes</b> signale aussi le nouveau fichier de Bridgemate, avec un bouton <b>Importer</b>.</li>
-      <li><b>Un fichier PBN</b> : les donnes d'un tournoi, de BBO, de Funbridge ou d'un autre logiciel.</li>
-      <li><b>Des donnes d'entraînement</b> : sur des thèmes choisis, ou une séance vide à remplir à la main (voir « Les séances »).</li>
+      <li><b>Importer un tournoi Bridgemate</b> : Bridge Coach importe les données d'un <code>.bws</code> du dossier de Bridgemate (ceux déjà importés sont marqués), ou, par <b>Choisir un fichier…</b>, un <code>.bws</code> ou une feuille de route <code>.pdf</code> de FFBClubNet ailleurs sur l'ordinateur. Après un tournoi, l'onglet <b>Donnes</b> signale aussi le nouveau fichier de Bridgemate, avec un bouton <b>Importer</b>.</li>
+      <li><b>Importer un fichier PBN</b> : les donnes d'un tournoi, de BBO, de Funbridge ou d'un autre logiciel.</li>
+      <li><b>Créer des donnes d'entraînement</b> : sur des thèmes choisis, ou une séance vide à remplir à la main (voir « Les séances »).</li>
     </ul>
-    Le fichier d'origine n'est jamais modifié. La séance ouverte le reste jusqu'à ce que la nouvelle soit créée ; elle s'ouvre alors.</dd>
+    Le <code>.bws</code> ou le <code>.pbn</code> est seulement lu : Bridge Coach n'y écrit jamais, et la séance n'en a plus besoin ensuite (une copie est rangée avec elle). La séance ouverte le reste jusqu'à ce que la nouvelle soit créée ; elle s'ouvre alors.</dd>
   <dt>Ouvrir une séance</dt>
   <dd>Les séances déjà dans Bridge Coach, les plus récentes d'abord : tournois importés et donnes d'entraînement. Pour une séance rangée ailleurs, <b>Choisir un fichier…</b> et son fichier <code>.bc.json</code>. La séance choisie s'ouvre et son nom s'affiche dans la barre de titre.</dd>
   <dt>Exporter en PBN</dt>
@@ -82,7 +82,7 @@
 
 <h3>Taper ses propres donnes</h3>
 <ol>
-  <li><b>Fichier</b>, <b>Nouveau</b>, <b>Des donnes d'entraînement</b>, puis, sans choisir de thème, <b>Créer une séance vide</b>. Elle s'appelle « Entraînement » et la date du jour et s'ouvre dans l'onglet <b>Donnes</b>, sur la donne 1.</li>
+  <li><b>Fichier</b>, <b>Nouveau</b>, <b>Créer des donnes d'entraînement</b>, puis, sans choisir de thème, <b>Créer une séance vide</b>. Elle s'appelle « Entraînement » et la date du jour et s'ouvre dans l'onglet <b>Donnes</b>, sur la donne 1.</li>
   <li>Tapez les cartes de chaque couleur dans les champs, autour de la table : A R D V X 9 … 2 (ou 10 ; les lettres anglaises K Q J T marchent aussi). Une couleur vide est une chicane. Au centre, les cartes qui restent à placer ; une carte tapée deux fois est signalée.</li>
   <li><b>Compléter au hasard</b> distribue les cartes qui manquent : tapez seulement votre main, ou la vôtre et celle du partenaire. Le double mort et le par apparaissent dès que la donne est complète.</li>
   <li><b>Ajouter une donne</b>, en bas de la liste de gauche, en ajoute une ; <b>Supprimer la donne</b> en retire une. Le donneur et la vulnérabilité suivent le numéro de la donne et se changent en haut de la page.</li>
@@ -92,7 +92,7 @@
 
 <h3>Créer des donnes sur des thèmes</h3>
 <ol>
-  <li><b>Fichier</b>, <b>Nouveau</b>, <b>Des donnes d'entraînement</b>. Les thèmes sont rangés en deux familles, <b>Enchères</b> et <b>Jeu de la carte</b>, et en trois niveaux : <b>1re année</b> (évaluer sa main, soutenir la majeure, les SA, Stayman et texas, compter ses levées, l'impasse…), <b>Intermédiaire</b> (contres, réveil, Michaels et bicolores, chelems, hold-up…) et <b>Avancé</b> (grand chelem, sacrifice, Roudi, mise en main, squeeze…). Les boutons de niveau, en haut, choisissent ceux qui s'affichent.</li>
+  <li><b>Fichier</b>, <b>Nouveau</b>, <b>Créer des donnes d'entraînement</b>. Les thèmes sont rangés en deux familles, <b>Enchères</b> et <b>Jeu de la carte</b>, et en trois niveaux : <b>1re année</b> (évaluer sa main, soutenir la majeure, les SA, Stayman et texas, compter ses levées, l'impasse…), <b>Intermédiaire</b> (contres, réveil, Michaels et bicolores, chelems, hold-up…) et <b>Avancé</b> (grand chelem, sacrifice, Roudi, mise en main, squeeze…). Les boutons de niveau, en haut, choisissent ceux qui s'affichent.</li>
   <li>Chaque thème a ses boutons <b>−</b> et <b>+</b> : combien de donnes de chacun, 36 en tout au plus. <b>Donnes au hasard</b> donne des mains sans thème. Les thèmes d'enchères et de jeu de la carte choisis ensemble sont réunis dans les mêmes donnes : 2 Stayman et 2 L'impasse font 2 donnes « Stayman + L'impasse ». La ligne au-dessus du bouton dit ce qui sera créé.</li>
   <li><b>Créer … donnes</b> : le programme cherche les donnes, les mélange et en fait une séance, qui s'ouvre aussitôt. <b>Analyser ces donnes</b> ouvre l'onglet <b>Analyse</b>, prêt à lancer l'analyse.</li>
 </ol>

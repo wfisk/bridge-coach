@@ -462,6 +462,10 @@ user's folder, never in git. Only `--avec-noms` shows full names in a report: an
   changes (auctions, results tables, robots' thoughts, messages, explanations) is 15–16 px or more in dark grey (text-gray-700,
   no text-sm for it); fixed labels everyone knows (tabs, sidebars at Claude's sidebar size, buttons, a PASS card) keep
   their normal size. Results tables use short headings (N-S, E-O, Décl., Rés.) so they fit whole at 15 px.
+- Réglages, « Taille du texte » (2026-11-11): Normale / Grande / Très grande = CSS zoom 1, 1.25, 1.5 on the whole page (etat.json
+  "zoom", app.TAILLES, taille_texte; set in the head at load and by JS on change). Anything sized from the window must divide by
+  the zoom: COTE_TABLE uses 100vw / var(--zoom), JS_AJUSTE divides innerHeight by --zoom and measures with offsetTop. Checked in
+  the browser pane (Chromium), 1200×850 and 1920×1080; not yet in the pywebview window (WebKit).
 
 - Language: Python 3. Run Python with `-I`.
 - File names use dashes and yyyy-mm-dd dates.

@@ -109,7 +109,7 @@ GRIS_BARRE = "#f3f3f1"
 LARGEUR_PANNEAU = 300                                     # la barre de droite de l'onglet Jouer
 # le côté de la table de l'onglet Jouer : ce que laissent la largeur (barres, mains des côtés) et la hauteur (mains du
 # haut et du bas), 420px au moins : en dessous, toute la table rétrécit (JS_AJUSTE)
-COTE_TABLE = "clamp(420px, min(100vw - 740px, 100vh - 420px), 640px)"   # 420 : une main cachée en haut et la vôtre en bas
+COTE_TABLE = "clamp(420px, min(100vw / var(--zoom, 1) - 740px, 100vh / var(--zoom, 1) - 420px), 640px)"   # --zoom : la taille du texte   # 420 : une main cachée en haut et la vôtre en bas
 # pendant le jeu de la carte, avec le mort sur un côté (en défense) : une table rectangulaire, de la même hauteur, plus
 # large de la colonne de la main du mort (vide : ses cartes sont sur la table). Les cartes gardent leur taille.
 LARGEUR_TABLE_LARGE = f"calc({COTE_TABLE} + 84px)"
@@ -186,8 +186,11 @@ JS_AJUSTE = """<script>
       var parent = el.parentElement, w = el.offsetWidth, h = el.offsetHeight;
       if (!w || !h) return;
       var marge = parseFloat(getComputedStyle(parent).paddingTop) || 0;
-      var haut = parent.getBoundingClientRect().top + window.scrollY + marge;
-      var e = Math.min(1, parent.clientWidth / w, (window.innerHeight - haut - 8) / h);
+      // la taille du texte (zoom de la page, --zoom) : la fenêtre compte en points d'écran, la page en points agrandis
+      var z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--zoom')) || 1;
+      var haut = marge;
+      for (var p = parent; p; p = p.offsetParent) haut += p.offsetTop;
+      var e = Math.min(1, parent.clientWidth / w, (window.innerHeight / z - haut - 8) / h);
       e = Math.max(e, 0.45);
       el.style.transform = 'scale(' + e + ')';
       el.style.marginLeft = Math.max(0, (parent.clientWidth - w * e) / 2) + 'px';
@@ -480,6 +483,15 @@ def ecrire_etat(**valeurs):
         with open(ETAT, "w", encoding="utf-8") as f: json.dump(x, f, ensure_ascii=False)
     except OSError:
         pass
+
+
+TAILLES = [(1.0, "Normale"), (1.25, "Grande"), (1.5, "Très grande")]   # Réglages, Taille du texte : le zoom de la page
+
+
+def taille_texte():
+    """La taille du texte choisie (etat.json « zoom ») : 1, 1.25 ou 1.5."""
+    z = lire_etat().get("zoom")
+    return z if z in [t for t, _ in TAILLES] else 1.0
 
 
 def seance_active():
@@ -1156,6 +1168,8 @@ def page():
                # libellés fixes que chacun connaît (onglets, barres latérales, boutons) gardent leur taille (le choix de l'utilisateur)
                ".q-table th, .q-table td { font-size: 15px !important; padding: 4px 6px !important; } .q-table th { font-weight: 700; }" + CSS_AIDE + CSS_CARTES)
     ui.add_head_html(JS_AJUSTE + JS_GLISSE)
+    z = taille_texte()
+    ui.add_head_html(f"<style>:root {{ zoom: {z}; --zoom: {z}; }}</style>")   # la taille du texte choisie dans Réglages
     seances, dossier = reglages()
     deja = seances_bc()
     choix = {"chemin": T.seance or seance_active() or (deja[0] if deja else None)}
@@ -2113,11 +2127,11 @@ def page():
     PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"),   # (Importer : une des trois façons de Nouveau)
                          ("exporter", "Exporter en PBN"), ("dossier", "Ouvrir le dossier de travail")],
              "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance")],   # (le bilan : bilan.py, à la main)
-             "Réglages": [("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
+             "Réglages": [("affichage", "Taille du texte"), ("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
     vue_page = {"Fichier": "nouveau" if PAGE.get("fichier") == "importer" else
                            PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "exporter", "dossier") else "ouvrir",
                 "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance") else "creer",
-                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("dossiers", "maj") else "dossiers"}
+                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "dossiers", "maj") else "affichage"}
 
     facon = {"k": PAGE.get("nouveau") if PAGE.get("nouveau") in ("bws", "pbn", "themes") else   # Fichier, Nouveau : la façon choisie
              ("bws" if PAGE.get("fichier") == "importer" else "themes")}
@@ -2399,6 +2413,25 @@ def page():
                     resultats()
 
             with ui.tab_panel(o_reglages).classes("px-0 pt-0 gap-5 max-w-xl"):
+              with ui.column().classes("w-full gap-3") as pages_ui["affichage"]:
+                ui.label("Taille du texte").classes("text-lg font-bold")
+                ui.label("Agrandit toute la fenêtre : le texte, les cartes et les tableaux. « Grande » ou « Très grande » "
+                         "pour un grand écran, une télévision en cours, ou si vous voyez moins bien. Le choix est gardé.") \
+                    .classes("text-base text-gray-700")
+
+                def changer_taille(z):
+                    ecrire_etat(zoom=z); boutons_taille.refresh()
+                    ui.run_javascript(f"document.documentElement.style.zoom = {z}; "
+                                      f"document.documentElement.style.setProperty('--zoom', {z}); window.dispatchEvent(new Event('resize'))")
+
+                @ui.refreshable
+                def boutons_taille():
+                    with ui.row().classes("gap-3"):
+                        for z, nom in TAILLES:
+                            ui.button(nom, on_click=lambda z=z: changer_taille(z)) \
+                                .props("unelevated" if z == taille_texte() else "outline").classes("text-base px-4")
+                boutons_taille()
+
               with ui.column().classes("w-full gap-5") as pages_ui["dossiers"]:
                 ui.label("Dossiers").classes("text-lg font-bold")
                 for titre, chemin in (("Dossier de Bridgemate : les fichiers .bws, lus sans être modifiés", dossier),

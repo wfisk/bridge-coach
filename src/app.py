@@ -109,7 +109,8 @@ GRIS_BARRE = "#f3f3f1"
 LARGEUR_PANNEAU = 300                                     # la barre de droite de l'onglet Jouer
 # le côté de la table de l'onglet Jouer : ce que laissent la largeur (barres, mains des côtés) et la hauteur (mains du
 # haut et du bas), 420px au moins : en dessous, toute la table rétrécit (JS_AJUSTE)
-COTE_TABLE = "clamp(420px, min(100vw / var(--zoom, 1) - 740px, 100vh / var(--zoom, 1) - 420px), 640px)"   # --zoom : la taille du texte   # 420 : une main cachée en haut et la vôtre en bas
+COTE_TABLE = ("clamp(420px, min(100vw / var(--zoom, 1) - var(--reserve-l, 740px), 100vh / var(--zoom, 1) - var(--reserve-h, 420px)), "
+              "var(--table-max, 640px))")   # les --reserve : ce que prennent les barres ; « table seule » les libère (app.appliquer_plein)   # --zoom : la taille du texte   # 420 : une main cachée en haut et la vôtre en bas
 # pendant le jeu de la carte, avec le mort sur un côté (en défense) : une table rectangulaire, de la même hauteur, plus
 # large de la colonne de la main du mort (vide : ses cartes sont sur la table). Les cartes gardent leur taille.
 LARGEUR_TABLE_LARGE = f"calc({COTE_TABLE} + 84px)"
@@ -492,6 +493,9 @@ def taille_texte():
     """La taille du texte choisie (etat.json « zoom ») : 1, 1.25 ou 1.5."""
     z = lire_etat().get("zoom")
     return z if z in [t for t, _ in TAILLES] else 1.0
+
+
+VUL_TXT = {"Personne": "personne", "N-S": "Nord-Sud", "E-O": "Est-Ouest", "Tous": "tous"}
 
 
 def seance_active():
@@ -1250,11 +1254,28 @@ def page():
             ui.html("<div style='font-size:15px;line-height:1.6'>" + "<br/>".join(lignes) + "</div>", sanitize=False)
             if d.get("dm"): ui.html(dm_html(d), sanitize=False).classes("w-full")
 
+    def carre_donne(d):
+        """Le petit carré de la donne, comme sur le site de la FFB : le numéro au centre, N E S O sur les côtés, rouges si
+        le camp est vulnérable, verts sinon ; le côté du donneur comme sur l'étui : blanc, bordé de sa couleur, avec « D »."""
+        v = d.get("vul", "Personne"); vul = lambda x: v == "Tous" or v == ("N-S" if x in "NS" else "E-O")
+        coul = lambda x: "#c0141c" if vul(x) else "#2e7d32"
+        cote = {"N": "top:0;left:14px;right:14px;height:14px", "S": "bottom:0;left:14px;right:14px;height:14px",
+                "O": "left:0;top:14px;bottom:14px;width:14px", "E": "right:0;top:14px;bottom:14px;width:14px"}
+        h = "<div style='position:relative;width:60px;height:60px;background:#e9ece9;border-radius:6px;flex:none'>"
+        for x in "NESO":                                  # le donneur comme sur l'étui : blanc, bordé de sa couleur, « D »
+            fond, encre, texte = (f"#fff;box-sizing:border-box;border:2px solid {coul(x)}", coul(x), "D") if x == d["donneur"] \
+                else (coul(x), "#fff", x)
+            h += (f"<div style='position:absolute;{cote[x]};background:{fond};color:{encre};font-size:10px;font-weight:800;"
+                  f"display:flex;align-items:center;justify-content:center'>{texte}</div>")
+        h += ("<div style='position:absolute;left:16px;top:16px;width:28px;height:28px;background:#fff;border-radius:3px;"
+              f"display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800'>{d['n']}</div></div>")
+        return h
+
     def panneau_droit(d=None, par=True):
         """La barre de droite d'une donne, la même dans Donnes, Jouer et Analyse : même largeur, même gris, le nom de la
         donne en haut ; avec d, l'étui (donneur, vulnérabilité), le thème et le par. Renvoie la colonne, à remplir."""
         col = ui.column().classes("gap-3 p-4 overflow-y-auto").style(
-            f"position:fixed;top:{HAUTEUR_BARRE}px;right:0;bottom:0;width:{LARGEUR_PANNEAU}px;background:{GRIS_BARRE};"
+            f"position:fixed;top:var(--haut-panneau, {HAUTEUR_BARRE}px);right:0;bottom:0;width:{LARGEUR_PANNEAU}px;background:{GRIS_BARRE};"
             "border-left:1px solid #dcdcd8;z-index:1;overflow-x:hidden")
         if d is not None:
             with col:
@@ -1763,6 +1784,40 @@ def page():
               sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == p.mort() and not p.fini()],
               tour=None if p.fini() or jeu["pli_vu"] else tour)
 
+    plein = {"on": False}                                 # Jouer, « table seule » : sans les barres ni les onglets
+
+    def appliquer_plein():
+        """La place que prennent les barres, pour la taille de la table (COTE_TABLE). Table seule : sans les onglets ni la
+        barre de gauche ; la barre de droite reste (la boîte à enchères, les commandes ; le choix de l'utilisateur)."""
+        if not plein["on"]: l, h, m, t = 740, 420, 640, f"{HAUTEUR_BARRE}px"
+        else: l, h, m, t = 440, 330, 820, "0px"           # sans les onglets : la barre de droite monte en haut
+        ui.run_javascript(f"var r = document.documentElement.style; r.setProperty('--reserve-l', '{l}px'); "
+                          f"r.setProperty('--haut-panneau', '{t}'); "
+                          f"r.setProperty('--reserve-h', '{h}px'); r.setProperty('--table-max', '{m}px'); "
+                          "setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50)")
+
+    def basculer_plein():
+        plein["on"] = not plein["on"]
+        entete.set_value(not plein["on"]); montrer_barre(); vue_jouer.refresh()
+
+    def pas_taille(k):
+        """A− / A+ à côté de la table : la taille du texte d'un cran, la même que dans Réglages."""
+        tailles = [t for t, _ in TAILLES]
+        i = max(0, min(len(tailles) - 1, tailles.index(taille_texte()) + k))
+        changer_taille(tailles[i])
+
+    def outils_table():
+        """En haut à droite de la table : la taille du texte (A− A+) et « table seule » (sans les barres)."""
+        z = taille_texte(); tailles = [t for t, _ in TAILLES]
+        with ui.row().classes("gap-1 no-wrap items-center").style("position:absolute;top:4px;right:4px;z-index:6"):
+            ui.button("A−", on_click=lambda: pas_taille(-1)).props("flat dense no-caps color=grey-8") \
+                .classes("text-base font-bold").tooltip("Texte plus petit").set_enabled(z > tailles[0])
+            ui.button("A+", on_click=lambda: pas_taille(1)).props("flat dense no-caps color=grey-8") \
+                .classes("text-lg font-bold").tooltip("Texte plus grand").set_enabled(z < tailles[-1])
+            ui.button(icon="fullscreen_exit" if plein["on"] else "fullscreen", on_click=basculer_plein) \
+                .props("flat dense round color=grey-8 size=lg") \
+                .tooltip("Revenir aux onglets et à la liste des donnes" if plein["on"] else "Table seule : sans les onglets ni la liste des donnes")
+
     @ui.refreshable
     def vue_jouer():
         c = choix["chemin"]; data = lire_seance(c)
@@ -1808,7 +1863,8 @@ def page():
         montrer = (fini and not a_jouer and not p) or (p and p.fini())
 
         with ui.row().classes("w-full no-wrap items-start gap-4").style(f"padding-right:{LARGEUR_PANNEAU}px"):
-            with ui.column().classes("grow min-w-0 gap-2"):              # la table
+            with ui.column().classes("grow min-w-0 gap-2 relative"):     # la table
+                outils_table()
                 if p:
                     vue_carte(c, d, data, places)
                 else:
@@ -1820,7 +1876,12 @@ def page():
                     table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False),
                           tour=jeu["pense"] if attente else (s if not fini else None))
             with panneau_droit():                                                         # la barre de droite : l'essentiel
-                ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
+                appliquer_plein()
+                with ui.row().classes("w-full items-center justify-between no-wrap"):   # comme sur le site de la FFB
+                    ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
+                    ui.html(carre_donne(d), sanitize=False)
+                ui.html(f"<div style='font-size:16px;line-height:1.5'>Donneur : <b>{SIEGE[d['donneur']]}</b><br>"
+                        f"Vulnérabilité : <b>{VUL_TXT.get(d.get('vul'), d.get('vul', ''))}</b></div>", sanitize=False)
                 ui.label(f"Vous jouez {SIEGE[s]}").classes("text-base text-gray-700")
                 if p and not p.fini():                          # pendant le jeu, les cartons sont rangés : l'étui reste sur la table
                     with ui.row().classes("w-full justify-center"):
@@ -2310,11 +2371,12 @@ def page():
     def montrer_barre():
         """La barre latérale : sur les onglets Donnes, Jouer et Analyse quand une séance est ouverte ; toujours sur
         Rapports, Réglages et l'aide."""
+        if plein["on"] and sur_jouer(): tiroir.set_value(False); return   # Jouer, table seule
         tiroir.set_value(sur_aide() or bool(onglet_a_pages()) or (onglets.value in (o_donnes, "Donnes", o_jouer, "Jouer", o_analyse, "Analyse")
                                         and lire_seance(choix["chemin"]) is not None))   # l'aide a toujours sa barre
     vu = {"fini": None}; vu_d = {"fini": None}; vu_i = {"fini": None}
 
-    with ui.header(elevated=False).classes("bg-white text-primary px-2 py-0 border-b border-gray-300"):   # la barre de menus
+    with ui.header(elevated=False).classes("bg-white text-primary px-2 py-0 border-b border-gray-300") as entete:   # la barre de menus
         with ui.row().classes("w-full items-center justify-between no-wrap"):
             with ui.tabs().props("no-caps dense inline-label align=left active-color=primary indicator-color=primary").classes("text-gray-700 grow") as onglets:   # les onglets, dans la barre
                 o_fichier = ui.tab("Fichier")                     # une page, comme Rapports et Réglages : sa barre à gauche
@@ -2421,6 +2483,7 @@ def page():
 
                 def changer_taille(z):
                     ecrire_etat(zoom=z); boutons_taille.refresh()
+                    if sur_jouer(): vue_jouer.refresh()            # A− A+ à côté de la table
                     ui.run_javascript(f"document.documentElement.style.zoom = {z}; "
                                       f"document.documentElement.style.setProperty('--zoom', {z}); window.dispatchEvent(new Event('resize'))")
 

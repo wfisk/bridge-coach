@@ -104,7 +104,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (the table and the board case turn with the seat; a hand on a side is one row per suit), the board case (etui: upright,
                         taller than wide, neutral grey; each seat's name on red if vulnerable, green if not, written to be read from
                         its own seat (sides turned, the top one upside down), names in capitals, white on red or green; the dealer's band white, « Donneur » written in red or green; the case 9:16 and light grey, North and South always on its short sides: upright when N-S sit top and bottom, lying when E-O do; the N-S bands run the full width, E-O between them) in the centre; hidden hands as small muted card backs in a closed fan; your hand larger, a little below the table, each player's last bid clear and earlier ones lightly faded (a filter, no outline on the last one: the user's choice, 2026-11-11), every card with a small even shadow and each player's last with a deeper one, glowing when it is your turn to bid; when it is your turn to bid or play, the cards you play from glow yellow (your hand, or dummy when you play from it: .a-vous on .main-grande / .mort-table; the user rejected an underline and a pulsing outline); cards you cannot play are dull but opaque (.carte.terne: grey card and text, never transparent, since dummy's columns overlap); a small green triangle on the table edge points to whoever must bid or play next, robots included (table tour=, .fleche-tour); disabled X/XX grey, the cards and the case sized so the layout fills the space, at the top of the screen; each bid pile sits mid-edge of the table, the same distance from its edge for all four players; the auction grid in the sidebar underlines each seat red or green (grille_html vul), « Le sens des enchères » and « Plis joués » sit in the sidebar, Indice on the front of the bidding box, a right
-                        sidebar (fixed, full height, LARGEUR_PANNEAU, the same grey with a thin left border) with the deal number,
+                        sidebar (fixed, full height, LARGEUR_PANNEAU, the same grey with a thin left border) with the deal number and, beside it, an FFB-style board square (carre_donne: the number, N E S O red if
+                        vulnerable or green, the dealer's side white with a border of its colour and a D, as on the board case), then the dealer and vulnerability in words (VUL_TXT),
                         the seat played (chosen in « Options », the first entry of the deal list: jouer.PLACES, jouer.siege_choisi: declarer (default), declaring side, defence, dealer, a fixed seat or random; the declarer is the recommended auction's, else the engine's; saved in etat.json as place_jouer, ecrire_etat), the auction, then the bidding box drawn as a red box (bid cards standing behind in the
                         order ♣ ♦ ♥ ♠ SA, only the bids still possible, four levels, « … les autres enchères »; Passe, X, XX tabs in
                         front) or the play buttons. The sidebar entry (vue["entree"]) is shared by Donnes, Jouer and
@@ -466,6 +467,10 @@ user's folder, never in git. Only `--avec-noms` shows full names in a report: an
   "zoom", app.TAILLES, taille_texte; set in the head at load and by JS on change). Anything sized from the window must divide by
   the zoom: COTE_TABLE uses 100vw / var(--zoom), JS_AJUSTE divides innerHeight by --zoom and measures with offsetTop. Checked in
   the browser pane (Chromium), 1200×850 and 1920×1080; not yet in the pywebview window (WebKit).
+- Jouer, top right of the table (outils_table): A− / A+ step the same text size (pas_taille → changer_taille), and « table
+  seule » (plein, basculer_plein) hides the header tabs (entete) and the left deal list (montrer_barre) but keeps the right
+  sidebar (the bidding box and controls: the user's choice, for the classroom); appliquer_plein sets --reserve-l/-h,
+  --table-max and --haut-panneau so the table grows (up to 820 px).
 
 - Language: Python 3. Run Python with `-I`.
 - File names use dashes and yyyy-mm-dd dates.

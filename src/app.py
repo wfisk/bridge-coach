@@ -9,10 +9,11 @@ lignes que rapport.py écrit (« Donne 3 sur 24 », « Rapport prêt : … »).
     --sans-ouvrir  ne fait que servir la page (essais)
 """
 import asyncio, datetime, glob, json, os, re, shutil, signal, subprocess, sys, tempfile, threading, time
+import html as html_
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import carte, classement, donnes, edition, jouer, maj, moi, rapport
+import carte, classement, donnes, edition, exporter, fichiers, jouer, maj, moi, rapport
 from nicegui import app, background_tasks, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -38,7 +39,10 @@ TYPES_EXPERT = ("Analyse expert (*.json)", "Tous les fichiers (*.*)")   # pywebv
 SOURCES = {"bws": "Bridgemate", "feuille-de-route": "Feuille de route", "entrainement": "Entraînement",
            "saisie": "Donnes saisies", "simulation": "Simulation"}
 AIDE = os.path.join(rapport.RACINE, "help", "index.html")
-GENERIQUE = "Le rapport n'a pas pu être créé. Le détail est dans le fichier derniere-erreur.txt du dossier des rapports."
+IMAGES_AIDE = os.path.join(rapport.RACINE, "help", "images")   # les captures d'écran de l'aide, servies sous /aide-images/
+GENERIQUE = ("Le rapport n'a pas pu être créé. Le détail est dans le fichier derniere-erreur.txt du dossier des rapports : "
+             "vous pouvez le joindre à un signalement (Réglages, Un problème, une idée ?).")
+GITHUB = "https://github.com/wfisk/bridge-coach"            # les signalements (issues) et les discussions du projet
 
 
 class Travail:
@@ -88,18 +92,26 @@ def message_erreur(sortie):
 
 def rapports_de(chemin):
     """{niveau: [(pdf, paire)]} déjà produits pour cette séance : l'analyse une fois par paire (« -analyse-SS-AR.pdf »,
-    initiales "" sans « Vous êtes »), les plus récentes d'abord."""
-    nom = rapport.nom_court(rapport.nom_seance(chemin)); out = {}
+    initiales "" sans « Vous êtes »), les plus récentes d'abord. Seulement ceux de cette séance-ci : la date de la
+    séance en tête du nom (deux séances « tournoi-jeudi » de dates différentes restent à part)."""
     ancien = {"expert": "analyse", "standard": "analyse", "diff": "comparaison"}   # les noms d'avant la 1.4, jusqu'aux rapports refaits
-    base = os.path.join(glob.escape(rapport.RAPPORTS), "*", f"*-{glob.escape(nom)}-")
+    d = fichiers.date_de(fichiers.entete(chemin))
+    if not d: return {}
+    debut = f"{d.isoformat()}-{rapport.nom_court(rapport.nom_seance(chemin))}-"
+    trouves = {}
+    for f in fichiers.pdfs(chemin):
+        m = re.match(r"(analyse|a-revoir|comparaison|standard|expert|diff)(?:-(.+))?\.pdf$", os.path.basename(f)[len(debut):])
+        if not m or ".provisoire" in f: continue           # (« analyse 2.pdf » : une copie d'iCloud, pas un rapport)
+        trouves.setdefault(m[1], []).append((f, (m[2] or "").replace("-", "/")))
+    out = {}
     for quoi in [q for q, _, _ in RAPPORTS] + list(ancien):
         cle = ancien.get(quoi, quoi)
         if cle in out and quoi in ancien: continue
-        trouves = [(f, "") for f in glob.glob(base + f"{quoi}.pdf")]
-        if quoi in ("analyse", "a-revoir"):
-            trouves += [(f, f[:-4].split(f"-{quoi}-", 1)[1].replace("-", "/")) for f in glob.glob(base + f"{quoi}-*.pdf")
-                        if ".provisoire" not in f]                 # « -analyse-SS-AR.pdf » : la paire SS/AR
-        if trouves: out.setdefault(cle, []).extend(sorted(trouves, key=lambda x: -os.path.getmtime(x[0])))
+        if quoi in ("comparaison", "diff") or quoi in ancien:
+            liste = [(f, "") for f, p in trouves.get(quoi, []) if not p]
+        else:
+            liste = trouves.get(quoi, [])
+        if liste: out.setdefault(cle, []).extend(sorted(liste, key=lambda x: -os.path.getmtime(x[0])))
     return out
 
 
@@ -119,6 +131,43 @@ COTE_TABLE = "440px"
 # large de la colonne de la main du mort (vide : ses cartes sont sur la table). Les cartes gardent leur taille.
 LARGEUR_TABLE_LARGE = f"calc({COTE_TABLE} + 84px)"
 HAUTEUR_BARRE = 37                                        # la barre de menus du haut                                    # le gris clair des barres latérales, comme celle de Claude
+
+JS_SUR_PAGE = """<script>
+// L'aide, « Sur cette page » : un clic descend à la section (sous la barre du haut) ; en lisant, la section à l'écran est
+// marquée (.lue). Sans changer l'adresse de la page : la fenêtre n'a pas de bouton « précédent ».
+window.allerAide = function (id) {
+  var h = document.getElementById(id);
+  if (h) h.scrollIntoView({behavior: 'smooth', block: 'start'});
+  return false;
+};
+// Une capture de l'aide, cliquée : en grand, par-dessus la page ; un clic (ou Échap) la referme.
+document.addEventListener('click', function (e) {
+  var img = e.target.closest && e.target.closest('.aide figure img');
+  var ouverte = document.querySelector('.image-aide-grande');
+  if (ouverte) { ouverte.remove(); return; }
+  if (!img) return;
+  var d = document.createElement('div'); d.className = 'image-aide-grande';
+  var g = document.createElement('img'); g.src = img.src; g.alt = img.alt; d.appendChild(g); document.body.appendChild(d);
+});
+document.addEventListener('keydown', function (e) {
+  var o = document.querySelector('.image-aide-grande'); if (o && e.key === 'Escape') o.remove();
+});
+window.suivreAide = function () {
+  function marquer() {
+    var liens = document.querySelectorAll('.sur-page a[data-ancre]');
+    if (!liens.length) return;
+    var lue = liens[0].dataset.ancre;
+    liens.forEach(function (a) {
+      var h = document.getElementById(a.dataset.ancre);
+      if (h && h.getBoundingClientRect().top < 140) lue = a.dataset.ancre;
+    });
+    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) lue = liens[liens.length - 1].dataset.ancre;
+    liens.forEach(function (a) { a.classList.toggle('lue', a.dataset.ancre === lue); });
+  }
+  if (!window.__aideSuivie) { window.addEventListener('scroll', marquer, {passive: true}); window.__aideSuivie = true; }
+  setTimeout(marquer, 50);
+};
+</script>"""
 
 JS_SENS = """<script>
 // Le sens d'une enchère de la grille : la bulle s'ouvre au survol (CSS) ; un clic la garde ouverte, un autre clic (sur elle
@@ -432,6 +481,27 @@ CSS_AIDE = """
 .aide li { margin-bottom: .4em; } .aide dt { font-weight: 600; margin-top: .7em; } .aide dd { margin: 0; }
 .aide code { background: #e6efe9; padding: .1em .35em; border-radius: 4px; font-size: 15px; word-break: break-all; }
 .aide .note { background: #e6efe9; border-left: 4px solid #1f6b45; padding: .7em 1em; margin: 1em 0; }
+.aide h2 { font-size: 22px; color: #222; margin: 0 0 .6em; }                  /* le titre de la page */
+.aide h3 { font-size: 18px; margin-top: 1.8em; scroll-margin-top: 60px; }     /* une section : sous la barre du haut */
+.aide p.intro { font-size: 17px; color: #333; }
+.aide figure { margin: 1em 0 1.4em; }
+.aide figure img { display: block; max-width: 100%; border: 1px solid #dfe3e6; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.aide figcaption { font-size: 15px; color: #555; margin-top: .4em; }
+.aide .etapes { counter-reset: e; list-style: none; padding-left: 0; }
+.aide .etapes > li { counter-increment: e; position: relative; padding-left: 2.4em; margin-bottom: .8em; }
+.aide .etapes > li::before { content: counter(e); position: absolute; left: 0; top: 0; width: 1.7em; height: 1.7em; border-radius: 50%;
+  background: #1f6b45; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.aide .astuce { background: #fff8e1; border-left: 4px solid #e0a800; padding: .7em 1em; margin: 1em 0; }
+.sur-page-place { width: 220px; align-self: stretch; }       /* la place de la colonne ; la liste, elle, reste fixe à l'écran */
+.sur-page { position: fixed; top: 64px; width: 220px; max-height: calc(100vh / var(--zoom, 1) - 90px); overflow-y: auto; background: transparent; }
+.aide figure img { cursor: zoom-in; }
+.image-aide-grande { position: fixed; inset: 0; z-index: 9999; background: rgba(20,20,20,.82); display: flex; align-items: center;
+  justify-content: center; cursor: zoom-out; padding: 24px; }
+.image-aide-grande img { max-width: 100%; max-height: 100%; border-radius: 8px; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+.sur-page a { display: block; font-size: 15px; line-height: 1.35; color: #444; text-decoration: none; padding: 5px 0 5px 12px;
+  border-left: 2px solid #e3e7ea; }
+.sur-page a:hover { color: #1f6b45; }
+.sur-page a.lue { color: #1f6b45; font-weight: 600; border-left-color: #1f6b45; }
 """
 
 
@@ -445,18 +515,21 @@ def texte_aide():
 
 
 def sections_aide():
-    """L'aide découpée en sujets : [(catégorie, titre, html)], un par titre <h3>, rangés sous la catégorie (<h2>) qui
-    les précède. Sans <h2> ni <h3> (une ancienne aide) : un seul sujet."""
-    corps = re.sub(r"<!--.*?-->", "", texte_aide(), flags=re.S)
+    """L'aide en pages : [(titre, html, [(ancre, titre de section)])], une page par <h2>, ses sections (<h3>) listées
+    dans « Sur cette page », à droite. Les images (help/images/…) sont servies sous /aide-images/. Sans <h2> : une page."""
+    corps = re.sub(r"<!--.*?-->", "", texte_aide(), flags=re.S).replace('src="images/', 'src="/aide-images/')
     out = []
-    for bloc in re.split(r"(?=<h2>)", corps):
+    for k, bloc in enumerate(re.split(r"(?=<h2>)", corps)):
         m = re.match(r"<h2>(.*?)</h2>", bloc, re.S)
         if not m: continue
-        cat = re.sub(r"<[^>]+>", "", m[1]).strip()
-        for p in re.split(r"(?=<h3>)", bloc[m.end():]):
-            t = re.match(r"\s*<h3>(.*?)</h3>", p, re.S)
-            if t: out.append((cat, re.sub(r"<[^>]+>", "", t[1]).strip(), p))
-    return out or [("Aide", "Aide", corps)]
+        titre = re.sub(r"<[^>]+>", "", m[1]).strip()
+        sections = []
+        def ancre(t, k=k):
+            sections.append((f"aide-{k}-{len(sections)}", re.sub(r"<[^>]+>", "", t[1]).strip()))
+            return f'<h3 id="{sections[-1][0]}">{t[1]}</h3>'
+        html_page = re.sub(r"<h3>(.*?)</h3>", ancre, bloc, flags=re.S)
+        out.append((titre, html_page, sections))
+    return out or [("Aide", corps, [])]
 
 
 def ouvrir(chemin):
@@ -503,9 +576,11 @@ def lancer_rapports(chemin, noms, revoir=False):
                      + ([] if avec_expert() else ["--sans-analyse"]) + (["--a-revoir"] if revoir else []))
 
 
-def lancer_import(chemin):
+def lancer_import(chemin, nom=None, titre=None):
+    """L'import seul (rapport.py --importer), sous le nom et le titre choisis (--nom=, --titre=)."""
     I.__init__(1.0, "Import"); I.seance = chemin; I.texte = f"Import de {os.path.basename(chemin)}"
-    demarrer_travail(I, [os.path.join(ICI, "rapport.py"), chemin, "--importer"])
+    demarrer_travail(I, [os.path.join(ICI, "rapport.py"), chemin, "--importer"] + ([f"--nom={nom}"] if nom else [])
+                     + ([f"--titre={titre}"] if titre else []))
 
 
 def seances_bc():
@@ -532,17 +607,29 @@ def infos_seance(c):
 
 
 def deja_importe(bws):
-    """Le .bc.json de ce fichier, s'il a déjà été importé ; sinon None."""
-    nom = rapport.nom_seance(bws)
-    return next((c for c in rapport.glob_seances(nom + rapport.BC)), None)
+    """Le .bc.json de ce fichier, s'il a déjà été importé (le nom du fichier d'origine gardé dans sa source, ou, pour
+    une séance d'avant, le même nom) ; sinon None."""
+    return fichiers.deja_importe(bws) or next((c for c in rapport.glob_seances(rapport.nom_seance(bws) + rapport.BC)), None)
 
 
-def exporter_pbn(chemin):
-    """Le .pbn de la séance, à côté de son .bc.json ; renvoie son chemin."""
-    data = json.load(open(chemin, encoding="utf-8"))
-    base = chemin[:-len(rapport.BC)] if chemin.endswith(rapport.BC) else os.path.splitext(chemin)[0]
-    with open(base + ".pbn", "w", encoding="utf-8") as f: f.write(donnes.pbn(data))
-    return base + ".pbn"
+def quand_iso(iso):
+    """« 2026-11-12T07:53:32 » → « 12/11/2026 à 07:53 » ; rien sans date."""
+    try:
+        return datetime.datetime.fromisoformat(iso).strftime("%d/%m/%Y à %H:%M") if iso else ""
+    except ValueError:
+        return iso
+
+
+def webview_save():
+    """Le type « enregistrer sous » du dialogue de la fenêtre (pywebview, ancien et nouveau nom)."""
+    import webview
+    return webview.FileDialog.SAVE if hasattr(webview, "FileDialog") else webview.SAVE_DIALOG
+
+
+def montrer_fichier(chemin):
+    """Le fichier, sélectionné dans le Finder (Mac) ou l'Explorateur (Windows)."""
+    if sys.platform == "win32": subprocess.Popen(["explorer", "/select,", os.path.normpath(chemin)])
+    else: subprocess.Popen(["open", "-R", chemin])
 
 
 ETAT = os.path.join(os.path.dirname(rapport.CONFIG), "etat.json")   # ce que l'application retient d'une fois sur l'autre
@@ -622,8 +709,11 @@ def place_jouer():
 
 
 def titre_fenetre(c):
-    """« Bridge Coach – 1234567MULTI23102026S.bc.json » ; sans séance, le nom du programme."""
-    return f"{TITRE} – {os.path.basename(c)}" if c else TITRE
+    """« Bridge Coach – Tournoi du jeudi 5 novembre 2026 » : le titre de la séance, son nom de fichier quand elle n'en a
+    pas ; sans séance, le nom du programme."""
+    if not c: return TITRE
+    t = fichiers.entete(c).get("session", {}).get("titre") if os.path.isfile(c) else None
+    return f"{TITRE} – {t or os.path.basename(c)}"
 
 
 def lancer_donnes(quotas):
@@ -1094,7 +1184,7 @@ def nom_pour_claude(data):
 def seance_pour_claude(data):
     """La séance telle qu'elle part chez Claude : sans les analyses, sans la source (nom du fichier d'origine), sans
     titre ; les joueurs par leurs initiales seulement (les noms complets restent sur l'ordinateur)."""
-    out = {k: v for k, v in data.items() if k not in ("analyses", "source", "joueurs", "session")}
+    out = {k: v for k, v in data.items() if k not in ("analyses", "source", "joueurs", "session", "fichier")}   # "fichier" : son journal nomme l'original
     out["session"] = {k: v for k, v in data.get("session", {}).items() if k in ("date", "tables", "sections", "mitchell")}
     out["session"]["marque"] = moi.MARQUES[moi.marque(data)]       # IMP ou match-points : l'expert juge pour cette marque
     out["joueurs"] = {k: [{"initiales": j.get("initiales", "")} for j in v] for k, v in data.get("joueurs", {}).items()}
@@ -1107,7 +1197,7 @@ def preparer_pour_claude(c):
     Renvoie (dossier, consigne)."""
     data = lire_seance(c) or {}
     nom = nom_pour_claude(data)
-    dossier = os.path.join(rapport.DONNEES, "pour-claude", rapport.nom_seance(c))
+    dossier = fichiers.dossier_claude(c)                  # par nom de fichier : deux « tournoi-jeudi » de dates différentes restent à part
     shutil.rmtree(dossier, ignore_errors=True); os.makedirs(dossier)
     consigne = CONSIGNE.format(nom=nom, date=data.get("session", {}).get("date", ""), marque=moi.MARQUES[moi.marque(data)])
     documents = {}
@@ -1370,7 +1460,7 @@ def page():
                # libellés fixes que chacun connaît (onglets, barres latérales, boutons) gardent leur taille (le choix de l'utilisateur)
                ".q-table th, .q-table td { font-size: 15px !important; padding: 4px 6px !important; } .q-table th { font-weight: 700; }"
                ".classement th, .classement td { font-size: 17px !important; padding: 6px 10px !important; }" + CSS_AIDE + CSS_CARTES)
-    ui.add_head_html(JS_AJUSTE + JS_GLISSE + JS_SENS)
+    ui.add_head_html(JS_AJUSTE + JS_GLISSE + JS_SENS + JS_SUR_PAGE)
     z = taille_texte()
     ui.add_head_html(f"<style>:root {{ zoom: {z}; --zoom: {z}; }}</style>")   # la taille du texte choisie dans Réglages
     seances, dossier = reglages()
@@ -2923,16 +3013,20 @@ def page():
     vue_aide = {"k": int(PAGE.get("aide") or 0)}          # la section de l'aide montrée
 
     PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"),   # (Importer : une des trois façons de Nouveau)
-                         ("exporter", "Exporter en PBN"), ("dossier", "Ouvrir le dossier de travail")],
+                         ("infos", "Infos"), ("exporter", "Exporter…"), ("dossier", "Ouvrir le dossier de travail")],
              "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance")],   # (le bilan : bilan.py, à la main)
-             "Réglages": [("affichage", "Taille du texte"), ("nom", "Votre nom"), ("dossiers", "Dossiers"), ("maj", "Mise à jour du programme")]}     # la barre de gauche de ces onglets
+             "Réglages": [("affichage", "Taille du texte"), ("nom", "Votre nom"), ("dossiers", "Dossiers"), ("sauvegarde", "Sauvegarder mes séances"), ("maj", "Mise à jour du programme"),
+                          ("contact", "Un problème, une idée ?")]}     # la barre de gauche de ces onglets
     vue_page = {"Fichier": "nouveau" if PAGE.get("fichier") == "importer" else
-                           PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "exporter", "dossier") else "ouvrir",
+                           PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "infos", "exporter", "dossier") else "ouvrir",
                 "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance") else "creer",
-                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "dossiers", "maj") else "affichage"}
+                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "dossiers", "sauvegarde", "maj", "contact") else "affichage"}
 
     facon = {"k": PAGE.get("nouveau") if PAGE.get("nouveau") in ("bws", "pbn", "themes") else   # Fichier, Nouveau : la façon choisie
              ("bws" if PAGE.get("fichier") == "importer" else "themes")}
+
+    sauve = {"fait": "", "faute": ""}                     # Réglages, Sauvegarder mes séances
+    a_importer = {"chemin": None, "prop": None, "titre": "", "nom": "", "nom_touche": False, "lecture": False, "faute": ""}
 
     def retenir_page():
         """La page ouverte (onglet, entrée de la barre, version de l'analyse, page de l'aide) : rouverte au prochain lancement."""
@@ -2959,10 +3053,11 @@ def page():
         vue_page[nom] = cle; montrer_pages(); barre_seance.refresh(); retenir_page()
         if cle == "seance": resultats.refresh()
         if nom == "Fichier": rafraichir_fichier()
+        if cle == "contact": fichier_erreur.refresh()
 
     def rafraichir_fichier():
         """Les pages de Fichier se mettent à jour quand on y vient : les séances, les .bws, la séance à exporter."""
-        try: liste.refresh(); liste_i.refresh(); a_exporter.refresh()
+        try: liste.refresh(); liste_i.refresh(); a_exporter.refresh(); page_infos.refresh()
         except NameError: pass                             # la page se construit encore
 
     def voir_aide(k):
@@ -2971,10 +3066,19 @@ def page():
 
     @ui.refreshable
     def page_aide():
-        s = sections_aide()
-        cat, _, h = s[min(vue_aide["k"], len(s) - 1)]
-        ui.label(cat).classes("text-sm text-gray-600 uppercase tracking-wide")   # la catégorie, au-dessus du sujet
-        ui.html(h, sanitize=False).classes("aide w-full pb-8")
+        """Une page de l'aide, et à droite « Sur cette page » : ses sections, sur le même fond que le texte ; un clic
+        y descend, la section lue est marquée en lisant (JS_SUR_PAGE)."""
+        s_ = sections_aide()
+        titre, h, sections = s_[min(vue_aide["k"], len(s_) - 1)]
+        with ui.row().classes("w-full no-wrap items-start gap-10"):
+            ui.html(h, sanitize=False).classes("aide pb-24").style("flex:1 1 auto;min-width:0;max-width:46em")
+            if sections:
+                with ui.element("div").classes("sur-page-place shrink-0"), ui.column().classes("sur-page gap-0"):   # reste à l'écran
+                    ui.label("Sur cette page").classes("text-sm font-bold text-gray-700 mb-2")
+                    for ancre_, t_ in sections:
+                        ui.html(f'<a href="#{ancre_}" data-ancre="{ancre_}" onclick="return allerAide(\'{ancre_}\')">{html_.escape(t_)}</a>',
+                                sanitize=False)
+        ui.run_javascript("window.suivreAide && window.suivreAide()")
 
     def entrees_de(data):
         """Les entrées de la barre latérale : la séance, puis (onglet Donnes) les joueurs et les alertes, puis chaque donne."""
@@ -3083,13 +3187,8 @@ def page():
                 ui.button(titre, on_click=lambda c=cle: voir_page(nom, c)).props("flat no-caps align=left dense color=grey-10") \
                     .classes("entree-barre text-left" + (" choisie" if vue_page[nom] == cle else ""))
             return
-        if sur_aide():                                    # l'aide : une entrée par section
-            avant = None
-            for k, (cat, titre, _) in enumerate(sections_aide()):
-                if cat != avant:                              # le titre de la catégorie, puis ses sujets
-                    ui.label(cat).classes("text-xs text-gray-600 uppercase tracking-wide font-bold px-2 " +
-                                          ("mt-1" if avant is None else "mt-4")).style("letter-spacing:.06em")
-                    avant = cat
+        if sur_aide():                                    # l'aide : une entrée par page (peu de pages, plus longues)
+            for k, (titre, _, _) in enumerate(sections_aide()):
                 ui.button(titre, on_click=lambda k=k: voir_aide(k)).props("flat no-caps align=left dense color=grey-10") \
                     .classes("entree-barre aide-sujet text-left" + (" choisie" if k == vue_aide["k"] else ""))
             return
@@ -3138,7 +3237,10 @@ def page():
                 o_rapports = ui.tab("Rapports")
                 o_reglages = ui.tab("Réglages")
                 o_aide = ui.tab("Aide").classes("hidden")          # la page d'aide : montrée par le bouton de droite
-            aide = ui.button("Aide", on_click=lambda: onglets.set_value(o_aide)).props("flat no-caps dense").classes("px-3")
+            with ui.button(on_click=lambda: onglets.set_value(o_aide)).props("flat no-caps dense").classes("px-3") as aide:
+                with ui.row().classes("items-center gap-1 no-wrap"):   # une icône de couleur : l'aide se voit (l'utilisateur, 2026-11-12)
+                    ui.icon("help", size="22px").style("color:#1976d2")
+                    ui.label("Aide")
             onglets.on_value_change(lambda e: (aide.classes(add="bg-green-50 font-bold") if e.value in (o_aide, "Aide")
                                                else aide.classes(remove="bg-green-50 font-bold"), montrer_barre(), barre_seance.refresh(),
                                                vue_analyse.refresh(), vue_jouer.refresh(), montrer_controles(), retenir_page(),
@@ -3160,7 +3262,7 @@ def page():
                         with ui.column().classes("gap-0"):
                             ui.label(f"Nouveau tournoi dans Bridgemate, du {date_lisible(neuf)}").classes("text-base")
                             ui.label(os.path.basename(neuf)).classes("text-base text-gray-700 break-all")
-                        ui.button("Importer", on_click=lambda b=neuf: importer(b)).classes("shrink-0")
+                        ui.button("Importer…", on_click=lambda b=neuf: preparer_import(b)).classes("shrink-0")
                 nouveau()
                 barre_i = ui.linear_progress(value=0, show_value=False).props("size=16px rounded indeterminate").classes("max-w-xl")
                 texte_i = ui.label("").classes("text-base")
@@ -3285,6 +3387,62 @@ def page():
                 ui.button("Modifier les réglages", on_click=ouvrir_reglages).classes("w-full text-base py-3")
                 ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-base text-gray-700")
 
+              with ui.column().classes("w-full gap-3") as pages_ui["sauvegarde"]:   # Réglages, Sauvegarder mes séances
+                ui.label("Sauvegarder mes séances").classes("text-lg font-bold")
+                ui.label("Un seul fichier .zip avec toutes vos séances : leurs donnes, leurs résultats, vos parties jouées et "
+                         "surtout les analyses de l'expert, qui ne se refont pas. Les rapports PDF n'y sont pas : ils se refont "
+                         "en un clic. Gardez ce fichier ailleurs que sur l'ordinateur : une clé USB, un disque, un dossier en "
+                         "ligne.").classes("text-base text-gray-700")
+                ui.button("Sauvegarder mes séances…", icon="save", on_click=lambda: sauvegarder_()).props("unelevated").classes("self-start")
+                @ui.refreshable
+                def etat_sauvegarde():
+                    e = lire_etat()
+                    if sauve["faute"]: ui.label(sauve["faute"]).classes("text-base text-red-800")
+                    if sauve["fait"]:
+                        ui.label(sauve["fait"]).classes("text-base text-primary break-all")
+                        ui.button("Montrer dans le dossier", icon="folder_open", on_click=lambda: montrer_fichier(e["sauvegarde_chemin"])).props("outline")
+                    elif e.get("sauvegarde_le"):
+                        ui.label(f"Dernière sauvegarde le {quand_iso(e['sauvegarde_le'])}.").classes("text-base text-gray-700")
+                    else:
+                        ui.label("Aucune sauvegarde faite pour l'instant.").classes("text-base text-gray-700")
+                etat_sauvegarde()
+
+              with ui.column().classes("w-full gap-3") as pages_ui["contact"]:   # Réglages, Un problème, une idée ?
+                ui.label("Un problème, une idée ?").classes("text-lg font-bold")
+                ui.label("Bridge Coach se discute sur GitHub, le site où vit son programme. Il faut un compte GitHub, gratuit, "
+                         "pour écrire ; tout le monde peut lire. Écrivez en français.").classes("text-base text-gray-700")
+                for titre_, texte_, lien_, icone_ in (
+                        ("Signaler un problème", "Quelque chose ne marche pas, un message d'erreur, un résultat faux : dites ce que "
+                         "vous faisiez, ce que vous attendiez et ce qui s'est passé.", GITHUB + "/issues/new", "bug_report"),
+                        ("Proposer une idée, poser une question, discuter", "Une amélioration, une façon de faire, une question "
+                         "sur le bridge ou sur le programme : les discussions sont ouvertes à tous.", GITHUB + "/discussions", "forum")):
+                    with ui.row().classes("w-full items-start gap-3 no-wrap p-3").style("border:2px solid #e3e7ea;border-radius:10px"):
+                        ui.icon(icone_, size="26px").classes("text-primary")
+                        with ui.column().classes("gap-1 grow"):
+                            ui.label(titre_).classes("text-base font-bold")
+                            ui.label(texte_).classes("text-base text-gray-700")
+                            ui.button("Ouvrir dans le navigateur", icon="open_in_new", on_click=lambda l=lien_: ouvrir(l)).props("outline").classes("self-start")
+                            ui.label(lien_).classes("text-sm text-gray-600 break-all")
+                ui.label(f"Donnez aussi le numéro de version : {maj.version_locale()}, et votre système "
+                         f"({'Windows' if sys.platform == 'win32' else 'Mac'}).").classes("text-base text-gray-700")
+                @ui.refreshable
+                def fichier_erreur():
+                    f_ = os.path.join(rapport.RAPPORTS, "derniere-erreur.txt")
+                    if not os.path.exists(f_):
+                        ui.label("Quand un calcul échoue, Bridge Coach en écrit le détail dans le fichier derniere-erreur.txt "
+                                 "du dossier des rapports. Il n'y en a pas pour l'instant.").classes("text-base text-gray-700"); return
+                    le_ = datetime.datetime.fromtimestamp(os.path.getmtime(f_)).strftime("%d/%m/%Y à %H:%M")
+                    ui.html(f"<b>La dernière erreur</b> (le {le_}) est dans le fichier <b>derniere-erreur.txt</b>. Joignez-le à "
+                            "votre signalement : glissez-le dans la case du message sur GitHub. Il ne contient que le détail "
+                            "technique de l'erreur et des noms de dossiers de votre ordinateur, pas vos séances ni les noms "
+                            "des joueurs ; ouvrez-le pour le vérifier si vous voulez.", sanitize=False).classes("text-base text-gray-700")
+                    with ui.row().classes("gap-3"):
+                        ui.button("Montrer le fichier", icon="folder_open", on_click=lambda: montrer_fichier(f_)).props("outline")
+                        ui.button("L'ouvrir", icon="description", on_click=lambda: ouvrir(f_)).props("flat")
+                fichier_erreur()
+                ui.label("N'envoyez pas vos fichiers de séance (.bc.json) sur GitHub : ils contiennent les noms complets des "
+                         "joueurs, et tout ce qu'on y dépose est public.").classes("text-base text-gray-700")
+
               with ui.column().classes("w-full gap-3") as pages_ui["maj"]:
                 ui.label("Mise à jour du programme").classes("text-lg font-bold")
                 ui.label(f"Bridge Coach, version {maj.version_locale()}").classes("text-base font-bold")
@@ -3302,7 +3460,7 @@ def page():
 
             montrer_pages()                                # chaque onglet à pages s'ouvre sur sa première page
 
-            with ui.tab_panel(o_aide).classes("px-0 pt-0 max-w-xl"):   # une page comme les autres : un onglet la quitte
+            with ui.tab_panel(o_aide).classes("px-0 pt-0").style("max-width:1100px"):   # une page comme les autres : un onglet la quitte
                 page_aide()                                    # une section à la fois, choisie dans la barre de gauche
 
             with ui.tab_panel(o_fichier).classes("px-0 pt-0 max-w-3xl") as panneau_fichier, \
@@ -3334,6 +3492,57 @@ def page():
                                     ui.label(titre).classes("text-base font-bold")
                                 ui.label(sous).classes("text-base text-gray-700")
                 cartes_facon()
+
+                @ui.refreshable
+                def formulaire_import():
+                    """Avant d'importer : le titre et le nom du fichier proposés, à changer si on veut (fichiers.proposer)."""
+                    x = a_importer
+                    if not x["chemin"]: return
+                    with ui.column().classes("w-full gap-2 p-4 mb-4").style("border:2px solid #1976d2;border-radius:10px;background:#f7fafd"):
+                        ui.label(f"Importer {os.path.basename(x['chemin'])}").classes("text-lg font-bold break-all")
+                        if x["lecture"]:
+                            ui.label("Lecture du fichier…").classes("text-base text-gray-700"); return
+                        if x["faute"]:
+                            ui.label(x["faute"]).classes("text-base text-red-800")
+                            ui.button("Fermer", on_click=lambda: fermer_import()).props("flat"); return
+                        p = x["prop"]
+                        ui.label(f"Séance du {p['date']}").classes("text-base text-gray-700")
+                        if p["deja"]:
+                            ui.html(f"Déjà importé : <b>{html_.escape(fichiers.titre_de(p['deja']))}</b>. L'importer à nouveau met "
+                                    "cette séance à jour ; ses analyses, ses parties jouées et les noms complets restent.",
+                                    sanitize=False).classes("text-base text-gray-700")
+                        titre_in = ui.input("Titre", value=x["titre"]).props("outlined").classes("w-full text-base")
+                        nom_in = ui.input("Nom du fichier", value=x["nom"]).props("outlined suffix=.bc.json").classes("w-full text-base")
+                        nom_in.set_enabled(not p["deja"])          # un réimport garde son fichier (Fichier, Infos le renomme)
+                        aide = ui.label("").classes("text-base")
+
+                        def verifier():
+                            n = fichiers.nettoyer_nom(nom_in.value); x["nom"] = nom_in.value; x["titre"] = titre_in.value
+                            pris = n and not p["deja"] and os.path.exists(os.path.join(p["dossier"], n + rapport.BC))
+                            aide.text = ("Donnez un nom au fichier." if not n else
+                                         f"Ce nom est déjà pris : {n}.bc.json" if pris else
+                                         f"Enregistré sous : {n}.bc.json" if n != nom_in.value.strip() else "")
+                            aide.classes(replace="text-base " + ("text-red-800" if (pris or not n) else "text-gray-700"))
+                            ok.set_enabled(bool(n) and not pris and bool(titre_in.value.strip()))
+
+                        def titre_change(e):
+                            if not x["nom_touche"] and not p["deja"]:   # le nom suit le titre, tant qu'on ne l'a pas tapé
+                                x["nom"] = fichiers.nom_libre(p["dossier"], fichiers.nom_propose(
+                                    {"session": {"date": p["date"]}}, e.value, p["genre"]))
+                                nom_in.value = x["nom"]           # (x["nom"] d'abord : nom_change n'y voit pas une frappe)
+                            verifier()
+
+                        def nom_change(_):
+                            if nom_in.value != x["nom"]: x["nom_touche"] = True
+                            verifier()
+                        with ui.row().classes("gap-3"):
+                            ok = ui.button("Importer" if not p["deja"] else "Importer à nouveau", icon="download",
+                                           on_click=lambda: importer(x["chemin"], fichiers.nettoyer_nom(nom_in.value), titre_in.value.strip())) \
+                                .props("unelevated")
+                            ui.button("Annuler", on_click=lambda: fermer_import()).props("flat")
+                        titre_in.on_value_change(titre_change); nom_in.on_value_change(nom_change)
+                        verifier()
+                formulaire_import()
 
                 with ui.column().classes("w-full gap-0") as sections_n["themes"]:
                   ui.label("Choisissez des thèmes et combien de donnes de chacun ; sans thème, la séance est vide et vous tapez "
@@ -3428,14 +3637,45 @@ def page():
 
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["ouvrir"]:   # Fichier, Ouvrir une séance
         ui.label("Ouvrir une séance").classes("text-lg font-bold")
+        faute_o = {"texte": ""}
         @ui.refreshable
         def liste():
             tout = seances_bc()
             if not tout: ui.label("Aucune séance pour l'instant : Fichier, Nouveau").classes("text-base text-gray-700")
-            for c in tout[:15]:
-                date, source = infos_seance(c)
-                ui.button(f"{date}  –  {source + ' – ' if source else ''}{rapport.nom_seance(c)}", on_click=lambda c=c: choisir(c)) \
-                    .props("flat align=left no-caps").classes("w-full")
+            mois = {}                                      # toutes les séances, par mois de la séance, le plus récent d'abord
+            for c in tout:
+                j, m, a_ = (infos_seance(c)[0].split("/") + ["", "", ""])[:3]
+                mois.setdefault((a_, m), []).append(c)
+            ouverte = os.path.abspath(choix["chemin"]) if choix["chemin"] else None
+            ouvert = next((k for k, cs in mois.items() if ouverte in map(os.path.abspath, cs)), next(iter(mois), None))
+            annee = None
+            for (a_, m), cs in mois.items():
+                if a_ != annee and len({k[0] for k in mois}) > 1:   # plusieurs années : l'année en tête de ses mois
+                    annee = a_; ui.label(a_).classes("text-base font-bold text-gray-700 mt-2")
+                nom_mois = (fichiers.MOIS[int(m) - 1].capitalize() + " " + a_) if m.isdigit() else "Sans date"
+                with ui.expansion(f"{nom_mois} · {len(cs)} séance{'s' if len(cs) > 1 else ''}", value=(a_, m) == ouvert) \
+                        .classes("w-full text-base").props("dense header-class='text-base font-bold'"):
+                    for c in cs:                           # le titre, la date et d'où elle vient ; le nom du fichier en petit
+                        date, source = infos_seance(c)
+                        est = ouverte == os.path.abspath(c)
+                        with ui.button(on_click=lambda c=c: choisir(c)).props("flat align=left no-caps").classes("w-full"):
+                            with ui.column().classes("gap-0 items-start text-left"):
+                                ui.label(fichiers.titre_de(c) + ("  · ouverte" if est else "")).classes("text-base font-bold")
+                                ui.label(f"{date}  ·  {source + '  ·  ' if source else ''}{os.path.basename(c)}").classes("text-sm text-gray-600 break-all")
+            jetees = fichiers.dans_la_corbeille()
+            if jetees:                                     # la corbeille, repliée : on en remet une d'un clic
+                with ui.expansion(f"Corbeille · {len(jetees)} séance{'s' if len(jetees) > 1 else ''}", icon="delete") \
+                        .classes("w-full text-base mt-3").props("dense header-class='text-base text-gray-700'"):
+                    ui.label("Rien n'y est effacé. « Remettre » replace la séance avec ses rapports et ses parties jouées.") \
+                        .classes("text-base text-gray-700")
+                    for d_, titre_, date_, quand_ in jetees:
+                        with ui.row().classes("w-full items-center justify-between no-wrap gap-3 py-1"):
+                            with ui.column().classes("gap-0"):
+                                ui.label(titre_).classes("text-base font-bold")
+                                ui.label(f"Séance du {date_} · mise à la corbeille le {quand_}").classes("text-sm text-gray-600")
+                            ui.button("Remettre", icon="restore_from_trash", on_click=lambda d_=d_: remettre_(d_)).props("outline").classes("shrink-0")
+                    ui.button("Ouvrir la corbeille", icon="folder_open", on_click=lambda: ouvrir(fichiers.corbeille_dossier())).props("flat")
+            if faute_o["texte"]: ui.label(faute_o["texte"]).classes("text-base text-red-800")
         liste()
         ui.label("Ou une séance Bridge Coach (.bc.json) ailleurs sur l'ordinateur :").classes("text-base mt-2")
         envoi = ui.upload(on_upload=lambda e: recu(e), auto_upload=True, max_files=1).props('accept=".json"').classes("hidden")
@@ -3443,8 +3683,8 @@ def page():
 
     with pages_ui["nouveau"], ui.column().classes("w-full gap-2") as sections_n["bws"]:   # Nouveau, depuis un tournoi Bridgemate
         ui.html("Bridge Coach <b>importe</b> les données du tournoi (donnes, joueurs, enchères, résultats) dans une "
-                "nouvelle séance <b>.bc.json</b>. Le fichier .bws est seulement lu : Bridge Coach n'y écrit jamais, et la "
-                "séance n'en a plus besoin ensuite (une copie est rangée avec elle).", sanitize=False).classes("text-base text-gray-700")
+                "nouvelle séance <b>.bc.json</b>, sous un titre et un nom que vous choisissez. Le fichier .bws est seulement lu : "
+                "Bridge Coach n'y écrit jamais, et la séance n'en a plus besoin ensuite.", sanitize=False).classes("text-base text-gray-700")
         ui.label("Les tournois du dossier de Bridgemate, les plus récents d'abord :").classes("text-base mt-1")
         @ui.refreshable
         def liste_i():
@@ -3452,7 +3692,7 @@ def page():
             if not bws: ui.label(f"Aucun fichier .bws dans {dossier}.").classes("text-base text-gray-700")
             for b in bws:
                 fait = " (déjà importé)" if deja_importe(b) else ""
-                ui.button(f"{date_lisible(b)}  –  {os.path.basename(b)}{fait}", on_click=lambda b=b: importer(b)) \
+                ui.button(f"{date_lisible(b)}  –  {os.path.basename(b)}{fait}", on_click=lambda b=b: preparer_import(b)) \
                     .props("flat align=left no-caps").classes("w-full")
         liste_i()
         ui.label("Ou un tournoi ailleurs sur l'ordinateur : un .bws, ou la feuille de route .pdf de FFBClubNet "
@@ -3464,7 +3704,7 @@ def page():
         ui.html("Un fichier .pbn (Portable Bridge Notation) : les donnes d'un tournoi, de BBO, de Funbridge ou d'un autre "
                 "logiciel. Bridge Coach <b>importe</b> les mains, le donneur et la vulnérabilité, et, quand le fichier les donne, "
                 "le contrat, les enchères, l'entame et le résultat d'une table, dans une nouvelle séance <b>.bc.json</b>. Le "
-                "fichier .pbn est seulement lu : Bridge Coach n'y écrit jamais (une copie est rangée avec la séance).",
+                "fichier .pbn est seulement lu : Bridge Coach n'y écrit jamais, et la séance n'en a plus besoin ensuite.",
                 sanitize=False).classes("text-base text-gray-700")
         envoi_p = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".pbn"').classes("hidden")
         ui.button("Choisir un fichier .pbn…", icon="folder_open", on_click=lambda: parcourir_i(TYPES_PBN, envoi_p)).props("unelevated").classes("self-start")
@@ -3483,24 +3723,142 @@ def page():
             ui.button("Annuler", on_click=lambda: confirmation.close()).props("flat")
             ui.button("Supprimer", icon="delete", on_click=lambda: supprimer()).props("color=red")
 
+    with ui.dialog() as corbeille_d, ui.card().classes("w-full max-w-md"):
+        corbeille_texte = ui.label("").classes("text-base")
+        with ui.row().classes("gap-3 justify-end w-full"):
+            ui.button("Annuler", on_click=lambda: corbeille_d.close()).props("flat")
+            ui.button("Mettre à la corbeille", icon="delete", on_click=lambda: mettre_a_la_corbeille()).props("color=red")
+
     envoi_x = ui.upload(on_upload=lambda e: recu_x(e), auto_upload=True, max_files=1).props('accept=".json"').classes("hidden")
 
-    with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["exporter"]:   # Fichier, Exporter en PBN
-        ui.label("Exporter en PBN").classes("text-lg font-bold")
-        ui.label("Le .pbn s'importe dans Bridgemate (Fichier, Importer) et se lit dans la plupart des logiciels de bridge. "
-                 "Il est écrit à côté de la séance.").classes("text-base text-gray-700")
-        exporte = {"f": None}
+    with panneau_fichier, ui.column().classes("w-full gap-3") as pages_ui["exporter"]:   # Fichier, Exporter…
+        ui.label("Exporter la séance").classes("text-lg font-bold")
+        ui.label("Le fichier exporté est écrit à côté de la séance, dans le dossier de travail. La séance elle-même ne "
+                 "change pas.").classes("text-base text-gray-700")
+        exporte = {"f": None, "format": lire_etat().get("export_format") or "excel", "quoi": "resultats", "noms": False, "faute": ""}
         @ui.refreshable
         def a_exporter():
             c = choix["chemin"]
             if not c or not c.endswith(rapport.BC):
                 ui.label("Aucune séance ouverte : Fichier, Ouvrir une séance.").classes("text-base"); return
-            ui.label(f"Séance : {infos_seance(c)[0]} – {rapport.nom_seance(c)}").classes("text-base")
-            ui.button("Exporter en PBN", icon="file_download", on_click=lambda: exporter()).classes("mt-1")
+            ui.label(f"Séance : {fichiers.titre_de(c)}").classes("text-base font-bold")
+            with ui.column().classes("gap-2"):
+                for k, nom, sous in exporter.FORMATS:          # le format : trois cartes, comme Nouveau
+                    choisi = exporte["format"] == k
+                    with ui.row().classes("items-center gap-3 p-3 cursor-pointer no-wrap w-full").style(
+                            "border-radius:10px;" + ("background:#eef4fb;border:2px solid #1976d2" if choisi else
+                                                     "background:#fff;border:2px solid #e3e7ea")) \
+                            .on("click", lambda k=k: (exporte.update(format=k, f=None, faute=""), ecrire_etat(export_format=k), a_exporter.refresh())):
+                        ui.icon("radio_button_checked" if choisi else "radio_button_unchecked", size="22px") \
+                            .classes("text-primary" if choisi else "text-gray-600")
+                        with ui.column().classes("gap-0"):
+                            ui.label(nom).classes("text-base font-bold")
+                            ui.label(sous).classes("text-base text-gray-700")
+            if exporte["format"] == "csv":
+                ui.toggle({k: v for k, v in exporter.TABLEAUX}, value=exporte["quoi"],
+                          on_change=lambda e: exporte.update(quoi=e.value, f=None)).props("no-caps")
+            if exporte["format"] in ("csv", "excel"):
+                ui.checkbox("Avec les noms complets des joueurs (sinon les initiales, comme dans les rapports)", value=exporte["noms"],
+                            on_change=lambda e: exporte.update(noms=e.value)).classes("text-base")
+            ui.button("Exporter", icon="file_download", on_click=lambda: exporter_seance()).props("unelevated").classes("self-start mt-1")
+            if exporte["faute"]: ui.label(exporte["faute"]).classes("text-base text-red-800")
             if exporte["f"] and os.path.dirname(exporte["f"]) == os.path.dirname(c):
-                ui.label(f"Exporté : {exporte['f']}").classes("text-base break-all")
-                ui.button("Ouvrir le dossier", on_click=lambda: ouvrir(os.path.dirname(exporte["f"]))).props("outline")
+                ui.label(f"Exporté : {os.path.basename(exporte['f'])}").classes("text-base break-all")
+                with ui.row().classes("gap-3"):
+                    if not exporte["f"].endswith(".pbn"):
+                        ui.button("Ouvrir le fichier", icon="open_in_new", on_click=lambda: ouvrir(exporte["f"])).props("outline")
+                    ui.button("Montrer dans le dossier", icon="folder_open", on_click=lambda: montrer_fichier(exporte["f"])).props("outline")
         a_exporter()
+
+    with panneau_fichier, ui.column().classes("w-full gap-3") as pages_ui["infos"]:   # Fichier, Infos
+        ui.label("Infos sur la séance").classes("text-lg font-bold")
+        infos_ui = {"copie": False, "faute": "", "fait": ""}
+        @ui.refreshable
+        def page_infos():
+            c = choix["chemin"]
+            if not c or not c.endswith(rapport.BC) or not os.path.isfile(c):
+                ui.label("Aucune séance ouverte : Fichier, Ouvrir une séance.").classes("text-base"); return
+            try:
+                data = rapport.lire_bc(c)
+            except (OSError, ValueError):
+                ui.label("Cette séance ne se lit pas.").classes("text-base text-red-800"); return
+            s = data.get("session", {}); src = data.get("source") or {}; f = data.get("fichier") or {}
+            lies_ = fichiers.lies(c)
+            titre_in = ui.input("Titre", value=s.get("titre") or "").props("outlined").classes("w-full text-base")
+            b_titre = ui.button("Enregistrer le titre", icon="check", on_click=lambda: changer_titre_(c, titre_in.value)).props("outline").classes("self-start")
+            b_titre.set_enabled(False)
+            titre_in.on_value_change(lambda e: b_titre.set_enabled(bool(e.value.strip()) and e.value.strip() != (s.get("titre") or "")))
+            prop = fichiers.proposer_pour(c)                # une séance d'avant les titres : titre et nom proposés
+            if prop:
+                with ui.column().classes("w-full gap-1 p-3").style("border-radius:10px;background:#eef4fb"):
+                    ui.label("Ce fichier date d'avant les titres. Bridge Coach propose :").classes("text-base")
+                    ui.html(f"le titre <b>{html_.escape(prop[0])}</b><br/>et le nom <b>{html_.escape(prop[1])}.bc.json</b>",
+                            sanitize=False).classes("text-base")
+                    ui.button("Utiliser ces propositions", icon="auto_fix_high", on_click=lambda: adopter_(c, *prop)).props("unelevated").classes("self-start mt-1")
+
+            def bloc(nom, lignes):
+                lignes = [(k, v) for k, v in lignes if v not in (None, "", [])]
+                if not lignes: return
+                ui.label(nom).classes("text-base font-bold mt-2")
+                with ui.grid(columns="170px 1fr").classes("w-full gap-x-4 gap-y-1 text-base"):   # les mêmes colonnes partout
+                    for k, v in lignes:
+                        ui.label(k).classes("text-gray-700"); ui.label(str(v)).classes("break-all")
+            d = fichiers.date_de(data)
+            cree = f.get("cree_le") or src.get("importe") or datetime.datetime.fromtimestamp(creation(c)).isoformat(timespec="seconds")
+            bloc("Le fichier", [("Nom", os.path.basename(c)), ("Dossier", os.path.dirname(c)), ("Créé le", quand_iso(cree)),
+                                ("Avec Bridge Coach", f.get("cree_avec")),
+                                ("Modifié le", quand_iso(f.get("modifie_le") or datetime.datetime.fromtimestamp(os.path.getmtime(c)).isoformat(timespec="seconds")))])
+            bloc("D'où elle vient", [("Source", SOURCES.get(src.get("type"), src.get("type"))),
+                                     ("Fichier d'origine", src.get("fichier") if src.get("type") not in ("entrainement", "saisie") else ""),
+                                     ("Il était dans", os.path.dirname(src["chemin"]) if src.get("chemin") else ""),
+                                     ("Daté du", quand_iso(src.get("date_fichier"))),
+                                     ("Importée le", quand_iso(src.get("importe")) if src.get("type") not in ("entrainement", "saisie") else "")])
+            a_finir = sum(1 for x in data.get("donnes", []) if x.get("a_completer"))
+            mes = moi.paires(data)
+            bloc("La séance", [("Date", fichiers.date_longue(d) if d else s.get("date")), ("Heure", s.get("heure")),
+                               ("Tables", s.get("tables") or "aucune : donnes non jouées"),
+                               ("Mouvement", "Mitchell" if s.get("mitchell") else "Howell ou tables fixes" if s.get("tables") else ""),
+                               ("Marque", moi.MARQUES.get(moi.marque(data))),
+                               ("Donnes", f"{len(data.get('donnes', []))}" + (f", dont {a_finir} à compléter" if a_finir else "")),
+                               ("Paires", len(data.get("paires") or {}) or ""),
+                               ("Thèmes", ", ".join(s.get("themes") or [])),
+                               ("Vous êtes", ("dans la paire " + ", ".join(sorted((data.get("paires") or {}).get(k, {}).get("nom") or k for k in mes)))
+                                if mes else "")])
+            ans = data.get("analyses") or {}
+            joues = sum(1 for v in (jouer.lire_essais(base_seance(c)).get("donnes") or {}).values() if v)
+            bloc("Le travail fait", [("Analyse du coach", quand_iso((ans.get("standard") or {}).get("fait_le"))),
+                                     ("Analyse de l'expert", quand_iso((ans.get("expert") or {}).get("fait_le"))),
+                                     ("Rapports PDF", len(lies_["pdf"]) or ""),
+                                     ("Donnes rejouées", joues or ""),
+                                     ("Versions gardées", len([v for v in lies_["versions"] if v.endswith(rapport.BC)]) or "")])
+
+            ui.label("Le fichier").classes("text-base font-bold mt-3")
+            with ui.row().classes("items-start gap-3 w-full no-wrap"):
+                nom_in = ui.input("Nom du fichier", value=fichiers.base(c)).props("outlined suffix=.bc.json").classes("grow text-base")
+                ui.button("Renommer", icon="drive_file_rename_outline", on_click=lambda: renommer_(c, nom_in.value)).props("outline").classes("mt-2")
+            ui.label("Ses rapports, ses parties jouées et ses versions gardées suivent le nouveau nom.").classes("text-base text-gray-700")
+            with ui.row().classes("gap-3"):
+                ui.button("Dupliquer…", icon="content_copy", on_click=lambda: (infos_ui.update(copie=True), page_infos.refresh())).props("outline")
+                ui.button("Montrer dans le dossier", icon="folder_open", on_click=lambda: montrer_fichier(c)).props("outline")
+                ui.button("Mettre à la corbeille…", icon="delete", on_click=lambda: demander_corbeille(c)).props("outline color=red")
+            if infos_ui["copie"]:
+                n0, t0 = fichiers.proposer_copie(c)
+                with ui.column().classes("w-full gap-2 p-3").style("border:2px solid #1976d2;border-radius:10px;background:#f7fafd"):
+                    ui.label("Une copie de la séance, ses analyses comprises (pas ses parties jouées ni ses rapports) :").classes("text-base")
+                    t_in = ui.input("Titre de la copie", value=t0).props("outlined").classes("w-full text-base")
+                    n_in = ui.input("Nom du fichier", value=n0).props("outlined suffix=.bc.json").classes("w-full text-base")
+                    with ui.row().classes("gap-3"):
+                        ui.button("Créer la copie", icon="content_copy", on_click=lambda: dupliquer_(c, n_in.value, t_in.value)).props("unelevated")
+                        ui.button("Annuler", on_click=lambda: (infos_ui.update(copie=False), page_infos.refresh())).props("flat")
+            if infos_ui["faute"]: ui.label(infos_ui["faute"]).classes("text-base text-red-800")
+            if infos_ui["fait"]: ui.label(infos_ui["fait"]).classes("text-base text-primary")
+            j = list(reversed(f.get("journal") or []))
+            if j:
+                ui.label("Son histoire").classes("text-base font-bold mt-3")
+                with ui.grid(columns="auto 1fr").classes("gap-x-6 gap-y-1 text-base"):
+                    for x in j[:20]:
+                        ui.label(quand_iso(x.get("le"))).classes("text-gray-700"); ui.label(x.get("quoi", "")).classes("break-all")
+        page_infos()
 
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["dossier"]:   # Fichier, Ouvrir le dossier de travail
         ui.label("Le dossier de travail").classes("text-lg font-bold")
@@ -3552,31 +3910,152 @@ def page():
         resultats.refresh(); vue_analyse.refresh()
         if onglets.value not in (o_donnes, o_analyse, o_rapports, "Donnes", "Analyse", "Rapports"): onglets.set_value(o_donnes)
 
-    def importer(b):
+    async def preparer_import(b):
+        """Un fichier à importer : Fichier, Nouveau montre le titre et le nom proposés ; rien n'est écrit avant « Importer »."""
+        if T.actif or D.actif or I.actif: return
+        a_importer.update(chemin=b, prop=None, titre="", nom="", nom_touche=False, lecture=True, faute="")
+        onglets.set_value(o_fichier); voir_page("Fichier", "nouveau")
+        choisir_facon("pbn" if b.lower().endswith(".pbn") else "bws")
+        formulaire_import.refresh()
+        try:
+            p = await run.io_bound(fichiers.proposer, b)
+            a_importer.update(prop=p, titre=p["titre"], nom=p["nom"])
+        except SystemExit as ex:
+            a_importer["faute"] = str(ex)
+        except Exception as ex:
+            a_importer["faute"] = (f"{os.path.basename(b)} ne se lit pas : {ex}" if isinstance(ex, ValueError)
+                                   else f"{os.path.basename(b)} ne se lit pas comme un tournoi.")
+        a_importer["lecture"] = False
+        formulaire_import.refresh()
+
+    def fermer_import():
+        a_importer.update(chemin=None, prop=None); formulaire_import.refresh()
+
+    def importer(b, nom=None, titre=None):
         if T.actif or D.actif or I.actif: return
         vu_i["fini"] = None; faute_i.text = ""
+        fermer_import()
         onglets.set_value(o_donnes)
-        lancer_import(b); nouveau.refresh()
+        lancer_import(b, nom, titre); nouveau.refresh()
 
-    def exporter():
+    def exporter_seance():
         c = choix["chemin"]
         if not c or not c.endswith(rapport.BC):
             ui.notify("Ouvrez d'abord une séance (Fichier, Ouvrir une séance)."); return
+        exporte["faute"] = ""
         try:
-            f = exporter_pbn(c)
+            exporte["f"] = exporter.exporter(c, exporte["format"], exporte["quoi"], exporte["noms"])
+            fichiers.journal_seance(c, f"Exportée : {os.path.basename(exporte['f'])}")
+        except ValueError as ex:
+            exporte["f"] = None; exporte["faute"] = str(ex)
+        except PermissionError:
+            exporte["f"] = None; exporte["faute"] = "Le fichier est ouvert dans un autre programme (Excel ?) : fermez-le, puis recommencez."
         except Exception:
-            ui.notify("Cette séance ne peut pas être exportée."); return
-        exporte["f"] = f; a_exporter.refresh()
+            exporte["f"] = None; exporte["faute"] = "Cette séance ne peut pas être exportée."
+        a_exporter.refresh()
+
+    def apres_changement(c, message=""):
+        """Après un renommage, une copie ou la corbeille : la séance ouverte, les listes et le titre de la fenêtre suivent."""
+        infos_ui.update(copie=False, faute="", fait=message)
+        if c: choisir(c)
+        else:
+            choix["chemin"] = None; retenir(None); montrer_titre(); vue["entree"] = "seance"
+            vue_seance.refresh(); barre_seance.refresh(); montrer_barre(); montrer_controles(); resultats.refresh(); vue_analyse.refresh()
+        onglets.set_value(o_fichier); voir_page("Fichier", "infos" if c else "ouvrir")
+
+    def changer_titre_(c, titre):
+        try:
+            fichiers.changer_titre(c, titre)
+        except ValueError as ex:
+            infos_ui["faute"] = str(ex); page_infos.refresh(); return
+        apres_changement(c, "Titre enregistré.")
+
+    def renommer_(c, nom):
+        if T.actif or D.actif or I.actif:
+            infos_ui["faute"] = "Un calcul est en cours : attendez qu'il se termine."; page_infos.refresh(); return
+        try:
+            n = fichiers.renommer(c, nom)
+        except ValueError as ex:
+            infos_ui["faute"] = str(ex); page_infos.refresh(); return
+        except OSError:
+            infos_ui["faute"] = "Le fichier n'a pas pu être renommé (ouvert dans un autre programme ?)."; page_infos.refresh(); return
+        apres_changement(n, f"Renommée : {os.path.basename(n)}")
+
+    def adopter_(c, titre, nom):
+        if T.actif or D.actif or I.actif:
+            infos_ui["faute"] = "Un calcul est en cours : attendez qu'il se termine."; page_infos.refresh(); return
+        try:
+            n = fichiers.adopter(c, titre, nom)
+        except (ValueError, OSError) as ex:
+            infos_ui["faute"] = str(ex) if isinstance(ex, ValueError) else "Le fichier n'a pas pu être renommé."; page_infos.refresh(); return
+        apres_changement(n, f"Titre et nom enregistrés : {os.path.basename(n)}")
+
+    def dupliquer_(c, nom, titre):
+        try:
+            n = fichiers.dupliquer(c, nom, titre)
+        except ValueError as ex:
+            infos_ui["faute"] = str(ex); page_infos.refresh(); return
+        apres_changement(n, "Copie créée : c'est elle qui est ouverte.")
+
+    async def sauvegarder_():
+        """Où l'écrire : la fenêtre demande (Documents par défaut) ; dans le navigateur, le dossier sauvegardes du dossier de travail."""
+        sauve.update(fait="", faute="")
+        nom_ = fichiers.nom_sauvegarde()
+        if app.native.main_window:
+            r = await app.native.main_window.create_file_dialog(dialog_type=webview_save(), directory=os.path.expanduser("~/Documents"),
+                                                                 save_filename=nom_)
+            if not r: return
+            cible = r if isinstance(r, str) else r[0]
+            if not cible.lower().endswith(".zip"): cible += ".zip"
+        else:
+            os.makedirs(os.path.join(rapport.DONNEES, "sauvegardes"), exist_ok=True)
+            cible = os.path.join(rapport.DONNEES, "sauvegardes", nom_)
+        try:
+            n = await run.io_bound(fichiers.sauvegarder, cible)
+        except OSError:
+            sauve["faute"] = "La sauvegarde n'a pas pu être écrite à cet endroit : choisissez un autre dossier."
+            etat_sauvegarde.refresh(); return
+        ecrire_etat(sauvegarde_le=datetime.datetime.now().isoformat(timespec="seconds"), sauvegarde_chemin=cible)
+        sauve["fait"] = f"{n} séance{'s' if n > 1 else ''} sauvegardée{'s' if n > 1 else ''} dans {cible}"
+        etat_sauvegarde.refresh()
+
+    def remettre_(d_):
+        faute_o["texte"] = ""
+        try:
+            c = fichiers.remettre(d_)
+        except (ValueError, OSError) as ex:
+            faute_o["texte"] = str(ex) if isinstance(ex, ValueError) else "La séance n'a pas pu être remise."
+            liste.refresh(); return
+        choisir(c); onglets.set_value(o_fichier); voir_page("Fichier", "ouvrir")
+        ui.notify(f"Séance remise : {fichiers.titre_de(c)}")
+
+    def demander_corbeille(c):
+        corbeille_texte.text = (f"Mettre « {fichiers.titre_de(c)} » à la corbeille, avec ses rapports, ses parties jouées et ses "
+                                "versions gardées ? Rien n'est effacé : tout va dans le dossier corbeille du dossier de travail, "
+                                "d'où vous pouvez le remettre.")
+        corbeille_d.open()
+
+    def mettre_a_la_corbeille():
+        corbeille_d.close(); c = choix["chemin"]
+        if not c: return
+        if T.actif or D.actif or I.actif:
+            infos_ui["faute"] = "Un calcul est en cours : attendez qu'il se termine."; page_infos.refresh(); return
+        try:
+            dossier_ = fichiers.corbeille(c)
+        except OSError:
+            infos_ui["faute"] = "La séance n'a pas pu aller à la corbeille (un fichier est ouvert ailleurs ?)."; page_infos.refresh(); return
+        apres_changement(None)
+        ui.notify(f"Séance mise à la corbeille : {dossier_}", multi_line=True, timeout=8000)
 
     async def parcourir_i(types, envoi):
         if not app.native.main_window: return envoi.run_method("pickFiles")
         r = await app.native.main_window.create_file_dialog(allow_multiple=False, file_types=types)
-        if r: importer(r[0])
+        if r: await preparer_import(r[0])
 
     async def recu_i(e):
         cible = os.path.join(tempfile.mkdtemp(prefix="import-"), os.path.basename(e.file.name))
         await e.file.save(cible)
-        importer(cible)
+        await preparer_import(cible)
 
     async def parcourir():
         """Dans la fenêtre, le dialogue de l'ordinateur : celui d'une page n'y s'ouvre pas. Le navigateur garde le sien."""
@@ -3689,6 +4168,7 @@ def principal():
     app.on_shutdown(lambda: (annuler(T), annuler(D), annuler(I)))
     app.on_startup(lambda: threading.Thread(target=precharger, daemon=True).start())
     # 127.0.0.1 : seul cet ordinateur joint l'application ; sans fenêtre, NiceGUI ouvrirait sinon le port à tout le réseau
+    if os.path.isdir(IMAGES_AIDE): app.add_static_files("/aide-images", IMAGES_AIDE)   # les captures de l'aide
     ui.run(title=TITRE, host="127.0.0.1", port=PORT, reload=False, show_welcome_message=False, favicon="♠", language="fr", **opts)
 
 

@@ -16,9 +16,10 @@ import datetime
 jour = datetime.datetime(2026, 11, 3, 14, 30, 12)
 c = E.nouvelle_seance(jour)
 data = E.lire(c)
-assert os.path.basename(c) == "entrainement-2026-11-03.bc.json" and data["session"]["titre"] == "Entraînement 2026-11-03"
+assert os.path.basename(c) == "2026-11-03-entrainement.bc.json" and data["session"]["titre"] == "Entraînement du mardi 3 novembre 2026"
+assert data["fichier"]["cree_le"] and data["fichier"]["journal"][0]["quoi"] == "Créée vide"
 assert data["source"]["type"] == "saisie" and data["donnes"] == []
-assert os.path.basename(E.nouvelle_seance(jour)) == "entrainement-2026-11-03-143012.bc.json"   # le nom est pris : l'heure en plus
+assert os.path.basename(E.nouvelle_seance(jour)) == "2026-11-03-entrainement-2.bc.json"   # le nom est pris : -2
 assert E.modifiable(c) == (True, "")
 assert E.ajouter_donne(c) == 1 and E.ajouter_donne(c) == 2
 d = E.donne_de(E.lire(c), 2)

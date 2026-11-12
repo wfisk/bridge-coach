@@ -26,16 +26,18 @@ def lire(c):
 
 
 def nouvelle_seance(maintenant=None):
-    """Une séance vide, « Entraînement 2026-11-03 » (entrainement-2026-11-03.bc.json, l'heure en plus si ce nom est pris),
+    """Une séance vide, « Entraînement du mardi 3 novembre 2026 » (2026-11-03-entrainement.bc.json, -2 si ce nom est pris),
     à remplir donne par donne ; renvoie le chemin de son .bc.json."""
     now = maintenant or datetime.datetime.now()
     rapport.preparer_donnees()
     dossier = os.path.join(rapport.SEANCES, now.strftime("%Y-%m"))
     os.makedirs(dossier, exist_ok=True)
-    nom = nom_entrainement(dossier, now)
+    titre, nom = nom_entrainement(dossier, now)
     data = dict(session=dict(date=now.strftime("%d/%m/%Y"), tables=0, sections=["A"], mitchell=False,
-                             titre=f"Entraînement {now.strftime('%Y-%m-%d')}"), donnes=[], paires={}, alertes=[])
+                             titre=titre), donnes=[], paires={}, alertes=[])
     rapport.entete(data, "saisie", nom)
+    import fichiers
+    fichiers.nouvel_entete(data, "saisie", None, titre, "Créée vide")
     chemin = os.path.join(dossier, nom + rapport.BC)
     rapport.ecrire_bc(data, chemin)
     return chemin

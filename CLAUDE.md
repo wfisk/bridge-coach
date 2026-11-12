@@ -62,8 +62,16 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         saved in etat.json "page"."nouveau": Importer un tournoi Bridgemate (.bws of the Bridgemate folder, or any .bws / FFB
                         feuille de route .pdf), Importer un fichier PBN, Créer des donnes d'entraînement (themes or empty); the page says the .bws/.pbn is only read and the session is one .bc.json; the first two are the old
                         Importer page, merged in on 2026-11-11: rapport.py --importer, the .bc.json only, then it opens; .bws already
-                        imported are marked; the Donnes tab offers a new .bws not yet imported), Ouvrir une séance (the .bc.json, by session date), Exporter en PBN (donnes.pbn beside the .bc.json, with
-                        DoubleDummyTricks) and Ouvrir le dossier de travail; the open session is remembered in etat.json beside
+                        imported are marked; the Donnes tab offers a new .bws not yet imported; picking a file first shows a form (preparer_import,
+                        formulaire_import: fichiers.proposer's title and date-first file name, editable, the name following the title until typed;
+                        a file already imported is recognised by source.fichier and re-imported under its own name; then lancer_import --nom= --titre=;
+                        2026-11-12)), Ouvrir une séance (the .bc.json by session date, shown by title with date, source and file name),
+                        Ouvrir lists every session grouped by session month (ui.expansion; the open session's month unfolded, a year
+                        heading when several years) and, folded at the bottom, the Corbeille with « Remettre » (fichiers.dans_la_corbeille,
+                        remettre); Infos (page_infos: title editable, file / source / session / work done / history from the "fichier" block; Renommer,
+                        Dupliquer…, Montrer dans le dossier, Mettre à la corbeille… with a confirm dialog; an older file without title or
+                        date-first name gets « Utiliser ces propositions », fichiers.proposer_pour / adopter), Exporter… (exporter.py: PBN, CSV
+                        or Excel, written beside the .bc.json, the session unchanged; « Avec les noms complets » off by default) and Ouvrir le dossier de travail; the open session is remembered in etat.json beside
                         bridge-coach.ini (retenir, seance_active) and named in the window title (titre_fenetre). The page open is saved too (etat.json "page": tab, sidebar entry, Standard | Expert, help section, Rapports and Réglages pages; retenir_page on every change) and reopened at start (PAGE). Fichier, Nouveau, Créer des donnes d'entraînement: "Créer une séance vide" (edited in the Donnes tab with the deal editor, editeur_donne),
                         then the theme drawing (a − / + count per kind of hand, 36 at most); either new file opens in the Donnes tab. Tabs: Donnes (opens on it) views the open
                         .bc.json with a sidebar (ui.left_drawer, light warm grey GRIS_BARRE like Claude's sidebar, the chosen entry a rounded darker pill, full height, Donnes tab only: Séance (alerts at its foot), Joueurs, a divider, one entry per deal (every tab has two entries then a divider, so Donne 1 stays in place): hands, each table's auction (encheres_html),
@@ -81,7 +89,13 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         names page), "Créer les rapports" (rapport.py --rapports: the PDFs from the saved analyses; T.genre says which
                         tab shows the progress), then the session's PDFs as links with file name and date (lien_pdf); Réglages.
                         Rapports and Réglages have a left sidebar of pages too (PAGES, vue_page, voir_page, pages_ui shown or hidden):
-                        Créer les rapports | Rapports de la séance; Dossiers | Mise à jour du programme.
+                        Créer les rapports | Rapports de la séance; Taille du texte | Votre nom | Dossiers | Sauvegarder mes séances
+                        (fichiers.sauvegarder: one .zip of seances/ without versions/ or .bws, plus documents/; the window asks where,
+                        ~/Documents by default; browser mode writes <working folder>/sauvegardes/; etat.json sauvegarde_le) | Mise à jour
+                        du programme | Un problème, une idée ? (GITHUB: Issues to report a problem, Discussions for ideas and questions,
+                        both enabled on wfisk/bridge-coach; shows derniere-erreur.txt with its date and « Montrer le fichier » to attach it;
+                        warns never to post a .bc.json: full names, and GitHub is public). The help's same topic gives the addresses as
+                        plain text (a link would open GitHub inside the app window).
                         Finished reports open the Rapports de la séance page. The left sidebar is LARGEUR_BARRE wide. Jouer (between Donnes and Analyse; Contrôle was removed): the player
                         bids one seat, the engine the three others (vue_jouer, boite_encheres; logic in jouer.py), then the
                         contract against Expert and Standard. Layout: the table on the left, a warm-neutral rounded square of fixed design size (COTE_TABLE 440px); the table, the four hands and the cards form one block that JS_AJUSTE (.ajuste) scales to fill the window, down to 0.45 or up to 2.4, growing only by real steps (6 %+) so a scrollbar appearing cannot make it shake, and never growing within the same deal at the same window size, so it doesn't swell as the hands empty (window.__echelleDonne) (2026-11-11: on a TV the cards grow, not just the table; every face-up card is one size, 55×79, in hands, dummy and trick) (no name plates: the board case in the centre, bidding
@@ -124,7 +138,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         Mac only so far; Windows not tested
       rapport.py        imports a source (.bws, FFB PDF, .pbn, simulated .json) into the Bridge Coach file
                         seances/AAAA-MM/<name>.bc.json (format, version, source, session, joueurs, donnes…;
-                        entete, ecrire_bc), keeps a copy of the original beside it, builds the PDFs into
+                        entete, ecrire_bc; named --nom=, titled --titre=, else fichiers.proposer's; the original is NOT copied: once
+                        imported, the session never needs it again, the user's choice 2026-11-12), builds the PDFs into
                         rapports/AAAA-MM/ (writes each PDF under a temporary name then swaps it in:
                         Documents is synced by a full iCloud, which kept old versions otherwise)
                         A .bc.json (or the old -donnes.json) is read as is (donnes_pretes), skipping the import. One already inside seances/ stays
@@ -148,7 +163,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         to use git pull. tests/test_maj.py applies a good and a broken version to throwaway copies
       donnes.py         creates training deals: a count per theme ("Squeeze=4" "Aléatoire=8", lire_quotas; the app's − / + list), each theme a test on a random
                         deal (THEMES: engine auction, double-dummy, coups.py or the plan's count), DELAI seconds per deal, then
-                        random and says so. Writes entrainement-<date>-<HHMMSS>.bc.json (source "entrainement" or "saisie") and a .pbn for Bridgemate
+                        random and says so. Writes AAAA-MM-JJ-entrainement-<themes>.bc.json (source "entrainement" or "saisie") and a .pbn for Bridgemate
                         (Control Software 3.1.2+: File, Import). Deals have no tables: their report has no results tables
                         Each theme has a family and a level (META: encheres / carte, 1 = 1re année, 2 = intermédiaire,
                         3 = avancé; new first-year themes Évaluer sa main, Soutien de la majeure, Compter ses levées, L'impasse);
@@ -158,6 +173,18 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         a summary line and one button, « Créer N donnes » or « Créer une séance vide » with no theme.
                         Deals typed by hand (lire_texte / texte_de: "PRDX76C32K…T…" × 4 from North, then vulnerability
                         N-S, E-O as V/N and the dealer, "VVN"; West may be left out): donnes.py --texte only (the app types deals in the Donnes tab)
+      fichiers.py       the session file itself (2026-11-12): titles and date-first names proposed at import (proposer, titre_propose:
+                        « Tournoi du jeudi 5 novembre 2026 (après-midi, 7 tables) » from the .bws Session Date and Time, a PBN's
+                        [Event]; nom_propose, nom_libre adds -2), the "fichier" block (nouvel_entete: cree_le, cree_avec = VERSION,
+                        journal; rapport.ecrire_bc sets modifie_le and writes it first; ecrire_analyse adds a journal line), session.titre,
+                        session.heure, source {type, fichier, importe, chemin, date_fichier}; lies(c): what goes with a session
+                        (-jeu.json and other same-name files, versions/, its PDFs: <session date>-<nom_court>-<quoi>…, pour-claude/<file
+                        name>, dossier_claude); renommer, dupliquer, corbeille (<working folder>/corbeille/<date-time>-<name>/, nothing
+                        deleted). app.rapports_de lists only PDFs with this session's date. The "fichier" block never goes to Claude
+                        (seance_pour_claude). tests/test_fichiers.py
+      exporter.py       Fichier, Exporter…: PBN (donnes.pbn), CSV (résultats, donnes or paires; « ; », decimal comma, UTF-8 BOM for
+                        French Excel), Excel .xlsx written with zipfile and XML only (no openpyxl: requirements are hash-locked and
+                        members would need it; sheets Séance, Donnes, Résultats, Paires, header frozen, filters). Initials unless noms=True
       bws_extract.py    .bws -> donnes-AAAA-MM-JJ.json (prints ALERTES for broken auctions)
       pbn.py            .pbn import (rapport.py, the app's Importer): deals as in a training session (donnes.donne_complete:
                         double-dummy, points, par), source "pbn", title from [Event], date from [Date]; a deal with
@@ -254,8 +281,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         deal: a deal shows as a page with "Modifier la donne" (editor; "Terminer" goes back), new or unfinished
                         deals open in the editor; a deal with an expert analysis asks first (a_analyse_expert), and changing it
                         sets that deal's expert entry aside (oublier_analyse: the file is first copied to versions/, the other deals keep theirs).
-                        nouvelle_seance ("Entraînement AAAA-MM-JJ", file entrainement-AAAA-MM-JJ.bc.json, time
-                        added only if taken: donnes.nom_entrainement), ajouter_donne, poser_couleur (one suit, typed A R D V X
+                        nouvelle_seance (« Entraînement du mardi 3 novembre 2026 », file 2026-11-03-entrainement.bc.json, -2 if
+                        taken: donnes.nom_entrainement → fichiers.entrainement, themes added to title and name), ajouter_donne, poser_couleur (one suit, typed A R D V X
                         or K Q J T, saved at once), completer_au_hasard, regler (dealer, vulnerability), supprimer_donne
                         (renumbers; the standard analysis follows). Unfinished deals are saved with "a_completer"; dm, par
                         and points come once 52 cards are placed. Every save first copies the file to versions/ (at most one
@@ -394,10 +421,17 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
       essai_encheres.py test bench: python3 -I src/essai_encheres.py <name>.bc.json [deal…]
                         (contract reached, double-dummy, gap to par); rerun after any rule change
       fonts/            DejaVu fonts (macOS has none); build_pdf.py looks here first
-    help/index.html     the application's help, in French, shown as a page of the window by the Aide button (a hidden tab, 16px),
-                        one topic at a time: five <h2> categories (Démarrer, Les séances, Jouer, Analyse et rapports, Installation et
-                        réglages), each with <h3> topics; the sidebar shows each category's name above its topics (sections_aide gives
-                        (catégorie, titre, html), page_aide)
+    help/index.html     the application's help, in French, shown as a page of the window by the Aide button (top right, a blue
+                        help icon; a hidden tab). Seven pages, one per <h2>, written from what the user wants to do (Bien démarrer,
+                        Importer et ranger vos séances, Revoir un tournoi, Rejouer les donnes, Comprendre vos erreurs, S'entraîner,
+                        Installer, régler, demander de l'aide; the user, 2026-11-12: fewer topics, longer pages, task-first, more
+                        screenshots); the left sidebar lists the pages, a right column « Sur cette page » (sections_aide gives
+                        (titre, html, [(ancre, h3)]); fixed on screen, page background, the section read is marked by JS_SUR_PAGE)
+                        lists its <h3>. Numbered steps use <ol class="etapes">, tips <div class="astuce">. Screenshots in
+                        help/images, served as /aide-images/ (img src="images/…"), click to enlarge. They come from
+                        src/captures_aide.py: headless Chrome through CDP (websockets, already in .venv), 1200×850 at 2×, on a demo
+                        folder with invented players (simuler.py --aleatoire; never real sessions: the images are public on GitHub),
+                        the page chosen through etat.json « page », demo paths replaced on screen; rerun it after a screen changes
     docs/bridge-analysis/  earlier session's instructions (kept in step with the rules below) and
                         original scripts (reference)
     systems/            bidding systems: one folder per system + shared conventions/,
@@ -415,13 +449,13 @@ Its `[dossiers]` section gives `bridgemate`, where the .bws are read, never writ
 
     documents/          loose reference files, such as the style example of the analyses
     seances/AAAA-MM/    session data by month of the session (no folder per session), ignored
-                        by git; the original name, no date prefix (Bridgemate names already hold
-                        it: 1234567MULTI23102026S = 23/10/2026): <name>.bc.json (the session: everything the
+                        by git; the name chosen at import, the date first (2026-11-05-tournoi-jeudi-apres-midi; older
+                        files keep their Bridgemate name, 1234567MULTI23102026S, until renamed in Fichier, Infos): <name>.bc.json (the session: everything the
                         reports need, and its analyses at the end, "analyses": {"standard": the program's analysis (engine
                         auctions + automatic comments; rewritten each run), "expert": written by Claude, the only part that
                         can't be recreated; wins deal by deal}, each with "fait_le"; rapport.analyse_de / ecrire_analyse;
                         written atomically, the file before copied to versions/, always before an expert change),
-                        the original beside it (<name>.bws, the FFB .pdf…), versions/ (dated copies; also the old separate
+                        older imports have the original beside it (<name>.bws…; no longer copied), versions/ (dated copies; also the old separate
                         -standard.json / -expert.json / -expert-avant-*.json, folded in once by rapport.fondre_analyses),
                         <name>-jeu.json (the Jouer tab's attempts)
     rapports/AAAA-MM/   only the PDFs, ignored by git, with the date first: <date>-<name>-analyse.pdf (-analyse-SS-AR.pdf, the initials of the pair « Vous êtes » plays in, moi.initiales: each pair keeps its own copy, and the Rapports page lists them all as « Analyse pour SS/AR », app.rapports_de),

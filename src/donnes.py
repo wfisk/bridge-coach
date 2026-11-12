@@ -451,11 +451,12 @@ def creer(quotas, graine=None, delai=DELAI, dossier=None):
     return chemin
 
 
-def nom_entrainement(dossier, now):
-    """« entrainement-2026-11-03 » ; l'heure s'ajoute seulement si ce nom est déjà pris ce jour-là."""
-    import rapport
-    nom = f"entrainement-{now.strftime('%Y-%m-%d')}"
-    return nom if not os.path.exists(os.path.join(dossier, nom + rapport.BC)) else f"{nom}-{now.strftime('%H%M%S')}"
+def nom_entrainement(dossier, now, themes=()):
+    """(titre, nom) : « Entraînement du mardi 3 novembre 2026 – Squeeze », « 2026-11-03-entrainement-squeeze » ; -2, -3…
+    si ce nom est déjà pris (fichiers.entrainement)."""
+    import fichiers
+    titre, nom = fichiers.entrainement(now, themes)
+    return titre, fichiers.nom_libre(dossier, nom)
 
 
 def ecrire(donnes, themes, dossier=None):
@@ -468,9 +469,12 @@ def ecrire(donnes, themes, dossier=None):
     rapport.preparer_donnees()
     sortie = dossier or os.path.join(rapport.SEANCES, now.strftime("%Y-%m"))
     os.makedirs(sortie, exist_ok=True)
-    nom = nom_entrainement(sortie, now)
-    data["session"]["titre"] = f"Entraînement {now.strftime('%Y-%m-%d')}"
-    rapport.entete(data, "saisie" if list(themes) == [SAISIE] else "entrainement", nom)
+    titre, nom = nom_entrainement(sortie, now, themes)
+    genre = "saisie" if list(themes) == [SAISIE] else "entrainement"
+    rapport.entete(data, genre, nom)
+    import fichiers
+    fichiers.nouvel_entete(data, genre, None, titre, "Donnes saisies" if genre == "saisie" else
+                           f"Créée : {len(donnes)} donne{'s' if len(donnes) > 1 else ''} d'entraînement")
     chemin = os.path.join(sortie, nom + rapport.BC)
     rapport.ecrire_bc(data, chemin)
     with open(os.path.join(sortie, nom + ".pbn"), "w", encoding="utf-8") as f: f.write(pbn(data))

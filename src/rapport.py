@@ -3,6 +3,7 @@
 
 Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer]
 --importer : seulement le fichier Bridge Coach (.bc.json), sans analyse ni rapport.
+--nom=… --titre=… : le nom du fichier et le titre de la séance importée (sinon ceux que propose fichiers.py).
 --rapports : seulement les PDF, depuis les analyses déjà enregistrées (après l'import d'une analyse de l'expert).
 --analyse-seule : l'analyse standard, enregistrée dans la séance, sans les PDF (l'onglet Analyse ; les PDF se font
 dans l'onglet Rapports, avec --rapports).
@@ -256,7 +257,9 @@ def entete(data, source, fichier):
 def ecrire_bc(data, chemin):
     """Le fichier Bridge Coach, champs d'en-tête en premier, les analyses à la fin. Écrit sous un nom provisoire puis
     mis à sa place d'un coup : une coupure en cours d'écriture ne laisse jamais un fichier à moitié écrit."""
-    tete = {k: data[k] for k in ("format", "version", "source", "session", "joueurs") if k in data}
+    import datetime
+    if isinstance(data.get("fichier"), dict): data["fichier"]["modifie_le"] = datetime.datetime.now().isoformat(timespec="seconds")
+    tete = {k: data[k] for k in ("format", "version", "fichier", "source", "session", "joueurs") if k in data}
     corps = dict(tete, **{k: v for k, v in data.items() if k not in tete and k != "analyses"})
     if data.get("analyses"): corps["analyses"] = data["analyses"]
     provisoire = chemin + ".provisoire"
@@ -293,6 +296,9 @@ def ecrire_analyse(chemin, quoi, an, dater=True):
         an = dict(an)
         if dater or "fait_le" not in an: an["fait_le"] = datetime.datetime.now().isoformat(timespec="seconds")
         ans[quoi] = an
+        if dater:
+            import fichiers
+            fichiers.journal(data, "Analyse du coach faite" if quoi == "standard" else "Analyse de l'expert ajoutée")
     ecrire_bc(data, chemin)
 
 
@@ -491,6 +497,7 @@ def main():
     lignes.PARALLELE = True                                # le déclarant simulé, sur tous les cœurs
     preparer_donnees()
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    choisi = {k: a.split("=", 1)[1] for a in sys.argv[1:] for k in ("--nom", "--titre") if a.startswith(k + "=")}
     sans = "--sans-analyse" in sys.argv; avec_noms = "--avec-noms" in sys.argv; importer = "--importer" in sys.argv
     rapports_seuls = "--rapports" in sys.argv; analyse_seule = "--analyse-seule" in sys.argv
     a_revoir = "--a-revoir" in sys.argv                    # avec --rapports : le rapport des donnes à revoir seulement
@@ -508,6 +515,7 @@ def main():
         json.dump({"format": "tables Bridgemate (feuille de route FFBClubNet)", "tables": T},
                   open(bws, "w"), ensure_ascii=False)
     nom = nom_seance(bws)
+    originel = os.path.abspath(args[0])                    # le fichier importé, avant toute conversion
 
     if bws.lower().endswith(".pbn"):                       # PBN : les donnes (et une table jouée quand il la donne)
         from pbn import seance as seance_pbn, ErreurPBN
@@ -519,32 +527,54 @@ def main():
         verifier_fichier(bws)
         pret = donnes_pretes(bws)
         data = pret or extraire(bws)
+    if not pret and bws.lower().endswith(".bws"):          # l'heure du tournoi, pour le titre proposé
+        try:
+            from bws_extract import lire as lire_bws
+            h = (lire_bws(bws).get("Session") or [{}])[0].get("Time")
+            if h: data["session"]["heure"] = h.strftime("%H:%M")
+        except Exception:
+            pass
     j, m, a = data["session"]["date"].split("/")
     date = f"{a}-{m}-{j}"
     DATA = os.path.join(SEANCES, f"{a}-{m}"); SORTIE = os.path.join(RAPPORTS, f"{a}-{m}")
     if pret and bws.endswith(BC) and os.path.dirname(os.path.dirname(bws)) == os.path.abspath(SEANCES):
         DATA = os.path.dirname(bws); nom = os.path.basename(bws)[:-len(BC)]   # déjà rangée : elle reste où elle est, sous son nom
+    import fichiers
+    if not pret:                                           # un import : le nom et le titre choisis, sinon ceux proposés
+        titre = choisi.get("--titre") or (fichiers.entete(fichiers.deja_importe(originel)).get("session", {}).get("titre")
+                                          if fichiers.deja_importe(originel) else None) \
+                or fichiers.titre_propose(data, source)
+        deja = fichiers.deja_importe(originel)
+        nom = fichiers.nettoyer_nom(choisi["--nom"]) if choisi.get("--nom") else \
+            os.path.basename(deja)[:-len(BC)] if deja else fichiers.nom_libre(DATA, fichiers.nom_propose(data, titre, source))
     os.makedirs(DATA, exist_ok=True); os.makedirs(SORTIE, exist_ok=True)
-    fichier = lambda suite: os.path.join(DATA, nom + suite)   # seances : le nom d'origine, sans date
+    fichier = lambda suite: os.path.join(DATA, nom + suite)   # seances : le nom choisi (la date d'abord)
     donnes = seance = fichier(BC)                          # donnes peut devenir une copie provisoire ; seance reste le fichier
     if not pret:                                           # importée : le fichier Bridge Coach se fait ici
         data["joueurs"] = joueurs_bws(data, {str(k): v for k, v in JOUEURS.items()})
         entete(data, source, origine)
+        fichiers.nouvel_entete(data, source, originel, titre)
         if os.path.exists(donnes):                         # réimport : les noms complets déjà saisis restent
-            avant = json.load(open(donnes, encoding="utf-8")).get("joueurs", {})
+            ancien = json.load(open(donnes, encoding="utf-8"))
+            avant = ancien.get("joueurs", {})
             for k, v in data["joueurs"].items():
                 for j, w in zip(v, avant.get(k, [])):
                     if w.get("nom") and not j.get("nom"): j["nom"] = w["nom"]
-            ancien = json.load(open(donnes, encoding="utf-8"))
             ans = ancien.get("analyses")
             if ans: data["analyses"] = ans                 # réimport : les analyses restent
             s_av = ancien.get("session") or {}
             if s_av.get("marque_choisie"):                 # réimport : la marque choisie sur la page Séance reste
                 data["session"].update(marque=s_av["marque"], marque_choisie=True)
+            if isinstance(ancien.get("fichier"), dict):    # réimport : le fichier garde sa naissance et son histoire
+                data["fichier"] = dict(ancien["fichier"], journal=ancien["fichier"].get("journal", []))
+                fichiers.journal(data, f"Réimportée de {os.path.basename(originel)}")
+            import edition
+            edition.garder_version(donnes, force=True)
     else:
         entete(data, "inconnue", origine)
-    if os.path.exists(fichier("-paires.json")):           # feuille de route : initiales (et noms) à part
-        fondre_paires(data, json.load(open(fichier("-paires.json"), encoding="utf-8")))
+    for paires in (fichier("-paires.json"), os.path.join(DATA, nom_seance(originel) + "-paires.json")):
+        if os.path.exists(paires):                         # feuille de route : initiales (et noms) à part
+            fondre_paires(data, json.load(open(paires, encoding="utf-8"))); break
     if avec_noms:
         complets = noms_complets(data)
         if not complets: raise SystemExit("Les noms complets des joueurs ne sont pas disponibles pour cette séance.")
@@ -552,10 +582,7 @@ def main():
         json.dump(complets, tmp, ensure_ascii=False); tmp.close()
         atexit.register(os.unlink, tmp.name)
         FICHIER_NOMS.append(tmp.name)
-    if not pret:                                           # l'original, gardé à côté (le .bc.json suffit ensuite)
-        copie = fichier(os.path.splitext(bws)[1].lower())
-        if not (os.path.exists(copie) and os.path.samefile(bws, copie)):
-            shutil.copy2(bws, copie)
+    # l'original n'est pas copié : une fois importé, la séance n'en a plus besoin (l'utilisateur, 2026-11-12)
     print(f"Séance : {donnes}")
     ecrire_bc(data, donnes)
     if importer:                                           # --importer : le fichier Bridge Coach seulement

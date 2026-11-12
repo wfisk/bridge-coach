@@ -533,7 +533,7 @@ field instead of one line per table. Unrecorded auctions are not alerts.
 Players are identified by **initials** in reports and analyses, pair as "AB/CD" (North then South, or
 East then West, at the starting table). This replaces the "no player names, pairs
 by number" rule in docs/bridge-analysis. The `.bc.json` holds the players (user's decision, 2026-11-02):
-`"joueurs": {pair: [{"initiales": "WF", "nom": "William Fisk", "licence": "12345678"}, …]}`, the full name optional; the FFB
+`"joueurs": {pair: [{"initiales": "WF", "nom": "William Fisk", "licence": "90000001"}, …]}`, the full name optional; the FFB
 licence number since 1.9 (2026-11-12: PlayerNumbers.Number of the .bws, without leading zeros, bws_extract.licence_ffb; older
 Bridgemate sessions get it once at start-up from their original .bws, fichiers.ajouter_licences). moi.est / paires /
 place_du_joueur recognise a player by licence first (compared without leading zeros), else by full name; etat.json

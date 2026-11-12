@@ -44,7 +44,7 @@ def initiales(nom):
     return "".join(m[0] for m in prenoms + nom_).upper()
 
 def licence_ffb(n):
-    """Le numéro de licence FFB, sans zéro de tête (00987654 et 987654 sont le même licencié : l'utilisateur, 2026-11-12) ;
+    """Le numéro de licence FFB, sans zéro de tête (09000003 et 9000003 sont le même licencié : l'utilisateur, 2026-11-12) ;
     autre chose que des chiffres (vide, un numéro de table) : "" ."""
     n = str(n or "").strip()
     return str(int(n)) if n.isdigit() and 0 < len(n) <= 8 and int(n) else ""

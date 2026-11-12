@@ -7,26 +7,26 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import bws_extract, moi, rapport
 
 # le numéro de Bridgemate, sans zéro de tête ; autre chose que des chiffres : rien
-assert bws_extract.licence_ffb("12345678") == "12345678" and bws_extract.licence_ffb("00987654") == "987654"
-assert bws_extract.licence_ffb(987654) == "987654" and bws_extract.licence_ffb("") == bws_extract.licence_ffb("A1") == bws_extract.licence_ffb("0") == ""
+assert bws_extract.licence_ffb("90000001") == "90000001" and bws_extract.licence_ffb("09000003") == "9000003"
+assert bws_extract.licence_ffb(9000003) == "9000003" and bws_extract.licence_ffb("") == bws_extract.licence_ffb("A1") == bws_extract.licence_ffb("0") == ""
 
 # joueurs_bws garde la licence à côté des initiales et du nom
 data = {"paires": {"1": {"nom": "AM/HB"}}}
-j = rapport.joueurs_bws(data, {"1": ["MARTIN Anne", "BERNARD Henri"]}, {"1": ["12345678", ""]})
-assert j["1"][0] == {"initiales": "AM", "nom": "MARTIN Anne", "licence": "12345678"} and "licence" not in j["1"][1]
+j = rapport.joueurs_bws(data, {"1": ["MARTIN Anne", "BERNARD Henri"]}, {"1": ["90000001", ""]})
+assert j["1"][0] == {"initiales": "AM", "nom": "MARTIN Anne", "licence": "90000001"} and "licence" not in j["1"][1]
 
 # la licence l'emporte sur l'orthographe du nom ; sans licence connue, le nom
-seance = {"joueurs": {"3NS": [{"initiales": "AM", "nom": "MARTIN-DUPONT Anne", "licence": "12345678"}],
+seance = {"joueurs": {"3NS": [{"initiales": "AM", "nom": "MARTIN-DUPONT Anne", "licence": "90000001"}],
                       "5EO": [{"initiales": "AM", "nom": "MARTIN Anne", "licence": "777"}]}}
-json.dump({"moi": "MARTIN Anne", "licences": {"MARTIN Anne": "012345678"}}, open(moi.ETAT, "w", encoding="utf-8"))
-assert moi.licence_de("MARTIN Anne") == "012345678"
+json.dump({"moi": "MARTIN Anne", "licences": {"MARTIN Anne": "090000001"}}, open(moi.ETAT, "w", encoding="utf-8"))
+assert moi.licence_de("MARTIN Anne") == "090000001"
 assert moi.paires(seance) == {"3NS"}                       # la même licence (sans les zéros), un autre nom d'usage
 json.dump({"moi": "MARTIN Anne"}, open(moi.ETAT, "w", encoding="utf-8"))
 assert moi.paires(seance) == {"5EO"}                       # licence inconnue : par le nom
 assert moi.est({"nom": "martin anne"}, "MARTIN Anne") and not moi.est({"nom": ""}, "")
 
 # la place à une donne, par la licence aussi
-json.dump({"licences": {"MARTIN Anne": "12345678"}}, open(moi.ETAT, "w", encoding="utf-8"))
+json.dump({"licences": {"MARTIN Anne": "90000001"}}, open(moi.ETAT, "w", encoding="utf-8"))
 d = {"n": 1, "tables": [{"paire_ns": "3NS", "paire_eo": "5EO"}]}
 assert moi.place_du_joueur(seance, d, "MARTIN Anne")["siege"] == "N"
 
@@ -34,18 +34,18 @@ assert moi.place_du_joueur(seance, d, "MARTIN Anne")["siege"] == "N"
 rapport.preparer_donnees()
 dossier = os.path.join(rapport.SEANCES, "2026-11"); os.makedirs(dossier)
 for nom_f, n in (("2026-11-01-a.bc.json", "MARTIN Anne"), ("2026-11-08-b.bc.json", "MARTIN-DUPONT Anne")):
-    json.dump({"joueurs": {"1": [{"initiales": "AM", "nom": n, "licence": "12345678"}, {"initiales": "HB", "nom": "BERNARD Henri"}]}},
+    json.dump({"joueurs": {"1": [{"initiales": "AM", "nom": n, "licence": "90000001"}, {"initiales": "HB", "nom": "BERNARD Henri"}]}},
               open(os.path.join(dossier, nom_f), "w", encoding="utf-8"))
 tous = moi.tous_les_joueurs(rapport.glob_seances("*" + rapport.BC))
-assert tous == {"MARTIN-DUPONT Anne": "12345678", "BERNARD Henri": ""}, tous
+assert tous == {"MARTIN-DUPONT Anne": "90000001", "BERNARD Henri": ""}, tous
 assert moi.tous_les_noms(rapport.glob_seances("*" + rapport.BC)) == ["BERNARD Henri", "MARTIN-DUPONT Anne"]
 
 # la licence ne part jamais chez l'expert : ni dans la séance pour Claude, ni dans une question sur une donne
 import app, question_expert
 plein = {"session": {"date": "01/11/2026", "tables": 1}, "donnes": [], "joueurs": seance["joueurs"], "paires": {}}
-assert "12345678" not in json.dumps(app.seance_pour_claude(plein), ensure_ascii=False)
+assert "90000001" not in json.dumps(app.seance_pour_claude(plein), ensure_ascii=False)
 d2 = {"n": 1, "donneur": "N", "vul": "Personne", "mains": {"N": "- A9742 AX76 D984", "E": "AD974 83 V82 AV5",
       "S": "5 RDVX65 RD54 62", "O": "RVX8632 - 93 RX73"}, "tables": []}
 q = question_expert.fichier(dict(plein, donnes=[d2]), d2, "S", [], None, True, prenom="Anne")
-assert "12345678" not in json.dumps(q, ensure_ascii=False) and "MARTIN" not in json.dumps(q, ensure_ascii=False)
+assert "90000001" not in json.dumps(q, ensure_ascii=False) and "MARTIN" not in json.dumps(q, ensure_ascii=False)
 print("ok")

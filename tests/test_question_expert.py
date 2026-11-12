@@ -21,12 +21,14 @@ seq = ["1♥", "passe", "4♥", "passe", "passe", "passe"]
 f = Q.fichier(data, d, "S", seq[:2], None, False, prenom="Anne")
 assert list(f["donne"]["mains"]) == ["S"] and f["moment"] == "pendant" and f["interlocuteur"] == "Anne"
 assert "Anne" in f["consigne"] and "EN COURS" in f["consigne"] and "systeme.md" in f["documents"]
+assert "« Bonjour Anne ! Que voulez-vous savoir" in f["consigne"] and "♥️" in f["consigne"] and "TON PREMIER MESSAGE" in f["consigne"]
 assert "BLANC" not in json.dumps(f, ensure_ascii=False) and "dm" not in f["donne"]
 
 # pendant le jeu de la carte, déclarant en Sud : Sud et le mort (Nord) une fois l'entame faite, jamais Est ni Ouest
 p = carte.Partie(d, "4♥", "S", seq, humain="S")
 f = Q.fichier(data, d, "S", seq, p, False, prenom="")
 assert sorted(f["donne"]["mains"]) == ["N", "S"] and f["interlocuteur"] is None and "un joueur du club" in f["consigne"]
+assert "« Bonjour ! Que voulez-vous" in f["consigne"] and "{" not in f["consigne"]
 assert f["jeu"] and f["jeu"][0]["cartes"][0]["joueur"] == "O" and f["contrat"]["contrat"] == "4♥"
 
 # après la donne : tout, analyses et résultats compris

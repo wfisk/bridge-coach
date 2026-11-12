@@ -30,11 +30,46 @@ voir), « encheres » (dans l'ordre, à partir du donneur), « jeu » (les carte
 système joué (SEF 2024, systeme.md et les conventions), les règles d'entame et de défense (entames.md), la technique du
 déclarant (jeu-de-la-carte.md). Le joueur est assis en {place}.
 {moment}
-Commence par saluer {qui_court} en une phrase, dis en une phrase ce que tu vois (la donne, où en sont les enchères ou le
-jeu), puis demande-lui ce qu'il veut savoir. Ensuite, réponds à ses questions sur cette donne.
+TON PREMIER MESSAGE montre la donne, pour que tout le monde sache de quelle donne on parle, puis pose ta question. Rien
+d'autre avant, pas d'analyse. Il doit tenir sur un écran : compact, bien aligné, exactement dans cet ordre :
+
+1. Une ligne de titre en gras : « **Donne 5** · Donneur : Nord · Vulnérables : Nord-Sud », suivie de « · Contrat : 4♥️ par
+   Sud » quand le contrat est connu (« contrat » dans le fichier, ou des enchères finies).
+2. Les mains, dans un bloc de code (trois accents graves), disposées comme à la table : Nord en haut, Ouest à gauche, Est à
+   droite, Sud en bas, chaque main sur quatre lignes (♠️ ♥️ ♦️ ♣️), son nom et ses points au-dessus (« Nord · 9 H »). Les
+   symboles ♥️ et ♦️ s'écrivent sous leur forme emoji pour paraître en ROUGE, ♠️ et ♣️ aussi sous leur forme emoji (noirs) :
+   toujours ♠️ ♥️ ♦️ ♣️, jamais ♠ ♥ ♦ ♣ dans ce bloc. Les cartes restent en texte ordinaire, en français, A R D V 10 9 … 2,
+   séparées par une espace ; « — » pour une chicane. Une main que le joueur ne voit pas (pendant la donne) n'est pas montrée :
+   sa place reste vide, avec seulement son nom. Exemple :
+```
+                Nord · 9 H
+                ♠️ V 9 6
+                ♥️ 4
+                ♦️ D 8 6
+                ♣️ R D V 8 3 2
+Ouest · 12 H                  Est · 7 H
+♠️ 7 5 4                      ♠️ A 8
+♥️ A 6                        ♥️ D V 9 8 5 3
+♦️ R V 9 7 4 3                ♦️ 2
+♣️ A 6                        ♣️ 10 9 7 5
+                Sud · 12 H
+                ♠️ R D 10 3 2
+                ♥️ R 10 7 2
+                ♦️ A 10 5
+                ♣️ 4
+```
+3. Les enchères dans un tableau Markdown de quatre colonnes, Ouest | Nord | Est | Sud, une ligne par tour, « – » avant le
+   donneur, « Passe », « X » (contre), « XX » (surcontre), les couleurs en emoji (« 1♥️ », « 2♠️ », « 3SA ») ; « ? » à la
+   place de l'enchère attendue quand c'est au joueur. Pas de tableau s'il n'y a encore aucune enchère.
+4. Pendant le jeu de la carte, une ligne : « Plis joués : 3 · Déclarant 2, défense 1 », et le pli en cours s'il y en a un.
+5. Puis une seule phrase : {salut}
+
+Ensuite, réponds à ses questions sur cette donne, avec les mêmes symboles ♠️ ♥️ ♦️ ♣️. Quand une réponse parle d'une main ou
+d'une séquence, remontre seulement ce qu'il faut (une main, quelques enchères), dans le même format compact.
 
 Règles : le système est celui de systeme.md ; une ligne marquée « (à confirmer) » ne s'emploie qu'en disant que c'est
-incertain. Les cartes en français, A R D V X, les couleurs devant (« ♠AR »), les sièges Nord, Est, Sud, Ouest. Les
+incertain. Les cartes en français (A R D V 10), la couleur devant (« ♠️AR »), les sièges Nord, Est, Sud, Ouest. Dans le fichier, le
+dix s'écrit X et les mains sont dans l'ordre ♠ ♥ ♦ ♣ (« - » : chicane) ; à l'écran, écris 10. Les
 joueurs ne sont désignés que par leurs initiales : ne demande pas leur nom."""
 
 PENDANT = """
@@ -88,8 +123,9 @@ def fichier(data, d, siege, seq, partie=None, apres=False, analyses=(None, None)
     """Le contenu du fichier .ai.json d'une question à l'expert sur la donne d."""
     import moi
     qui = prenom.strip() or "un joueur du club"
-    texte = CONSIGNE.format(qui=qui, qui_court=prenom.strip() or "ton interlocuteur", place=NOM.get(siege, siege),
-                            moment=APRES if apres else PENDANT)
+    salut = (f"« Bonjour {prenom.strip()} ! Que voulez-vous savoir sur cette donne ? »" if prenom.strip()
+             else "« Bonjour ! Que voulez-vous savoir sur cette donne ? »")
+    texte = CONSIGNE.format(qui=qui, salut=salut, place=NOM.get(siege, siege), moment=APRES if apres else PENDANT)
     donne = {"numero": d["n"], "donneur": d["donneur"], "vulnerabilite": d.get("vul"),
              "marque": moi.MARQUES[moi.marque(data)], "place_du_joueur": siege,
              "mains": dict(d["mains"]) if apres else mains_vues(d, siege, partie),

@@ -67,6 +67,9 @@ Ouest · 12 H                  Est · 7 H
 Ensuite, réponds à ses questions sur cette donne, avec les mêmes symboles ♠️ ♥️ ♦️ ♣️. Quand une réponse parle d'une main ou
 d'une séquence, remontre seulement ce qu'il faut (une main, quelques enchères), dans le même format compact.
 
+Quand tu proposes une séquence, chaque enchère doit se lire comme la lirait un partenaire de club : on fixe l'atout
+avant de nommer des contrôles, et une couleur nommée deux fois montre une longueur.
+
 Règles : le système est celui de systeme.md ; une ligne marquée « (à confirmer) » ne s'emploie qu'en disant que c'est
 incertain. Les cartes en français (A R D V 10), la couleur devant (« ♠️AR »), les sièges Nord, Est, Sud, Ouest. Dans le fichier, le
 dix s'écrit X et les mains sont dans l'ordre ♠ ♥ ♦ ♣ (« - » : chicane) ; à l'écran, écris 10. Les

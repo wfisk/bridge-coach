@@ -44,3 +44,12 @@ d = dict(n=1, donneur="N", vul="Personne", mains=dict(N="A5 R2 AD982 R532", E="R
 seq, ex, ind, al = jouer.avancer_alertes(d, ["1♦", "1♠", "contre"], "N")
 assert seq[2] == "contre" and 2 in al, (seq, al)
 print("ok")
+
+# 4SA du joueur, une couleur nommée par les deux partenaires : Blackwood 3041, le partenaire répond (donne 17, 12/11/2026)
+from encheres import encherir as _encherir
+_d = {"n": 17, "donneur": "N", "vul": "Personne",
+      "mains": {"N": "752 5 D43 D87642", "E": "X63 AD932 862 AR", "S": "R984 74 VX75 V93", "O": "ADV RVX86 AR9 X5"}}
+_r = _encherir(_d, imposees=["passe", "1♥", "passe", "2♦", "passe", "2SA", "passe", "3♥", "passe", "4♥", "passe", "4SA"])
+assert _r["encheres"][12:14] == ["passe", "5♠"], _r["encheres"]        # 2 clés avec la dame d'atout, pas passe
+_r = _encherir(_d, imposees=["passe", "1♥", "passe", "2♦", "passe", "2SA", "passe", "4SA"])
+assert _r["encheres"][8:] == ["passe", "passe", "passe"]                # sans couleur fixée : quantitatif, minimum passe

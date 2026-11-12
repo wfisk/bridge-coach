@@ -229,3 +229,15 @@ contrats changés, +38 IMP ; sur 3M, la manche dès 12 HLD avec deux atouts (au 
 du 05/11 (n° 21), le partenaire A4 AX4 A9874 X95 dit maintenant 4♠.
 Essayé et retiré : après 2♣ – 2♦ – 2M, le soutien à 3M forcing (3+ atouts, 6+ H) pour chercher le chelem, 4M restant
 faible : +17 puis −15 IMP sur deux lots de 20 000 (neutre), bien que le 6♠ du 05/11 (n° 26) soit trouvé.
+
+## Fit différé, contrôles et Blackwood (2026-11-12)
+Donne 17 du 12/11 : après 1♥ – 2♦ (fit différé, trois cœurs) – 2SA, le moteur nommait un contrôle (3♦ « fit à ♥,
+contrôle à ♦ ») qu'aucun partenaire de club ne lirait ainsi ; il devrait fixer l'atout (3♥, forcing) d'abord.
+Essayé et éteint (`DIFFERE_PAS_ETABLI`) : un fit montré seulement par un fit différé n'est pas établi, d'où 3♥ forcing
+avant les contrôles : +15 puis −54 IMP sur deux lots de 20 000 donnes (environ 110 séquences changées par lot) : neutre
+à négatif, les suites (signature à la manche du partenaire minimum) perdent des chelems. Les enchères recommandées de
+l'expert, elles, doivent rester lisibles : la consigne le demande maintenant (règle 1).
+Gardé (`LENT_PUIS_CLES`) : après son propre soutien lent, demander les clés si le camp a le compte du chelem : +2 et +11 IMP
+(3 séquences sur 40 000 donnes).
+Corrigé (un défaut, pas un choix de système) : 4SA du joueur dans Jouer, une couleur nommée par les deux partenaires, est
+lu comme Blackwood 3041 (encheres.couleur_fixee) ; le robot le passait comme une enchère naturelle.

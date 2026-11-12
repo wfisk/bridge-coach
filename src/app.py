@@ -1249,6 +1249,10 @@ Les règles, à suivre strictement :
    (« dm »), ni le par, ni les résultats des tables. Ne choisis jamais entre deux enchères raisonnables parce que
    l'une réussit au double mort. Quand deux enchères se défendaient, « notes » le dit dans une phrase qui commence
    par « Décision serrée : », avec l'autre enchère et pourquoi celle choisie est préférée.
+   Chaque enchère doit se lire comme la lirait un partenaire de club, pas seulement mener au bon contrat : fixe
+   l'atout avant de nommer des contrôles (par exemple 1♥ – 2♦ – 2SA – 3♥, forcing, puis 4♣ / 4♦) ; une couleur
+   nommée deux fois montre une longueur, jamais « fit et contrôle ». Quand tu gardes la séquence du coach
+   (« analyse_standard »), vérifie-la enchère par enchère et réécris celle qu'un partenaire comprendrait mal.
 2. Le système est celui de systeme.md. Une ligne marquée « (à confirmer) » ne s'emploie qu'en disant que le
    traitement est incertain.
 3. L'entame et la défense (« entame », « defense ») viennent de la main de l'entameur et des enchères seulement,

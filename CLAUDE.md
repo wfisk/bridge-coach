@@ -244,7 +244,13 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         bids first: suite_controles, keys at 29+ with every suit controlled; soutien_lent, a forcing 3M, shows
                         the fit below game; avant_3sa, a cue-bid asks for their stopper before 3SA; instead of 3SA, a fit of 8+
                         in partner's minor and 29+ together bids 4 of the minor, forcing, then controls: FIT_MINEUR); contracts may be
-                        doubled ("3♦X"); raises NonCouverte rather than guessing
+                        doubled ("3♦X"); raises NonCouverte rather than guessing. A 4SA the player makes in Jouer, once a suit
+                        has been named by both partners, is read as Blackwood 3041 for it (couleur_fixee; the robot used to pass it,
+                        2026-11-12); without one it stays quantitative. LENT_PUIS_CLES: after its own slow raise the engine may
+                        still ask for key cards (kept, +13 IMP on 40 000 deals); DIFFERE_PAS_ETABLI (fix the trump suit with 3M
+                        before control bids after a fit différé, as a club partner would read it) is off: neutral to negative
+                        on 2 × 20 000 deals (systems/sef-2024/a-faire.md). The expert's CONSIGNE rule 1 now asks for auctions a
+                        club partner reads the same way (agree trumps before controls; a suit bid twice shows length)
                         Benchmark: 6-table random session (seed 2026) vs Claude's analysis —
                         stage 2: 18/24 make, 10/24 par, 4.4 IMP avg (Claude 22, 19, 0.6)
       simuler.py        fake Mitchell session (N tables, invented names) from a real .bws's hands,

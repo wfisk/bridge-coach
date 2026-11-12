@@ -151,6 +151,14 @@ def completer(a, s, hist, infos):
         a.L = dict(a.L or {}, **{c: min(max(infos[s].L[c] + 1, 5), 6)})
 
 
+def couleur_fixee(s, hist):
+    """La couleur fixée par le camp de s : la dernière nommée (au palier) par s et par son partenaire, sinon None.
+    C'est ce que tout joueur de club lit : 4SA après un fit nommé des deux côtés demande les clés."""
+    mine = [b.enchere[1:] for x, b in hist if x == s and b.enchere[0].isdigit()]
+    lui = [b.enchere[1:] for x, b in hist if x == PART[s] and b.enchere[0].isdigit()]
+    return next((c for c in reversed(lui + mine) if c != "SA" and c in mine and c in lui), None)
+
+
 def interpreter(cle, enchere, a_dire=""):
     """Ce que montre une enchère choisie par un joueur et non par le moteur : la règle du fichier qui la propose pour
     cette séquence (la première), sinon une lecture naturelle. Le partenaire du joueur continue avec elle."""
@@ -219,6 +227,9 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
             ecarts.append(k)
             if not legal(imposees[k], s, etat): raise ValueError(f"{imposees[k]} n'est pas possible ici")
             a = interpreter("ouverture" if ouvreur is None else cle_regles(seq, i0, s), imposees[k])
+            if a.enchere == "4SA" and not a.nature:          # 4SA du joueur, une couleur fixée : Blackwood 3041
+                atout = couleur_fixee(s, hist)
+                if atout: a = Appel("4SA", f"votre enchère : Blackwood 3041, les clés à {atout}", nature="blackwood", atout=atout)
         seq.append(a.enchere); expl.append((s, a.enchere, a.texte))
         if getattr(a, "alerte", False): alertes.append(len(seq) - 1)
         if a.enchere != "passe":
@@ -245,6 +256,14 @@ SEUIL_CHELEM_FIT = 31          # points du camp (les miens + le minimum du parte
 SEUIL_CONTROLES = 28           # dès ce total avec un fit : on nomme ses contrôles avant de conclure (0 : jamais)
 FIT_MONTRE = True              # le fit se lit aussi sur les longueurs montrées (Spoutnik, réponse 4e…)
 SOUTIEN_LENT = True            # fit et chelem possible : soutien forcing au palier de 3 plutôt que la manche
+# Un fit montré seulement par une enchère de « fit différé » (1♥ – 2♦ : 13+, trois cœurs) n'est pas établi pour le
+# partenaire, qui a entendu des carreaux : avant de nommer un contrôle, on fixe l'atout au palier de 3, forcing (soutien
+# lent). Sinon le moteur nommait un contrôle (1♥ – 2♦ – 2SA – 3♦ « fit à ♥, contrôle à ♦ ») qu'aucun partenaire ne
+# lirait ainsi (donne 17 du 12/11/2026, l'utilisateur).
+DIFFERE_PAS_ETABLI = False      # essayé le 2026-11-12 : +15 et -54 IMP sur 2 × 20 000 donnes : éteint
+# Après son propre soutien lent (fit fixé au palier de 3, forcing), si le partenaire conclut à la manche, on peut encore
+# demander les clés quand le camp a le compte du chelem (SEUIL_CHELEM_FIT) : le soutien lent n'éteint plus la recherche.
+LENT_PUIS_CLES = True
 DRURY_PLACE = True             # après le 2♣ Drury du partenaire, pas de recherche de chelem
 FIT_MINEUR = 8                 # avant 3SA, un fit de 8+ cartes dans la mineure du partenaire… (0 : jamais)
 SEUIL_FIT_MINEUR = 29          # …et ce total : 4 de la mineure, forcing, au lieu de 3SA
@@ -275,8 +294,10 @@ def chelem(m, s, a, hist, infos, etat):
     + le minimum montré par le partenaire). Sans fit, à SA : 6SA avec 33+ H, 4SA quantitatif
     avec 31–32 H. Rien si le camp a déjà parlé au palier de 4SA ou plus."""
     nos = [b for x, b in hist if camp(x) == camp(s)]
-    if not nos or any(b.nature in ("blackwood", "controle", "soutien_lent") or (b.enchere[0].isdigit() and rang(b.enchere) >= rang("4SA")) for b in nos):
+    bloque = ("blackwood", "controle") if LENT_PUIS_CLES else ("blackwood", "controle", "soutien_lent")
+    if not nos or any(b.nature in bloque or (b.enchere[0].isdigit() and rang(b.enchere) >= rang("4SA")) for b in nos):
         return a
+    lent = any(b.nature == "soutien_lent" for b in nos)       # déjà fixé au palier de 3 : seulement les clés, plus de contrôles
     if DRURY_PLACE and any(b.nature == "drury" for x, b in hist if x == PART[s]):   # après Drury, la réponse de l'ouvreur place le contrat
         return a
     dernier = etat["dernier"]
@@ -289,12 +310,13 @@ def chelem(m, s, a, hist, infos, etat):
         t = valeur_fit(m, d, part.L[d]) + part.pts[0] + int(PART_MARGE * (min(part.pts[1], 40) - part.pts[0]))
         mine = [b.enchere[1:] for x, b in hist if x == s]; lui = [b.enchere[1:] for x, b in hist if x == PART[s]]
         moi_i = infos[s]
-        etabli = (d in mine and d in lui) or (FIT_MONTRE and moi_i.L[d] + part.L[d] >= 8)
-        if SEUIL_CONTROLES and t >= SEUIL_CONTROLES and a.enchere != "passe" and etabli:
+        differe = DIFFERE_PAS_ETABLI and d not in mine and any("fit différé" in (b.texte or "") for x, b in hist if x == s)
+        etabli = (d in mine and d in lui) or (FIT_MONTRE and moi_i.L[d] + part.L[d] >= 8 and not differe)
+        if SEUIL_CONTROLES and t >= SEUIL_CONTROLES and a.enchere != "passe" and etabli and not lent:
             c = prochain_controle(m, d, dernier, cible)
             if c: return Appel(c, f"{m.hcp} H, fit à {d} : chelem possible, contrôle à {c[1:]}", (valeur_fit(m, d, part.L[d]), 40),
                                nature="controle", atout=d)
-        elif SOUTIEN_LENT and SEUIL_CONTROLES and t >= SEUIL_CONTROLES and a.enchere != "passe" and d in lui and d in MAJEURES \
+        elif SOUTIEN_LENT and not lent and SEUIL_CONTROLES and t >= SEUIL_CONTROLES and a.enchere != "passe" and d in lui and d in MAJEURES \
                 and moi_i.pts[0] >= 11 and rang(e(3, d)) > rang(dernier):
             return Appel(e(3, d), f"{m.hcp} H, {m.L[d]} cartes à {d} : fit, forcing, chelem possible", (valeur_fit(m, d, part.L[d]), 40),
                          {d: 3}, nature="soutien_lent", atout=d)

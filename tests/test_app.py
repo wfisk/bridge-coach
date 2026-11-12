@@ -190,3 +190,19 @@ assert [d["n"] for d in moi.ordre_des_donnes(M, {"2"})] == [4, 5, 1, 2, 3, 6]
 assert [d["n"] for d in moi.ordre_des_donnes(M, {"3"})] == [1, 2, 3, 4, 5, 6] and moi.parcours({"session": {}}) == []
 app.ecrire_etat(ordre_joue=True); assert moi.ordre_joue(); app.ecrire_etat(ordre_joue=False); assert not moi.ordre_joue()
 print("ok")
+
+# l'aide selon la page : chaque section de AIDE_POUR existe dans l'aide, et la clé la plus précise gagne
+ancres = {a for _, _, secs in app.sections_aide() for a, _ in secs}
+assert set(app.AIDE_POUR.values()) <= ancres, set(app.AIDE_POUR.values()) - ancres
+assert app.section_aide("Fichier", "nouveau", "themes") == "themes" and app.section_aide("Fichier", "nouveau") == "importer"
+assert app.section_aide("Jouer", "carte") == "jouer-carte" and app.section_aide("Inconnu") == "premiere-fois"
+assert len(app.sections_aide()) == 7 and all(secs for _, _, secs in app.sections_aide())
+
+# quoi de neuf : les sections entre la version vue et la version installée ; le rappel de sauvegarde
+assert [v for v, _ in app.nouveautes("1.6.0", "1.8.0")] == ["1.8.0", "1.7.0"] and app.nouveautes("1.8.0", "1.8.0") == []
+import datetime as _dt
+app.ecrire_etat(sauvegarde_le=None)
+assert app.rappel_sauvegarde(2) is None and "jamais" in app.rappel_sauvegarde(3)
+app.ecrire_etat(sauvegarde_le="2026-10-01T10:00:00")
+assert app.rappel_sauvegarde(5, _dt.datetime(2026, 10, 20)) is None
+assert "6 semaines" in app.rappel_sauvegarde(5, _dt.datetime(2026, 11, 12, 12))

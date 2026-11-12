@@ -23,7 +23,7 @@ PETITS_MOTS = {"du", "de", "des", "la", "le", "les", "d", "l", "en", "au", "aux"
 # ce qui, à côté du .bc.json, porte le nom de la séance : les essais de Jouer, les anciens originaux et exports
 SUITES = ["-jeu.json", "-paires.json", ".bws", ".pbn", ".pdf", ".json", ".csv", ".xlsx",
           "-resultats.csv", "-donnes.csv", "-paires.csv"]
-QUOI_PDF = r"(?:analyse|a-revoir|comparaison|standard|expert|archive|diff)"
+QUOI_PDF = r"(?:analyse|a-revoir|comparaison|standard|expert|archive|diff|donne-\d+)"
 
 
 def maintenant():

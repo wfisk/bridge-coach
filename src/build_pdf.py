@@ -1277,7 +1277,10 @@ def main():
         nums = couts.numeros_a_revoir(couts.bilan(donnes, an, MES, moi.marque(data)))
         donnes = [next(d for d in tout if d["n"] == n) for n in nums]
         if not donnes: raise SystemExit("Aucune donne à revoir dans cette séance : rien à mettre dans ce rapport.")
-    synth = None if an.get("a_revoir") else synthese(dict(data, donnes=donnes), an)  # avec la synthèse, les explications y sont
+    if an.get("seule"):                             # Analyse, « Imprimer cette donne » : sa page seule, pour un cours
+        donnes = [d for d in tout if d["n"] == an["seule"]]
+        if not donnes: raise SystemExit(f"La donne {an['seule']} n'est pas dans cette séance.")
+    synth = None if an.get("a_revoir") or an.get("seule") else synthese(dict(data, donnes=donnes), an)  # avec la synthèse, les explications y sont
 
     def fabriquer(an):
         doc = BaseDocTemplate(out, pagesize=A4, leftMargin=1.7*cm, rightMargin=1.7*cm, topMargin=1.5*cm, bottomMargin=1.5*cm,
@@ -1285,15 +1288,16 @@ def main():
         doc._spans = {}
         doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
                                            onPage=footer, onPageEnd=suite)])
-        story = page_champ(tout, an or {"donnes": {}}, tours={d["n"]: moi.tour_infos(data, d["n"]) for d in data["donnes"]},
-                           marque=moi.marque(data), liens={d["n"] for d in donnes})    # vous avez choisi « Vous êtes » : vous face au champ (la séance en
+        story = [] if an.get("seule") else \
+            page_champ(tout, an or {"donnes": {}}, tours={d["n"]: moi.tour_infos(data, d["n"]) for d in data["donnes"]},
+                       marque=moi.marque(data), liens={d["n"] for d in donnes})    # vous avez choisi « Vous êtes » : vous face au champ (la séance en
                                                             # un coup d'œil, page_ensemble, essayée puis écartée : l'utilisateur)
         for k, d in enumerate(donnes):
             story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
-        parcours = page_parcours(data)             # à la fin : votre parcours, puis la synthèse
+        parcours = [] if an.get("seule") else page_parcours(data)   # à la fin : votre parcours, puis la synthèse
         fin = parcours + synth if synth else parcours + [PageBreak()] if parcours else []
         if fin: story += [Marque(None)] + fin
-        doc.build(page_noms(data, sys.argv[4] if len(sys.argv) > 4 else None) + story[:-1])
+        doc.build((page_noms(data, sys.argv[4] if len(sys.argv) > 4 else None) if not an.get("seule") else []) + story[:-1])
         return doc, {n: s[1] - s[0] + 1 for n, s in doc._spans.items() if s[1] - s[0] + 1 > 2}
 
     doc, longues = fabriquer(an)                   # deux pages par donne : un repère, pas une règle (l'utilisateur, 2026-11-09)

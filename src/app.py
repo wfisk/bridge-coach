@@ -13,7 +13,7 @@ import html as html_
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import carte, classement, donnes, edition, exporter, fichiers, jouer, maj, moi, rapport
+import carte, classement, donnes, edition, exporter, fichiers, jouer, maj, moi, question_expert, rapport
 from nicegui import app, background_tasks, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -135,9 +135,10 @@ HAUTEUR_BARRE = 37                                        # la barre de menus du
 JS_SUR_PAGE = """<script>
 // L'aide, « Sur cette page » : un clic descend à la section (sous la barre du haut) ; en lisant, la section à l'écran est
 // marquée (.lue). Sans changer l'adresse de la page : la fenêtre n'a pas de bouton « précédent ».
-window.allerAide = function (id) {
+window.allerAide = function (id, net) {
   var h = document.getElementById(id);
-  if (h) h.scrollIntoView({behavior: 'smooth', block: 'start'});
+  if (h) h.scrollIntoView({behavior: net ? 'auto' : 'smooth', block: 'start'});
+  if (window.suivreAide) setTimeout(window.suivreAide, net ? 30 : 400);
   return false;
 };
 // Une capture de l'aide, cliquée : en grand, par-dessus la page ; un clic (ou Échap) la referme.
@@ -492,6 +493,7 @@ CSS_AIDE = """
 .aide .etapes > li::before { content: counter(e); position: absolute; left: 0; top: 0; width: 1.7em; height: 1.7em; border-radius: 50%;
   background: #1f6b45; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
 .aide .astuce { background: #fff8e1; border-left: 4px solid #e0a800; padding: .7em 1em; margin: 1em 0; }
+@media (max-width: 1000px) { .sur-page-place { display: none; } }   /* une fenêtre étroite : le texte d'abord */
 .sur-page-place { width: 220px; align-self: stretch; }       /* la place de la colonne ; la liste, elle, reste fixe à l'écran */
 .sur-page { position: fixed; top: 64px; width: 220px; max-height: calc(100vh / var(--zoom, 1) - 90px); overflow-y: auto; background: transparent; }
 .aide figure img { cursor: zoom-in; }
@@ -524,12 +526,77 @@ def sections_aide():
         if not m: continue
         titre = re.sub(r"<[^>]+>", "", m[1]).strip()
         sections = []
-        def ancre(t, k=k):
-            sections.append((f"aide-{k}-{len(sections)}", re.sub(r"<[^>]+>", "", t[1]).strip()))
-            return f'<h3 id="{sections[-1][0]}">{t[1]}</h3>'
-        html_page = re.sub(r"<h3>(.*?)</h3>", ancre, bloc, flags=re.S)
+        def ancre(t, k=k):                              # l'id écrit dans l'aide (AIDE_POUR s'en sert), sinon un id fait
+            sections.append((t[1] or f"aide-{k}-{len(sections)}", re.sub(r"<[^>]+>", "", t[2]).strip()))
+            return f'<h3 id="{sections[-1][0]}">{t[2]}</h3>'
+        html_page = re.sub(r'<h3(?: id="([^"]+)")?>(.*?)</h3>', ancre, bloc, flags=re.S)
         out.append((titre, html_page, sections))
     return out or [("Aide", corps, [])]
+
+
+# L'aide selon la page, comme une table route → sujet : (onglet, page ou entrée, précision) → la section de l'aide (son id
+# dans help/index.html). L'Aide du haut ouvre la section de la page où l'on est (section_aide, la clé la plus précise
+# d'abord), les « ? » à côté des titres aussi. tests/test_app.py vérifie que chaque section existe dans l'aide.
+AIDE_POUR = {
+    ("Fichier",): "importer", ("Fichier", "nouveau", "bws"): "importer", ("Fichier", "nouveau", "pbn"): "importer-ailleurs",
+    ("Fichier", "nouveau", "themes"): "themes", ("Fichier", "ouvrir"): "retrouver", ("Fichier", "infos"): "infos",
+    ("Fichier", "exporter"): "exporter", ("Fichier", "dossier"): "fichiers",
+    ("Donnes",): "donne", ("Donnes", "seance"): "parcours", ("Donnes", "joueurs"): "votre-table", ("Donnes", "saisie"): "taper",
+    ("Jouer",): "encherir", ("Jouer", "options"): "encherir", ("Jouer", "classement"): "classement",
+    ("Jouer", "encheres"): "encherir", ("Jouer", "carte"): "jouer-carte", ("Jouer", "defense"): "defendre",
+    ("Jouer", "revoir"): "revoir", ("Jouer", "demo"): "cours",
+    ("Analyse",): "lire-analyse", ("Analyse", "standard"): "lancer-analyse", ("Analyse", "expert"): "expert",
+    ("Rapports",): "rapport", ("Rapports", "creer"): "rapport", ("Rapports", "seance"): "perdu",
+    ("Réglages",): "reglages", ("Réglages", "affichage"): "taille", ("Réglages", "nom"): "votre-table",
+    ("Réglages", "dossiers"): "reglages", ("Réglages", "sauvegarde"): "sauvegarde", ("Réglages", "maj"): "mise-a-jour",
+    ("Réglages", "contact"): "signaler", ("Réglages", "expert"): "questions-expert",
+}
+
+
+NOUVEAUTES = os.path.join(rapport.RACINE, "help", "nouveautes.html")
+
+
+def nouveautes(depuis, jusqua):
+    """[(version, html)] des sections de help/nouveautes.html plus récentes que depuis, jusqu'à jusqua comprise."""
+    try:
+        t = open(NOUVEAUTES, encoding="utf-8").read()
+    except OSError:
+        return []
+    out = []
+    for v, h in re.findall(r'<section data-version="([^"]+)">(.*?)</section>', t, re.S):
+        if maj.cle(depuis) < maj.cle(v) <= maj.cle(jusqua): out.append((v, h.strip()))
+    return out
+
+
+def rappel_sauvegarde(n_seances, maintenant=None):
+    """La phrase qui rappelle de sauvegarder (dernière sauvegarde il y a plus de 30 jours, ou jamais avec 3 séances ou
+    plus), sinon None."""
+    le = lire_etat().get("sauvegarde_le")
+    maintenant = maintenant or datetime.datetime.now()
+    if not le:
+        return "Vos séances n'ont jamais été sauvegardées." if n_seances >= 3 else None
+    try:
+        jours = (maintenant - datetime.datetime.fromisoformat(le)).days
+    except ValueError:
+        return None
+    if jours <= 30: return None
+    return f"Votre dernière sauvegarde date de {jours // 7} semaines." if jours < 90 else \
+        f"Votre dernière sauvegarde date de {jours // 30} mois."
+
+
+def section_aide(*cle):
+    """La section de l'aide pour cette page : la clé entière, sinon de moins en moins précise, sinon le début de l'aide."""
+    for k in range(len(cle), 0, -1):
+        if tuple(cle[:k]) in AIDE_POUR: return AIDE_POUR[tuple(cle[:k])]
+    return "premiere-fois"
+
+
+def titre_page(texte, ancre, classes="text-lg font-bold"):
+    """Le titre d'une page et, à côté, un petit « ? » bleu qui ouvre l'aide à la bonne section (l'événement « aide »)."""
+    with ui.row().classes("items-center gap-1 no-wrap"):
+        ui.label(texte).classes(classes)
+        ui.button(icon="help_outline", on_click=lambda: ui.run_javascript(f"emitEvent('aide', {json.dumps(ancre)})")) \
+            .props("flat round dense size=sm").style("color:#1976d2").tooltip("L'aide de cette page")
 
 
 def ouvrir(chemin):
@@ -624,6 +691,23 @@ def webview_save():
     """Le type « enregistrer sous » du dialogue de la fenêtre (pywebview, ancien et nouveau nom)."""
     import webview
     return webview.FileDialog.SAVE if hasattr(webview, "FileDialog") else webview.SAVE_DIALOG
+
+
+def url_expert():
+    """L'adresse de l'outil d'IA (Réglages, L'expert), claude.ai par défaut."""
+    return lire_etat().get("expert_url") or question_expert.ADRESSE
+
+
+def nom_outil(url):
+    """« https://claude.ai/new » → « claude.ai » : le site, pour le dire à l'écran."""
+    from urllib.parse import urlparse
+    return urlparse(url).netloc.replace("www.", "") or url
+
+
+def prenom_expert():
+    """Le prénom que l'expert peut employer : celui réglé (vide : aucun), sinon le prénom de « Votre nom »."""
+    e = lire_etat()
+    return e["expert_prenom"] if "expert_prenom" in e else question_expert.prenom_de(e.get("mon_nom") or "")
 
 
 def montrer_fichier(chemin):
@@ -822,7 +906,7 @@ def changer_marque(c, marque):
 
 
 def page_joueurs(data):
-    ui.label("Joueurs").classes("text-lg font-bold")
+    titre_page("Joueurs", "votre-table")
     j = data.get("joueurs") or {}
     if not j:
         ui.label("Pas de joueurs dans cette séance : les donnes n'ont pas été jouées.").classes("text-base text-gray-700"); return
@@ -948,7 +1032,7 @@ def page_classement(c, data, aller_donne):
     salle ; enfin les paires du club avec vous à votre place. Un clic sur une donne l'ouvre pour la rejouer."""
     cl = classement.classement(data, jouer.lire_essais(base_seance(c)))
     imp_ = cl["marque"] == "IMP"
-    ui.label("Classement du tournoi rejoué").classes("text-lg font-bold")
+    titre_page("Classement du tournoi rejoué", "classement")
     if not cl["a_compter"]:
         ui.label("Cette séance n'a pas de résultats de club : il n'y a pas de classement à faire.").classes("text-base text-gray-700")
         return
@@ -1544,6 +1628,43 @@ def page():
             if d.get("par"): lignes.append(par_html(d))
             ui.html("<div style='font-size:15px;line-height:1.6'>" + "<br/>".join(lignes) + "</div>", sanitize=False)
             if d.get("dm"): ui.html(dm_html(d), sanitize=False).classes("w-full")
+            with ui.column().classes("w-full gap-2 mt-3"):    # de l'analyse à la table, ou sur papier pour un cours
+                ui.button("Rejouer cette donne", icon="play_arrow", on_click=lambda: rejouer_donne(d)).props("outline no-caps").classes("w-full")
+                ui.button("Imprimer cette donne", icon="print", on_click=lambda: imprimer_donne(c, d)) \
+                    .props("outline no-caps").classes("w-full").set_enabled(not (T.actif or D.actif or I.actif))
+                ui.button("Demander à l'expert", icon="forum", on_click=lambda: demander_expert(c, d, True, analyse=True)) \
+                    .props("outline no-caps").classes("w-full")
+
+    question = {"f": None, "message": ""}
+
+    def demander_expert(c, d, apres, analyse=False):
+        """Écrit le fichier de la question (question_expert), copie le court message, et montre les trois gestes."""
+        data = lire_seance(c) or {}
+        p_ = None if analyse else (jeu.get("partie") if jeu.get("cle") == (c, d["n"]) else None)
+        siege = (siege_pour(c, d) or "S") if analyse else jeu.get("siege") or "S"
+        seq = [] if analyse else jeu["seq"] if apres else jeu["seq"][:jeu.get("affiche", len(jeu["seq"]))]
+        contenu = question_expert.fichier(data, d, siege, seq, p_, apres, lire_analyses(c) if apres else (None, None),
+                                          prenom_expert())
+        try:
+            question["f"] = question_expert.ecrire(c, contenu, d["n"], apres)
+        except OSError:
+            ui.notify("Le fichier pour l'expert n'a pas pu être écrit.", type="negative"); return
+        question["message"] = question_expert.message(os.path.basename(question["f"]))
+        ui.clipboard.write(question["message"])
+        fenetre_question.refresh(); question_d.open()
+
+    def rejouer_donne(d):
+        """Analyse → Jouer, sur la même donne, au début de ses enchères."""
+        jeu["mode"] = "jouer"; ecrire_etat(mode_jouer="jouer")
+        onglets.set_value(o_jouer); aller(f"d{d['n']}")
+
+    def imprimer_donne(c, d):
+        """La page de cette donne seule, en PDF (rapport.py --rapports --donne=N), ouverte dès qu'elle est prête."""
+        if T.actif or D.actif or I.actif: return
+        T.__init__(0.0, "Impression"); T.genre = "imprimer"; T.seance = c; T.texte = f"Donne {d['n']} : préparation de la page"
+        demarrer_travail(T, [os.path.join(ICI, "rapport.py"), c, "--rapports", f"--donne={d['n']}"]
+                         + ([] if avec_expert() else ["--sans-analyse"]))
+        ui.notify(f"La donne {d['n']} se prépare : le PDF s'ouvre dans un instant.")
 
     def carre_donne(d):
         """Le petit carré de la donne, comme sur le site de la FFB : le numéro au centre, N E S O sur les côtés, rouges si
@@ -2390,10 +2511,35 @@ def page():
         except ValueError: return
         jeu["pas"] = m.n_encheres + j + 2; vue_jouer.refresh()
 
+    COULEUR_TOUCHE = {"T": "♣", "K": "♦", "C": "♥", "P": "♠", "S": "SA"}   # trèfle, carreau, cœur, pique, sans-atout
+
+    async def encheres_clavier(cle):
+        """Enchérir au clavier, dans Jouer : un chiffre puis T K C P S (1 puis C = 1♥), Entrée = passe, X = contre,
+        R = surcontre, Échap efface le chiffre tapé. Le chiffre attendu s'affiche sous la boîte (jeu["clavier"])."""
+        if jeu.get("partie") or jeu.get("attend") or not jeu.get("d") or (jeu.get("mode") or "jouer") != "jouer": return
+        d = jeu["d"]; k = cle.upper() if len(cle) == 1 else cle
+        appel = None
+        if k.isdigit() and "1" <= k <= "7":
+            jeu["clavier"] = k; vue_jouer.refresh(); return
+        if k == "Escape" and jeu.get("clavier"):
+            jeu["clavier"] = None; vue_jouer.refresh(); return
+        if k in COULEUR_TOUCHE and jeu.get("clavier"): appel = jeu["clavier"] + COULEUR_TOUCHE[k]
+        elif k == "Enter": appel = "passe"
+        elif k == "X": appel = "contre"
+        elif k == "R": appel = "surcontre"
+        if not appel: return
+        jeu["clavier"] = None
+        if appel not in jouer.legales(jeu["seq"], d["donneur"]):
+            jeu["note"] = f"{appel} n'est pas possible ici."; vue_jouer.refresh(); return
+        await jeu_annonce(d, appel)
+
     async def demo_touche(e):
-        """Flèches ← → (et Page précédente / suivante d'une télécommande de présentation) dans la démonstration."""
-        if not e.action.keydown or jeu.get("mode") != "demo" or not sur_jouer() or not jeu.get("demo"): return
+        """Le clavier : ← → (et Page précédente / suivante d'une télécommande de présentation) dans la démonstration ;
+        les enchères au clavier dans Jouer (encheres_clavier)."""
+        if not e.action.keydown or not sur_jouer(): return
         cle = e.key.name if hasattr(e.key, "name") else str(e.key)
+        if jeu.get("mode") != "demo": return await encheres_clavier(cle)
+        if not jeu.get("demo"): return
         if cle in ("ArrowRight", "PageDown"): await demo_aller(jeu.get("pas", 0) + 1)
         elif cle in ("ArrowLeft", "PageUp"): await demo_aller(jeu.get("pas", 0) - 1)
 
@@ -2604,7 +2750,7 @@ def page():
         if not es: return
         e = entree_effective(data)
         if e == "options":
-            ui.label("Options").classes("text-lg font-bold")
+            titre_page("Options", "encherir")
             ui.label("La place que vous jouez").classes("text-base font-bold mt-2")
             ui.label("Le déclarant est celui de la séquence recommandée (l'analyse de l'expert, sinon la standard, sinon "
                      "les enchères du coach). Le choix vaut pour toutes les donnes et reste d'une fois sur l'autre.") \
@@ -2737,6 +2883,11 @@ def page():
                                 f"<span class='bulle'>{rouge(jeu['indice']['texte'])}</span></div>", sanitize=False)
                     if jeu.get("note"):
                         ui.html(f"<div style='font-size:15px;color:#8a5a00'>{rouge(jeu['note'])}</div>", sanitize=False)
+                    if jeu.get("clavier"):                      # un chiffre tapé au clavier : la couleur est attendue
+                        ui.label(f"Au clavier : {jeu['clavier']}… puis T, K, C, P ou S (Échap pour effacer)").classes("text-base text-primary")
+                    else:
+                        ui.label("Au clavier : 1 puis T K C P S (1♣ … 1SA), Entrée passe, X contre, R surcontre.") \
+                            .classes("text-sm text-gray-600")
                 elif a_jouer:                                   # les enchères finies : le jeu de la carte part tout seul, comme à
                     ui.label(f"{'Vous jouez' if jouer.camp(decl) == jouer.camp(s) else 'Vous défendez contre'} {c_} par {SIEGE[decl]} : "
                              "le jeu de la carte commence…").classes("text-base")      # la table (l'utilisateur, 2026-11-11)
@@ -2766,6 +2917,11 @@ def page():
                             ui.button("Voir pourquoi" if f_ is not None else "Revoir la donne", icon="replay",
                                       on_click=lambda f_=f_: (changer_mode("revoir"), jeu.update(revoir=f_ or 0), vue_jouer.refresh())) \
                                 .props("outline no-caps").classes("w-full text-base")
+                if not jeu.get("attend"):                       # une question sur la donne, à l'outil d'IA réglé (Réglages, L'expert)
+                    fin_ = bool((p and p.fini()) or (montrer and not p))
+                    ui.button("Demander à l'expert", icon="forum", on_click=lambda fin_=fin_: demander_expert(c, d, fin_)) \
+                        .props("outline no-caps").classes("w-full text-base mt-2") \
+                        .tooltip("Une question sur cette donne : ce que vous voyez" + ("" if fin_ else ", sans les mains cachées"))
 
         if fini and not jeu["garde"]:
             jouer.enregistrer(base_seance(c), d["n"], s, jeu["seq"], d["donneur"]); jeu["garde"] = True; barre_seance.refresh()
@@ -3015,12 +3171,12 @@ def page():
     PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"),   # (Importer : une des trois façons de Nouveau)
                          ("infos", "Infos"), ("exporter", "Exporter…"), ("dossier", "Ouvrir le dossier de travail")],
              "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance")],   # (le bilan : bilan.py, à la main)
-             "Réglages": [("affichage", "Taille du texte"), ("nom", "Votre nom"), ("dossiers", "Dossiers"), ("sauvegarde", "Sauvegarder mes séances"), ("maj", "Mise à jour du programme"),
+             "Réglages": [("affichage", "Taille du texte"), ("nom", "Votre nom"), ("dossiers", "Dossiers"), ("expert", "L'expert"), ("sauvegarde", "Sauvegarder mes séances"), ("maj", "Mise à jour du programme"),
                           ("contact", "Un problème, une idée ?")]}     # la barre de gauche de ces onglets
     vue_page = {"Fichier": "nouveau" if PAGE.get("fichier") == "importer" else
                            PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "infos", "exporter", "dossier") else "ouvrir",
                 "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance") else "creer",
-                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "dossiers", "sauvegarde", "maj", "contact") else "affichage"}
+                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "dossiers", "expert", "sauvegarde", "maj", "contact") else "affichage"}
 
     facon = {"k": PAGE.get("nouveau") if PAGE.get("nouveau") in ("bws", "pbn", "themes") else   # Fichier, Nouveau : la façon choisie
              ("bws" if PAGE.get("fichier") == "importer" else "themes")}
@@ -3064,6 +3220,37 @@ def page():
         vue_aide["k"] = k; page_aide.refresh(); barre_seance.refresh(); retenir_page()
         ui.run_javascript("window.scrollTo(0, 0)")
 
+    def cle_aide():
+        """Où l'on est, pour AIDE_POUR : (onglet, page ou entrée, précision)."""
+        o = onglets.value; nom = o if isinstance(o, str) else o.props.get("name", "")
+        if nom in ("Fichier", "Rapports", "Réglages"):
+            pg = vue_page[nom]
+            return (nom, pg, facon["k"]) if (nom, pg) == ("Fichier", "nouveau") else (nom, pg)
+        e = vue.get("entree") or ""
+        if nom == "Jouer":
+            if e in ("options", "classement"): return (nom, e)
+            m = jeu.get("mode") or "jouer"
+            if m in ("revoir", "demo"): return (nom, m)
+            p_ = jeu.get("partie")
+            if p_: return (nom, "defense" if p_.en_defense() else "carte")
+            return (nom, "encheres")
+        if nom == "Analyse": return (nom, e if e in ("standard", "expert") else "donne")
+        if nom == "Donnes":
+            if e in ("seance", "joueurs"): return (nom, e)
+            c = choix["chemin"]
+            return (nom, "saisie") if c and e.startswith("d") and edition.modifiable(c)[0] else (nom, "donne")
+        return (nom,)
+
+    def ouvrir_aide(ancre=None):
+        """L'aide, ouverte à la section voulue (sinon celle de la page où l'on est) : sa page, puis on y descend."""
+        if not ancre and onglets.value in (o_aide, "Aide"): return   # déjà dans l'aide : on y reste
+        ancre = ancre or section_aide(*cle_aide())
+        k = next((i for i, (_, _, secs) in enumerate(sections_aide()) if ancre in [a for a, _ in secs]), vue_aide["k"])
+        vue_aide["k"] = k
+        if onglets.value not in (o_aide, "Aide"): onglets.set_value(o_aide)
+        page_aide.refresh(); barre_seance.refresh(); retenir_page()
+        ui.run_javascript(f"setTimeout(function () {{ window.allerAide && window.allerAide({json.dumps(ancre)}, true); }}, 120)")
+
     @ui.refreshable
     def page_aide():
         """Une page de l'aide, et à droite « Sur cette page » : ses sections, sur le même fond que le texte ; un clic
@@ -3106,8 +3293,8 @@ def page():
                      "l'analyse du coach, le système, un exemple et la consigne), puis ouvre son dossier. Les joueurs n'y "
                      "sont que par leurs initiales : les noms complets ne quittent pas l'ordinateur.")
             ui.button("Préparer le fichier pour Claude", icon="folder_open", on_click=lambda: preparer_expert(c)).props("outline")
-            etape(2, "Ouvrez <b>claude.ai</b> dans votre navigateur et commencez une nouvelle conversation.")
-            ui.button("Ouvrir claude.ai", icon="open_in_new", on_click=lambda: ouvrir("https://claude.ai/new")).props("outline")
+            etape(2, f"Ouvrez <b>{html_.escape(nom_outil(url_expert()))}</b> dans votre navigateur et commencez une nouvelle conversation.")
+            ui.button("Ouvrir l'expert", icon="open_in_new", on_click=lambda: ouvrir(url_expert())).props("outline")
             etape(3, f"Glissez le fichier <code>{nom}.ai.json</code> dans la conversation.")
             etape(4, "Copiez la consigne, collez-la dans la conversation, puis envoyez.")
             ui.button("Copier la consigne", icon="content_copy", on_click=lambda: copier_consigne(c)).props("outline")
@@ -3237,7 +3424,7 @@ def page():
                 o_rapports = ui.tab("Rapports")
                 o_reglages = ui.tab("Réglages")
                 o_aide = ui.tab("Aide").classes("hidden")          # la page d'aide : montrée par le bouton de droite
-            with ui.button(on_click=lambda: onglets.set_value(o_aide)).props("flat no-caps dense").classes("px-3") as aide:
+            with ui.button(on_click=lambda: ouvrir_aide()).props("flat no-caps dense").classes("px-3") as aide:   # l'aide de la page ouverte
                 with ui.row().classes("items-center gap-1 no-wrap"):   # une icône de couleur : l'aide se voit (l'utilisateur, 2026-11-12)
                     ui.icon("help", size="22px").style("color:#1976d2")
                     ui.label("Aide")
@@ -3286,7 +3473,7 @@ def page():
             pages_ui = {}
             with ui.tab_panel(o_rapports).classes("px-0 pt-0 gap-4 max-w-xl"):
                 with ui.column().classes("w-full gap-2") as pages_ui["creer"]:   # les options, puis « Créer les rapports »
-                    ui.label("Créer les rapports").classes("text-lg font-bold")
+                    titre_page("Créer les rapports", "rapport")
                     ui.label("Vous êtes").classes("text-base")
                     actuel = moi.nom()
 
@@ -3337,7 +3524,7 @@ def page():
 
             with ui.tab_panel(o_reglages).classes("px-0 pt-0 gap-5 max-w-xl"):
               with ui.column().classes("w-full gap-3") as pages_ui["affichage"]:
-                ui.label("Taille du texte").classes("text-lg font-bold")
+                titre_page("Taille du texte", "taille")
                 ui.label("Agrandit toute la fenêtre : le texte, les cartes et les tableaux. « Grande » ou « Très grande » "
                          "pour un grand écran, une télévision en cours, ou si vous voyez moins bien. Le choix est gardé.") \
                     .classes("text-base text-gray-700")
@@ -3357,7 +3544,7 @@ def page():
                 boutons_taille()
 
               with ui.column().classes("w-full gap-3") as pages_ui["nom"]:
-                ui.label("Votre nom").classes("text-lg font-bold")
+                titre_page("Votre nom", "votre-table")
                 ui.label("Votre nom vient en premier dans le choix d'un joueur (« Vous êtes », dans Rapports), juste après "
                          "« Aucun », puis une ligne, puis les autres joueurs.").classes("text-base text-gray-700")
 
@@ -3372,7 +3559,7 @@ def page():
                     .classes("w-full").props("outlined dense")
 
               with ui.column().classes("w-full gap-5") as pages_ui["dossiers"]:
-                ui.label("Dossiers").classes("text-lg font-bold")
+                titre_page("Dossiers", "reglages")
                 for titre, chemin in (("Dossier de Bridgemate : les fichiers .bws, lus sans être modifiés", dossier),
                                       ("Dossier de travail : vos séances et vos rapports", rapport.DONNEES),
                                       ("Programme Bridge Coach : là où il est installé", rapport.RACINE)):
@@ -3387,8 +3574,21 @@ def page():
                 ui.button("Modifier les réglages", on_click=ouvrir_reglages).classes("w-full text-base py-3")
                 ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-base text-gray-700")
 
+              with ui.column().classes("w-full gap-3") as pages_ui["expert"]:   # Réglages, L'expert : l'outil d'IA et le prénom
+                titre_page("L'expert", "questions-expert")
+                ui.label("L'expert est un outil d'intelligence artificielle, sur Internet : Claude (claude.ai) par défaut, ou un "
+                         "autre que vous préférez. Il écrit l'analyse de l'expert et répond à vos questions sur une donne "
+                         "(« Demander à l'expert », dans Jouer et Analyse).").classes("text-base text-gray-700")
+                adresse_in = ui.input("Adresse de l'outil", value=url_expert()).props("outlined").classes("w-full text-base")
+                adresse_in.on("blur", lambda: ecrire_etat(expert_url=adresse_in.value.strip() or question_expert.ADRESSE))
+                ui.label("Par exemple https://claude.ai/new ou https://chatgpt.com").classes("text-sm text-gray-600")
+                prenom_in = ui.input("Le prénom que l'expert peut employer", value=prenom_expert()).props("outlined").classes("w-full text-base")
+                prenom_in.on("blur", lambda: ecrire_etat(expert_prenom=prenom_in.value.strip()))
+                ui.label("L'expert vous saluera par ce prénom. C'est le seul nom qui part chez lui : les autres joueurs n'y sont "
+                         "que par leurs initiales. Laissez vide pour rester anonyme.").classes("text-base text-gray-700")
+
               with ui.column().classes("w-full gap-3") as pages_ui["sauvegarde"]:   # Réglages, Sauvegarder mes séances
-                ui.label("Sauvegarder mes séances").classes("text-lg font-bold")
+                titre_page("Sauvegarder mes séances", "sauvegarde")
                 ui.label("Un seul fichier .zip avec toutes vos séances : leurs donnes, leurs résultats, vos parties jouées et "
                          "surtout les analyses de l'expert, qui ne se refont pas. Les rapports PDF n'y sont pas : ils se refont "
                          "en un clic. Gardez ce fichier ailleurs que sur l'ordinateur : une clé USB, un disque, un dossier en "
@@ -3408,7 +3608,7 @@ def page():
                 etat_sauvegarde()
 
               with ui.column().classes("w-full gap-3") as pages_ui["contact"]:   # Réglages, Un problème, une idée ?
-                ui.label("Un problème, une idée ?").classes("text-lg font-bold")
+                titre_page("Un problème, une idée ?", "signaler")
                 ui.label("Bridge Coach se discute sur GitHub, le site où vit son programme. Il faut un compte GitHub, gratuit, "
                          "pour écrire ; tout le monde peut lire. Écrivez en français.").classes("text-base text-gray-700")
                 for titre_, texte_, lien_, icone_ in (
@@ -3444,7 +3644,7 @@ def page():
                          "joueurs, et tout ce qu'on y dépose est public.").classes("text-base text-gray-700")
 
               with ui.column().classes("w-full gap-3") as pages_ui["maj"]:
-                ui.label("Mise à jour du programme").classes("text-lg font-bold")
+                titre_page("Mise à jour du programme", "mise-a-jour")
                 ui.label(f"Bridge Coach, version {maj.version_locale()}").classes("text-base font-bold")
                 with ui.row().classes("items-center gap-3"):
                     ui.button("Rechercher une mise à jour", on_click=lambda: chercher_maj()).props("outline")
@@ -3465,7 +3665,7 @@ def page():
 
             with ui.tab_panel(o_fichier).classes("px-0 pt-0 max-w-3xl") as panneau_fichier, \
                     ui.column().classes("w-full gap-0") as pages_ui["nouveau"]:   # Fichier : ses pages, la première Nouveau
-                ui.label("Nouvelle séance").classes("text-lg font-bold")
+                titre_page("Nouvelle séance", "importer")
                 ui.html("Une séance Bridge Coach est un seul fichier, <b>.bc.json</b> : les donnes, les joueurs, les "
                         "résultats et les analyses. Trois façons d'en créer une :", sanitize=False).classes("text-base text-gray-700")
                 FACONS = [("bws", "Importer un tournoi Bridgemate", "depuis le fichier .bws du tournoi", "table_restaurant"),
@@ -3636,12 +3836,19 @@ def page():
                       fichier_cree()
 
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["ouvrir"]:   # Fichier, Ouvrir une séance
-        ui.label("Ouvrir une séance").classes("text-lg font-bold")
+        titre_page("Ouvrir une séance", "retrouver")
         faute_o = {"texte": ""}
         @ui.refreshable
         def liste():
             tout = seances_bc()
             if not tout: ui.label("Aucune séance pour l'instant : Fichier, Nouveau").classes("text-base text-gray-700")
+            rappel = rappel_sauvegarde(len(tout))
+            if rappel:                                     # une sauvegarde vieille d'un mois, ou jamais faite
+                with ui.row().classes("w-full items-center justify-between no-wrap gap-3 px-3 py-2 mb-2") \
+                        .style("background:#fff8e1;border-left:4px solid #e0a800;border-radius:6px"):
+                    ui.label(rappel).classes("text-base")
+                    ui.button("Sauvegarder", icon="save", on_click=lambda: (onglets.set_value(o_reglages), voir_page("Réglages", "sauvegarde"))) \
+                        .props("outline").classes("shrink-0")
             mois = {}                                      # toutes les séances, par mois de la séance, le plus récent d'abord
             for c in tout:
                 j, m, a_ = (infos_seance(c)[0].split("/") + ["", "", ""])[:3]
@@ -3723,6 +3930,27 @@ def page():
             ui.button("Annuler", on_click=lambda: confirmation.close()).props("flat")
             ui.button("Supprimer", icon="delete", on_click=lambda: supprimer()).props("color=red")
 
+    with ui.dialog() as question_d, ui.card().classes("w-full max-w-lg gap-3"):   # « Demander à l'expert » : trois gestes
+        @ui.refreshable
+        def fenetre_question():
+            f_ = question["f"]
+            if not f_: return
+            ui.label("Demander à l'expert").classes("text-lg font-bold")
+            ui.label("Bridge Coach a préparé la donne pour l'expert. Trois gestes :").classes("text-base")
+            etape_ = lambda k, t: ui.html(f"<div style='font-size:16px'><b>{k}.</b> {t}</div>", sanitize=False)
+            etape_(1, f"Ouvrez l'expert ({html_.escape(nom_outil(url_expert()))}) dans votre navigateur.")
+            ui.button("Ouvrir l'expert", icon="open_in_new",
+                      on_click=lambda: ouvrir(question_expert.adresse_avec_message(url_expert(), question["message"]))).props("unelevated")
+            etape_(2, f"Glissez-y le fichier <b>{html_.escape(os.path.basename(f_))}</b> :")
+            ui.button("Montrer le fichier", icon="folder_open", on_click=lambda: montrer_fichier(question["f"])).props("outline")
+            etape_(3, "Collez le message (⌘V sur Mac, Ctrl+V sous Windows ; il est déjà copié), puis envoyez. L'expert vous "
+                      "salue et vous demande ce que vous voulez savoir.")
+            ui.html(f"<div style='font-size:15px;color:#555;background:#f3f3f1;padding:6px 10px;border-radius:6px'>"
+                    f"{html_.escape(question['message'])}</div>", sanitize=False)
+            with ui.row().classes("w-full justify-end"):
+                ui.button("Fermer", on_click=lambda: question_d.close()).props("flat")
+        fenetre_question()
+
     with ui.dialog() as corbeille_d, ui.card().classes("w-full max-w-md"):
         corbeille_texte = ui.label("").classes("text-base")
         with ui.row().classes("gap-3 justify-end w-full"):
@@ -3732,7 +3960,7 @@ def page():
     envoi_x = ui.upload(on_upload=lambda e: recu_x(e), auto_upload=True, max_files=1).props('accept=".json"').classes("hidden")
 
     with panneau_fichier, ui.column().classes("w-full gap-3") as pages_ui["exporter"]:   # Fichier, Exporter…
-        ui.label("Exporter la séance").classes("text-lg font-bold")
+        titre_page("Exporter la séance", "exporter")
         ui.label("Le fichier exporté est écrit à côté de la séance, dans le dossier de travail. La séance elle-même ne "
                  "change pas.").classes("text-base text-gray-700")
         exporte = {"f": None, "format": lire_etat().get("export_format") or "excel", "quoi": "resultats", "noms": False, "faute": ""}
@@ -3771,7 +3999,7 @@ def page():
         a_exporter()
 
     with panneau_fichier, ui.column().classes("w-full gap-3") as pages_ui["infos"]:   # Fichier, Infos
-        ui.label("Infos sur la séance").classes("text-lg font-bold")
+        titre_page("Infos sur la séance", "infos")
         infos_ui = {"copie": False, "faute": "", "fait": ""}
         @ui.refreshable
         def page_infos():
@@ -3861,7 +4089,7 @@ def page():
         page_infos()
 
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["dossier"]:   # Fichier, Ouvrir le dossier de travail
-        ui.label("Le dossier de travail").classes("text-lg font-bold")
+        titre_page("Le dossier de travail", "fichiers")
         ui.label("Vos séances (seances), vos rapports (rapports) et les fichiers préparés pour Claude (pour-claude). "
                  "Il se change dans Réglages, Dossiers.").classes("text-base text-gray-700")
         ui.label(rapport.DONNEES).classes("text-base break-all")
@@ -4119,6 +4347,10 @@ def page():
         if T.fini and vu["fini"] is not T.proc:            # le travail vient de finir : une seule fois
             vu["fini"] = T.proc
             erreur = "" if T.annule else T.erreur
+            if T.genre == "imprimer":                      # une donne à imprimer : son PDF s'ouvre
+                if erreur: ui.notify(erreur, type="negative", multi_line=True)
+                elif T.prets and not T.annule: ouvrir(T.prets[-1])
+                resultats.refresh(); vue_analyse.refresh(); montrer_controles(); return
             if T.genre == "analyse":
                 faute.text = erreur
                 fait_a.text = "" if erreur or T.annule else "Analyse faite : lisez-la donne par donne. Les rapports PDF se font dans l'onglet Rapports."
@@ -4127,6 +4359,29 @@ def page():
                 if not erreur and not T.annule: voir_page("Rapports", "seance")   # les rapports prêts : leur liste
             resultats.refresh(); vue_analyse.refresh(); montrer_controles()
 
+    ui.on("aide", lambda e: ouvrir_aide(e.args if isinstance(e.args, str) else None))   # les « ? » des titres (titre_page)
+    try:                                                   # un tournoi pas encore importé : son import s'ouvre, une fois par fichier
+        neuf_bws = next((b for b in reglages()[0] if not deja_importe(b)), None)
+    except OSError:
+        neuf_bws = None
+    if neuf_bws and lire_etat().get("bws_propose") != neuf_bws:
+        ecrire_etat(bws_propose=neuf_bws)
+        ui.timer(.6, lambda: preparer_import(neuf_bws), once=True)
+    vue_v, version_ = lire_etat().get("version_vue"), maj.version_locale()
+    if vue_v != version_:                                  # après une mise à jour, une fois : quoi de neuf (help/nouveautes.html)
+        ecrire_etat(version_vue=version_)
+        neuf = nouveautes(vue_v, version_) if vue_v else []   # (la première installation : rien à montrer)
+        if neuf:
+            with ui.dialog() as quoi_neuf, ui.card().classes("w-full max-w-lg gap-2"):
+                titre_ = f"Quoi de neuf dans Bridge Coach {version_} ?"
+                ui.label(titre_).classes("text-lg font-bold")
+                for v, h in neuf:
+                    if len(neuf) > 1: ui.label(f"Version {v}").classes("text-base font-bold text-gray-700 mt-1")
+                    ui.html(h, sanitize=False).classes("aide")
+                with ui.row().classes("gap-3 justify-end w-full mt-2"):
+                    ui.button("Voir l'aide", icon="help", on_click=lambda: (quoi_neuf.close(), ouvrir_aide("premiere-fois"))).props("flat")
+                    ui.button("C'est noté", on_click=lambda: quoi_neuf.close()).props("unelevated")
+            ui.timer(1.0, quoi_neuf.open, once=True)
     ui.timer(.4, rafraichir)
     ui.timer(.5, lambda: montrer_titre(), once=True)
     depart = {"Fichier": o_fichier, "Jouer": o_jouer, "Analyse": o_analyse, "Rapports": o_rapports, "Réglages": o_reglages,

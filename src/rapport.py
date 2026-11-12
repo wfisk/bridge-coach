@@ -497,13 +497,14 @@ def main():
     lignes.PARALLELE = True                                # le déclarant simulé, sur tous les cœurs
     preparer_donnees()
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    choisi = {k: a.split("=", 1)[1] for a in sys.argv[1:] for k in ("--nom", "--titre") if a.startswith(k + "=")}
+    choisi = {k: a.split("=", 1)[1] for a in sys.argv[1:] for k in ("--nom", "--titre", "--donne") if a.startswith(k + "=")}
+    seule = int(choisi["--donne"]) if choisi.get("--donne", "").isdigit() else None   # avec --rapports : une seule donne, à imprimer
     sans = "--sans-analyse" in sys.argv; avec_noms = "--avec-noms" in sys.argv; importer = "--importer" in sys.argv
     rapports_seuls = "--rapports" in sys.argv; analyse_seule = "--analyse-seule" in sys.argv
     a_revoir = "--a-revoir" in sys.argv                    # avec --rapports : le rapport des donnes à revoir seulement
     if not args: args = [choisir_seance()]
     if len(args) != 1 or not os.path.isfile(args[0]):
-        raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer] [--rapports] [--analyse-seule] [--a-revoir]")
+        raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer] [--rapports] [--analyse-seule] [--a-revoir] [--donne=N]")
 
     bws = os.path.abspath(args[0])
     source = {".bws": "bws", ".pdf": "feuille-de-route", ".json": "simulation", ".pbn": "pbn"}.get(os.path.splitext(bws)[1].lower(), "inconnue")
@@ -640,6 +641,8 @@ def main():
     if sans or not redigee:                                # l'analyse du programme et le conseil du coach
         print("Sans l'avis de l'expert (--sans-analyse)" if sans and redigee
               else "Pas d'analyse de l'expert", ": l'analyse du programme seulement.")
+        if seule:                                          # « Imprimer cette donne » (Analyse) : sa page seule
+            construire_pdf(donnes, {"seule": seule}, auto, pdf(f"donne-{seule}")); return
         if a_revoir:                                       # seulement les donnes à revoir : ce PDF-là, le reste ne bouge pas
             construire_pdf(donnes, {"a_revoir": True}, auto, pdf("a-revoir"))
             chrono.etape("rapport des donnes à revoir"); chrono.ecrire(len(data["donnes"])); return
@@ -658,6 +661,8 @@ def main():
         std_d = auto.get("donnes") or {}
         an = dict(an, donnes={n: coach_pour_expert(next((d for d in data["donnes"] if str(d["n"]) == n), {"donneur": "N"}), x,
                                                    std_d.get(n)) for n, x in an["donnes"].items()})
+        if seule:
+            construire_pdf(donnes, dict(an, seule=seule), auto, pdf(f"donne-{seule}")); return
         if a_revoir:
             construire_pdf(donnes, dict(an, a_revoir=True), auto, pdf("a-revoir"))
             chrono.etape("rapport des donnes à revoir"); chrono.ecrire(len(data["donnes"])); return

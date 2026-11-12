@@ -205,7 +205,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         the space between the two lines filled pale orange where you are above the recommended contract, pale green
                         where it is above you. (A dumbbell variant, style "haltere", was tried and left out.) « Vous face au champ » (page_champ, first): a bar from 50 %
                         (the field's average on each deal) to your %, red for a loss, blue for a gain (PERTE_C, GAIN_C), the gap in points
-                        on the right replaced by your %, your contract and the best table's (« Meilleur », from your side: moi.ordre), the three costliest deals named under the title; grouped by round when the movement is known (moi.tour_infos, page_champ tours=): a title line per round, « Tour 1 · contre AP/EK » with your round average « moy. 48 % » in the % column, every other round on a pale band lighter than the field boxes, a relay round as one grey line « Tour 3 · relais (donnes 7–9) »; the last column is « Recommandé » (the recommended contract at its double-dummy result and what it would score at your table; « Meilleur », the best table, was dropped on 2026-11-11: it mostly shows another table's mistake); then « Où vous pouviez faire mieux » (paragraphe_couts, from src/couts.py, kept whole: on the next page when the chart fills this one): two sentences, the « Donnes à revoir » table (one row per costly part, Où / Ce qui s'est passé / Vous / Possible, deal numbers linked), your best moves, the rest; those deals get an orange dot before their number in the chart. Rapports, « Seulement les donnes à revoir » (rapport.py --rapports --a-revoir, an["a_revoir"] in build_pdf.main): <date>-<name>-a-revoir-SS-AR.pdf, the chart for the whole session then only those deals, costliest first, no summary page; the full analysis is untouched (app.RAPPORTS, rapports_de); a two-line subtitle, the costliest deals on their own line; texts inside drawings go through build_pdf.chaine, which draws ♥ and ♦ in red like suits() does in paragraphs
+                        on the right replaced by your %, your contract and the best table's (« Meilleur », from your side: moi.ordre), the three costliest deals named under the title; grouped by round when the movement is known (moi.tour_infos, page_champ tours=): a title line per round, « Tour 1 · contre AP/EK » with your round average « moy. 48 % » in the % column, every other round on a pale band lighter than the field boxes, a relay round as one grey line « Tour 3 · relais (donnes 7–9) »; the last column is « Recommandé » (the recommended contract at its double-dummy result and what it would score at your table; « Meilleur », the best table, was dropped on 2026-11-11: it mostly shows another table's mistake); then « Où vous pouviez faire mieux » (paragraphe_couts, from src/couts.py, kept whole: on the next page when the chart fills this one): two sentences, the « Donnes à revoir » table (one row per costly part, Où / Ce qui s'est passé / Vous / Possible, deal numbers linked), your best moves, the rest; those deals get an orange dot before their number in the chart. Analyse, « Imprimer cette donne »: rapport.py --rapports --donne=N, an["seule"] in build_pdf, one deal without the
+                        chart, summary or names page, <date>-<name>-donne-N.pdf, opened when ready (T.genre "imprimer"); « Rejouer
+                        cette donne » opens it in Jouer. Rapports, « Seulement les donnes à revoir » (rapport.py --rapports --a-revoir, an["a_revoir"] in build_pdf.main): <date>-<name>-a-revoir-SS-AR.pdf, the chart for the whole session then only those deals, costliest first, no summary page; the full analysis is untouched (app.RAPPORTS, rapports_de); a two-line subtitle, the costliest deals on their own line; texts inside drawings go through build_pdf.chaine, which draws ♥ and ♦ in red like suits() does in paragraphs
                         (split where the lines cross: ecart_couleur); on the right your contract (pale red
                         when higher than the recommended one on the same side, pale blue when lower: sens_contrat, SENS), your %,
                         and the recommended contract (no %: the diamond shows it); a last « Séance » row: your session % (the
@@ -432,6 +434,23 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         src/captures_aide.py: headless Chrome through CDP (websockets, already in .venv), 1200×850 at 2×, on a demo
                         folder with invented players (simuler.py --aleatoire; never real sessions: the images are public on GitHub),
                         the page chosen through etat.json « page », demo paths replaced on screen; rerun it after a screen changes
+                        Contextual help (2026-11-12): every <h3> has a fixed id; app.AIDE_POUR maps (tab, page or entry, detail)
+                        to a section id, like a route → help-topic table; the Aide button opens the section of the page shown
+                        (cle_aide, section_aide: the most precise key first), and titre_page puts a blue « ? » beside page titles
+                        (event « aide »). tests/test_app.py checks every mapped id exists.
+    src/question_expert.py « Demander à l'expert » (2026-11-12): in Jouer's right sidebar (during and after a deal) and in Analyse,
+                        one small .ai.json per deal in pour-claude/<file name>/donne-N[-apres].ai.json: a French instruction (be
+                        « l'expert », a patient teacher; greet the player by first name and ask what they want to know), the deal,
+                        auction and play, the system documents. During the deal only what the player sees (their hand, dummy after
+                        the lead), never the hidden hands nor double dummy; after it everything (hands, dm, par, coach/expert
+                        analyses, the tables). The app copies a one-line message (« Lis le fichier joint et suis sa consigne »),
+                        shows a three-step window (Ouvrir l'expert, Montrer le fichier, coller) and opens the AI tool, adding the
+                        message as ?q= for claude.ai and chatgpt.com. Réglages › L'expert: the tool's address (etat expert_url,
+                        default https://claude.ai/new; also used by Analyse expert's steps) and the first name the expert may use
+                        (etat expert_prenom, default the first name of « Votre nom »; the only name that leaves the computer, the
+                        user's choice 2026-11-12). tests/test_question_expert.py
+    help/nouveautes.html « Quoi de neuf », one <section data-version> per version: shown once after an update (etat.json
+                        version_vue; app.nouveautes). Fill it in before each ./publier.sh
     docs/bridge-analysis/  earlier session's instructions (kept in step with the rules below) and
                         original scripts (reference)
     systems/            bidding systems: one folder per system + shared conventions/,
@@ -570,6 +589,10 @@ user's folder, never in git. Only `--avec-noms` shows full names in a report: an
   starts by itself after 1.8 s (« Voir les mains sans jouer » stays during the pause; depart_auto, not after ◀◀ back to the auction).
   Revoir: the short reason (carte.justification) with the full thought behind « Plus », and at the costly card « Ici, ♥5 a coûté une
   levée : ♥9 la gardait » (carte.meilleure_carte, jeu["faute"]). Classement with nothing replayed offers « Commencer par la donne N ».
+- Jouer, keyboard bidding (2026-11-12, encheres_clavier): a digit 1–7 then T K C P S (♣ ♦ ♥ ♠ SA), Enter = passe, X = contre,
+  R = surcontre, Escape clears; the digit typed shows under the box. Start-up: a tournament in the Bridgemate folder not yet
+  imported opens its import form once per file (etat bws_propose); « Ouvrir une séance » reminds to back up after 30 days
+  (rappel_sauvegarde).
 - Jouer, end of a deal: « Donne suivante » always opens the next deal in Jouer (jeu_suivante; picking a deal in the list keeps the mode); the deal summary
   (resume_de) shows in Revoir at the last card, not under the table; one trick count per side (rangees_plis). The result and « Donne suivante » (filled) sit in the right
   sidebar, never below the table (they were off screen); the summary, hands and comparison stay below. Robots' thoughts are not shown while

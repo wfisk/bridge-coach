@@ -558,14 +558,27 @@ NOUVEAUTES = os.path.join(rapport.RACINE, "help", "nouveautes.html")
 
 def nouveautes(depuis, jusqua):
     """[(version, html)] des sections de help/nouveautes.html plus récentes que depuis, jusqu'à jusqua comprise."""
+    return [(v, h) for v, _, h in toutes_nouveautes() if maj.cle(depuis) < maj.cle(v) <= maj.cle(jusqua)]
+
+
+def toutes_nouveautes():
+    """[(version, date « AAAA-MM-JJ » ou "", html)] de help/nouveautes.html, la plus récente d'abord."""
     try:
         t = open(NOUVEAUTES, encoding="utf-8").read()
     except OSError:
         return []
-    out = []
-    for v, h in re.findall(r'<section data-version="([^"]+)">(.*?)</section>', t, re.S):
-        if maj.cle(depuis) < maj.cle(v) <= maj.cle(jusqua): out.append((v, h.strip()))
-    return out
+    out = [(v, d, h.strip()) for v, d, h in
+           re.findall(r'<section data-version="([^"]+)"(?: data-date="([^"]*)")?>(.*?)</section>', t, re.S)]
+    return sorted(out, key=lambda x: maj.cle(x[0]), reverse=True)
+
+
+def date_en_mots(iso):
+    """« 2026-11-12 » → « 12 novembre 2026 »."""
+    try:
+        d = datetime.date.fromisoformat(iso)
+        return f"{'1er' if d.day == 1 else d.day} {fichiers.MOIS[d.month - 1]} {d.year}"
+    except (ValueError, TypeError):
+        return ""
 
 
 def rappel_sauvegarde(n_seances, maintenant=None):
@@ -3203,12 +3216,16 @@ def page():
     PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"),   # (Importer : une des trois façons de Nouveau)
                          ("infos", "Infos"), ("exporter", "Exporter…"), ("dossier", "Ouvrir le dossier de travail")],
              "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance")],   # (le bilan : bilan.py, à la main)
-             "Réglages": [("affichage", "Taille du texte"), ("nom", "Votre nom"), ("dossiers", "Dossiers"), ("expert", "L'expert"), ("sauvegarde", "Sauvegarder mes séances"), ("maj", "Mise à jour du programme"),
-                          ("contact", "Un problème, une idée ?")]}     # la barre de gauche de ces onglets
+             "Réglages": [("nom", "Votre nom"), ("affichage", "Taille du texte"), ("expert", "L'expert"),
+                          ("dossiers", "Dossiers"), ("sauvegarde", "Sauvegarder mes séances"),
+                          ("maj", "Mise à jour et nouveautés"), ("contact", "Un problème, une idée ?")]}     # la barre de gauche de ces onglets
+    # les intertitres de la barre de Réglages : vous, vos séances, le programme (l'utilisateur, 2026-11-12 : un peu d'ordre)
+    GROUPES_PAGES = {"Réglages": {"nom": "Vous", "dossiers": "Vos séances", "maj": "Le programme"}}
     vue_page = {"Fichier": "nouveau" if PAGE.get("fichier") == "importer" else
                            PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "infos", "exporter", "dossier") else "ouvrir",
                 "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance") else "creer",
-                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "dossiers", "expert", "sauvegarde", "maj", "contact") else "affichage"}
+                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "dossiers", "expert", "sauvegarde", "maj", "contact") else
+                    "maj" if PAGE.get("reglages") == "nouveautes" else "affichage"}
 
     facon = {"k": PAGE.get("nouveau") if PAGE.get("nouveau") in ("bws", "pbn", "themes") else   # Fichier, Nouveau : la façon choisie
              ("bws" if PAGE.get("fichier") == "importer" else "themes")}
@@ -3402,7 +3419,11 @@ def page():
     def barre_seance():
         if onglet_a_pages():                              # Rapports, Réglages : une entrée par page
             nom = onglet_a_pages()
-            for cle, titre in PAGES[nom]:
+            for k_, (cle, titre) in enumerate(PAGES[nom]):
+                groupe = GROUPES_PAGES.get(nom, {}).get(cle)
+                if groupe:                                  # l'intertitre d'un groupe de pages, petit et discret
+                    ui.label(groupe).classes("text-xs text-gray-600 uppercase font-bold px-2 " + ("mt-1" if k_ == 0 else "mt-4")) \
+                        .style("letter-spacing:.06em")
                 ui.button(titre, on_click=lambda c=cle: voir_page(nom, c)).props("flat no-caps align=left dense color=grey-10") \
                     .classes("entree-barre text-left" + (" choisie" if vue_page[nom] == cle else ""))
             return
@@ -3694,7 +3715,7 @@ def page():
                          "joueurs, et tout ce qu'on y dépose est public.").classes("text-base text-gray-700")
 
               with ui.column().classes("w-full gap-3") as pages_ui["maj"]:
-                titre_page("Mise à jour du programme", "mise-a-jour")
+                titre_page("Mise à jour et nouveautés", "mise-a-jour")
                 ui.label(f"Bridge Coach, version {maj.version_locale()}").classes("text-base font-bold")
                 with ui.row().classes("items-center gap-3"):
                     ui.button("Rechercher une mise à jour", on_click=lambda: chercher_maj()).props("outline")
@@ -3707,6 +3728,12 @@ def page():
                     if lignes_j:
                         le = datetime.datetime.fromtimestamp(os.path.getmtime(journal)).strftime("%d/%m/%Y")   # pas « quand » : la fonction
                         ui.label(f"Dernière mise à jour, le {le} : {lignes_j[0]} — {lignes_j[-1]}").classes("text-base text-gray-700")
+                ui.label("Ce qui a changé, version par version").classes("text-base font-bold mt-4")   # les nouveautés de chaque version
+                installee = maj.version_locale()
+                for k_, (v, d_, h) in enumerate(toutes_nouveautes()):
+                    titre_v = f"Version {v}" + (f" · {date_en_mots(d_)}" if d_ else "") + ("  (la vôtre)" if maj.cle(v) == maj.cle(installee) else "")
+                    with ui.expansion(titre_v, value=k_ == 0).classes("w-full").props("dense header-class='text-base font-bold'"):
+                        ui.html(h, sanitize=False).classes("aide pb-2")
 
             montrer_pages()                                # chaque onglet à pages s'ouvre sur sa première page
 
@@ -4453,7 +4480,8 @@ def page():
                     if len(neuf) > 1: ui.label(f"Version {v}").classes("text-base font-bold text-gray-700 mt-1")
                     ui.html(h, sanitize=False).classes("aide")
                 with ui.row().classes("gap-3 justify-end w-full mt-2"):
-                    ui.button("Voir l'aide", icon="help", on_click=lambda: (quoi_neuf.close(), ouvrir_aide("premiere-fois"))).props("flat")
+                    ui.button("Toutes les nouveautés", icon="history",
+                              on_click=lambda: (quoi_neuf.close(), onglets.set_value(o_reglages), voir_page("Réglages", "maj"))).props("flat")
                     ui.button("C'est noté", on_click=lambda: quoi_neuf.close()).props("unelevated")
             ui.timer(1.0, quoi_neuf.open, once=True)
     ui.timer(.4, rafraichir)

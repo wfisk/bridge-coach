@@ -206,3 +206,11 @@ assert app.rappel_sauvegarde(2) is None and "jamais" in app.rappel_sauvegarde(3)
 app.ecrire_etat(sauvegarde_le="2026-10-01T10:00:00")
 assert app.rappel_sauvegarde(5, _dt.datetime(2026, 10, 20)) is None
 assert "6 semaines" in app.rappel_sauvegarde(5, _dt.datetime(2026, 11, 12, 12))
+
+# toutes les nouveautés : chaque version publiée a sa section datée, la plus récente d'abord
+toutes = app.toutes_nouveautes()
+assert [v for v, _, _ in toutes] == sorted([v for v, _, _ in toutes], key=app.maj.cle, reverse=True)
+assert all(d and h for _, d, h in toutes) and app.date_en_mots("2026-11-12") == "12 novembre 2026"
+import subprocess
+etiquettes = subprocess.run(["git", "tag"], capture_output=True, text=True, cwd=rapport.RACINE).stdout.split()
+assert {e[1:] for e in etiquettes if e.startswith("v")} <= {v for v, _, _ in toutes}, "une version publiée sans nouveautés"

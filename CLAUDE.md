@@ -449,8 +449,11 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         default https://claude.ai/new; also used by Analyse expert's steps) and the first name the expert may use
                         (etat expert_prenom, default the first name of « Votre nom »; the only name that leaves the computer, the
                         user's choice 2026-11-12). tests/test_question_expert.py
-    help/nouveautes.html « Quoi de neuf », one <section data-version> per version: shown once after an update (etat.json
-                        version_vue; app.nouveautes). Fill it in before each ./publier.sh
+    help/nouveautes.html the members' changelog, one <section data-version="X.Y.Z" data-date="AAAA-MM-JJ"> per version since
+                        1.0, newest first, in plain French: shown once after an update (« Quoi de neuf », etat.json version_vue;
+                        app.nouveautes), and all of them under the update button in Réglages › Mise à jour et nouveautés
+                        (app.toutes_nouveautes; the two were combined, the user's choice 2026-11-12). Fill it in before each
+                        ./publier.sh: tests/test_app.py fails when a published tag has no section
     docs/bridge-analysis/  earlier session's instructions (kept in step with the rules below) and
                         original scripts (reference)
     systems/            bidding systems: one folder per system + shared conventions/,

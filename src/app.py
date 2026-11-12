@@ -3695,7 +3695,8 @@ def page():
                 with ui.row().classes("gap-3 mt-1"):
                     ui.button("Imprimer ou garder en PDF", icon="print", on_click=lambda: imprimer_fiche()).props("unelevated")
                     ui.button("Tout remettre comme Bridge Coach", icon="restart_alt", on_click=lambda: remettre_fiche_d.open()).props("flat")
-                for section_, lignes_ in fiche_conventions.MODELE:
+                def lignes_texte(section_, lignes_):
+                    """Une section de lignes à réécrire (le système, les entames, la signalisation)."""
                     ui.label(section_).classes("text-base font-bold mt-4")
                     for cle_, titre_l, defaut_, incertain_ in lignes_:
                         val_, change_ = fiche_conventions.valeur(cle_, fiche_)
@@ -3717,6 +3718,28 @@ def page():
                                     fiche_conventions.changer(cle, ""); z.value = d; m()
                                 zone.on("blur", enregistrer_ligne); retour.on_click(revenir)
                                 montrer_etat()
+
+                lignes_texte(*fiche_conventions.MODELE[0])        # le système en une ligne
+                ui.label("Conventions d'enchères").classes("text-base font-bold mt-4")
+                ui.label("Oui ou Non pour chacune : au départ, ce que joue Bridge Coach.").classes("text-base text-gray-700")
+                for cle_, nom_c, desc_c, defaut_c, incertain_c in fiche_conventions.CONVENTIONS:
+                    oui_, change_c = fiche_conventions.convention(cle_, fiche_)
+                    with ui.row().classes("w-full items-center no-wrap gap-3 py-1").style("border-bottom:1px solid #eceff1"):
+                        with ui.column().classes("grow gap-0"):
+                            ui.html(f"<b>{rouge(html_.escape(nom_c))}</b>", sanitize=False).classes("text-base")
+                            ui.html(rouge(html_.escape(desc_c)), sanitize=False).classes("text-sm text-gray-600")
+                        av_c = ui.label("à vérifier").classes("text-sm shrink-0").style("color:#8a5a00") \
+                            .tooltip("Bridge Coach n'est pas sûr de jouer cette convention comme la FFB : vérifiez")
+                        ch_c = ui.label("changé").classes("text-sm text-primary font-bold shrink-0") \
+                            .tooltip("Bridge Coach dit " + ("Oui" if defaut_c else "Non"))
+                        bascule = ui.toggle({True: "Oui", False: "Non"}, value=oui_).props("no-caps dense toggle-color=primary").classes("shrink-0")
+                        def montrer_c(cle=cle_, inc=incertain_c, av=av_c, ch=ch_c):
+                            c_ = fiche_conventions.convention(cle)[1]
+                            av.set_visibility(inc and not c_); ch.set_visibility(c_)
+                        bascule.on_value_change(lambda e, cle=cle_, m=montrer_c: (fiche_conventions.choisir_convention(cle, e.value), m()))
+                        montrer_c()
+                for section_, lignes_ in fiche_conventions.MODELE[1:]:   # le jeu de la carte
+                    lignes_texte(section_, lignes_)
                 ui.label("Nos accords particuliers").classes("text-base font-bold mt-4")
                 accords_in = ui.textarea(value=fiche_.get("accords") or "", placeholder="Ce qui n'est pas dans la fiche : une convention "
                                          "à vous, une exception, un rappel…").props("outlined autogrow").classes("w-full text-base")

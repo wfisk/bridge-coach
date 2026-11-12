@@ -449,12 +449,13 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         default https://claude.ai/new; also used by Analyse expert's steps) and the first name the expert may use
                         (etat expert_prenom, default the first name of « Votre nom »; the only name that leaves the computer, the
                         user's choice 2026-11-12). tests/test_question_expert.py
-    src/fiche_conventions.py Réglages › Vous › « Votre système » (2026-11-12): the partnership's convention card. MODELE: sections
-                        (Général, Ouvertures, Réponses et suites, Concurrence, Chelem, Entames, Signalisation), each line starting
-                        from what Bridge Coach plays (systeme.md / entames.md written for a player), flagged « à vérifier » where
-                        the system says « à confirmer » until rewritten. Only changed lines are kept, with the players' names and
+    src/fiche_conventions.py Réglages › Vous › « Votre système » (2026-11-12): the partnership's convention card, like a club bidding card
+                        (the user, 2026-11-12: « juste oui ou non »): CONVENTIONS, 23 bidding items each Oui / Non (default = what
+                        Bridge Coach plays, e.g. Stayman Oui, Landy Non); MODELE: the system line, then Entames and Signalisation
+                        as short editable lines (systeme.md / entames.md written for a player). « à vérifier » where the system
+                        says « à confirmer », until changed. Only what differs from Bridge Coach is kept, with the players' names and
                         « Nos accords particuliers », in <working folder>/documents/fiche-conventions.json (in the backup);
-                        « Revenir à Bridge Coach » per line, « Tout remettre » for all. pdf(): two A4 pages, red ♥ ♦
+                        « Revenir à Bridge Coach » per line, « Tout remettre » for all. pdf(): one A4 page, conventions in two columns, red ♥ ♦
                         (documents/fiche-de-conventions.pdf), opened to print or send. It never changes what the robots play.
                         Linked from Jouer › Options. tests/test_fiche_conventions.py
     help/nouveautes.html the members' changelog, one <section data-version="X.Y.Z" data-date="AAAA-MM-JJ"> per version since

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Réglages › Votre système : la fiche de conventions de la paire, modifiable, à imprimer ou garder en PDF pour un
-partenaire.
+partenaire. Les enchères : les conventions principales, Oui ou Non. Le jeu de la carte : quelques lignes à réécrire.
 
 Chaque ligne part de ce que joue Bridge Coach (le système de systems/sef-2024/, écrit ici pour un joueur, sans les
 notes du programme) ; la paire change ce qu'elle joue autrement. Seules les lignes changées sont gardées, dans
@@ -12,60 +12,39 @@ import json, os, datetime
 
 import rapport
 
-# (section, [(clé, intitulé, ce que joue Bridge Coach, à vérifier)])
+# Les enchères : les conventions principales, à cocher Oui ou Non (l'utilisateur, 2026-11-12 : « juste oui ou non ») :
+# (clé, nom, ce qu'elle dit en quelques mots, jouée par Bridge Coach, à vérifier). Bridge Coach joue celles à True.
+CONVENTIONS = [
+    ("majeures5", "Majeures 5e", "1♥ / 1♠ : 5 cartes au moins", True, False),
+    ("meilleure_mineure", "Meilleure mineure", "1♣ / 1♦ : la mineure la plus longue, 3 cartes au moins", True, True),
+    ("barrages", "Barrages", "Au palier de 3 : 7 cartes, main faible", True, True),
+    ("stayman", "Stayman", "2♣ sur 1SA, 3♣ sur 2SA : demande des majeures 4e", True, False),
+    ("texas", "Texas", "2♦ / 2♥ sur 1SA, 3♦ / 3♥ sur 2SA : transfert vers la majeure", True, False),
+    ("deux_faibles", "Deux faibles", "2♥ / 2♠ : 6 cartes, main faible", True, True),
+    ("deux_forts", "2♣ fort, 2♦ forcing de manche", "Les deux ouvertures fortes du SEF", True, True),
+    ("quatrieme", "Quatrième couleur forcing", "La 4e couleur du répondant : forcing, 11 H et plus", True, False),
+    ("drury", "Drury", "2♣ d'un partenaire qui a passé, sur 1♥ / 1♠ : soutien limite", True, True),
+    ("contre_appel", "Contre d'appel", "Court dans leur couleur, les autres couleurs", True, False),
+    ("spoutnik", "Contre Spoutnik", "Après leur intervention : la ou les majeures non nommées", True, False),
+    ("cue_bid", "Cue-bid de soutien", "Leur couleur : soutien du partenaire et force", True, True),
+    ("michaels", "Michaels", "Le cue-bid sur leur ouverture : bicolore 5-5", True, True),
+    ("sa_bicolore", "2SA bicolore", "Sur leur ouverture : les deux couleurs les plus basses libres", True, True),
+    ("loi", "Loi des levées totales", "Disputer jusqu'au palier égal au nombre d'atouts moins 6", True, False),
+    ("blackwood", "Blackwood 3041", "4SA : les clés (cinq, avec le roi d'atout)", True, False),
+    ("controles", "Contrôles", "Après un fit, on nomme ses as, rois, singletons et chicanes", True, False),
+    ("quantitatif", "4SA quantitatif", "Sur 1SA et 2SA : invitation au chelem", True, False),
+    ("landy", "Landy", "2♣ sur leur 1SA : les deux majeures", False, False),
+    ("roudi", "Roudi", "2♣ du répondant après la redemande à 1SA : demande", False, False),
+    ("lebensohl", "Lebensohl", "2SA après leur intervention sur 1SA, ou leur deux faible contré", False, False),
+    ("splinter", "Splinter", "Saut dans une couleur courte : fit et singleton ou chicane", False, False),
+    ("multi", "Multi 2♦", "2♦ : un deux faible en majeure, ou une main forte", False, False),
+]
+CONV = {c[0]: c for c in CONVENTIONS}
+
+# Le système en une ligne, puis le jeu de la carte : (section, [(clé, intitulé, ce que joue Bridge Coach, à vérifier)])
 MODELE = [
     ("Général", [
-        ("systeme", "Système", "SEF 2024 (Système d'Enseignement Français), naturel, majeures 5e", False),
-        ("ouverture_3e", "En 3e position", "Ouverture légère dès 8 H avec la règle des 20, ou 10 H avec neuf cartes dans "
-                                            "les majeures ; un deux faible ou un barrage passe d'abord", False),
-        ("ouverture_4e", "En 4e position", "12 H et plus, ou 10–11 H avec une 6e ; sinon la règle des 15 (H + piques)", False),
-    ]),
-    ("Ouvertures", [
-        ("1t", "1♣", "12–21 H, 3 cartes et plus", True),
-        ("1k", "1♦", "12–21 H, 4 cartes et plus (sauf exceptions)", True),
-        ("1m", "1♥ / 1♠", "12–21 H, 5 cartes et plus", False),
-        ("1sa", "1SA", "15–17 H, régulier", True),
-        ("2t", "2♣", "Fort indéterminé", True),
-        ("2k", "2♦", "Forcing de manche", True),
-        ("2m", "2♥ / 2♠", "Faible, 6 cartes", True),
-        ("2sa", "2SA", "20–21 H, régulier", True),
-        ("barrages", "Barrages", "Au palier de 3 : 7 cartes, faible", True),
-    ]),
-    ("Réponses et suites", [
-        ("rep_mineure", "Sur 1♣ / 1♦", "Majeure 4e et mineure 5e : la majeure d'abord avec 5–11 H ; forcing de manche, "
-                                       "la couleur la plus longue d'abord", False),
-        ("sur_1sa", "Sur 1SA", "2♣ Stayman ; 2♦ / 2♥ texas ; 4SA quantitatif", False),
-        ("sur_2sa", "Sur 2SA", "3♣ Stayman ; 3♦ / 3♥ texas ; 4SA quantitatif ; 4♣ / 4♦ : 6e, essai de chelem", True),
-        ("sur_faibles", "Sur un deux faible ou un barrage", "La manche en majeure avec dix atouts ensemble, pour jouer "
-                                                             "(loi des levées)", True),
-        ("4e_couleur", "4e couleur", "Forcing, 11 H et plus, sans arrêt dans la couleur", False),
-        ("drury", "Drury", "2♣ d'un partenaire qui a passé, sur 1♥ / 1♠ en 3e ou 4e : soutien et 10–11 points", True),
-        ("bicolore_cher", "Redemande de l'ouvreur", "Deuxième couleur plus chère avec saut : 18 HL et plus, forcing", True),
-    ]),
-    ("Concurrence", [
-        ("interv_1sa", "Intervention à 1SA", "15–18 H, régulier, arrêt dans leur couleur", False),
-        ("interv_1", "Couleur au palier de 1", "5 cartes et plus, 8–16 H", False),
-        ("interv_2", "Couleur au palier de 2", "Bonne 5e ou 6e, 11–16 H", False),
-        ("saut_faible", "Saut", "Faible : 6 cartes, 6–10 H", False),
-        ("bicolores", "Bicolores (5-5, 8–18 H, alertés)", "Sur 1♣ / 1♦ : 2♦ = les majeures, 2SA = les deux plus basses "
-                                                           "libres. Sur 1♥ / 1♠ : cue-bid = trèfle et l'autre majeure "
-                                                           "(Michaels), 2SA = les mineures, 3♣ = carreau et l'autre "
-                                                           "majeure", True),
-        ("contre_appel", "Contre d'appel", "12 H et plus, court dans leur couleur, 3 cartes dans les majeures libres ; "
-                                           "ou 17 H et plus, toute forme", False),
-        ("sur_1sa_adv", "Sur leur 1SA", "Couleur 6e naturelle au palier de 2 ; contre = 15 H et plus, punitif", False),
-        ("sur_barrage", "Sur un barrage de 3", "Couleur 6e, 10–17 H ; contre d'appel 15 H et plus", True),
-        ("reveil", "Réveil", "Les mêmes enchères avec 3 points de moins", False),
-        ("spoutnik", "Contre Spoutnik", "6 H et plus, 4 cartes dans la ou les majeures non nommées", False),
-        ("cue_bid", "Cue-bid de leur couleur", "Soutien et force : 4 atouts et 13 HLD sur une majeure, forcing de manche",
-         True),
-        ("loi", "Partielles disputées", "Loi des levées totales : jusqu'au palier égal au nombre d'atouts moins 6", False),
-    ]),
-    ("Chelem", [
-        ("blackwood", "Demande de clés", "Blackwood 3041", False),
-        ("controles", "Contrôles", "Après un fit, on nomme ses contrôles (as ou chicane, roi ou singleton) dès 28 points "
-                                   "ensemble ; sauter une couleur la nie", False),
-        ("quantitatif", "4SA quantitatif", "Sur 1SA et 2SA, même après un texas", False),
+        ("systeme", "Système", "SEF 2024, naturel, 1SA 15–17 H", False),
     ]),
     ("Entames", [
         ("entame_couleur", "Couleur", "Celle du partenaire ; sinon une séquence ; contre une couleur, jamais sous un as ; "
@@ -124,13 +103,27 @@ def changer(cle, texte):
     ecrire(x)
 
 
+def convention(cle, fiche=None):
+    """(jouée par la paire ?, changé par rapport à Bridge Coach ?)."""
+    v = ((fiche if fiche is not None else lire()).get("conventions") or {}).get(cle)
+    return (v, True) if v is not None and v != CONV[cle][3] else (CONV[cle][3], False)
+
+
+def choisir_convention(cle, oui):
+    """Oui ou Non pour la paire ; le même choix que Bridge Coach n'est pas gardé (la ligne revient au système)."""
+    x = lire(); cs = x.setdefault("conventions", {})
+    if bool(oui) == CONV[cle][3]: cs.pop(cle, None)
+    else: cs[cle] = bool(oui)
+    ecrire(x)
+
+
 def changer_entete(**champs):
     x = lire(); x.update({k: (v or "").strip() for k, v in champs.items()}); ecrire(x)
 
 
 def tout_remettre():
     """Toutes les lignes reviennent au système de Bridge Coach ; les noms et les accords particuliers restent."""
-    x = lire(); x.pop("valeurs", None); ecrire(x)
+    x = lire(); x.pop("valeurs", None); x.pop("conventions", None); ecrire(x)
 
 
 # ---------------------------------------------------------------- le PDF
@@ -139,7 +132,7 @@ def pdf(sortie=None):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, KeepTogether
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, KeepTogether
     import build_pdf as B                                    # les polices DejaVu et les cœurs et carreaux en rouge
     from xml.sax.saxutils import escape
     x = lire()
@@ -152,8 +145,22 @@ def pdf(sortie=None):
     t = lambda s: B.suits(escape(s))
     story = [Paragraph("Fiche de conventions", titre)]
     if x.get("joueurs"): story.append(Paragraph(t(x["joueurs"]), B.st("fc_j", fontName="DVB", fontSize=11, leading=14)))
-    story.append(Paragraph(f"Système de base : SEF 2024 · établie le {datetime.date.today():%d/%m/%Y} avec Bridge Coach", sous))
-    for section, lignes in MODELE:
+    story.append(Paragraph(f"Établie le {datetime.date.today():%d/%m/%Y} avec Bridge Coach", sous))
+    general = MODELE[0][1]
+    story.append(Paragraph(t(valeur(general[0][0], x)[0]), B.st("fc_sys", fontName="DVB", fontSize=10, leading=13, spaceBefore=4)))
+    story.append(Paragraph("Conventions d'enchères", h))
+    oui_non = lambda c: ('<font color="#1f6b45"><b>✔ Oui</b></font>' if convention(c, x)[0]
+                         else '<font color="#999999">✘ Non</font>')
+    cases = [[Paragraph(f"<b>{t(nom)}</b><br/><font size=7.4 color='#666666'>{t(desc)}</font>", cel), Paragraph(oui_non(c), cel)]
+             for c, nom, desc, _, _ in CONVENTIONS]
+    moitie = (len(cases) + 1) // 2
+    rangs = [cases[i] + (cases[i + moitie] if i + moitie < len(cases) else ["", ""]) for i in range(moitie)]
+    tab = Table(rangs, colWidths=[6.6 * cm, 1.95 * cm, 6.6 * cm, 1.95 * cm])
+    tab.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LINEBELOW", (0, 0), (-1, -1), .3, colors.HexColor("#dddddd")),
+                             ("TOPPADDING", (0, 0), (-1, -1), 2.2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2.2),
+                             ("LEFTPADDING", (0, 0), (-1, -1), 3), ("LEFTPADDING", (2, 0), (2, -1), 12)]))
+    story.append(tab)
+    for section, lignes in MODELE[1:]:
         rangs = [[Paragraph(t(titre_l), cel_b), Paragraph(t(valeur(cle, x)[0]), cel)] for cle, titre_l, _, _ in lignes]
         tab = Table(rangs, colWidths=[4.3 * cm, 13.3 * cm])
         tab.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LINEBELOW", (0, 0), (-1, -1), .3, colors.HexColor("#dddddd")),

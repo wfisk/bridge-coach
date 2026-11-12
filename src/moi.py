@@ -26,12 +26,27 @@ def nom():
         return None
 
 
+def licence_de(qui):
+    """Le numéro de licence FFB connu pour ce nom (etat.json « licences », retenu quand on choisit un joueur), ou ""."""
+    try:
+        return ((json.load(open(ETAT, encoding="utf-8")) or {}).get("licences") or {}).get((qui or "").strip(), "")
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+def est(j, qui, licence=""):
+    """Ce joueur (de « joueurs ») est-il qui ? Par la licence FFB quand les deux en ont une (elle ne change pas avec un
+    accent ou un nom d'usage), sinon par le nom complet."""
+    if licence and j.get("licence"): return str(j["licence"]).lstrip("0") == str(licence).lstrip("0")
+    return (j.get("nom") or "").strip().lower() == (qui or "").strip().lower() != ""
+
+
 def paires(data, qui=None):
-    """Les paires de la séance où joue l'utilisateur (ou qui), d'après les noms complets des joueurs."""
-    qui = (qui if qui is not None else nom() or "").strip().lower()
+    """Les paires de la séance où joue l'utilisateur (ou qui) : par sa licence FFB, sinon par son nom complet."""
+    qui = (qui if qui is not None else nom() or "").strip()
     if not qui: return set()
-    return {str(k) for k, v in (data.get("joueurs") or {}).items()
-            if any((j.get("nom") or "").strip().lower() == qui for j in v)}
+    lic = licence_de(qui)
+    return {str(k) for k, v in (data.get("joueurs") or {}).items() if any(est(j, qui, lic) for j in v)}
 
 
 def initiales(data, qui=None):
@@ -49,16 +64,29 @@ def a_joue(t, mes_paires):
     return bool(mes_paires) and (str(t.get("paire_ns")) in mes_paires or str(t.get("paire_eo")) in mes_paires)
 
 
-def tous_les_noms(seances):
-    """Les noms complets des joueurs de ces séances (.bc.json), triés : de quoi choisir le sien."""
-    out = set()
+def tous_les_joueurs(seances):
+    """{nom complet: licence FFB ("" si inconnue)} des joueurs de ces séances. Un même licencié écrit de deux façons
+    (un accent, un nom d'usage) n'y est qu'une fois, sous le nom de la séance la plus récente lue (la dernière)."""
+    par_licence, sans = {}, {}
     for c in seances:
         try:
             for v in (json.load(open(c, encoding="utf-8")).get("joueurs") or {}).values():
-                out.update(j["nom"].strip() for j in v if (j.get("nom") or "").strip())
+                for j in v:
+                    n = (j.get("nom") or "").strip()
+                    if not n: continue
+                    if j.get("licence"): par_licence[str(j["licence"]).lstrip("0")] = n
+                    else: sans.setdefault(n, "")
         except (OSError, ValueError, AttributeError):
             pass
-    return sorted(out, key=str.lower)
+    out = {n: lic for lic, n in par_licence.items()}
+    for n in sans:
+        if n not in out: out[n] = ""
+    return out
+
+
+def tous_les_noms(seances):
+    """Les noms complets des joueurs de ces séances (.bc.json), triés : de quoi choisir le sien (un licencié une fois)."""
+    return sorted(tous_les_joueurs(seances), key=str.lower)
 
 
 def mon_camp(tables, mes_paires):
@@ -210,15 +238,15 @@ def place_du_joueur(data, d, qui):
     [deux noms], "tour": n° du tour ou None, "noms": {siège: nom} des quatre joueurs de sa table}, ou None s'il ne l'a pas jouée. Dans une paire, le premier joueur est Nord
     (ou Est), le second Sud (ou Ouest), comme à la table de départ. Les noms complets restent sur l'ordinateur : l'onglet
     Jouer les montre, rien ne part ailleurs (les initiales à défaut de nom)."""
-    q = (qui or "").strip().lower()
+    q = (qui or "").strip()
     if not q: return None
+    lic = licence_de(q)
     joueurs = data.get("joueurs") or {}
     for t in d.get("tables") or []:
         for cote, autre, sieges in (("paire_ns", "paire_eo", "NS"), ("paire_eo", "paire_ns", "EO")):
             k = str(t.get(cote))
-            noms = [(j.get("nom") or "").strip().lower() for j in joueurs.get(k, [])]
-            if q in noms:
-                i = noms.index(q)
+            i = next((x for x, j in enumerate(joueurs.get(k, [])) if est(j, q, lic)), None)
+            if i is not None:
                 adv = [j.get("nom") or j.get("initiales") or "?" for j in joueurs.get(str(t.get(autre)), [])]
                 tour = next((r["tour"] for r in (data.get("session") or {}).get("rondes") or []
                              if d["n"] in r.get("donnes", []) and k in (str(r["ns"]), str(r["eo"]))), None)

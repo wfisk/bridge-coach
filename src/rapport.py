@@ -64,7 +64,7 @@ ANCIEN = "-donnes.json"                                   # son ancien nom, enco
 VERSION = 1
 SEANCES = os.path.join(DONNEES, "seances")
 sys.path.insert(0, ICI)
-from bws_extract import extraire, JOUEURS
+from bws_extract import extraire, JOUEURS, LICENCES
 from commentaires import commentaire
 from encheres import encherir
 from jeu import entame_et_defense, plan_de_jeu, apres_coup, LHO
@@ -427,13 +427,16 @@ def fondre_paires(data, paires):
                       for x in range(max(len(i), len(n)))]
 
 
-def joueurs_bws(data, complets):
-    """Les joueurs d'une séance tirée d'un .bws : initiales de "paires", nom complet du .bws (en mémoire)."""
+def joueurs_bws(data, complets, licences=None):
+    """Les joueurs d'une séance tirée d'un .bws : initiales de "paires", nom complet et numéro de licence FFB du .bws (en
+    mémoire). La licence reconnaît un joueur mieux que son nom (accents, nom d'usage) ; elle reste sur l'ordinateur."""
     out = {}
+    licences = licences or {}
     for k, p in data.get("paires", {}).items():
         if not p.get("nom"): continue
-        n = complets.get(k, [])
-        out[k] = [dict({"initiales": x}, **({"nom": n[i]} if i < len(n) else {})) for i, x in enumerate(p["nom"].split("/"))]
+        n = complets.get(k, []); lic = licences.get(k, [])
+        out[k] = [dict({"initiales": x}, **({"nom": n[i]} if i < len(n) else {}),
+                       **({"licence": lic[i]} if i < len(lic) and lic[i] else {})) for i, x in enumerate(p["nom"].split("/"))]
     return out
 
 
@@ -552,7 +555,7 @@ def main():
     fichier = lambda suite: os.path.join(DATA, nom + suite)   # seances : le nom choisi (la date d'abord)
     donnes = seance = fichier(BC)                          # donnes peut devenir une copie provisoire ; seance reste le fichier
     if not pret:                                           # importée : le fichier Bridge Coach se fait ici
-        data["joueurs"] = joueurs_bws(data, {str(k): v for k, v in JOUEURS.items()})
+        data["joueurs"] = joueurs_bws(data, {str(k): v for k, v in JOUEURS.items()}, {str(k): v for k, v in LICENCES.items()})
         entete(data, source, origine)
         fichiers.nouvel_entete(data, source, originel, titre)
         if os.path.exists(donnes):                         # réimport : les noms complets déjà saisis restent

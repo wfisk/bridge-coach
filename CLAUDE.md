@@ -533,7 +533,13 @@ field instead of one line per table. Unrecorded auctions are not alerts.
 Players are identified by **initials** in reports and analyses, pair as "AB/CD" (North then South, or
 East then West, at the starting table). This replaces the "no player names, pairs
 by number" rule in docs/bridge-analysis. The `.bc.json` holds the players (user's decision, 2026-11-02):
-`"joueurs": {pair: [{"initiales": "WF", "nom": "William Fisk"}, …]}`, the full name optional (the .bws gives it
+`"joueurs": {pair: [{"initiales": "WF", "nom": "William Fisk", "licence": "12345678"}, …]}`, the full name optional; the FFB
+licence number since 1.9 (2026-11-12: PlayerNumbers.Number of the .bws, without leading zeros, bws_extract.licence_ffb; older
+Bridgemate sessions get it once at start-up from their original .bws, fichiers.ajouter_licences). moi.est / paires /
+place_du_joueur recognise a player by licence first (compared without leading zeros), else by full name; etat.json
+« licences » {name: licence} is filled when a name is picked (app.retenir_licence); moi.tous_les_joueurs lists each licensee
+once. Réglages › Votre nom shows the licence; after the first import, « Qui utilise Bridge Coach ? » asks once (etat
+qui_demande). Licences, like full names, never leave the computer (tests/test_licence.py checks the Claude files) (the .bws gives it
 through `bws_extract.JOUEURS`; a feuille de route only through a `<name>-paires.json`, merged in on import; a
 re-import keeps full names already there). Tables and `paires[].nom` keep the initials. The .bc.json lives in the
 user's folder, never in git. Only `--avec-noms` shows full names in a report: an opening page of players

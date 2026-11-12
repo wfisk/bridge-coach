@@ -43,16 +43,26 @@ def initiales(nom):
     if not nom_: nom_, prenoms = mots[-1:], mots[:-1]
     return "".join(m[0] for m in prenoms + nom_).upper()
 
+def licence_ffb(n):
+    """Le numéro de licence FFB, sans zéro de tête (00987654 et 987654 sont le même licencié : l'utilisateur, 2026-11-12) ;
+    autre chose que des chiffres (vide, un numéro de table) : "" ."""
+    n = str(n or "").strip()
+    return str(int(n)) if n.isdigit() and 0 < len(n) <= 8 and int(n) else ""
+
+
 JOUEURS = {}     # {identifiant de paire: [nom, nom]} de la dernière séance lue : en mémoire seulement, pour --avec-noms
+LICENCES = {}    # {identifiant de paire: [licence, licence]} : le numéro de licence FFB de chaque joueur (PlayerNumbers.Number)
 
 
 def paires_initiales(T, cle):
     """{identifiant de paire: 'AB/CD'} d'après les places de départ ; seules les initiales sont gardées.
     cle(section, numéro, 'NS'|'EO') donne l'identifiant de la paire."""
-    JOUEURS.clear()
-    places = {}
+    JOUEURS.clear(); LICENCES.clear()
+    places, numeros = {}, {}
     for r in sorted(T["PlayerNumbers"], key=lambda r: r["Round"]):
-        if r.get("Name"): places.setdefault((r["Section"], r["Table"], r["Direction"]), r["Name"])
+        if r.get("Name"):
+            places.setdefault((r["Section"], r["Table"], r["Direction"]), r["Name"])
+            numeros.setdefault((r["Section"], r["Table"], r["Direction"]), licence_ffb(r.get("Number")))
     if not places: return {}
     out = {}
     for sec in {x["Section"] for x in T["RoundData"]}:
@@ -64,6 +74,7 @@ def paires_initiales(T, cle):
                 if all(noms):
                     out[cle(sec, paire, cote)] = "/".join(initiales(n) for n in noms)
                     JOUEURS[cle(sec, paire, cote)] = noms
+                    LICENCES[cle(sec, paire, cote)] = [numeros.get((sec, x["Table"], s_), "") for s_ in sieges]
     return out
 
 

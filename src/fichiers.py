@@ -458,3 +458,47 @@ def sauvegarder(cible):
                     if f.endswith(rapport.BC): n += 1
     os.replace(provisoire, cible)
     return n
+
+
+# ---------------------------------------------------------------- les licences des séances importées avant la 1.9
+def original_de(c):
+    """Le .bws d'origine d'une séance, s'il est encore là : là où il était à l'import, à côté de la séance (les imports
+    d'avant la 1.7 en gardaient une copie), ou dans le dossier de Bridgemate sous son nom. Seulement lu."""
+    src = entete(c).get("source") or {}
+    if src.get("type") != "bws": return None
+    nom = src.get("fichier") or ""
+    candidats = [src.get("chemin"), os.path.join(os.path.dirname(c), nom), os.path.join(os.path.dirname(c), base(c) + ".bws")]
+    try:
+        d = rapport.dossier_configure()
+        candidats += [os.path.join(r, f) for r, _, fs in os.walk(d) for f in fs if f == nom] if nom and os.path.isdir(d) else []
+    except Exception:
+        pass
+    return next((x for x in candidats if x and os.path.isfile(x)), None)
+
+
+def ajouter_licences(c):
+    """Ajoute à une séance Bridgemate d'avant la 1.9 le numéro de licence FFB de ses joueurs, lu dans son .bws d'origine
+    (par le nom de chaque joueur). Renvoie le nombre de joueurs complétés (0 : rien à faire, ou pas d'original)."""
+    data = rapport.lire_bc(c)
+    joueurs = data.get("joueurs") or {}
+    if not joueurs or any(j.get("licence") for v in joueurs.values() for j in v): return 0
+    bws = original_de(c)
+    if not bws: return 0
+    from bws_extract import lire, licence_ffb
+    try:
+        T = lire(bws)
+    except Exception:
+        return 0
+    par_nom = {}
+    for r in T.get("PlayerNumbers") or []:
+        lic = licence_ffb(r.get("Number"))
+        if r.get("Name") and lic: par_nom.setdefault(r["Name"].strip().lower(), lic)
+    n = 0
+    for v in joueurs.values():
+        for j in v:
+            lic = par_nom.get((j.get("nom") or "").strip().lower())
+            if lic: j["licence"] = lic; n += 1
+    if n:
+        journal(data, f"Licences des joueurs ajoutées ({n})")
+        rapport.ecrire_bc(data, c)
+    return n

@@ -693,6 +693,18 @@ def webview_save():
     return webview.FileDialog.SAVE if hasattr(webview, "FileDialog") else webview.SAVE_DIALOG
 
 
+def retenir_licence(*noms):
+    """Retient la licence FFB des joueurs choisis (etat.json « licences », {nom: licence}) : moi.paires et
+    moi.place_du_joueur les reconnaissent par elle. Aussi pour les noms déjà choisis avant la 1.9 (au lancement)."""
+    noms = [n for n in noms if n]
+    if not noms: return
+    tous = moi.tous_les_joueurs(rapport.glob_seances("*" + rapport.BC))
+    lic = dict(lire_etat().get("licences") or {})
+    for n in noms:
+        if tous.get(n): lic[n] = tous[n]
+    if lic != (lire_etat().get("licences") or {}): ecrire_etat(licences=lic)
+
+
 def url_expert():
     """L'adresse de l'outil d'IA (Réglages, L'expert), claude.ai par défaut."""
     return lire_etat().get("expert_url") or question_expert.ADRESSE
@@ -1652,6 +1664,26 @@ def page():
         question["message"] = question_expert.message(os.path.basename(question["f"]))
         ui.clipboard.write(question["message"])
         fenetre_question.refresh(); question_d.open()
+
+    qui_ = {"noms": [], "choix": None}
+
+    def demander_qui(c):
+        """Après le premier import, une fois : « Qui utilise Bridge Coach ? », parmi les joueurs de ce tournoi."""
+        data = lire_seance(c) or {}
+        noms_ = sorted({(j.get("nom") or "").strip() for v in (data.get("joueurs") or {}).values() for j in v} - {""}, key=str.lower)
+        ecrire_etat(qui_demande=True)
+        if not noms_: return
+        qui_.update(noms=noms_, choix=None); fenetre_qui.refresh(); qui_d.open()
+
+    def c_est_moi():
+        n_ = qui_["choix"]
+        if not n_: return
+        ecrire_etat(mon_nom=n_); retenir_licence(n_)
+        if not moi.nom(): ecrire_etat(moi=n_)
+        qui_d.close(); vue_seance.refresh(); resultats.refresh()
+        try: ma_licence.refresh(); choix_moi.set_options(options_joueurs(moi.nom()), value=moi.nom() or "")
+        except NameError: pass
+        ui.notify(f"Bonjour {question_expert.prenom_de(n_)} ! Vos tables sont maintenant surlignées.")
 
     def rejouer_donne(d):
         """Analyse → Jouer, sur la même donne, au début de ses enchères."""
@@ -2777,7 +2809,7 @@ def page():
                     opts.update({x: x for x in noms_seance if x != mien})
                     def choisir_joueur(ev):
                         if ev.value == SEPARATEUR: ev.sender.value = joueur_jouer(); return
-                        ecrire_etat(joueur_jouer=ev.value); repartir(); barre_seance.refresh(); vue_jouer.refresh()
+                        ecrire_etat(joueur_jouer=ev.value); retenir_licence(ev.value); repartir(); barre_seance.refresh(); vue_jouer.refresh()
                     with ui.column().classes("gap-2 ml-8 max-w-md"):
                         ui.select(opts, value=actuel, with_input=True, on_change=choisir_joueur).classes("w-full") \
                             .props("outlined dense") \
@@ -3479,7 +3511,7 @@ def page():
 
                     def choisir_moi(e):
                         if e.value == SEPARATEUR: e.sender.value = moi.nom() or ""; return   # la ligne de séparation
-                        ecrire_etat(moi=e.value or None); vue_seance.refresh()
+                        ecrire_etat(moi=e.value or None); retenir_licence(e.value); vue_seance.refresh()
                     choix_moi = ui.select(options_joueurs(actuel), value=actuel or "", with_input=True, on_change=choisir_moi) \
                         .classes("w-full").props("outlined dense") \
                         .props(":option-disable=\"o => typeof o.label === 'string' && o.label.startsWith('───')\"")   # la ligne ne se choisit pas
@@ -3545,18 +3577,36 @@ def page():
 
               with ui.column().classes("w-full gap-3") as pages_ui["nom"]:
                 titre_page("Votre nom", "votre-table")
-                ui.label("Votre nom vient en premier dans le choix d'un joueur (« Vous êtes », dans Rapports), juste après "
-                         "« Aucun », puis une ligne, puis les autres joueurs.").classes("text-base text-gray-700")
+                ui.label("Qui utilise Bridge Coach sur cet ordinateur : choisissez votre nom tel que la FFB l'écrit, dans la liste "
+                         "des joueurs de vos tournois. Bridge Coach vous reconnaît ensuite par votre numéro de licence, même si "
+                         "votre nom est écrit autrement d'un tournoi à l'autre.").classes("text-base text-gray-700")
 
                 def choisir_mon_nom(e):
                     if e.value == SEPARATEUR: e.sender.value = lire_etat().get("mon_nom") or ""; return
-                    ecrire_etat(mon_nom=e.value or None)
+                    ecrire_etat(mon_nom=e.value or None); retenir_licence(e.value)
                     if e.value and not moi.nom(): ecrire_etat(moi=e.value); vue_seance.refresh()   # « Vous êtes » vide : c'est vous
                     choix_moi.set_options(options_joueurs(moi.nom()), value=moi.nom() or "")
-                noms_tous = {"": "—"} | {x: x for x in moi.tous_les_noms(rapport.glob_seances("*" + rapport.BC))}
+                    ma_licence.refresh()
+                noms_tous = {"": "Inconnu (pas de nom)"} | {x: x for x in moi.tous_les_noms(rapport.glob_seances("*" + rapport.BC))}
                 if lire_etat().get("mon_nom") and lire_etat()["mon_nom"] not in noms_tous: noms_tous[lire_etat()["mon_nom"]] = lire_etat()["mon_nom"]
                 ui.select(noms_tous, value=lire_etat().get("mon_nom") or "", with_input=True, on_change=choisir_mon_nom) \
                     .classes("w-full").props("outlined dense")
+                @ui.refreshable
+                def ma_licence():
+                    n_ = lire_etat().get("mon_nom")
+                    if not n_:                              # facultatif : sans nom, l'utilisateur est « inconnu »
+                        ui.html("<div style='font-size:16px'>Vous êtes : <b>inconnu</b>.</div>", sanitize=False)
+                        ui.label("C'est facultatif. Sans nom, Bridge Coach marche aussi : vos tables ne sont simplement pas "
+                                 "surlignées.").classes("text-base text-gray-700"); return
+                    lic_ = moi.licence_de(n_)
+                    ui.html(f"<div style='font-size:16px'>Vous êtes <b>{html_.escape(n_)}</b>" +
+                            (f", licence FFB <b>{lic_}</b>.</div>" if lic_ else ".</div>"), sanitize=False)
+                    if not lic_:
+                        ui.label("Licence inconnue : elle viendra avec le prochain tournoi Bridgemate importé où vous avez joué.") \
+                            .classes("text-base text-gray-700")
+                    ui.label("Votre licence et les noms des joueurs restent sur cet ordinateur : rien de cela ne part chez l'expert "
+                             "ni ailleurs.").classes("text-sm text-gray-600")
+                ma_licence()
 
               with ui.column().classes("w-full gap-5") as pages_ui["dossiers"]:
                 titre_page("Dossiers", "reglages")
@@ -3929,6 +3979,20 @@ def page():
         with ui.row().classes("gap-3 justify-end w-full"):
             ui.button("Annuler", on_click=lambda: confirmation.close()).props("flat")
             ui.button("Supprimer", icon="delete", on_click=lambda: supprimer()).props("color=red")
+
+    with ui.dialog() as qui_d, ui.card().classes("w-full max-w-md gap-3"):   # après le premier import : qui êtes-vous ?
+        @ui.refreshable
+        def fenetre_qui():
+            ui.label("Qui utilise Bridge Coach ?").classes("text-lg font-bold")
+            ui.label("Si vous le voulez, choisissez votre nom parmi les joueurs de ce tournoi : vos tables seront surlignées "
+                     "partout, et les rapports faits pour votre paire. C'est facultatif : sans nom, vous restez « inconnu ». "
+                     "Vous pourrez le changer dans Réglages, Votre nom.").classes("text-base text-gray-700")
+            ui.select({n: n for n in qui_["noms"]}, with_input=True, label="Votre nom",
+                      on_change=lambda e: qui_.update(choix=e.value)).classes("w-full").props("outlined")
+            with ui.row().classes("w-full justify-end gap-3"):
+                ui.button("Rester inconnu", on_click=lambda: qui_d.close()).props("flat")
+                ui.button("C'est moi", icon="check", on_click=lambda: c_est_moi()).props("unelevated")
+        fenetre_qui()
 
     with ui.dialog() as question_d, ui.card().classes("w-full max-w-lg gap-3"):   # « Demander à l'expert » : trois gestes
         @ui.refreshable
@@ -4319,7 +4383,10 @@ def page():
         if I.fini and vu_i["fini"] is not I.proc:          # l'import vient de finir : la séance s'ouvre
             vu_i["fini"] = I.proc
             faute_i.text = "" if I.annule else I.erreur
-            if I.fichier and not I.erreur: choisir(I.fichier)
+            if I.fichier and not I.erreur:
+                choisir(I.fichier)
+                e_ = lire_etat()
+                if not e_.get("mon_nom") and not e_.get("qui_demande"): demander_qui(I.fichier)   # une fois : qui êtes-vous ?
             nouveau.refresh()
         actif = T.actif; occupe = actif or actif_i         # un travail à la fois
         analyse_ = actif and T.genre == "analyse"; rapports_ = actif and T.genre == "rapports"
@@ -4367,6 +4434,13 @@ def page():
     if neuf_bws and lire_etat().get("bws_propose") != neuf_bws:
         ecrire_etat(bws_propose=neuf_bws)
         ui.timer(.6, lambda: preparer_import(neuf_bws), once=True)
+    e0 = lire_etat()
+    if not e0.get("licences_ajoutees"):                    # une fois : les séances d'avant la 1.9 reçoivent les licences
+        for c_ in rapport.glob_seances("*" + rapport.BC):
+            try: fichiers.ajouter_licences(c_)
+            except Exception: pass
+        ecrire_etat(licences_ajoutees=True)
+    retenir_licence(e0.get("mon_nom"), e0.get("moi"), e0.get("joueur_jouer"))
     vue_v, version_ = lire_etat().get("version_vue"), maj.version_locale()
     if vue_v != version_:                                  # après une mise à jour, une fois : quoi de neuf (help/nouveautes.html)
         ecrire_etat(version_vue=version_)

@@ -230,6 +230,10 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
             if a.enchere == "4SA" and not a.nature:          # 4SA du joueur, une couleur fixée : Blackwood 3041
                 atout = couleur_fixee(s, hist)
                 if atout: a = Appel("4SA", f"votre enchère : Blackwood 3041, les clés à {atout}", nature="blackwood", atout=atout)
+            if a.enchere == "5SA" and not a.nature:          # 5SA du joueur après son Blackwood : les rois
+                bw = next((b for x, b in reversed(hist) if x == s and b.nature == "blackwood"), None)
+                if bw: a = Appel("5SA", f"votre enchère : demande des rois (toutes les clés réunies), atout {bw.atout}",
+                                 nature="rois", atout=bw.atout)
         seq.append(a.enchere); expl.append((s, a.enchere, a.texte))
         if getattr(a, "alerte", False): alertes.append(len(seq) - 1)
         if a.enchere != "passe":
@@ -486,7 +490,10 @@ def cote_ouvreur(m, s, hist, infos, etat, ouvreur):
             return S.avance_contre(m, [c for c in (x[1:] for x in eux) if c != "SA"], dernier, False)
         return S.reponse_concurrence(m, ouv, oc, dernier)
     dp = du_part[-1]
+    if dp.nature == "rois": return S.reponse_rois(m, dp.atout)
     if dp.nature == "blackwood": return S.reponse_blackwood(m, dp.atout)
+    if len(nos) >= 2 and nos[-2][1].nature == "rois" and nos[-2][0] == s:
+        return apres_rois(m, nos[-2][1].atout, nos[-1][1].enchere)
     if len(nos) >= 2 and nos[-2][1].nature == "blackwood" and nos[-2][0] == s:
         return apres_blackwood(m, nos[-2][1].atout, nos[-1][1].enchere, infos[PART[s]])
     if dp.nature == "spoutnik": return S.apres_spoutnik(m, ouv, oc, dp, dernier)
@@ -519,6 +526,7 @@ def cote_defense(m, s, hist, infos, etat, seq):
         if dp.enchere[1:] == "SA": return placer(m, s, nos, infos, dernier, adverse=adverse)   # 1SA, 2SA bicolore…
         return S.avance_couleur(m, dp.enchere[1:], eux[-1] if eux else None, dernier, dp.nature == "reveil")
     dp = du_part[-1] if du_part else Appel("passe", "")
+    if dp.nature == "rois": return S.reponse_rois(m, dp.atout)
     if dp.nature == "blackwood": return S.reponse_blackwood(m, dp.atout)
     moi = mes[-1]
     if moi.nature == "cue": return apres_mon_cue(m, s, moi, etat, True)
@@ -614,8 +622,12 @@ def suivante(m, s, nos, infos, dernier):
     dern_part = next((a for x, a in reversed(nos) if x == PART[s]), None)
     if dern_part is None: return Appel("passe", "le partenaire n'a pas parlé : rien à ajouter")
 
+    if dern_part.nature == "rois":
+        return S.reponse_rois(m, dern_part.atout)
     if dern_part.nature == "blackwood":
         return S.reponse_blackwood(m, dern_part.atout)
+    if len(nos) >= 2 and nos[-2][1].nature == "rois":
+        return apres_rois(m, nos[-2][1].atout, dern_part.enchere)
     if len(nos) >= 2 and nos[-2][1].nature == "blackwood":
         return apres_blackwood(m, nos[-2][1].atout, dern_part.enchere, part)
 
@@ -702,6 +714,15 @@ def accepte_ou_passe(m, nos, moi):
     if a.nature == "invite" and a.enchere == "4SA": return Appel("6SA" if maxi else "passe", "maximum" if maxi else "minimum")
     if a.nature == "invite": return Appel("3SA" if maxi else "passe", "maximum" if maxi else "minimum")
     return Appel("passe", "")
+
+
+def apres_rois(m, atout, reponse):
+    """Après la réponse à 5SA (demande des rois) : le grand chelem quand tous les rois sont là, sinon le petit."""
+    mes = sum("R" in m.cartes[c] for c in m.cartes if c != atout)
+    lui = {"6♣": 0, "6♦": 1, "6♥": 2, "6♠": 3}.get(reponse, 0)
+    if mes + lui >= 3: return Appel(e(7, atout), "toutes les clés et tous les rois : grand chelem", nature="conclusion")
+    if rang(e(6, atout)) > rang(reponse): return Appel(e(6, atout), "un roi manque : petit chelem", nature="conclusion")
+    return Appel("passe", "un roi manque : le petit chelem est atteint", nature="conclusion")
 
 
 def apres_blackwood(m, atout, reponse, part):

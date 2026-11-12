@@ -53,3 +53,8 @@ _r = _encherir(_d, imposees=["passe", "1♥", "passe", "2♦", "passe", "2SA", "
 assert _r["encheres"][12:14] == ["passe", "5♠"], _r["encheres"]        # 2 clés avec la dame d'atout, pas passe
 _r = _encherir(_d, imposees=["passe", "1♥", "passe", "2♦", "passe", "2SA", "passe", "4SA"])
 assert _r["encheres"][8:] == ["passe", "passe", "passe"]                # sans couleur fixée : quantitatif, minimum passe
+
+# 5SA du joueur après son Blackwood : demande des rois ; le partenaire répond par paliers (6♦ = un roi), puis 6♥
+_r = _encherir(_d, imposees=["passe", "1♥", "passe", "2♦", "passe", "2SA", "passe", "3♥", "passe", "4♥", "passe", "4SA",
+                             "passe", "5♠", "passe", "5SA"])
+assert _r["encheres"][16:19] == ["passe", "6♦", "passe"] and _r["contrat"] == "6♥", _r["encheres"]

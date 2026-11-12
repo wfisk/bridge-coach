@@ -219,6 +219,13 @@ def reponse_blackwood(m, atout):
     return Appel("5♠" if dame else "5♥", f"2 clés {'avec' if dame else 'sans'} la dame d'atout")
 
 
+def reponse_rois(m, atout):
+    """Sur 5SA (après le Blackwood du partenaire, toutes les clés réunies) : les rois hors le roi d'atout, par paliers :
+    6♣ = 0, 6♦ = 1, 6♥ = 2, 6♠ = 3 (systems/conventions/blackwood-3041.md, à confirmer)."""
+    k = sum("R" in m.cartes[c] for c in m.cartes if c != atout)
+    return Appel(("6♣", "6♦", "6♥", "6♠")[min(k, 3)], f"{k} roi{'s' if k > 1 else ''} hors le roi d'atout (réponse à 5SA)")
+
+
 # ---------------------------------------------------------------- concurrence (étape 2)
 # Traitements SEF courants, tous « à confirmer » dans systems/sef-2024/systeme.md (section Concurrence).
 

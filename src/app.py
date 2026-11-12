@@ -13,7 +13,7 @@ import html as html_
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import carte, classement, donnes, edition, exporter, fichiers, jouer, maj, moi, question_expert, rapport
+import carte, classement, donnes, edition, exporter, fichiers, fiche_conventions, jouer, maj, moi, question_expert, rapport
 from nicegui import app, background_tasks, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -561,7 +561,7 @@ AIDE_POUR = {
     ("Rapports",): "rapport", ("Rapports", "creer"): "rapport", ("Rapports", "seance"): "perdu",
     ("Réglages",): "reglages", ("Réglages", "affichage"): "taille", ("Réglages", "nom"): "votre-table",
     ("Réglages", "dossiers"): "reglages", ("Réglages", "sauvegarde"): "sauvegarde", ("Réglages", "maj"): "mise-a-jour",
-    ("Réglages", "contact"): "signaler", ("Réglages", "expert"): "questions-expert",
+    ("Réglages", "contact"): "signaler", ("Réglages", "expert"): "questions-expert", ("Réglages", "systeme"): "systeme",
 }
 
 
@@ -1710,6 +1710,20 @@ def page():
         except NameError: pass
         ui.notify(f"Bonjour {question_expert.prenom_de(n_)} ! Vos tables sont maintenant surlignées.")
 
+    def imprimer_fiche():
+        """La fiche en PDF (documents/fiche-de-conventions.pdf), ouverte : de là on l'imprime ou on l'envoie."""
+        try:
+            f_ = fiche_conventions.pdf()
+        except Exception:
+            ui.notify("La fiche n'a pas pu être écrite.", type="negative"); return
+        ouvrir(f_)
+        ui.notify(f"La fiche est ouverte : imprimez-la depuis là. Elle est gardée dans {f_}", multi_line=True, timeout=8000)
+
+    def remettre_fiche():
+        fiche_conventions.tout_remettre(); remettre_fiche_d.close()
+        ui.notify("Toutes les lignes sont revenues au système de Bridge Coach.")
+        ui.navigate.reload()
+
     def rejouer_donne(d):
         """Analyse → Jouer, sur la même donne, au début de ses enchères."""
         jeu["mode"] = "jouer"; ecrire_etat(mode_jouer="jouer")
@@ -2808,6 +2822,10 @@ def page():
         e = entree_effective(data)
         if e == "options":
             titre_page("Options", "encherir")
+            with ui.row().classes("items-center gap-2"):          # le système des robots, sur la fiche de conventions
+                ui.label("Les robots jouent le SEF 2024.").classes("text-base text-gray-700")
+                ui.button("Votre fiche de conventions", icon="description",
+                          on_click=lambda: (onglets.set_value(o_reglages), voir_page("Réglages", "systeme"))).props("flat dense no-caps")
             ui.label("La place que vous jouez").classes("text-base font-bold mt-2")
             ui.label("Le déclarant est celui de la séquence recommandée (l'analyse de l'expert, sinon la standard, sinon "
                      "les enchères du coach). Le choix vaut pour toutes les donnes et reste d'une fois sur l'autre.") \
@@ -3228,7 +3246,7 @@ def page():
     PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"),   # (Importer : une des trois façons de Nouveau)
                          ("infos", "Infos"), ("exporter", "Exporter…"), ("dossier", "Ouvrir le dossier de travail")],
              "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance")],   # (le bilan : bilan.py, à la main)
-             "Réglages": [("nom", "Votre nom"), ("affichage", "Taille du texte"), ("expert", "L'expert"),
+             "Réglages": [("nom", "Votre nom"), ("systeme", "Votre système"), ("affichage", "Taille du texte"), ("expert", "L'expert"),
                           ("dossiers", "Dossiers"), ("sauvegarde", "Sauvegarder mes séances"),
                           ("maj", "Mise à jour et nouveautés"), ("contact", "Un problème, une idée ?")]}     # la barre de gauche de ces onglets
     # les intertitres de la barre de Réglages : vous, vos séances, le programme (l'utilisateur, 2026-11-12 : un peu d'ordre)
@@ -3236,7 +3254,7 @@ def page():
     vue_page = {"Fichier": "nouveau" if PAGE.get("fichier") == "importer" else
                            PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "infos", "exporter", "dossier") else "ouvrir",
                 "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance") else "creer",
-                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "dossiers", "expert", "sauvegarde", "maj", "contact") else
+                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "systeme", "dossiers", "expert", "sauvegarde", "maj", "contact") else
                     "maj" if PAGE.get("reglages") == "nouveautes" else "affichage"}
 
     facon = {"k": PAGE.get("nouveau") if PAGE.get("nouveau") in ("bws", "pbn", "themes") else   # Fichier, Nouveau : la façon choisie
@@ -3665,6 +3683,45 @@ def page():
                 ui.button("Modifier les réglages", on_click=ouvrir_reglages).classes("w-full text-base py-3")
                 ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-base text-gray-700")
 
+              with ui.column().classes("w-full gap-2") as pages_ui["systeme"]:   # Réglages, Votre système : la fiche de conventions
+                titre_page("Votre système", "systeme")
+                ui.label("Votre fiche de conventions, à imprimer ou à garder en PDF pour un partenaire. Chaque ligne part de ce "
+                         "que joue Bridge Coach (SEF 2024) : changez ce que votre paire joue autrement. Ce qui est écrit ici "
+                         "ne change pas ce que jouent les robots.").classes("text-base text-gray-700")
+                fiche_ = fiche_conventions.lire()
+                joueurs_in = ui.input("Les joueurs", value=fiche_.get("joueurs") or "",
+                                      placeholder="Par exemple : MARTIN Anne et BERNARD Henri").props("outlined").classes("w-full text-base")
+                joueurs_in.on("blur", lambda: fiche_conventions.changer_entete(joueurs=joueurs_in.value))
+                with ui.row().classes("gap-3 mt-1"):
+                    ui.button("Imprimer ou garder en PDF", icon="print", on_click=lambda: imprimer_fiche()).props("unelevated")
+                    ui.button("Tout remettre comme Bridge Coach", icon="restart_alt", on_click=lambda: remettre_fiche_d.open()).props("flat")
+                for section_, lignes_ in fiche_conventions.MODELE:
+                    ui.label(section_).classes("text-base font-bold mt-4")
+                    for cle_, titre_l, defaut_, incertain_ in lignes_:
+                        val_, change_ = fiche_conventions.valeur(cle_, fiche_)
+                        with ui.row().classes("w-full items-start no-wrap gap-3"):
+                            ui.html(rouge(html_.escape(titre_l)), sanitize=False).classes("text-base font-bold pt-2 shrink-0").style("width:190px")
+                            with ui.column().classes("grow gap-0"):
+                                zone = ui.textarea(value=val_).props("outlined dense autogrow").classes("w-full text-base")
+                                with ui.row().classes("items-center gap-2"):
+                                    a_verifier = ui.label("à vérifier").classes("text-sm").style("color:#8a5a00") \
+                                        .tooltip("Le système de Bridge Coach n'est pas sûr de cette ligne : relisez-la")
+                                    change_lbl = ui.label("changé").classes("text-sm text-primary font-bold")
+                                    retour = ui.button("Revenir à Bridge Coach", icon="undo").props("flat dense no-caps size=sm")
+                                def montrer_etat(cle=cle_, inc=incertain_, av=a_verifier, ch=change_lbl, rt=retour):
+                                    c_ = fiche_conventions.valeur(cle)[1]
+                                    av.set_visibility(inc and not c_); ch.set_visibility(c_); rt.set_visibility(c_)
+                                def enregistrer_ligne(cle=cle_, z=zone, m=montrer_etat):
+                                    fiche_conventions.changer(cle, z.value); m()
+                                def revenir(cle=cle_, z=zone, d=defaut_, m=montrer_etat):
+                                    fiche_conventions.changer(cle, ""); z.value = d; m()
+                                zone.on("blur", enregistrer_ligne); retour.on_click(revenir)
+                                montrer_etat()
+                ui.label("Nos accords particuliers").classes("text-base font-bold mt-4")
+                accords_in = ui.textarea(value=fiche_.get("accords") or "", placeholder="Ce qui n'est pas dans la fiche : une convention "
+                                         "à vous, une exception, un rappel…").props("outlined autogrow").classes("w-full text-base")
+                accords_in.on("blur", lambda: fiche_conventions.changer_entete(accords=accords_in.value))
+
               with ui.column().classes("w-full gap-3") as pages_ui["expert"]:   # Réglages, L'expert : l'outil d'IA et le prénom
                 titre_page("L'expert", "questions-expert")
                 ui.label("L'expert est un outil d'intelligence artificielle, sur Internet : Claude (claude.ai) par défaut, ou un "
@@ -4026,6 +4083,13 @@ def page():
         with ui.row().classes("gap-3 justify-end w-full"):
             ui.button("Annuler", on_click=lambda: confirmation.close()).props("flat")
             ui.button("Supprimer", icon="delete", on_click=lambda: supprimer()).props("color=red")
+
+    with ui.dialog() as remettre_fiche_d, ui.card().classes("w-full max-w-md"):
+        ui.label("Remettre toutes les lignes de la fiche comme les joue Bridge Coach ? Vos changements sont effacés ; les noms "
+                 "des joueurs et vos accords particuliers restent.").classes("text-base")
+        with ui.row().classes("gap-3 justify-end w-full"):
+            ui.button("Annuler", on_click=lambda: remettre_fiche_d.close()).props("flat")
+            ui.button("Tout remettre", icon="restart_alt", on_click=lambda: remettre_fiche()).props("color=red")
 
     with ui.dialog() as qui_d, ui.card().classes("w-full max-w-md gap-3"):   # après le premier import : qui êtes-vous ?
         @ui.refreshable

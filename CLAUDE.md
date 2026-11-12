@@ -449,6 +449,14 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         default https://claude.ai/new; also used by Analyse expert's steps) and the first name the expert may use
                         (etat expert_prenom, default the first name of « Votre nom »; the only name that leaves the computer, the
                         user's choice 2026-11-12). tests/test_question_expert.py
+    src/fiche_conventions.py Réglages › Vous › « Votre système » (2026-11-12): the partnership's convention card. MODELE: sections
+                        (Général, Ouvertures, Réponses et suites, Concurrence, Chelem, Entames, Signalisation), each line starting
+                        from what Bridge Coach plays (systeme.md / entames.md written for a player), flagged « à vérifier » where
+                        the system says « à confirmer » until rewritten. Only changed lines are kept, with the players' names and
+                        « Nos accords particuliers », in <working folder>/documents/fiche-conventions.json (in the backup);
+                        « Revenir à Bridge Coach » per line, « Tout remettre » for all. pdf(): two A4 pages, red ♥ ♦
+                        (documents/fiche-de-conventions.pdf), opened to print or send. It never changes what the robots play.
+                        Linked from Jouer › Options. tests/test_fiche_conventions.py
     help/nouveautes.html the members' changelog, one <section data-version="X.Y.Z" data-date="AAAA-MM-JJ"> per version since
                         1.0, newest first, in plain French: shown once after an update (« Quoi de neuf », etat.json version_vue;
                         app.nouveautes), and all of them under the update button in Réglages › Mise à jour et nouveautés

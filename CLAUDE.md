@@ -424,10 +424,10 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (contract reached, double-dummy, gap to par); rerun after any rule change
       fonts/            DejaVu fonts (macOS has none); build_pdf.py looks here first
     help/index.html     the application's help, in French, shown as a page of the window by the Aide button (top right, a blue
-                        help icon; a hidden tab). Seven pages, one per <h2>, written from what the user wants to do (Bien démarrer,
-                        Importer et ranger vos séances, Revoir un tournoi, Rejouer les donnes, Comprendre vos erreurs, S'entraîner,
-                        Installer, régler, demander de l'aide; the user, 2026-11-12: fewer topics, longer pages, task-first, more
-                        screenshots); the left sidebar lists the pages, a right column « Sur cette page » (sections_aide gives
+                        help icon; a hidden tab). Five categories, <h1 class="categorie"> (Démarrer, Revoir un tournoi, S'entraîner, Faire
+                        cours, Réglages et aide: the program's three uses, the user, 2026-11-12), eleven topics, one page per <h2>,
+                        written from what the user wants to do (fewer topics, longer pages, task-first, screenshots); the left
+                        sidebar lists the pages under their category headings (categories_aide), a right column « Sur cette page » (sections_aide gives
                         (titre, html, [(ancre, h3)]); fixed on screen, page background, the section read is marked by JS_SUR_PAGE)
                         lists its <h3>. Numbered steps use <ol class="etapes">, tips <div class="astuce">. Screenshots in
                         help/images, served as /aide-images/ (img src="images/…"), click to enlarge. They come from

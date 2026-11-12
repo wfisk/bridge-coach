@@ -516,10 +516,22 @@ def texte_aide():
     return re.search(r"<body>(.*)</body>", t, re.S)[1] if "<body>" in t else t
 
 
+def categories_aide():
+    """La catégorie de chaque page de l'aide, dans l'ordre des pages : le dernier <h1 class="categorie"> qui la précède
+    (Démarrer, Revoir un tournoi, S'entraîner, Faire cours, Réglages et aide : l'utilisateur, 2026-11-12)."""
+    corps = re.sub(r"<!--.*?-->", "", texte_aide(), flags=re.S)
+    cat, out = "", []
+    for m in re.finditer(r'<h1 class="categorie">(.*?)</h1>|<h2>', corps, re.S):
+        if m[1] is not None: cat = re.sub(r"<[^>]+>", "", m[1]).strip()
+        else: out.append(cat)
+    return out
+
+
 def sections_aide():
     """L'aide en pages : [(titre, html, [(ancre, titre de section)])], une page par <h2>, ses sections (<h3>) listées
     dans « Sur cette page », à droite. Les images (help/images/…) sont servies sous /aide-images/. Sans <h2> : une page."""
     corps = re.sub(r"<!--.*?-->", "", texte_aide(), flags=re.S).replace('src="images/', 'src="/aide-images/')
+    corps = re.sub(r'<h1 class="categorie">.*?</h1>', "", corps, flags=re.S)   # les catégories rangent la barre de gauche
     out = []
     for k, bloc in enumerate(re.split(r"(?=<h2>)", corps)):
         m = re.match(r"<h2>(.*?)</h2>", bloc, re.S)
@@ -3304,8 +3316,10 @@ def page():
     def page_aide():
         """Une page de l'aide, et à droite « Sur cette page » : ses sections, sur le même fond que le texte ; un clic
         y descend, la section lue est marquée en lisant (JS_SUR_PAGE)."""
-        s_ = sections_aide()
-        titre, h, sections = s_[min(vue_aide["k"], len(s_) - 1)]
+        s_ = sections_aide(); cats = categories_aide()
+        k_ = min(vue_aide["k"], len(s_) - 1)
+        titre, h, sections = s_[k_]
+        if k_ < len(cats) and cats[k_]: ui.label(cats[k_]).classes("text-sm text-gray-600 uppercase tracking-wide")
         with ui.row().classes("w-full no-wrap items-start gap-10"):
             ui.html(h, sanitize=False).classes("aide pb-24").style("flex:1 1 auto;min-width:0;max-width:46em")
             if sections:
@@ -3428,7 +3442,13 @@ def page():
                     .classes("entree-barre text-left" + (" choisie" if vue_page[nom] == cle else ""))
             return
         if sur_aide():                                    # l'aide : une entrée par page (peu de pages, plus longues)
+            cats, avant = categories_aide(), None
             for k, (titre, _, _) in enumerate(sections_aide()):
+                cat = cats[k] if k < len(cats) else ""
+                if cat and cat != avant:                     # l'intertitre de la catégorie, comme dans Réglages
+                    ui.label(cat).classes("text-xs text-gray-600 uppercase font-bold px-2 " + ("mt-1" if avant is None else "mt-4")) \
+                        .style("letter-spacing:.06em")
+                avant = cat
                 ui.button(titre, on_click=lambda k=k: voir_aide(k)).props("flat no-caps align=left dense color=grey-10") \
                     .classes("entree-barre aide-sujet text-left" + (" choisie" if k == vue_aide["k"] else ""))
             return

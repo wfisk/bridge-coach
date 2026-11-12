@@ -196,7 +196,9 @@ ancres = {a for _, _, secs in app.sections_aide() for a, _ in secs}
 assert set(app.AIDE_POUR.values()) <= ancres, set(app.AIDE_POUR.values()) - ancres
 assert app.section_aide("Fichier", "nouveau", "themes") == "themes" and app.section_aide("Fichier", "nouveau") == "importer"
 assert app.section_aide("Jouer", "carte") == "jouer-carte" and app.section_aide("Inconnu") == "premiere-fois"
-assert len(app.sections_aide()) == 7 and all(secs for _, _, secs in app.sections_aide())
+assert len(app.sections_aide()) == 11 and all(secs for _, _, secs in app.sections_aide())
+cats = app.categories_aide()                               # cinq catégories, chaque page dans la sienne
+assert len(cats) == 11 and list(dict.fromkeys(cats)) == ["Démarrer", "Revoir un tournoi", "S'entraîner", "Faire cours", "Réglages et aide"]
 
 # quoi de neuf : les sections entre la version vue et la version installée ; le rappel de sauvegarde
 assert [v for v, _ in app.nouveautes("1.6.0", "1.8.0")] == ["1.8.0", "1.7.0"] and app.nouveautes("1.8.0", "1.8.0") == []

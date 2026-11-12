@@ -19,12 +19,17 @@
 </style>
 </head>
 <body>
+
 <h1>Aide de Bridge Coach</h1>
-<!-- Une page par <h2> (la barre de gauche), ses sections <h3> dans « Sur cette page » (à droite). Chaque section part de
-     ce que l'on veut faire. Les images sont dans help/images (src/captures_aide.py les refait, avec des joueurs inventés). -->
+<!-- Cinq catégories (<h1 class="categorie">), chacune avec ses sujets : une page par <h2> (la barre de gauche, sous sa
+     catégorie), ses sections <h3> dans « Sur cette page » (à droite). Chaque section part de ce que l'on veut faire.
+     Les id des <h3> ne changent pas : app.AIDE_POUR s'en sert pour l'aide de chaque page. Les images sont dans
+     help/images (src/captures_aide.py les refait, avec des joueurs inventés). -->
+
+<h1 class="categorie">Démarrer</h1>
 
 <h2>Bien démarrer</h2>
-<p class="intro">Bridge Coach vous aide à progresser à partir des donnes que vous avez vraiment jouées. Il lit le tournoi du club enregistré par Bridgemate, vous montre ce qui s'est passé à chaque table, vous fait rejouer les donnes contre des robots, et vous explique, donne par donne, ce qu'il fallait annoncer et jouer.</p>
+<p class="intro">Bridge Coach vous aide à progresser à partir des donnes que vous jouez : il lit le tournoi du club enregistré par Bridgemate, vous montre ce qui s'est passé à chaque table, vous fait rejouer les donnes contre des robots et vous explique, donne par donne, ce qu'il fallait annoncer et jouer. Il sert aussi à faire cours.</p>
 
 <h3 id="presentation">Ce que vous pouvez faire</h3>
 <ul>
@@ -44,7 +49,7 @@
   <li><b>Lancez l'analyse</b> : onglet <b>Analyse</b>, <b>Lancer l'analyse</b>. Comptez quelques minutes.</li>
   <li><b>Créez votre rapport</b> : onglet <b>Rapports</b>, <b>Créer les rapports</b>. Il s'ouvre en PDF, prêt à lire ou à imprimer.</li>
 </ol>
-<p>Chaque étape a sa page dans cette aide, à gauche. Les images de l'aide s'agrandissent d'un clic.</p>
+<p>Chaque étape a sa page dans cette aide. À gauche, les pages sont rangées selon ce que vous voulez faire : <b>Revoir un tournoi</b>, <b>S'entraîner</b>, <b>Faire cours</b>. Les images de l'aide s'agrandissent d'un clic.</p>
 
 <h3 id="fenetre">Se repérer dans la fenêtre</h3>
 <figure><img src="images/fenetre.png" alt="La fenêtre de Bridge Coach, onglet Donnes"><figcaption>En haut, les onglets ; à gauche, ce que contient la séance ; au centre, la donne choisie ; à droite, son résumé.</figcaption></figure>
@@ -65,8 +70,10 @@
 <p>Onglet <b>Réglages</b>, <b>Taille du texte</b> : <b>Normale</b>, <b>Grande</b> (125 %) ou <b>Très grande</b> (150 %). Toute la fenêtre grandit, le texte comme les cartes. C'est utile si vous voyez moins bien, ou pour montrer Bridge Coach sur une télévision.</p>
 <figure><img src="images/taille-texte.png" alt="Réglages, Taille du texte"></figure>
 
-<h2>Importer et ranger vos séances</h2>
-<p class="intro">Une séance, c'est un tournoi ou une série de donnes d'entraînement. Bridge Coach la garde dans un seul fichier qui contient tout : les donnes, les joueurs, les résultats et les analyses.</p>
+<h1 class="categorie">Revoir un tournoi</h1>
+
+<h2>Importer et retrouver vos tournois</h2>
+<p class="intro">Après le tournoi, importez-le : Bridge Coach en fait une séance, un seul fichier qui contient tout (les donnes, les joueurs, les résultats et les analyses).</p>
 
 <h3 id="importer">Importer le tournoi de ce soir</h3>
 <ol class="etapes">
@@ -122,8 +129,8 @@
   <li><code>corbeille</code> : les séances mises à la corbeille.</li>
 </ul>
 
-<h2>Revoir un tournoi</h2>
-<p class="intro">L'onglet <b>Donnes</b> montre la séance ouverte telle qu'elle a été jouée : les mains, les enchères et le résultat de chaque table.</p>
+<h2>Voir les donnes et vos résultats</h2>
+<p class="intro">L'onglet <b>Donnes</b> montre le tournoi tel qu'il a été joué : les mains, les enchères et le résultat de chaque table, et votre place.</p>
 
 <h3 id="donne">Voir une donne et ses résultats</h3>
 <p>Cliquez une donne dans la liste de gauche. Vous voyez les quatre mains, le donneur et la vulnérabilité, puis le résultat de chaque table, avec ses enchères quand les Bridgemate les ont enregistrées. À droite, le double mort et le par.</p>
@@ -141,57 +148,8 @@
 <h3 id="marque">Match-points ou IMP</h3>
 <p>La <b>marque</b> vient du fichier importé. Si elle est fausse, changez-la sur la page <b>Séance</b> : les rapports et les analyses la suivent.</p>
 
-<h2>Rejouer les donnes</h2>
-<p class="intro">Dans l'onglet <b>Jouer</b>, vous rejouez chaque donne contre trois robots : vous enchérissez, puis vous jouez la carte comme déclarant ou en défense. Les robots ne voient pas vos cartes.</p>
-
-<h3 id="encherir">Enchérir une donne</h3>
-<ol class="etapes">
-  <li>Onglet <b>Jouer</b>, cliquez une donne dans la liste de gauche. Vous êtes en bas de la table.</li>
-  <li>Cliquez <b>▶</b>, en haut à droite : les robots enchérissent jusqu'à votre tour.</li>
-  <li>Choisissez votre enchère dans la boîte à enchères, à droite : un niveau, puis une couleur ; <b>PASS</b>, <b>X</b> et <b>XX</b> sont devant.</li>
-</ol>
-<figure><img src="images/jouer-encheres.png" alt="Onglet Jouer : la table et la boîte à enchères"><figcaption>Chaque joueur pose ses cartons devant lui ; votre main est en bas, la boîte à enchères à droite.</figcaption></figure>
-<ul>
-  <li><b>Que veut dire cette enchère ?</b> Touchez-la dans la grille des enchères, à droite : une bulle dit ce qu'elle montre. Une enchère alertée porte un petit <b>A</b> bleu.</li>
-  <li><b>Je ne sais pas quoi dire</b> : <b>Indice</b>, sous la boîte, dit ce que dirait le système, et pourquoi.</li>
-  <li><b>Un saut</b> : cliquez <b>STOP</b> avant l'enchère, comme au club.</li>
-  <li><b>Une enchère artificielle</b> (Stayman, texas, Spoutnik…) : posez <b>ALERT</b> avant l'enchère. Si vous l'oubliez, le coach reprend votre enchère et vous le rappelle.</li>
-  <li><b>Je me suis trompé</b> : <b>◀◀</b> reprend votre dernière enchère ; <b>⏮</b> revient au début de la donne.</li>
-  <li><b>Au clavier</b> : tapez le niveau puis la couleur, <b>T</b> trèfle, <b>K</b> carreau, <b>C</b> cœur, <b>P</b> pique, <b>S</b> sans-atout (<b>1</b> puis <b>C</b> = 1♥) ; <b>Entrée</b> passe, <b>X</b> contre, <b>R</b> surcontre.</li>
-</ul>
-<p>Pour jouer une autre place, ouvrez <b>Options</b>, en haut de la liste : le déclarant (au départ), la défense, une place fixe, ou <b>comme un joueur de la séance</b>, à la place où il était assis ce soir-là.</p>
-
-<h3 id="jouer-carte">Jouer la carte</h3>
-<p>Après les enchères, l'entame est faite et le mort s'étale. Cliquez la carte à jouer, dans votre main ou au mort. Quand c'est à vous, les cartes que vous jouez sont surlignées en jaune. Si une carte ne peut pas être jouée (vous devez fournir), elle tremble et reste en place.</p>
-<ul>
-  <li><b>Indice</b> dit la carte que jouerait le coach à votre place.</li>
-  <li><b>Réclamer</b> donne les levées restantes, si la défense ne peut vraiment plus rien faire.</li>
-  <li><b>Revoir le dernier pli</b> : cliquez la dernière carte des plis posés devant vous.</li>
-</ul>
-<p>À la fin, la barre de droite compare votre contrat à celui que recommande l'analyse, et votre jeu de la carte au meilleur jeu possible. <b>Voir pourquoi</b> vous montre la carte qui a coûté une levée ; <b>Donne suivante</b> continue.</p>
-
-<h3 id="defendre">Défendre</h3>
-<p>Quand l'autre camp gagne les enchères, vous défendez avec un robot pour partenaire. Si c'est à vous d'entamer, choisissez votre carte. Le mort s'étale sur le côté. Votre partenaire signale comme le prévoit le système : sur votre entame, parité en continuation, préférence en défausse.</p>
-
-<h3 id="revoir">Revoir une donne jouée</h3>
-<p>Une fois la donne finie, <b>Revoir</b> (en haut à droite, à côté de <b>Jouer</b>) rejoue votre partie carte par carte, les quatre mains visibles, avec ce que pensait chaque robot : pourquoi il a choisi sa carte, et ce qu'il croyait des mains cachées. À la dernière carte, le résumé de la donne. <b>▶</b> avance, <b>◀◀</b> recule, <b>⏮</b> revient au début.</p>
-
-<h3 id="classement">Rejouer tout le tournoi et se classer</h3>
-<p>Rejouez le tournoi donne par donne, puis ouvrez <b>Classement</b>, sous <b>Options</b> : « Vous : 54,2 % — 3e sur 11 paires ». Une donne compte quand vous l'avez jouée jusqu'à la dernière levée ; votre score vient des levées vraiment faites. Tant que des donnes restent à jouer, le classement est provisoire.</p>
-<div class="astuce">Dans <b>Options</b>, choisissez <b>comme un joueur de la séance</b> (vous-même) et <b>Dans l'ordre où ce joueur a joué les donnes</b> : vous rejouez votre soirée tour après tour, à vos vraies places.</div>
-
-<h3 id="cours">Faire cours sur grand écran</h3>
-<p>Le mode <b>Démo</b> (en haut à droite : <b>Jouer | Revoir | Démo</b>) montre une donne pas à pas, les quatre mains ouvertes : les enchères recommandées, puis le jeu des robots. Chaque pas est expliqué dans la barre de droite.</p>
-<figure><img src="images/demo.png" alt="Le mode Démo"></figure>
-<ol class="etapes">
-  <li>Ouvrez la donne, puis <b>Démo</b>.</li>
-  <li>Avancez avec <b>▶</b>, ou la flèche <b>→</b> du clavier (une télécommande de présentation marche aussi). Reculez avec <b>←</b>.</li>
-  <li>Cochez <b>Double mort</b> : sous chaque carte possible, le nombre de levées qu'elle donne au déclarant. Cliquez une autre carte pour demander « et si… ? » : les robots reprennent de là.</li>
-</ol>
-<p>La liste des donnes se cache avec la petite flèche « en haut de la liste : la table prend toute la place et grandit avec la fenêtre. Avec <b>Réglages</b>, <b>Taille du texte</b>, <b>Très grande</b>, tout se lit du fond de la salle.</p>
-
 <h2>Comprendre vos erreurs</h2>
-<p class="intro">L'analyse dit, pour chaque donne, ce qu'il fallait annoncer et comment jouer, sans regarder les mains cachées, comme un bon joueur à la table. Le rapport PDF montre en plus où vous avez perdu des points.</p>
+<p class="intro">L'analyse dit, pour chaque donne, ce qu'il fallait annoncer et comment jouer, sans regarder les mains cachées, comme un bon joueur à la table. Le rapport montre où vous avez perdu des points.</p>
 
 <h3 id="lancer-analyse">Lancer l'analyse</h3>
 <ol class="etapes">
@@ -225,17 +183,6 @@
   <li>Télécharger le fichier que Claude écrit, puis <b>Importer l'analyse de l'expert…</b>.</li>
 </ol>
 
-<h3 id="questions-expert">Poser vos questions à l'expert</h3>
-<p>Une donne vous intrigue ? Demandez à l'expert, comme à un professeur. Le bouton <b>Demander à l'expert</b> est dans la barre de droite de <b>Jouer</b> (pendant la donne et à la fin) et dans <b>Analyse</b>.</p>
-<ol class="etapes">
-  <li>Cliquez <b>Demander à l'expert</b>. Bridge Coach prépare un petit fichier sur cette donne et copie un court message.</li>
-  <li><b>Ouvrir l'expert</b> ouvre l'outil dans votre navigateur (claude.ai, ou celui réglé dans <b>Réglages</b>, <b>L'expert</b>).</li>
-  <li><b>Montrer le fichier</b>, puis glissez-le dans la conversation ; collez le message (⌘V sur Mac, Ctrl+V sous Windows) et envoyez.</li>
-  <li>L'expert vous salue et vous demande ce que vous voulez savoir. Posez vos questions comme vous les diriez : « Fallait-il ouvrir ? », « Pourquoi mon impasse a raté ? ».</li>
-</ol>
-<p><b>Pendant la donne</b>, l'expert ne voit que ce que vous voyez : votre main, le mort, les enchères et les cartes jouées. Il vous aide à réfléchir sans vous dire les mains cachées. <b>À la fin</b>, il voit tout : les quatre mains, l'analyse et les résultats du club.</p>
-<p>Dans <b>Réglages</b>, <b>L'expert</b> : l'adresse de votre outil (par exemple <code>https://claude.ai/new</code> ou <code>https://chatgpt.com</code>), et le prénom par lequel il vous salue. Ce prénom est le seul nom qui part chez l'expert ; les autres joueurs n'y sont que par leurs initiales. Laissez-le vide pour rester anonyme.</p>
-
 <h3 id="rapport">Créer votre rapport</h3>
 <ol class="etapes">
   <li>Onglet <b>Rapports</b>, <b>Créer les rapports</b>.</li>
@@ -250,7 +197,51 @@
 <figure><img src="images/rapport-champ.png" alt="Rapport, Vous face au champ"></figure>
 <p>Puis <b>Où vous pouviez faire mieux</b> : les donnes à revoir, la plus coûteuse d'abord. Une donne y entre par <b>les enchères</b> (votre contrat face au contrat recommandé) ou par <b>le jeu de la carte</b> (vos levées face au meilleur jeu, seulement quand une autre table a fait mieux dans le même contrat). Vos meilleurs coups sont nommés aussi. Cliquez un numéro de donne pour y aller.</p>
 
-<h2>S'entraîner</h2>
+<h2>Rejouer le tournoi et vous classer</h2>
+<p class="intro">Rejouez le tournoi d'hier donne par donne, puis voyez où vous seriez classé face au club. Pour jouer une donne, voir « Jouer contre les robots ».</p>
+
+<h3 id="classement">Rejouer tout le tournoi et se classer</h3>
+<p>Rejouez le tournoi donne par donne, puis ouvrez <b>Classement</b>, sous <b>Options</b> : « Vous : 54,2 % — 3e sur 11 paires ». Une donne compte quand vous l'avez jouée jusqu'à la dernière levée ; votre score vient des levées vraiment faites. Tant que des donnes restent à jouer, le classement est provisoire.</p>
+<div class="astuce">Dans <b>Options</b>, choisissez <b>comme un joueur de la séance</b> (vous-même) et <b>Dans l'ordre où ce joueur a joué les donnes</b> : vous rejouez votre soirée tour après tour, à vos vraies places.</div>
+
+<h1 class="categorie">S'entraîner</h1>
+
+<h2>Jouer contre les robots</h2>
+<p class="intro">Dans l'onglet <b>Jouer</b>, vous jouez chaque donne contre trois robots : vous enchérissez, puis vous jouez la carte comme déclarant ou en défense. Les robots ne voient pas vos cartes. Cela marche pour les donnes d'un tournoi comme pour celles d'un entraînement.</p>
+
+<h3 id="encherir">Enchérir une donne</h3>
+<ol class="etapes">
+  <li>Onglet <b>Jouer</b>, cliquez une donne dans la liste de gauche. Vous êtes en bas de la table.</li>
+  <li>Cliquez <b>▶</b>, en haut à droite : les robots enchérissent jusqu'à votre tour.</li>
+  <li>Choisissez votre enchère dans la boîte à enchères, à droite : un niveau, puis une couleur ; <b>PASS</b>, <b>X</b> et <b>XX</b> sont devant.</li>
+</ol>
+<figure><img src="images/jouer-encheres.png" alt="Onglet Jouer : la table et la boîte à enchères"><figcaption>Chaque joueur pose ses cartons devant lui ; votre main est en bas, la boîte à enchères à droite.</figcaption></figure>
+<ul>
+  <li><b>Que veut dire cette enchère ?</b> Touchez-la dans la grille des enchères, à droite : une bulle dit ce qu'elle montre. Une enchère alertée porte un petit <b>A</b> bleu.</li>
+  <li><b>Je ne sais pas quoi dire</b> : <b>Indice</b>, sous la boîte, dit ce que dirait le système, et pourquoi.</li>
+  <li><b>Un saut</b> : cliquez <b>STOP</b> avant l'enchère, comme au club.</li>
+  <li><b>Une enchère artificielle</b> (Stayman, texas, Spoutnik…) : posez <b>ALERT</b> avant l'enchère. Si vous l'oubliez, le coach reprend votre enchère et vous le rappelle.</li>
+  <li><b>Je me suis trompé</b> : <b>◀◀</b> reprend votre dernière enchère ; <b>⏮</b> revient au début de la donne.</li>
+  <li><b>Au clavier</b> : tapez le niveau puis la couleur, <b>T</b> trèfle, <b>K</b> carreau, <b>C</b> cœur, <b>P</b> pique, <b>S</b> sans-atout (<b>1</b> puis <b>C</b> = 1♥) ; <b>Entrée</b> passe, <b>X</b> contre, <b>R</b> surcontre.</li>
+</ul>
+<p>Pour jouer une autre place, ouvrez <b>Options</b>, en haut de la liste : le déclarant (au départ), la défense, une place fixe, ou <b>comme un joueur de la séance</b>, à la place où il était assis ce soir-là.</p>
+
+<h3 id="jouer-carte">Jouer la carte</h3>
+<p>Après les enchères, l'entame est faite et le mort s'étale. Cliquez la carte à jouer, dans votre main ou au mort. Quand c'est à vous, les cartes que vous jouez sont surlignées en jaune. Si une carte ne peut pas être jouée (vous devez fournir), elle tremble et reste en place.</p>
+<ul>
+  <li><b>Indice</b> dit la carte que jouerait le coach à votre place.</li>
+  <li><b>Réclamer</b> donne les levées restantes, si la défense ne peut vraiment plus rien faire.</li>
+  <li><b>Revoir le dernier pli</b> : cliquez la dernière carte des plis posés devant vous.</li>
+</ul>
+<p>À la fin, la barre de droite compare votre contrat à celui que recommande l'analyse, et votre jeu de la carte au meilleur jeu possible. <b>Voir pourquoi</b> vous montre la carte qui a coûté une levée ; <b>Donne suivante</b> continue.</p>
+
+<h3 id="defendre">Défendre</h3>
+<p>Quand l'autre camp gagne les enchères, vous défendez avec un robot pour partenaire. Si c'est à vous d'entamer, choisissez votre carte. Le mort s'étale sur le côté. Votre partenaire signale comme le prévoit le système : sur votre entame, parité en continuation, préférence en défausse.</p>
+
+<h3 id="revoir">Revoir une donne jouée</h3>
+<p>Une fois la donne finie, <b>Revoir</b> (en haut à droite, à côté de <b>Jouer</b>) rejoue votre partie carte par carte, les quatre mains visibles, avec ce que pensait chaque robot : pourquoi il a choisi sa carte, et ce qu'il croyait des mains cachées. À la dernière carte, le résumé de la donne. <b>▶</b> avance, <b>◀◀</b> recule, <b>⏮</b> revient au début.</p>
+
+<h2>Créer des donnes</h2>
 <p class="intro">Bridge Coach fabrique des donnes sur les thèmes que vous voulez travailler, ou vous laisse taper les vôtres. Elles se jouent et s'analysent comme un tournoi.</p>
 
 <h3 id="themes">Des donnes sur un thème</h3>
@@ -272,19 +263,63 @@
 </ol>
 <p>Tout est enregistré dès que vous quittez un champ. Pour changer une donne plus tard : <b>Modifier la donne</b>. Bridge Coach garde des copies de la séance : la page <b>Séance</b> les liste, et <b>Restaurer</b> en remet une. Seules les séances créées dans Bridge Coach se modifient ; les donnes d'un tournoi restent celles qui ont été jouées.</p>
 
-<h2>Installer, régler, demander de l'aide</h2>
+<h2>Demander à l'expert</h2>
+<p class="intro">Une question sur une donne ? L'expert, une intelligence artificielle, vous répond comme un professeur, pendant la donne ou après.</p>
 
-<h3 id="installer">Installer Bridge Coach</h3>
+<h3 id="questions-expert">Poser vos questions à l'expert</h3>
+<p>Une donne vous intrigue ? Demandez à l'expert, comme à un professeur. Le bouton <b>Demander à l'expert</b> est dans la barre de droite de <b>Jouer</b> (pendant la donne et à la fin) et dans <b>Analyse</b>.</p>
 <ol class="etapes">
-  <li>Sur la page <code>github.com/wfisk/bridge-coach/releases</code>, téléchargez <b>Bridge-Coach-Setup.exe</b> (Windows 10 ou 11) ou <b>Bridge-Coach.pkg</b> (Mac).</li>
-  <li>Ouvrez-le et suivez les étapes. Il faut Internet et quelques minutes.</li>
-  <li>Windows affiche « Windows a protégé votre ordinateur » : <b>Informations complémentaires</b>, puis <b>Exécuter quand même</b>. Le Mac refuse d'abord : <b>Réglages Système</b>, <b>Confidentialité et sécurité</b>, <b>Ouvrir quand même</b>.</li>
+  <li>Cliquez <b>Demander à l'expert</b>. Bridge Coach prépare un petit fichier sur cette donne et copie un court message.</li>
+  <li><b>Ouvrir l'expert</b> ouvre l'outil dans votre navigateur (claude.ai, ou celui réglé dans <b>Réglages</b>, <b>L'expert</b>).</li>
+  <li><b>Montrer le fichier</b>, puis glissez-le dans la conversation ; collez le message (⌘V sur Mac, Ctrl+V sous Windows) et envoyez.</li>
+  <li>L'expert vous salue et vous demande ce que vous voulez savoir. Posez vos questions comme vous les diriez : « Fallait-il ouvrir ? », « Pourquoi mon impasse a raté ? ».</li>
 </ol>
-<p>Bridge Coach arrive sur le Bureau. Au premier lancement sur Mac, acceptez l'accès au dossier Documents.</p>
+<p><b>Pendant la donne</b>, l'expert ne voit que ce que vous voyez : votre main, le mort, les enchères et les cartes jouées. Il vous aide à réfléchir sans vous dire les mains cachées. <b>À la fin</b>, il voit tout : les quatre mains, l'analyse et les résultats du club.</p>
+<p>Dans <b>Réglages</b>, <b>L'expert</b> : l'adresse de votre outil (par exemple <code>https://claude.ai/new</code> ou <code>https://chatgpt.com</code>), et le prénom par lequel il vous salue. Ce prénom est le seul nom qui part chez l'expert ; les autres joueurs n'y sont que par leurs initiales. Laissez-le vide pour rester anonyme.</p>
 
-<h3 id="mise-a-jour">Mettre à jour</h3>
-<p>Onglet <b>Réglages</b>, <b>Mise à jour et nouveautés</b>, <b>Rechercher une mise à jour</b>. S'il y en a une, <b>Mettre à jour vers …</b> : Bridge Coach se ferme, se met à jour en une minute environ et se rouvre. Vos séances et vos rapports ne changent pas.</p>
-<p>Après la mise à jour, une petite fenêtre dit ce qui a changé. La même page, <b>Mise à jour et nouveautés</b>, montre en dessous ce qui a changé à chaque version, la plus récente en haut.</p>
+<h1 class="categorie">Faire cours</h1>
+
+<h2>Faire cours</h2>
+<p class="intro">Pour l'enseignant : préparer les donnes d'une leçon, les montrer pas à pas sur un grand écran, et les distribuer sur papier.</p>
+
+<h3 id="preparer-cours">Préparer un cours</h3>
+<p>Choisissez les donnes de votre leçon, selon ce que vous voulez montrer :</p>
+<ul>
+  <li><b>Des donnes sur un thème</b> : <b>Fichier</b>, <b>Nouveau</b>, <b>Créer des donnes d'entraînement</b>, puis le thème du cours (Stayman, l'impasse, le squeeze…) et le nombre de donnes. Voir « Créer des donnes ».</li>
+  <li><b>Vos propres donnes</b>, tirées d'un livre ou d'une revue : une séance vide, où vous tapez les mains (voir « Taper vos propres donnes »).</li>
+  <li><b>Les donnes du tournoi d'hier</b> : ouvrez le tournoi, tout simplement. Les élèves les ont jouées et se souviennent de leur main.</li>
+</ul>
+<p>Lancez l'analyse avant le cours (onglet <b>Analyse</b>) : la démonstration suit alors les enchères recommandées et vous avez le commentaire de chaque donne sous les yeux.</p>
+<div class="astuce">Pour faire jouer les mêmes donnes au club, <b>Fichier</b>, <b>Exporter…</b>, <b>PBN</b> : le fichier s'importe dans Bridgemate Control Software (<b>Fichier</b>, <b>Importer</b>) et sert à préparer les étuis.</div>
+
+<h3 id="cours">Montrer une donne en classe</h3>
+<p>Le mode <b>Démo</b> (en haut à droite : <b>Jouer | Revoir | Démo</b>) montre une donne pas à pas, les quatre mains ouvertes : les enchères recommandées, puis le jeu des robots. Chaque pas est expliqué dans la barre de droite.</p>
+<figure><img src="images/demo.png" alt="Le mode Démo"></figure>
+<ol class="etapes">
+  <li>Ouvrez la donne, puis <b>Démo</b>.</li>
+  <li>Avancez avec <b>▶</b>, ou la flèche <b>→</b> du clavier (une télécommande de présentation marche aussi). Reculez avec <b>←</b>.</li>
+  <li>Cochez <b>Double mort</b> : sous chaque carte possible, le nombre de levées qu'elle donne au déclarant. Cliquez une autre carte pour demander « et si… ? » : les robots reprennent de là.</li>
+</ol>
+
+<h3 id="grand-ecran">Le grand écran</h3>
+<p>Pour que tout le monde voie bien, du fond de la salle :</p>
+<ol class="etapes">
+  <li>Branchez l'ordinateur sur la télévision ou le projecteur, et agrandissez la fenêtre de Bridge Coach.</li>
+  <li><b>Réglages</b>, <b>Taille du texte</b>, <b>Très grande</b> : le texte, les cartes et les tableaux grandissent.</li>
+  <li>La liste des donnes se cache avec la petite flèche « en haut de la liste : la table prend toute la place et grandit avec la fenêtre. Avec <b>Réglages</b>, <b>Taille du texte</b>, <b>Très grande</b>, tout se lit du fond de la salle.</li>
+  <li>Une télécommande de présentation avance et recule d'un pas, comme les flèches <b>→</b> et <b>←</b>.</li>
+</ol>
+
+<h3 id="distribuer">Les donnes sur papier, et le commentaire</h3>
+<ul>
+  <li><b>Imprimer cette donne</b>, dans l'onglet <b>Analyse</b>, fait une ou deux pages PDF d'une donne : les mains, les enchères recommandées, le plan de jeu, le commentaire. À distribuer en fin de cours.</li>
+  <li><b>Demander à l'expert</b> vous aide à préparer ce que vous direz : « Comment expliquer cette séquence à des joueurs de première année ? », « Quelle question poser à la classe sur cette entame ? ».</li>
+</ul>
+
+<h1 class="categorie">Réglages et aide</h1>
+
+<h2>Les réglages</h2>
+<p class="intro">L'onglet <b>Réglages</b> : vous, vos séances, le programme.</p>
 
 <h3 id="reglages">Les réglages</h3>
 <p>Les pages de l'onglet <b>Réglages</b> sont rangées en trois groupes.</p>
@@ -297,13 +332,26 @@
 <p><b>Vos séances</b></p>
 <dl>
   <dt>Dossiers</dt><dd>Le dossier de Bridgemate (où lire les tournois) et votre dossier de travail. <b>Modifier les réglages</b> ouvre un petit fichier de texte : changez le dossier, enregistrez, puis fermez et rouvrez Bridge Coach.</dd>
-  <dt>Sauvegarder mes séances</dt><dd>Un fichier <code>.zip</code> de toutes vos séances (voir « Importer et ranger vos séances »).</dd>
+  <dt>Sauvegarder mes séances</dt><dd>Un fichier <code>.zip</code> de toutes vos séances (voir « Importer et retrouver vos tournois »).</dd>
 </dl>
 <p><b>Le programme</b></p>
 <dl>
   <dt>Mise à jour et nouveautés</dt><dd>La version installée, la recherche d'une nouvelle version, et ce qui a changé à chaque version.</dd>
   <dt>Un problème, une idée ?</dt><dd>Signaler un problème ou proposer une idée (ci-dessous).</dd>
 </dl>
+
+<h3 id="mise-a-jour">Mettre à jour</h3>
+<p>Onglet <b>Réglages</b>, <b>Mise à jour et nouveautés</b>, <b>Rechercher une mise à jour</b>. S'il y en a une, <b>Mettre à jour vers …</b> : Bridge Coach se ferme, se met à jour en une minute environ et se rouvre. Vos séances et vos rapports ne changent pas.</p>
+<p>Après la mise à jour, une petite fenêtre dit ce qui a changé. La même page, <b>Mise à jour et nouveautés</b>, montre en dessous ce qui a changé à chaque version, la plus récente en haut.</p>
+
+<h2>Installer et demander de l'aide</h2>
+<h3 id="installer">Installer Bridge Coach</h3>
+<ol class="etapes">
+  <li>Sur la page <code>github.com/wfisk/bridge-coach/releases</code>, téléchargez <b>Bridge-Coach-Setup.exe</b> (Windows 10 ou 11) ou <b>Bridge-Coach.pkg</b> (Mac).</li>
+  <li>Ouvrez-le et suivez les étapes. Il faut Internet et quelques minutes.</li>
+  <li>Windows affiche « Windows a protégé votre ordinateur » : <b>Informations complémentaires</b>, puis <b>Exécuter quand même</b>. Le Mac refuse d'abord : <b>Réglages Système</b>, <b>Confidentialité et sécurité</b>, <b>Ouvrir quand même</b>.</li>
+</ol>
+<p>Bridge Coach arrive sur le Bureau. Au premier lancement sur Mac, acceptez l'accès au dossier Documents.</p>
 
 <h3 id="erreurs">Un message d'erreur ?</h3>
 <dl>
@@ -337,5 +385,6 @@
 <h3 id="desinstaller">Désinstaller Bridge Coach</h3>
 <p><b>Windows</b> : <b>Paramètres</b>, <b>Applications</b>, <b>Applications installées</b>, <b>Bridge Coach</b>, <b>Désinstaller</b>. <b>Mac</b> : mettez à la corbeille <b>Bridge Coach</b> dans Applications, son lien sur le Bureau, et le dossier <code>~/Library/Application Support/Bridge Coach</code>.</p>
 <p>Vos séances (<code>bridge-coach-files</code>, dans Documents) restent : supprimez-les vous-même si vous le voulez, après une sauvegarde.</p>
+
 </body>
 </html>

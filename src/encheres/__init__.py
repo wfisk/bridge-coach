@@ -276,6 +276,7 @@ LENT_PUIS_CLES = True
 DRURY_PLACE = True             # après le 2♣ Drury du partenaire, pas de recherche de chelem
 FIT_MINEUR = 8                 # avant 3SA, un fit de 8+ cartes dans la mineure du partenaire… (0 : jamais)
 SEUIL_FIT_MINEUR = 29          # …et ce total : 4 de la mineure, forcing, au lieu de 3SA
+PASSE_PUNITIVE = True          # l'ouvreur recontre après 1x (2y) passe passe : le répondant peut passer (passe embusqué, 2026-11-13)
 CONTRE_FORT_3SA = True         # contre d'appel fort (18+), réponse en mineure : 3SA, ou le cue-bid qui demande l'arrêt (donne 20 du 12/11)
 ARRET_CUE = True               # avant 3SA sans arrêt dans leur couleur : cue-bid qui demande l'arrêt
 SEUIL_ACCORD = 29              # total des deux mains pour demander les clés une fois toutes les couleurs contrôlées
@@ -435,6 +436,13 @@ def couleur_adverse(hist, s):
     return next(iter(eux)) if len(eux) == 1 else None
 
 
+def transformer(m, oc):
+    """Le répondant, qui a passé sur l'intervention, laisse le contre de réveil de l'ouvreur : cinq cartes dans leur couleur
+    (même petites : il est derrière l'intervenant), ou quatre avec deux honneurs (A R D V X), et quelques points."""
+    honneurs = sum(r in m.cartes[oc] for r in "ARDVX")
+    return (m.L[oc] >= 5 and m.hcp >= 5) or (m.L[oc] >= 4 and honneurs >= 2 and m.hcp >= 7)
+
+
 def avant_3sa(m, s, a, hist, infos, etat):
     """3SA sans arrêt dans leur couleur : le cue-bid demande l'arrêt au partenaire. S'il ne l'a pas, on joue
     la manche dans sa couleur la plus longue."""
@@ -493,6 +501,10 @@ def cote_ouvreur(m, s, hist, infos, etat, ouvreur):
     if s != ouvreur and not [a for x, a in hist if x == s]:
         dp = du_part[-1] if du_part else None
         if dp and dp.enchere == "contre" and dp.nature == "appel":     # l'ouvreur a recontré : répondre
+            if PASSE_PUNITIVE and etat["dbl"] == 1 and len(eux) == 1 and oc != "SA" and int(eux[0][0]) <= 3 \
+                    and transformer(m, oc):               # ou laisser le contre : passe embusqué, leur couleur derrière eux
+                return Appel("passe", f"{m.L[oc]} cartes à {oc} derrière l'intervenant : on laisse le contre, punitif",
+                             nature="punitif")
             return S.avance_contre(m, [c for c in (x[1:] for x in eux) if c != "SA"], dernier, False)
         return S.reponse_concurrence(m, ouv, oc, dernier)
     dp = du_part[-1]

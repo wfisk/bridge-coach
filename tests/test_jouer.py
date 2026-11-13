@@ -80,3 +80,10 @@ _d11 = {"n": 11, "donneur": "S", "vul": "Personne", "mains": {"N": "54 A863 AV96
                                                             "S": "ARD862 754 75 42", "O": "V97 DV9 832 ADV9"}}
 _r = _encherir(_d11, imposees=["2♠", "passe", "passe", "contre", "passe"])
 assert _r["encheres"][5] == "3♣", _r["encheres"]
+
+# L'ouvreur recontre après 1♦ (2♣) passe passe : le répondant, cinq trèfles derrière l'intervenant, laisse le contre
+# (passe embusqué, donne 18 du 12/11) ; et sur un contre d'appel, pas de saut dans une couleur de trois cartes
+_d18 = {"n": 18, "donneur": "E", "vul": "N-S", "mains": {"N": "V95 D9 RX9 RDVX3", "E": "RD3 R3 V54 96542",
+                                                         "S": "X864 87654 876 7", "O": "A72 AVX2 AD32 A8"}}
+_r = _encherir(_d18)
+assert _r["contrat"] == "2♣X" and _r["encheres"][8] == "passe", _r["encheres"]

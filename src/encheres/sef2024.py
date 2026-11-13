@@ -297,6 +297,8 @@ def avance_couleur(m, p, oc, dernier, reveil=False):
         if n <= 2 and h >= 8 + 2 * (n - 1): return Appel(e(n, c), f"5+ cartes à {c}, {8 + 2 * (n - 1)}+ H", (8, 16), {c: 5})
     return Appel("passe", "rien à ajouter")
 
+SAUT_4_CARTES = True   # sur un contre d'appel, pas de saut dans une couleur de trois cartes (2026-11-13)
+
 def avance_contre(m, eux, dernier, libre):
     """Le partenaire a fait un contre d'appel ; eux = couleurs adverses. libre : l'adversaire a enchéri entre-temps."""
     h = m.hcp
@@ -313,7 +315,8 @@ def avance_contre(m, eux, dernier, libre):
     if 6 <= h <= 9 and not majs and oc and arret(m, oc) and m.reguliere and rang("1SA") > rang(dernier):
         return Appel("1SA", f"6–9 H, arrêt à {oc}, sans majeure 4e", (6, 9), reguliere=True, nature="limite")
     n = plus_bas(c, dernier)
-    if h >= 9 and n + 1 <= 3: return Appel(e(n + 1, c), f"9–11 H, 4+ cartes à {c} (saut)", (9, 11), {c: 4}, nature="invite")
+    if h >= 9 and n + 1 <= 3 and (m.L[c] >= 4 or not SAUT_4_CARTES):   # le saut promet quatre cartes
+        return Appel(e(n + 1, c), f"9–11 H, 4+ cartes à {c} (saut)", (9, 11), {c: 4}, nature="invite")
     return Appel(e(n, c), f"0–8 H, meilleure couleur {c}", (0, 8), {c: 4 if m.L[c] >= 4 else 3}, nature="limite")
 
 def reponse_concurrence(m, ouv, oc, dernier):

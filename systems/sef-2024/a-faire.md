@@ -258,3 +258,13 @@ le robot dit 3SA avec l'arrêt (il passait 3♥, lu comme naturel).
 Donne 11 du 12/11 : après 2♠ – passe – passe – contre, Ouest (11 H, ♦832 ♣ADV9) disait 3♦ : la ligne de repli
 « meilleure couleur, carreaux » passait avant les trèfles sans comparer les longueurs. Corrigé (K >= T, comme dans les
 lignes 0–8 H) : +55 et +15 IMP sur deux lots de 20 000 donnes (18 et 10 séquences changées). Gardé.
+
+## Passe embusqué : le répondant laisse le contre de réveil de l'ouvreur (2026-11-13)
+Donne 18 du 12/11 : 1♦ – (2♣) – passe – (passe) – contre ; Est (9 H, ♣96542 derrière l'intervenant) sautait à 3♠ avec
+trois piques, comme sur un contre d'appel à qui l'on doit répondre. Deux changements, mesurés chacun seul sur deux lots
+de 20 000 donnes, gardés :
+1. `PASSE_PUNITIVE` (encheres.transformer) : le répondant passe et laisse le contre, punitif, avec cinq cartes dans leur
+   couleur (et 5+ H), ou quatre avec deux honneurs (et 7+ H), au palier de 3 au plus : +106 et +157 IMP (11 et 17
+   séquences, 25 gagnées, 1 perdue).
+2. `SAUT_4_CARTES` (sef2024.avance_contre) : sur un contre d'appel, pas de saut à 9–11 H dans une couleur de trois
+   cartes : +30 et +27 IMP (11 et 13 séquences).

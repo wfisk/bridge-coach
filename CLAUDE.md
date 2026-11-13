@@ -437,7 +437,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (2x – passe – passe) has its own rules, double from 10 H; the take-out double comes before a 3-level suit with
                         four cards in the free major; a strong doubler (18+, no 5-card major) after partner's minor looks for 3SA
                         (CONTRE_FORT_3SA, avant_3sa turns it into the stopper-asking cue); the player's own cue-bid after their double
-                        asks for a stopper (nature demande_arret) and the robot answers 3SA with one. Two sections for one auction: the more specific
+                        asks for a stopper (nature demande_arret) and the robot answers 3SA with one. Answering a take-out double with no better call, the longer minor (the « meilleure couleur » fallback had diamonds before clubs whatever their length: deal 11 of 12/11; +55 / +15 IMP, 2026-11-13). Two sections for one auction: the more specific
                         key (fewer M/N/x) wins over the generic one (regles.charger), else an error.
                         Responder after a take-out double is still the old code: a first rule
                         version (redouble, pre-emptive raise) cost 0.08 IMP on fresh deals

@@ -782,9 +782,11 @@ ouverture:
   - "*C": { si: "H 8-, non U est C", montre: "0–8 H, cœurs", nature: limite }
   - "*P": { si: "non U est P, P 4+", montre: "meilleure couleur, piques" }
   - "*C": { si: "non U est C, C 4+", montre: "meilleure couleur, cœurs" }
+  - "*K": { si: "non U est K, K >= T", montre: "meilleure couleur, carreaux" }   # la plus longue mineure (donne 11 du 12/11 :
+  - "*T": { si: "non U est T", montre: "meilleure couleur, trèfles" }               # 3♦ avec trois carreaux et quatre trèfles)
   - "*K": { si: "non U est K", montre: "meilleure couleur, carreaux" }
-  - "*T": { si: "non U est T", montre: "meilleure couleur, trèfles" }
   - exemples:
+      - { main: "V97 DV9 832 ADV9", apres: (2P) passe contre, attendu: 3T }   # donne 11 du 12/11
       - { main: "V852 D74 X63 952", apres: (1K) contre, attendu: 1P }
       - { main: "AV82 D74 X63 R52", apres: (1K) contre, attendu: 2P }
       - { main: "D82 R74 DV63 952", apres: (1C) contre, attendu: 1SA }      # arrêt R74, régulier

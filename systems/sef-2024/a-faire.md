@@ -253,3 +253,8 @@ seul sur deux lots de 20 000 donnes (IMP au double mort pour le camp dont l'ench
    avant_3sa le change en cue-bid qui demande l'arrêt (`CONTRE_FORT_3SA`) : +66 et +106 IMP (71 et 54 séquences).
 Et dans Jouer, le cue-bid du joueur dans leur couleur, après son contre et la réponse du partenaire, demande l'arrêt :
 le robot dit 3SA avec l'arrêt (il passait 3♥, lu comme naturel).
+
+## Réponse au contre d'appel : la mineure la plus longue (2026-11-13)
+Donne 11 du 12/11 : après 2♠ – passe – passe – contre, Ouest (11 H, ♦832 ♣ADV9) disait 3♦ : la ligne de repli
+« meilleure couleur, carreaux » passait avant les trèfles sans comparer les longueurs. Corrigé (K >= T, comme dans les
+lignes 0–8 H) : +55 et +15 IMP sur deux lots de 20 000 donnes (18 et 10 séquences changées). Gardé.

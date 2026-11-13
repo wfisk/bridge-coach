@@ -74,3 +74,9 @@ _d29 = {"n": 29, "donneur": "N", "vul": "Tous", "mains": {"N": "ADVX92 X3 832 D8
                                                            "S": "54 RD752 5 76542", "O": "R873 V6 ADV964 V"}}
 _r = _encherir(_d29)
 assert _r["encheres"][1] == "contre" and _r["contrat"] == "3SA", _r["encheres"]
+
+# Après le contre d'appel du partenaire, la mineure la plus longue (donne 11 du 12/11 : 3♣ avec quatre trèfles, pas 3♦ avec trois)
+_d11 = {"n": 11, "donneur": "S", "vul": "Personne", "mains": {"N": "54 A863 AV964 87", "E": "X3 RX2 RDX RX653",
+                                                            "S": "ARD862 754 75 42", "O": "V97 DV9 832 ADV9"}}
+_r = _encherir(_d11, imposees=["2♠", "passe", "passe", "contre", "passe"])
+assert _r["encheres"][5] == "3♣", _r["encheres"]

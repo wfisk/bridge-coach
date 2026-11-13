@@ -861,9 +861,22 @@ ouverture:
   - passe: { si: "H 6-", montre: "pas de manche" }
 
 # ------------------------------------------------------------------ intervention sur un deux faible ou un barrage
-"(2K) | (2C) | (2P) | (2C) passe | (2P) passe":
+"(2C) passe | (2P) passe":                          # réveil sur un deux faible : le contre dès 10 H (l'ouvreur a 6–10 H,
+  - "*P": { si: "P 5+, P >= C, non U est P, palier(P) 2, H 9-15, bonne P", montre: "réveil, 5+ piques, 9–15 H" }   # le partenaire a des points)
+  - "*C": { si: "C 5+, non U est C, palier(C) 2, H 9-15, bonne C", montre: "réveil, 5+ cœurs, 9–15 H" }
+  - contre: { si: "H 10+, U 2-, (C 3+ || U est C), (P 3+ || U est P) || H 16+", montre: "contre de réveil, 10+ H", nature: appel }
+  - "*P": { si: "P 5+, non U est P, palier(P) 3, H 12-16, bonne P", montre: "réveil, 5+ piques, 12–16 H", source: à confirmer }
+  - "*C": { si: "C 5+, non U est C, palier(C) 3, H 12-16, bonne C", montre: "réveil, 5+ cœurs, 12–16 H", source: à confirmer }
+  - "*K": { si: "K 5+, K >= T, non U est K, palier(K) 3, H 12-16, bonne K", montre: "réveil, 5+ carreaux, 12–16 H", source: à confirmer }
+  - "*T": { si: "T 5+, non U est T, palier(T) 3, H 12-16, bonne T", montre: "réveil, 5+ trèfles, 12–16 H", source: à confirmer }
+  - passe: { montre: "laisse jouer" }
+  - exemples:
+      - { main: "R2 AV62 9873 R32", apres: (2P) passe, attendu: contre }   # donne 5 du 12/11 : 11 H en réveil
+
+"(2K) | (2C) | (2P)":
   - "*P": { si: "P 5+, P >= C, non U est P, palier(P) 2, H 11-16, bonne P", montre: "5+ piques, 11–16 H" }
   - "*C": { si: "C 5+, non U est C, palier(C) 2, H 11-16, bonne C", montre: "5+ cœurs, 11–16 H" }
+  - contre: { si: "H 12+, U 1-, (C 4+ || U est C), (P 4+ || U est P)", montre: "contre d'appel, 4 cartes dans la majeure libre", nature: appel }   # avant une mineure au palier de 3 (donne 29 du 12/11)
   - "*P": { si: "P 5+, non U est P, palier(P) 3, H 14-17, bonne P", montre: "5+ piques, 14–17 H", source: à confirmer }
   - "*C": { si: "C 5+, non U est C, palier(C) 3, H 14-17, bonne C", montre: "5+ cœurs, 14–17 H", source: à confirmer }
   - "*K": { si: "K 5+, K >= T, non U est K, palier(K) 3, H 14-17, bonne K", montre: "5+ carreaux, 14–17 H", source: à confirmer }

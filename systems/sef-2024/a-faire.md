@@ -241,3 +241,15 @@ Gardé (`LENT_PUIS_CLES`) : après son propre soutien lent, demander les clés s
 (3 séquences sur 40 000 donnes).
 Corrigé (un défaut, pas un choix de système) : 4SA du joueur dans Jouer, une couleur nommée par les deux partenaires, est
 lu comme Blackwood 3041 (encheres.couleur_fixee) ; le robot le passait comme une enchère naturelle.
+
+## Concurrence sur un deux faible (2026-11-13)
+Donnes 5, 20 et 29 du 12/11 : le par est 3SA, l'expert y arrive, le coach non. Trois changements, gardés, chacun mesuré
+seul sur deux lots de 20 000 donnes (IMP au double mort pour le camp dont l'enchère change) :
+1. Le réveil sur un deux faible (2x – passe – passe) a ses propres règles : contre dès 10 H, court dans leur couleur
+   (le direct reste à 12+) ; couleur 5e au palier de 2 dès 9 H : +187 et +50 IMP (117 et 118 séquences changées).
+2. Sur un deux faible, le contre d'appel passe avant une couleur au palier de 3 avec quatre cartes dans la majeure
+   libre et un singleton dans la leur : +21 et +27 IMP (11 et 29 séquences).
+3. Le contre fort (18+ H, sans majeure 5e) après la réponse du partenaire en mineure cherche 3SA ; sans arrêt,
+   avant_3sa le change en cue-bid qui demande l'arrêt (`CONTRE_FORT_3SA`) : +66 et +106 IMP (71 et 54 séquences).
+Et dans Jouer, le cue-bid du joueur dans leur couleur, après son contre et la réponse du partenaire, demande l'arrêt :
+le robot dit 3SA avec l'arrêt (il passait 3♥, lu comme naturel).

@@ -230,6 +230,11 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
             if a.enchere == "4SA" and not a.nature:          # 4SA du joueur, une couleur fixée : Blackwood 3041
                 atout = couleur_fixee(s, hist)
                 if atout: a = Appel("4SA", f"votre enchère : Blackwood 3041, les clés à {atout}", nature="blackwood", atout=atout)
+            oc_ = couleur_adverse(hist, s)
+            if oc_ and a.enchere[1:] == oc_ and rang(a.enchere) < rang("3SA") and not a.nature \
+                    and any(x == s and b.enchere == "contre" and b.nature == "appel" for x, b in hist) \
+                    and any(x == PART[s] and b.enchere not in DOUBLES for x, b in hist):   # le joueur a contré, le partenaire
+                a = Appel(a.enchere, f"votre enchère : cue-bid, demande l'arrêt à {oc_} pour jouer 3SA", nature="demande_arret")   # a répondu
             if a.enchere == "5SA" and not a.nature:          # 5SA du joueur après son Blackwood : les rois
                 bw = next((b for x, b in reversed(hist) if x == s and b.nature == "blackwood"), None)
                 if bw: a = Appel("5SA", f"votre enchère : demande des rois (toutes les clés réunies), atout {bw.atout}",
@@ -271,6 +276,7 @@ LENT_PUIS_CLES = True
 DRURY_PLACE = True             # après le 2♣ Drury du partenaire, pas de recherche de chelem
 FIT_MINEUR = 8                 # avant 3SA, un fit de 8+ cartes dans la mineure du partenaire… (0 : jamais)
 SEUIL_FIT_MINEUR = 29          # …et ce total : 4 de la mineure, forcing, au lieu de 3SA
+CONTRE_FORT_3SA = True         # contre d'appel fort (18+), réponse en mineure : 3SA, ou le cue-bid qui demande l'arrêt (donne 20 du 12/11)
 ARRET_CUE = True               # avant 3SA sans arrêt dans leur couleur : cue-bid qui demande l'arrêt
 SEUIL_ACCORD = 29              # total des deux mains pour demander les clés une fois toutes les couleurs contrôlées
 INVITE_LARGE = "vul"           # vulnérable, ma zone montrée large (plus de 6 points) : accepter sur le total avec le partenaire
@@ -601,7 +607,11 @@ def soutien_apres_contre(m, s, hist, dernier):
     r = lui[-1]
     if r.enchere in DOUBLES or r.enchere[1:] == "SA" or r.nature != "limite" or not r.pts or r.pts[1] > 8: return None
     c = r.enchere[1:]
-    if dernier != r.enchere or m.L[c] < 3: return None
+    if dernier != r.enchere: return None
+    if CONTRE_FORT_3SA and c not in MAJEURES and m.hcp >= 18 and not any(m.L[x] >= 5 for x in MAJEURES) \
+            and rang("3SA") > rang(dernier):          # contre fort, réponse en mineure : chercher 3SA (avant_3sa fait le cue-bid
+        return Appel("3SA", f"{m.hcp} H : contre fort, la manche à SA", (18, 21), nature="conclusion")   # sans arrêt)
+    if m.L[c] < 3: return None
     t = m.dh(c) + (1 if m.L[c] >= 4 else 0)
     if m.L[c] == 3 and t < 20: return None
     n = int(r.enchere[0])

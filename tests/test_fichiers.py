@@ -52,13 +52,16 @@ open(os.path.join(dossier, "2026-11-05-tournoi-jeudi-jeu.json"), "w").write("{}"
 os.makedirs(os.path.join(dossier, "versions"))
 open(os.path.join(dossier, "versions", "2026-11-05-tournoi-jeudi-v-2026-11-06-101010.bc.json"), "w").write("{}")
 r = os.path.join(rapport.RAPPORTS, "2026-11"); os.makedirs(r)
-for n in ("analyse-AB-CD", "comparaison", "analyse 2"):
+for n in ("analyse-AB-CD", "comparaison", "analyse 2", "donnes-3-17-5", "releve-AB-CD", "releve-donne-12"):
     open(os.path.join(r, f"2026-11-05-tournoi-jeudi-{n}.pdf"), "w").write("%PDF")
 open(os.path.join(r, "2026-11-05-tournoi-jeudi-2-analyse.pdf"), "w").write("%PDF")   # une autre séance : pas à elle
 os.makedirs(F.dossier_claude(c))
-assert len(F.pdfs(c)) == 3, F.pdfs(c)
+assert len(F.pdfs(c)) == 6, F.pdfs(c)
 import app
-assert sorted(app.rapports_de(c)) == ["analyse", "comparaison"] and app.rapports_de(c)["analyse"][0][1] == "AB/CD"
+rp = app.rapports_de(c)
+assert sorted(rp) == ["analyse", "comparaison", "donnes", "releve", "releve-donnes"] and rp["analyse"][0][1] == "AB/CD", rp
+assert rp["donnes"][0][1] == "3, 17, 5" and rp["releve-donnes"][0][1] == "12" and rp["releve"][0][1] == "AB/CD"
+assert app.args_rapports("choisir", [3, 5])[-1] == "--donnes=3,5" and "--a-revoir" in app.args_rapports("revoir")
 assert app.titre_fenetre(c) == "Bridge Coach – Tournoi du jeudi"
 
 # renommer : tout suit
@@ -67,7 +70,9 @@ assert os.path.basename(n) == "jeudi-au-club.bc.json" and not os.path.exists(c)
 assert os.path.exists(os.path.join(dossier, "jeudi-au-club-jeu.json"))
 assert os.path.exists(os.path.join(dossier, "versions", "jeudi-au-club-v-2026-11-06-101010.bc.json"))
 assert sorted(os.listdir(r)) == ["2026-11-05-jeudi-au-club-analyse 2.pdf", "2026-11-05-jeudi-au-club-analyse-AB-CD.pdf",
-                                 "2026-11-05-jeudi-au-club-comparaison.pdf", "2026-11-05-tournoi-jeudi-2-analyse.pdf"]
+                                 "2026-11-05-jeudi-au-club-comparaison.pdf", "2026-11-05-jeudi-au-club-donnes-3-17-5.pdf",
+                                 "2026-11-05-jeudi-au-club-releve-AB-CD.pdf", "2026-11-05-jeudi-au-club-releve-donne-12.pdf",
+                                 "2026-11-05-tournoi-jeudi-2-analyse.pdf"]
 assert os.path.isdir(F.dossier_claude(n))
 assert rapport.lire_bc(n)["fichier"]["journal"][-1]["quoi"] == "Renommée : 2026-11-05-tournoi-jeudi → jeudi-au-club"
 try: F.renommer(n, ""); raise AssertionError
@@ -113,7 +118,7 @@ assert os.path.basename(F.adopter(vieux, t, nom)) == "2026-11-05-tournoi-jeudi.b
 poubelle = F.corbeille(n)
 assert not os.path.exists(n) and os.path.exists(os.path.join(poubelle, "jeudi-au-club.bc.json"))
 assert os.path.exists(os.path.join(poubelle, "jeudi-au-club-jeu.json"))
-assert len(os.listdir(os.path.join(poubelle, "rapports"))) == 3 and os.listdir(r) == ["2026-11-05-tournoi-jeudi-2-analyse.pdf"]
+assert len(os.listdir(os.path.join(poubelle, "rapports"))) == 6 and os.listdir(r) == ["2026-11-05-tournoi-jeudi-2-analyse.pdf"]
 assert os.path.isdir(os.path.join(poubelle, "pour-claude")) and os.path.exists(cp)
 
 # la remettre : la séance, ses parties jouées, ses rapports et ses versions reviennent ; la corbeille se vide

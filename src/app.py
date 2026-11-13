@@ -29,8 +29,19 @@ LARGEUR_BARRE = 220                                        # la barre de gauche 
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
 NB_PDF = 2                                                 # l'analyse, la comparaison
 RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du coach et, si vous l'incluez, avis de l'expert"),
-            ("a-revoir", "Donnes à revoir", "« Vous face au champ », puis seulement les donnes où vous pouviez faire mieux"),
+            ("a-revoir", "Donnes à revoir", "seulement les donnes où vous pouviez faire mieux, la plus coûteuse d'abord"),
+            ("donnes", "Donnes", "les donnes choisies"),
+            ("releve", "Relevé", "les faits seulement : résultats, enchères aux tables, double mort et par"),
+            ("releve-a-revoir", "Relevé des donnes à revoir", "les faits seulement"),
+            ("releve-donnes", "Relevé des donnes", "les faits seulement, les donnes choisies"),
             ("comparaison", "Comparaison", "le Coach face à l'Expert"))
+NIVEAUX = {"faits": "Les faits seulement", "coach": "Le coach", "expert": "Le coach et l'expert"}   # Rapports, l'analyse
+PAGES_EN_PLUS = (("champ", "Vous face au champ", "votre % donne par donne face aux autres tables, et où vous pouviez faire mieux"),
+                 ("parcours", "Votre parcours", "tour par tour : la table, les donnes, les adversaires"),
+                 ("synthese", "Synthèse des contrats", "une ligne par donne : le contrat recommandé et ce qu'ont joué les tables"),
+                 ("noms", "Liste des joueurs", "les noms complets, en première page"),
+                 ("comparaison", "Le Coach face à l'Expert", "un rapport à part, quand l'expert a analysé la séance"))
+PAGES_DEFAUT = ["champ", "parcours", "synthese", "comparaison"]
 TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.pbn;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
 TYPES_BWS = ("Bridgemate ou feuille de route (*.bws;*.pdf)", "Tous les fichiers (*.*)")
@@ -100,9 +111,14 @@ def rapports_de(chemin):
     debut = f"{d.isoformat()}-{rapport.nom_court(rapport.nom_seance(chemin))}-"
     trouves = {}
     for f in fichiers.pdfs(chemin):
-        m = re.match(r"(analyse|a-revoir|comparaison|standard|expert|diff)(?:-(.+))?\.pdf$", os.path.basename(f)[len(debut):])
+        m = re.match(r"(releve-a-revoir|(?:releve-)?donnes?-[\d-]+|analyse|a-revoir|releve|comparaison|standard|expert|diff)"
+                     r"(?:-(.+))?\.pdf$", os.path.basename(f)[len(debut):])
         if not m or ".provisoire" in f: continue           # (« analyse 2.pdf » : une copie d'iCloud, pas un rapport)
-        trouves.setdefault(m[1], []).append((f, (m[2] or "").replace("-", "/")))
+        d_ = re.match(r"(releve-)?donnes?-([\d-]+)$", m[1])
+        if d_:                                             # des donnes choisies : leurs numéros à la place des initiales
+            trouves.setdefault((d_[1] or "") + "donnes", []).append((f, ", ".join(d_[2].strip("-").split("-"))))
+        else:
+            trouves.setdefault(m[1], []).append((f, (m[2] or "").replace("-", "/")))
     out = {}
     for quoi in [q for q, _, _ in RAPPORTS] + list(ancien):
         cle = ancien.get(quoi, quoi)
@@ -656,16 +672,38 @@ def lancer(chemin):
     demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--analyse-seule"])
 
 
+def niveau_rapport():
+    """Rapports, « L'analyse » (etat.json rapport_niveau) : faits, coach ou expert. Avant la 1.11, la case « Inclure
+    l'avis de l'expert » (avec_expert) : décochée, c'était le coach."""
+    e = lire_etat()
+    n = e.get("rapport_niveau") or ("expert" if e.get("avec_expert", True) else "coach")
+    return n if n in NIVEAUX else "expert"
+
+
 def avec_expert():
-    """L'option « Inclure l'avis de l'expert » de l'onglet Rapports (etat.json, oui par défaut)."""
-    return lire_etat().get("avec_expert", True)
+    """L'avis de l'expert dans les PDF (« Imprimer cette donne » suit aussi le choix de l'onglet Rapports)."""
+    return niveau_rapport() == "expert"
 
 
-def lancer_rapports(chemin, noms, revoir=False):
+def pages_rapport():
+    """Rapports, « Pages en plus » (etat.json rapport_pages) : champ, parcours, synthese, noms, comparaison."""
+    p = lire_etat().get("rapport_pages")
+    return [x for x in p if x in dict((k, 1) for k, _, _ in PAGES_EN_PLUS)] if isinstance(p, list) else list(PAGES_DEFAUT)
+
+
+def args_rapports(quelles="toutes", nums=()):
+    """Les options de rapport.py --rapports pour les choix de l'onglet Rapports : les donnes (toutes, « revoir » ou
+    « choisir » avec leurs numéros), le niveau et les pages en plus (etat.json)."""
+    a = [f"--niveau={niveau_rapport()}", "--pages=" + ",".join(pages_rapport())]
+    if quelles == "revoir": a.append("--a-revoir")
+    elif quelles == "choisir" and nums: a.append("--donnes=" + ",".join(str(n) for n in nums))
+    return a
+
+
+def lancer_rapports(chemin, quelles="toutes", nums=()):
     """Les PDF seulement, depuis les analyses enregistrées (rapport.py --rapports) : la barre avance rapport par rapport."""
     T.__init__(0.0, "Écriture des rapports"); T.genre = "rapports"; T.seance = chemin; T.texte = "Écriture des rapports"
-    demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--rapports"] + (["--avec-noms"] if noms else [])
-                     + ([] if avec_expert() else ["--sans-analyse"]) + (["--a-revoir"] if revoir else []))
+    demarrer_travail(T, [os.path.join(ICI, "rapport.py"), chemin, "--rapports"] + args_rapports(quelles, nums))
 
 
 def lancer_import(chemin, nom=None, titre=None):
@@ -1591,6 +1629,7 @@ def page():
     seances, dossier = reglages()
     deja = seances_bc()
     choix = {"chemin": T.seance or seance_active() or (deja[0] if deja else None)}
+    choix_r = {"quelles": "toutes", "nums": []}            # Rapports, « Les donnes » : le temps de la séance ouverte
     ui.page_title(titre_fenetre(choix["chemin"]))
     PAGE = lire_etat().get("page") or {}                    # la page ouverte à la dernière fermeture (retenir_page)
     vue = {"entree": PAGE.get("entree") or "seance"}       # l'entrée choisie dans la barre latérale de l'onglet Donnes
@@ -1738,7 +1777,7 @@ def page():
         if T.actif or D.actif or I.actif: return
         T.__init__(0.0, "Impression"); T.genre = "imprimer"; T.seance = c; T.texte = f"Donne {d['n']} : préparation de la page"
         demarrer_travail(T, [os.path.join(ICI, "rapport.py"), c, "--rapports", f"--donne={d['n']}"]
-                         + ([] if avec_expert() else ["--sans-analyse"]))
+                         + [f"--niveau={niveau_rapport()}"])
         ui.notify(f"La donne {d['n']} se prépare : le PDF s'ouvre dans un instant.")
 
     def carre_donne(d):
@@ -2580,6 +2619,35 @@ def page():
             if not ok: k = m.n_pas()
         jeu["pas"] = min(k, m.n_pas()); vue_jouer.refresh()
 
+    async def demo_pli(k):
+        """▶ : jusqu'à la fin du pli en cours, une carte après l'autre (pendant les enchères : l'enchère suivante, que l'enseignant commente une à une),
+        pour ne pas cliquer quatre fois par pli (l'utilisateur, 2026-11-13)."""
+        m = jeu.get("demo")
+        if not m or jeu.get("demo_occupe") or jeu.get("demo_suite"): return
+        cible = k + 1 if k < m.n_encheres else m.n_encheres + min(52, ((k - m.n_encheres) // 4 + 1) * 4)   # enchères : une à une
+        jeu["demo_suite"] = True
+        try:
+            while jeu.get("pas", 0) < cible and jeu.get("demo") is m:
+                avant = jeu.get("pas", 0)
+                if avant >= m.n_pas() and m.fini(): break
+                await demo_aller(avant + 1)
+                if jeu.get("pas", 0) == avant: break        # plus rien à jouer
+                if jeu["pas"] < cible: await asyncio.sleep(0.25 if jeu["pas"] <= m.n_encheres else 0.7)
+        finally:
+            jeu["demo_suite"] = False; vue_jouer.refresh()
+
+    async def revoir_pli(k, n):
+        """Revoir, ▶ : les cartes jusqu'à la fin du pli en cours, une à une (k : la dernière carte montrée, n : le nombre de cartes)."""
+        if jeu.get("revoir_suite"): return
+        cible = min(n - 1, ((k + 1) // 4 + 1) * 4 - 1)
+        jeu["revoir_suite"] = True
+        try:
+            while jeu.get("revoir", 0) < cible and jeu.get("mode") == "revoir":
+                jeu["revoir"] = jeu.get("revoir", 0) + 1; vue_jouer.refresh()
+                if jeu["revoir"] < cible: await asyncio.sleep(0.7)
+        finally:
+            jeu["revoir_suite"] = False
+
     async def demo_essayer(m, j, x):
         """Double mort : l'enseignant joue une autre carte à la place de la carte j + 1 ; la suite repart de là."""
         try: m.essayer(j, x)
@@ -2613,8 +2681,15 @@ def page():
         les enchères au clavier dans Jouer (encheres_clavier)."""
         if not e.action.keydown or not sur_jouer(): return
         cle = e.key.name if hasattr(e.key, "name") else str(e.key)
+        maj_ = bool(getattr(getattr(e, "modifiers", None), "shift", False))   # Maj + → : une carte ; → seul : tout le pli
+        if jeu.get("mode") == "revoir" and cle in ("ArrowRight", "PageDown", "ArrowLeft", "PageUp") and jeu.get("revoir_n"):
+            k, n = jeu.get("revoir", 0), jeu["revoir_n"]
+            if cle in ("ArrowRight", "PageDown") and not maj_: await revoir_pli(k, n); return
+            jeu["revoir"] = max(0, min(n - 1, k + (1 if cle in ("ArrowRight", "PageDown") else -1))); vue_jouer.refresh(); return
         if jeu.get("mode") != "demo": return await encheres_clavier(cle)
         if not jeu.get("demo"): return
+        if cle in ("ArrowRight", "PageDown") and not maj_: await demo_pli(jeu.get("pas", 0)); return
+        if jeu.get("demo_suite"): return
         if cle in ("ArrowRight", "PageDown"): await demo_aller(jeu.get("pas", 0) + 1)
         elif cle in ("ArrowLeft", "PageUp"): await demo_aller(jeu.get("pas", 0) - 1)
 
@@ -2702,8 +2777,12 @@ def page():
                         .tooltip("Au début").set_enabled(k > 0 and not jeu.get("demo_occupe"))
                     ui.button(icon="fast_rewind", on_click=lambda: demo_aller(k - 1)).props("outline") \
                         .tooltip("Un pas en arrière (flèche ←)").set_enabled(k > 0 and not jeu.get("demo_occupe"))
-                    ui.button(icon="play_arrow", on_click=lambda: demo_aller(k + 1)).props("unelevated") \
-                        .tooltip("Un pas en avant (flèche →)").set_enabled(not fin and not jeu.get("demo_occupe"))
+                    libre = not fin and not jeu.get("demo_occupe") and not jeu.get("demo_suite")
+                    ui.button(icon="play_arrow", on_click=lambda: demo_pli(k)).props("unelevated") \
+                        .tooltip("Tout le pli (flèche →)" if k >= m.n_encheres else "L'enchère suivante (flèche →)").set_enabled(libre)
+                    if k >= m.n_encheres:                    # le jeu de la carte : › une seule carte
+                        ui.button(icon="chevron_right", on_click=lambda: demo_aller(k + 1)).props("flat round") \
+                            .tooltip("Une carte (Maj + →)").set_enabled(libre)
                 src = {"expert": "de l'Expert", "standard": "du Coach", "moteur": "du moteur"}[m.source]
                 n_ = min(k, m.n_encheres); i0 = jouer.ROT.index(d["donneur"])
                 grille_demo = lambda: ui.html(grille_html(jouer.grille(m.seq[:n_], d["donneur"]), d.get("vul"),
@@ -3026,7 +3105,7 @@ def page():
         """La donne rejouée carte par carte : les quatre mains telles qu'elles étaient, le pli en cours, et ce que
         pensait le joueur de la carte montrée (◀ ▶). Votre carte : ce que le programme aurait joué à votre place."""
         cartes = [(cc, r_) for pli, _ in p.plis for _x, cc, r_ in pli]
-        k = max(0, min(jeu["revoir"], len(cartes) - 1)); jeu["revoir"] = k
+        k = max(0, min(jeu["revoir"], len(cartes) - 1)); jeu["revoir"] = k; jeu["revoir_n"] = len(cartes)   # pour les flèches du clavier
         q = carte.Partie(d, p.contrat, p.decl, p.encheres, humain=p.humain)
         for x in cartes[len(q.pos.jouees):k + 1]: q.poser(x)
         pli = q.pos.pli or (q.plis[-1][0] if q.plis else [])
@@ -3054,8 +3133,10 @@ def page():
                         .tooltip("À la première carte").set_enabled(k > 0)
                     ui.button(icon="fast_rewind", on_click=lambda: (jeu.update(revoir=k - 1), vue_jouer.refresh())).props("outline") \
                         .tooltip("Une carte en arrière").set_enabled(k > 0)
-                    ui.button(icon="play_arrow", on_click=lambda: (jeu.update(revoir=k + 1), vue_jouer.refresh())).props("unelevated") \
-                        .tooltip("Une carte en avant").set_enabled(k < len(cartes) - 1)
+                    ui.button(icon="play_arrow", on_click=lambda: revoir_pli(k, len(cartes))).props("unelevated") \
+                        .tooltip("Tout le pli (flèche →)").set_enabled(k < len(cartes) - 1 and not jeu.get("revoir_suite"))
+                    ui.button(icon="chevron_right", on_click=lambda: (jeu.update(revoir=k + 1), vue_jouer.refresh())).props("flat round") \
+                        .tooltip("Une carte (Maj + →)").set_enabled(k < len(cartes) - 1 and not jeu.get("revoir_suite"))
                 ui.label(f"{p.contrat} par {SIEGE[p.decl]} · carte {k + 1} sur {len(cartes)} · pli {k // 4 + 1}").classes("text-base font-bold")
                 if k == len(cartes) - 1 and resume_de(d, p):  # la fin du film : le résumé de la donne
                     with ui.element("div").classes("w-full").style(
@@ -3396,7 +3477,9 @@ def page():
     def maj_rapports():
         if T.actif or D.actif or I.actif or not choix["chemin"]: return
         vu["fini"] = None; faute.text = ""; faute_r.text = ""; fait_a.text = ""
-        lancer_rapports(choix["chemin"], noms.value, revoir.value)
+        if choix_r["quelles"] == "choisir" and not choix_r["nums"]:
+            faute_r.text = "Choisissez au moins une donne, ou « Toutes les donnes »."; return
+        lancer_rapports(choix["chemin"], choix_r["quelles"], sorted(choix_r["nums"]))
         resultats.refresh(); montrer_controles()
 
     def preparer_expert(c):
@@ -3414,7 +3497,7 @@ def page():
 
     def importer_expert_de(chemin):
         try:
-            expert_msg.update(texte=importer_expert(choix["chemin"], chemin), faute=False)
+            expert_msg.update(texte=importer_expert(choix["chemin"], chemin), faute=False); options_rapports.refresh()
         except ValueError as ex:
             expert_msg.update(texte=str(ex), faute=True)
         vue_analyse.refresh(); barre_seance.refresh(); resultats.refresh()
@@ -3567,31 +3650,93 @@ def page():
 
             pages_ui = {}
             with ui.tab_panel(o_rapports).classes("px-0 pt-0 gap-4 max-w-xl"):
+                @ui.refreshable
+                def options_rapports():
+                    """Les options, légères (l'utilisateur, 2026-11-13) : une case à cocher pour chaque chose qu'on ajoute,
+                    rien d'expliqué sous chaque ligne ; ce qui demande « Vous êtes » est grisé sans lui, la raison à côté.
+                    Les donnes : toutes, sauf « à revoir » ou « choisir » (l'une décoche l'autre), l'ordre joué ; l'analyse :
+                    le coach, puis l'expert (sans le coach : les faits seulement) ; les pages en plus."""
+                    c = choix["chemin"]
+                    data = lire_seance(c) if c else None
+                    nums_seance = [d["n"] for d in (data or {}).get("donnes", []) if not d.get("a_completer")]
+                    _, expert_ = lire_analyses(c) if c else (None, None)
+                    expert_ = bool(expert_ and expert_.get("donnes"))
+                    vous = bool(data and moi.paires(data))
+                    niveau = niveau_rapport()
+                    pages = set(pages_rapport())
+                    choix_r["nums"] = [n for n in choix_r["nums"] if n in nums_seance]
+                    if not vous and choix_r["quelles"] == "revoir": choix_r["quelles"] = "toutes"
+                    SANS_VOUS = "choisissez « Vous êtes »"
+
+                    def titre(t):
+                        ui.label(t).classes("text-base font-bold mt-3")
+
+                    def case(texte, valeur, quand, raison=""):
+                        """Une case ; grisée et décochée avec sa raison quand elle ne s'applique pas."""
+                        with ui.row().classes("items-center gap-2 no-wrap"):
+                            cb = ui.checkbox(texte, value=bool(valeur) and not raison, on_change=lambda e: quand(e.value)) \
+                                .props("dense").classes("text-base")
+                            if raison:
+                                cb.disable(); ui.label(f"({raison})").classes("text-base text-gray-500")
+
+                    def quelles_(q, v):
+                        choix_r["quelles"] = q if v else "toutes"; options_rapports.refresh()
+
+                    def niveau_(n):
+                        ecrire_etat(rapport_niveau=n); options_rapports.refresh()
+
+                    def page_(k, v):
+                        p_ = [x for x, _, _ in PAGES_EN_PLUS if (x in pages and x != k) or (x == k and v)]
+                        ecrire_etat(rapport_pages=p_); options_rapports.refresh()
+
+                    titre("Les donnes")
+                    case("Seulement les donnes à revoir", choix_r["quelles"] == "revoir", lambda v: quelles_("revoir", v),
+                         "" if vous else SANS_VOUS)
+                    case("Choisir les donnes", choix_r["quelles"] == "choisir", lambda v: quelles_("choisir", v))
+                    if choix_r["quelles"] == "choisir":
+                        def basculer(n):
+                            ns = choix_r["nums"]
+                            if n in ns: ns.remove(n)
+                            else: ns.append(n)
+                            options_rapports.refresh()
+                        with ui.row().classes("gap-1 ml-7 flex-wrap max-w-lg"):
+                            for n in nums_seance:
+                                ui.button(str(n), on_click=lambda n=n: basculer(n)) \
+                                    .props(f"{'unelevated' if n in choix_r['nums'] else 'outline'} dense no-caps") \
+                                    .classes("text-base min-w-[2.6rem]")
+                    case("Dans l'ordre où vous les avez jouées", moi.ordre_joue(), lambda v: ecrire_etat(ordre_joue=v),
+                         "" if vous else SANS_VOUS)
+
+                    titre("L'analyse")
+                    case("Avec l'analyse du coach", niveau != "faits", lambda v: niveau_("coach" if v else "faits"))
+                    case("Avec l'avis de l'expert", niveau == "expert", lambda v: niveau_("expert" if v else "coach"),
+                         "pas encore d'analyse de l'expert" if not expert_ else "")
+                    if niveau == "faits":
+                        ui.label("Sans analyse : les résultats, les enchères aux tables, le double mort et le par.") \
+                            .classes("text-base text-gray-700")
+
+                    titre("Pages en plus")
+                    for k, nom_, _ in PAGES_EN_PLUS:
+                        raison = (SANS_VOUS if k in ("champ", "parcours") and not vous else
+                                  "avec l'analyse seulement" if k == "synthese" and niveau == "faits" else
+                                  "avec l'avis de l'expert seulement" if k == "comparaison" and (niveau != "expert" or not expert_) else
+                                  "toutes les donnes seulement" if k in ("synthese", "comparaison") and choix_r["quelles"] != "toutes"
+                                  else "")
+                        case(nom_, k in pages,
+                             lambda v, k=k: page_(k, v), raison)
+
                 with ui.column().classes("w-full gap-2") as pages_ui["creer"]:   # les options, puis « Créer les rapports »
                     titre_page("Créer les rapports", "rapport")
-                    ui.label("Vous êtes").classes("text-base")
+                    ui.label("Vous êtes").classes("text-base font-bold")
                     actuel = moi.nom()
 
                     def choisir_moi(e):
                         if e.value == SEPARATEUR: e.sender.value = moi.nom() or ""; return   # la ligne de séparation
-                        ecrire_etat(moi=e.value or None); retenir_licence(e.value); vue_seance.refresh()
+                        ecrire_etat(moi=e.value or None); retenir_licence(e.value); vue_seance.refresh(); options_rapports.refresh()
                     choix_moi = ui.select(options_joueurs(actuel), value=actuel or "", with_input=True, on_change=choisir_moi) \
                         .classes("w-full").props("outlined dense") \
                         .props(":option-disable=\"o => typeof o.label === 'string' && o.label.startsWith('───')\"")   # la ligne ne se choisit pas
-                    ui.label("Votre table est surlignée dans les tableaux des résultats : dans l'onglet Donnes tout de suite, dans les "
-                             "rapports quand ils sont refaits.").classes("text-base text-gray-700")
-                    ui.checkbox("Les donnes dans l'ordre où vous les avez jouées", value=moi.ordre_joue(),
-                                on_change=lambda e: ecrire_etat(ordre_joue=e.value)).classes("text-base")
-                    ui.label("Quand la séance décrit votre parcours (tour, table, adversaires) ; sinon par numéro.").classes("text-base text-gray-700 -mt-2")
-                    ui.checkbox("Inclure l'avis de l'expert", value=avec_expert(),
-                                on_change=lambda e: ecrire_etat(avec_expert=e.value)).classes("text-base")
-                    ui.label("Quand Claude a rédigé l'analyse de la séance (onglet Analyse, « Analyse expert ») : son avis, en "
-                             "vert, après le conseil du coach.").classes("text-base text-gray-700 -mt-2")
-                    noms = ui.checkbox("Ajouter une page avec le nom des joueurs").classes("text-base")
-                    revoir = ui.checkbox("Seulement les donnes à revoir").classes("text-base")
-                    ui.label("Quand « Vous êtes » est choisi : « Vous face au champ », puis seulement les donnes où vous "
-                             "pouviez faire mieux, la plus coûteuse d'abord. Un rapport à part : l'analyse complète reste.") \
-                        .classes("text-base text-gray-700 -mt-2")
+                    options_rapports()
                     creer_r = ui.button("Créer les rapports", icon="picture_as_pdf", on_click=lambda: maj_rapports()).classes("text-base px-6 mt-2")
                     besoin_r = ui.label("").classes("text-base text-gray-700")
                     barre_r = ui.linear_progress(value=0, show_value=False).props("size=16px rounded")
@@ -3609,7 +3754,7 @@ def page():
                         ui.label("Pas encore de rapport : « Créer les rapports », dans la barre de gauche.").classes("text-base text-gray-700")
                     for quoi, nom, detail in RAPPORTS:
                         for f, pour in prets.get(quoi, []):        # l'analyse : une par paire (ses initiales)
-                            lien_pdf(f, f"{nom} pour {pour}" if pour else nom, detail)
+                            lien_pdf(f, f"{nom if ',' in pour else nom.replace('donnes', 'donne').replace('Donnes', 'Donne')} {pour}" if quoi.endswith("donnes") else f"{nom} pour {pour}" if pour else nom, detail)
                     if prets:
                         ui.button("Ouvrir le dossier des rapports", on_click=lambda p=prets[next(iter(prets))][0][0]: ouvrir(os.path.dirname(p))) \
                             .props("flat no-caps").classes("mt-2 px-0")
@@ -4337,7 +4482,7 @@ def page():
     def choisir(c):
         choix["chemin"] = c; faute.text = ""
         retenir(c); montrer_titre(); vue["entree"] = "seance"; vue.pop("version", None); expert_msg.update(texte="", faute=False); vue_seance.refresh(); barre_seance.refresh(); montrer_barre(); montrer_controles()
-        resultats.refresh(); vue_analyse.refresh()
+        resultats.refresh(); vue_analyse.refresh(); choix_r.update(quelles="toutes", nums=[]); options_rapports.refresh()
         if onglets.value not in (o_donnes, o_analyse, o_rapports, "Donnes", "Analyse", "Rapports"): onglets.set_value(o_donnes)
 
     async def preparer_import(b):

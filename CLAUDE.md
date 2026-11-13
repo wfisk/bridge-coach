@@ -85,9 +85,16 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         checks it (four-column grids; each lead from the declarer's left, a card of that hand: rapport.entame_valide)
                         and merges it deal by deal into the .bc.json (the file before goes to versions/); "Aller aux rapports"
                         switches to the Rapports tab), then each deal's analysis laid out like its PDF page (page_analyse: title, diagramme_html with the lead marks of build_pdf.marques_entame and the vulnerability compass, Résultats à la table as the rank line, the recommended contract's double-dummy line and the full table folded in a ui.expansion (tableau_resultats, shared with Donnes; hearts and diamonds red through a v-html slot), the recommended auction beside its notes, expert text in the green ✦ block, plan, lead and defence, comment, cartes vues), the Expert's when it exists (toggle
-                        Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: options (« Vous êtes », played order, the
-                        names page), "Créer les rapports" (rapport.py --rapports: the PDFs from the saved analyses; T.genre says which
-                        tab shows the progress), then the session's PDFs as links with file name and date (lien_pdf); Réglages.
+                        Standard | Expert, Expert by default; page_analyse, lire_analyses); Rapports: « Vous êtes », then light options, one checkbox per thing
+                        added, no help lines (the user, 2026-11-13: radios for two choices were too heavy; options_rapports, case):
+                        Les donnes (« Seulement les donnes à revoir » / « Choisir les donnes », one unticks the other, choix_r per open
+                        session, deal-number buttons; « Dans l'ordre où vous les avez jouées », etat ordre_joue), L'analyse (« Avec
+                        l'analyse du coach », « Avec l'avis de l'expert »: none = facts only; etat rapport_niveau faits|coach|expert,
+                        niveau_rapport, the old avec_expert read when unset), Pages en plus (PAGES_EN_PLUS, etat rapport_pages); a box
+                        that does not apply is greyed, unticked, the reason beside it; without « Vous êtes »: à revoir, ordre joué,
+                        Vous face au champ, Votre parcours;
+                        "Créer les rapports" (rapport.py --rapports + args_rapports: --niveau= --pages= --a-revoir / --donnes=; the PDFs
+                        from the saved analyses; T.genre says which tab shows the progress), then the session's PDFs as links with file name and date (lien_pdf); Réglages.
                         Rapports and Réglages have a left sidebar of pages too (PAGES, vue_page, voir_page, pages_ui shown or hidden):
                         Créer les rapports | Rapports de la séance; Taille du texte | Votre nom | Dossiers | Sauvegarder mes séances
                         (fichiers.sauvegarder: one .zip of seances/ without versions/ or .bws, plus documents/; the window asks where,
@@ -136,7 +143,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         dependency and its SHA-256 hashes, so pip installs in hash-checking mode (needs a recent pip:
                         pip 21 rejects the socketio extra). The command is in its header.
                         Mac only so far; Windows not tested
-      rapport.py        imports a source (.bws, FFB PDF, .pbn, simulated .json) into the Bridge Coach file
+      rapport.py        --rapports takes --niveau=faits|coach|expert (--sans-analyse = coach), --donnes=1,4,7 (chosen deals, in the
+                        report's order: -donnes-1-4-7.pdf, one deal -donne-N.pdf) and --pages=champ,parcours,synthese,noms,comparaison
+                        (default all but noms; --avec-noms adds it). Facts only: -releve[-a-revoir|-donnes-…].pdf, build_pdf an["faits"]
+                        shows no coach or expert (no recommended row, lead or « Recommandé » column, no « Où vous pouviez faire
+                        mieux »); the coach's analysis is only used to pick the deals à revoir. build_pdf an["choix"], an["pages"].
+                        It also imports a source (.bws, FFB PDF, .pbn, simulated .json) into the Bridge Coach file
                         seances/AAAA-MM/<name>.bc.json (format, version, source, session, joueurs, donnes…;
                         entete, ecrire_bc; named --nom=, titled --titre=, else fichiers.proposer's; the original is NOT copied: once
                         imported, the session never needs it again, the user's choice 2026-11-12), builds the PDFs into
@@ -313,7 +325,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         with the meaning bubbles (no contract, counter, Double mort or step text: the user, 2026-11-11; the Expert's notes and the
                         Double mort switch come at the end of the auction); during the play the same grid stays open (it gives the contract; no separate contract line), « Pli n · carte n », Double mort,
                         the current step's explanation) in the right sidebar; ← → and PageUp/PageDown on the keyboard
-                        (demo_touche); double-mort counts as badges on the cards' top corner (marques_dm, .carte .dm). tests/test_demo.py
+                        (demo_touche); in the play ▶ (filled) plays to the end of the trick, one card after another, and a light › one card
+                        (demo_pli; in Revoir too, revoir_pli; → the trick, Maj + → one card; the user, 2026-11-13: less clicking); during the
+                        auction ▶ is one call; double-mort counts as badges on the cards' top corner (marques_dm, .carte .dm). tests/test_demo.py
       classement.py     the tournament replay scoreboard (Jouer tab, sidebar entry « Classement » under Options, 2026-11-11;
                         app.page_classement): for each deal the latest finished attempt in <name>-jeu.json (card play to the
                         last trick, "levees", or a passed-out deal; bidding alone does not count: fini, dernier_fini), the score
@@ -416,7 +430,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         Two-suited overcalls (5-5, 8–18 H, alerted; the user's scheme, 2026-11-08): over 1♣/1♦ 2♦ = majors,
                         2SA = the two lowest unbid; over 1♥/1♠ the cue-bid = clubs + other major (Michaels), 2SA = minors,
                         3♣ = diamonds + other major; advancer picks a suit by strength; +0.61 IMP a deal on 20 000 random
-                        deals (331 uses) against the old natural overcalls. Two sections for one auction: the more specific
+                        deals (331 uses) against the old natural overcalls.
+                        Over a weak two (2026-11-13, deals 5, 20, 29 of 12/11, each kept on 2 × 20 000 deals, a-faire.md): balancing
+                        (2x – passe – passe) has its own rules, double from 10 H; the take-out double comes before a 3-level suit with
+                        four cards in the free major; a strong doubler (18+, no 5-card major) after partner's minor looks for 3SA
+                        (CONTRE_FORT_3SA, avant_3sa turns it into the stopper-asking cue); the player's own cue-bid after their double
+                        asks for a stopper (nature demande_arret) and the robot answers 3SA with one. Two sections for one auction: the more specific
                         key (fewer M/N/x) wins over the generic one (regles.charger), else an error.
                         Responder after a take-out double is still the old code: a first rule
                         version (redouble, pre-emptive raise) cost 0.08 IMP on fresh deals

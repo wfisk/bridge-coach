@@ -29,7 +29,15 @@ d'espace dans les noms (remplacés par des tirets) :
                          rédigée par Claude, la sienne et l'avis de l'expert, le coach avant lui),
                      <date>-<nom>-comparaison.pdf (programme et expert comparés, comparer.py ; seulement avec une analyse
                          rédigée ; -diff.pdf avant le 09/11/2026).
---sans-analyse : l'analyse sans l'avis de l'expert (l'option « Inclure l'avis de l'expert » de l'onglet Rapports).
+--sans-analyse : l'analyse sans l'avis de l'expert (= --niveau=coach).
+Avec --rapports, les options de l'onglet Rapports, en trois groupes (2026-11-13) :
+  les donnes : toutes, --a-revoir (celles où vous pouviez faire mieux) ou --donnes=1,4,7 (celles-là ; une seule :
+      <date>-<nom>-donne-N.pdf, plusieurs : -donnes-1-4-7.pdf) ; l'ordre (numéro ou ordre joué) est celui d'etat.json ;
+  --niveau=faits|coach|expert : les faits seulement (résultats, enchères aux tables, double mort et par : -releve.pdf),
+      l'analyse du coach, ou le coach et l'expert (le défaut) ;
+  --pages=champ,parcours,synthese,noms,comparaison : les pages en plus (« Vous face au champ », votre parcours,
+      la synthèse des contrats, la page des joueurs, le rapport à part « Le Coach face à l'Expert ») ; sans --pages :
+      toutes sauf noms (--avec-noms l'ajoute).
 Avant la 1.4, -standard.pdf, -expert.pdf et -archive.pdf : refaire les rapports les remplace par -analyse.pdf.
 
 Les joueurs : dans le .bc.json, "joueurs" {paire: [{"initiales", "nom"}, …]}, le nom complet facultatif
@@ -500,14 +508,22 @@ def main():
     lignes.PARALLELE = True                                # le déclarant simulé, sur tous les cœurs
     preparer_donnees()
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    choisi = {k: a.split("=", 1)[1] for a in sys.argv[1:] for k in ("--nom", "--titre", "--donne") if a.startswith(k + "=")}
+    choisi = {k: a.split("=", 1)[1] for a in sys.argv[1:] for k in ("--nom", "--titre", "--donne", "--donnes", "--niveau", "--pages") if a.startswith(k + "=")}
     seule = int(choisi["--donne"]) if choisi.get("--donne", "").isdigit() else None   # avec --rapports : une seule donne, à imprimer
     sans = "--sans-analyse" in sys.argv; avec_noms = "--avec-noms" in sys.argv; importer = "--importer" in sys.argv
     rapports_seuls = "--rapports" in sys.argv; analyse_seule = "--analyse-seule" in sys.argv
     a_revoir = "--a-revoir" in sys.argv                    # avec --rapports : le rapport des donnes à revoir seulement
+    niveau = choisi.get("--niveau") or ("coach" if sans else "expert")   # faits | coach | expert
+    if niveau not in ("faits", "coach", "expert"): raise SystemExit(f"Niveau inconnu : {niveau} (faits, coach ou expert).")
+    sans = niveau != "expert"
+    choix_n = [seule] if seule else [int(x) for x in re.split(r"[ ,;]+", choisi.get("--donnes", "")) if x.isdigit()]
+    pages = set(filter(None, choisi["--pages"].split(","))) if "--pages" in choisi \
+        else {"champ", "parcours", "synthese", "comparaison"} | ({"noms"} if avec_noms else set())
+    avec_noms = "noms" in pages and not seule
     if not args: args = [choisir_seance()]
     if len(args) != 1 or not os.path.isfile(args[0]):
-        raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer] [--rapports] [--analyse-seule] [--a-revoir] [--donne=N]")
+        raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer] [--rapports] [--analyse-seule] "
+                         "[--a-revoir] [--donne=N] [--donnes=1,4,7] [--niveau=faits|coach|expert] [--pages=champ,parcours,synthese,noms,comparaison]")
 
     bws = os.path.abspath(args[0])
     source = {".bws": "bws", ".pdf": "feuille-de-route", ".json": "simulation", ".pbn": "pbn"}.get(os.path.splitext(bws)[1].lower(), "inconnue")
@@ -610,10 +626,11 @@ def main():
     chrono.etape("coups des tables (cartes vues)")
     if rapports_seuls:                                     # --rapports : les PDF depuis les analyses enregistrées
         auto = analyse_de(seance, "standard")
-        if not auto:
+        if not auto and niveau == "faits" and not a_revoir: auto = {"donnes": {}}   # les faits : pas besoin d'analyse
+        elif not auto:
             raise SystemExit("Pas encore d'analyse standard pour cette séance : lancez d'abord l'analyse.")
         manquent = [str(d["n"]) for d in data["donnes"] if str(d["n"]) not in auto.get("donnes", {})]
-        if manquent:
+        if manquent and auto.get("donnes"):
             raise SystemExit(f"L'analyse standard manque pour {'la donne' if len(manquent) == 1 else 'les donnes'} "
                              f"{', '.join(manquent)} : relancez l'analyse standard.")
         print("Analyse standard reprise")
@@ -633,9 +650,23 @@ def main():
 
     import moi
     pour = moi.initiales(data).replace("/", "-")           # le rapport d'une paire porte ses initiales (« SS-AR ») : celui de chacune reste
-    pdf = lambda quoi: os.path.join(SORTIE, f"{date}-{nom_court(nom)}-{quoi}{'-' + pour if pour and quoi in ('analyse', 'a-revoir') else ''}.pdf")
+    pdf = lambda quoi: os.path.join(SORTIE, f"{date}-{nom_court(nom)}-{quoi}{'-' + pour if pour and quoi.endswith(('analyse', 'a-revoir', 'releve')) else ''}.pdf")
+    connues = {d["n"] for d in data["donnes"]}
+    if any(n not in connues for n in choix_n):
+        raise SystemExit(f"Donne inconnue dans cette séance : {', '.join(str(n) for n in choix_n if n not in connues)}.")
+    extra = {"pages": sorted(pages)}                       # pour build_pdf : les pages en plus, les donnes choisies
+    if choix_n: extra["choix"] = choix_n
+    if a_revoir: extra["a_revoir"] = True
+    def nom_pdf(base):                                     # le nom du PDF : les donnes choisies, sinon le genre du rapport
+        if len(choix_n) == 1: return f"donne-{choix_n[0]}"
+        if choix_n: return "donnes-" + "-".join(str(n) for n in choix_n)
+        return "a-revoir" if a_revoir else base
     if a_revoir and not pour:
         raise SystemExit("Les donnes à revoir sont celles de votre paire : choisissez d'abord « Vous êtes ».")
+    if niveau == "faits":                                  # les faits seulement (-releve…) : l'analyse du coach ne sert qu'à
+        quoi = nom_pdf("releve")                           # choisir les donnes à revoir
+        construire_pdf(donnes, dict(extra, faits=True), auto, pdf(quoi if quoi == "releve" else "releve-" + quoi))
+        chrono.etape("relevé des donnes"); chrono.ecrire(len(data["donnes"])); return
     an = analyse_de(seance, "expert")
     redigee = bool(an and an.get("donnes"))
     def anciens():                                         # avant la 1.4 : -standard et -expert, que -analyse remplace, et le
@@ -644,13 +675,11 @@ def main():
     if sans or not redigee:                                # l'analyse du programme et le conseil du coach
         print("Sans l'avis de l'expert (--sans-analyse)" if sans and redigee
               else "Pas d'analyse de l'expert", ": l'analyse du programme seulement.")
-        if seule:                                          # « Imprimer cette donne » (Analyse) : sa page seule
-            construire_pdf(donnes, {"seule": seule}, auto, pdf(f"donne-{seule}")); return
-        if a_revoir:                                       # seulement les donnes à revoir : ce PDF-là, le reste ne bouge pas
-            construire_pdf(donnes, {"a_revoir": True}, auto, pdf("a-revoir"))
-            chrono.etape("rapport des donnes à revoir"); chrono.ecrire(len(data["donnes"])); return
-        construire_pdf(donnes, {}, auto, pdf("analyse")); anciens()
-        if not redigee:
+        if choix_n or a_revoir:                            # des donnes choisies, ou celles à revoir : ce PDF-là, le reste ne
+            construire_pdf(donnes, dict(extra), auto, pdf(nom_pdf("analyse")))   # bouge pas (une seule : « Imprimer cette donne »)
+            chrono.etape("rapport des donnes choisies"); chrono.ecrire(len(data["donnes"])); return
+        construire_pdf(donnes, dict(extra), auto, pdf("analyse")); anciens()
+        if not redigee or "comparaison" not in pages:
             chrono.etape("rapports PDF"); chrono.ecrire(len(data["donnes"]))
             return
     else:                                                  # avec l'avis de l'expert : son analyse, et le coach avant lui
@@ -664,12 +693,12 @@ def main():
         std_d = auto.get("donnes") or {}
         an = dict(an, donnes={n: coach_pour_expert(next((d for d in data["donnes"] if str(d["n"]) == n), {"donneur": "N"}), x,
                                                    std_d.get(n)) for n, x in an["donnes"].items()})
-        if seule:
-            construire_pdf(donnes, dict(an, seule=seule), auto, pdf(f"donne-{seule}")); return
-        if a_revoir:
-            construire_pdf(donnes, dict(an, a_revoir=True), auto, pdf("a-revoir"))
-            chrono.etape("rapport des donnes à revoir"); chrono.ecrire(len(data["donnes"])); return
-        construire_pdf(donnes, an, auto, pdf("analyse")); anciens()
+        if choix_n or a_revoir:
+            construire_pdf(donnes, dict(an, **extra), auto, pdf(nom_pdf("analyse")))
+            chrono.etape("rapport des donnes choisies"); chrono.ecrire(len(data["donnes"])); return
+        construire_pdf(donnes, dict(an, **extra), auto, pdf("analyse")); anciens()
+        if "comparaison" not in pages:
+            chrono.etape("rapport d'analyse"); chrono.ecrire(len(data["donnes"])); return
     chrono.etape("rapport d'analyse"); atexit.register(chrono.ecrire, len(data["donnes"]))
     sys.stdout.flush()
     provisoire = pdf("comparaison")[:-4] + ".provisoire.pdf"

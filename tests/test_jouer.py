@@ -58,3 +58,19 @@ assert _r["encheres"][8:] == ["passe", "passe", "passe"]                # sans c
 _r = _encherir(_d, imposees=["passe", "1♥", "passe", "2♦", "passe", "2SA", "passe", "3♥", "passe", "4♥", "passe", "4SA",
                              "passe", "5♠", "passe", "5SA"])
 assert _r["encheres"][16:19] == ["passe", "6♦", "passe"] and _r["contrat"] == "6♥", _r["encheres"]
+
+# Sur un deux faible (donnes 5, 20 et 29 du 12/11) : le réveil par contre dès 10 H, le contre fort qui cherche 3SA,
+# le contre plutôt qu'une mineure au palier de 3 avec quatre cartes dans la majeure libre ; et le cue-bid du joueur
+# après son contre demande l'arrêt (le partenaire dit 3SA avec ♥RV3)
+_d5 = {"n": 5, "donneur": "N", "vul": "N-S", "mains": {"N": "R2 AV62 9873 R32", "E": "DX9876 543 AV D5",
+                                                         "S": "A54 R RD542 V764", "O": "V3 DX987 X6 AX98"}}
+assert _encherir(_d5)["contrat"] == "3SA"
+_d20 = {"n": 20, "donneur": "O", "vul": "Tous", "mains": {"N": "D4 RV3 V6432 732", "E": "X82 DX7652 D D85",
+                                                           "S": "AR63 A R987 AV64", "O": "V975 984 AX5 RX9"}}
+assert _encherir(_d20)["contrat"] == "3SA"
+_r = _encherir(_d20, imposees=["passe", "passe", "2♥", "contre", "passe", "3♦", "passe", "3♥"])
+assert _r["encheres"][9] == "3SA" and _r["contrat"] == "3SA", _r["encheres"]
+_d29 = {"n": 29, "donneur": "N", "vul": "Tous", "mains": {"N": "ADVX92 X3 832 D8", "E": "6 A984 RX7 ARX93",
+                                                           "S": "54 RD752 5 76542", "O": "R873 V6 ADV964 V"}}
+_r = _encherir(_d29)
+assert _r["encheres"][1] == "contre" and _r["contrat"] == "3SA", _r["encheres"]

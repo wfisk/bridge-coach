@@ -225,14 +225,14 @@ def diagram(d, a=None):
 
 class Legende(Flowable):
     """Légende des repères d'entame (verticale, à droite du diagramme). Sans tables, seule l'entame recommandée."""
-    def __init__(self, jouee=True): Flowable.__init__(self); self.jouee = jouee
+    def __init__(self, jouee=True, reco=True): Flowable.__init__(self); self.jouee = jouee; self.reco = reco
     def wrap(self, aw, ah): self.width = aw; return aw, 66
     def draw(self):
         c = self.canv
         c.setFont("DVB", 8.5); c.setFillColor(colors.HexColor(GREY)); c.drawString(0, 56, "Entame")
         items = [("jouée à une table", 1, False), ("jouée à plusieurs tables", 2, False), ("recommandée", 0, True)]
         for i, (lab, n, reco) in enumerate(items):
-            if reco is False and not self.jouee: continue
+            if (reco is False and not self.jouee) or (reco and not self.reco): continue   # les faits seulement : pas de recommandée
             y = 38 - i * 17; cx, cy = 9, y + 3
             if reco: c.setFillColor(LEAD_FILL); c.circle(cx, cy, 5.2, stroke=0, fill=1)
             if n:
@@ -241,7 +241,7 @@ class Legende(Flowable):
             c.setFont("DV", 8.5); c.setFillColor(colors.HexColor(GREY)); c.drawString(22, y, lab)
 
 def diagram_legende(d, a):
-    t = Table([[diagram(d, a), Legende(bool(d["tables"]))]], colWidths=[12.6*cm, 5.0*cm])
+    t = Table([[diagram(d, a), Legende(bool(d["tables"]), bool(a.get("entame")))]], colWidths=[12.6*cm, 5.0*cm])
     t.setStyle(TableStyle([("VALIGN", (0, 0), (0, 0), "TOP"), ("VALIGN", (1, 0), (1, 0), "BOTTOM"),
         ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
         ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
@@ -394,7 +394,8 @@ def page_champ(donnes, an, largeur=17.4*cm, tours=None, marque="MP", liens=None)
     import couts
     bil = couts.bilan(donnes, an, MES, marque)
     valeur_reco = {c["n"]: c.get("valeur_reco") for c in bil["lignes"]}
-    revoir = set(couts.numeros_a_revoir(bil))
+    avec_reco = any(r["texte_reco"] for r in L)           # sans analyse (Rapports, « Les faits seulement ») : ni la colonne
+    revoir = set(couts.numeros_a_revoir(bil)) if avec_reco else set()   # « Recommandé », ni les donnes à revoir
     for r in L:                                            # le recommandé et ce qu'il aurait marqué à votre table
         v_ = valeur_reco.get(r["n"])
         r["texte_meilleur"] = r["texte_reco"] + (f"  ({nombre_(v_, imp)})" if v_ is not None and r["texte_reco"] else "")
@@ -426,7 +427,7 @@ def page_champ(donnes, an, largeur=17.4*cm, tours=None, marque="MP", liens=None)
     for p in graduations:
         D.add(String(x(p), Y + .25*cm, legende(p), fontName="DVB" if p == centre else "DV", fontSize=7.5,
                      fillColor=colors.HexColor(INK if p == centre else GREY), textAnchor="middle"))
-    for t_, xx, anc in (("IMP" if imp else "%", C1, "end"), ("Vous", C0, "start"), ("Recommandé", C2, "start")):
+    for t_, xx, anc in (("IMP" if imp else "%", C1, "end"), ("Vous", C0, "start")) + ((("Recommandé", C2, "start"),) if avec_reco else ()):
         D.add(String(xx, Y + .25*cm, t_, fontName="DVB", fontSize=7.5, fillColor=colors.HexColor(INK), textAnchor=anc))
 
     def rangée(y, nom, r, gras=False):
@@ -493,13 +494,13 @@ def page_champ(donnes, an, largeur=17.4*cm, tours=None, marque="MP", liens=None)
     return [Paragraph("Vous face au champ", S_title),
             Paragraph(txt("Marque en IMP : 0 est le datum de chaque donne (la moyenne des tables) ; en rouge les IMP que vous "
                           "perdez, en bleu ceux que vous gagnez (la barre s'arrête à ±12) ; la boîte grise montre le champ. "
-                          "Les tours et la séance en totaux. « Recommandé » : le contrat recommandé joué au double mort, et "
-                          "ses IMP à votre table." if imp else
+                          "Les tours et la séance en totaux." + (" « Recommandé » : le contrat recommandé joué au double mort, et "
+                          "ses IMP à votre table." if avec_reco else "") if imp else
                           "50 % est la moyenne des tables sur chaque donne : en rouge ce que vous perdez face au champ, "
-                          "en bleu ce que vous gagnez ; la boîte grise montre le champ. « Recommandé » : le contrat "
-                          "recommandé joué au double mort, et son % à votre table.")
+                          "en bleu ce que vous gagnez ; la boîte grise montre le champ." + (" « Recommandé » : le contrat "
+                          "recommandé joué au double mort, et son % à votre table." if avec_reco else ""))
                           + (f" <font color='{VOUS_C}'>●</font> : une donne à revoir (le tableau sous le dessin)." if revoir else ""), S_sub),
-            Spacer(1, 8), DessinLiens(D, zones), KeepTogether(paragraphe_couts(bil)), PageBreak()]
+            Spacer(1, 8), DessinLiens(D, zones)] + ([KeepTogether(paragraphe_couts(bil, liens))] if avec_reco else []) + [PageBreak()]
 
 
 def nombre_(v, imp):
@@ -508,11 +509,12 @@ def nombre_(v, imp):
     return f"{v:.0f} %"
 
 
-def paragraphe_couts(b):
+def paragraphe_couts(b, liens=None):
     """Où vous pouviez faire mieux (couts.bilan) : deux phrases (le résultat de la séance, le repère), puis le tableau
     « Donnes à revoir », une ligne par part coûteuse (les enchères, ou la carte), la plus coûteuse d'abord, chaque numéro
     menant à sa donne ; « Vous » est votre résultat, « Possible » ce qu'il aurait été avec cette part réussie. Puis vos
-    meilleurs coups et le reste, une ligne chacun. En IMP, des IMP ; en match-points, des % de la donne."""
+    meilleurs coups et le reste, une ligne chacun. En IMP, des IMP ; en match-points, des % de la donne.
+    liens : les donnes qui ont leur page dans ce rapport (None : toutes) ; les autres numéros ne sont pas des liens."""
     import couts
     if not b["n"]: return []
     imp = b["marque"] == "IMP"; n = b["n"]
@@ -548,7 +550,8 @@ def paragraphe_couts(b):
                 elif c["memes"] == 1: cmp_ = "l'autre table a fait mieux"
                 else: cmp_ = f"{c['mieux']} tables sur {c['memes']} mieux"
                 quoi_ = f"{c['levees']} levées pour le déclarant ({c['levees_dm']} au double mort ; {cmp_})"
-            rows.append([Paragraph(f"<a href='#donne{c['n']}'><u>{c['n']}</u></a>", S_tb), Paragraph(txt(ou), S_t),
+            num = f"<a href='#donne{c['n']}'><u>{c['n']}</u></a>" if liens is None or c["n"] in liens else str(c["n"])
+            rows.append([Paragraph(num, S_tb), Paragraph(txt(ou), S_t),
                          Paragraph(txt(quoi_), S_t), Paragraph(nombre_(c["vous"], imp), S_tr),
                          Paragraph(nombre_(c["vous"] + cout, imp), S_tr)])
         tb = _grille(rows, [w * cm for w in (1.7, 4.9, 7.3, 1.6, 2.1)],
@@ -1257,7 +1260,8 @@ def main():
     MES = moi.paires(data); DONNEES_SEANCE.update(data); MARQUE_TXT = moi.MARQUES[moi.marque(data)]
     TOURS = {d["n"]: moi.tour_de(data, d["n"]) for d in data["donnes"]}
     date = data["session"]["date"]
-    pied = an.get("titre_pied", f"Analyse des donnes – séance du {date} – Système SEF, marque {moi.MARQUES[moi.marque(data)]}")
+    faits = bool(an.get("faits"))                   # Rapports, « Les faits seulement » : ni coach ni expert à l'écran
+    pied = an.get("titre_pied", f"{'Relevé' if faits else 'Analyse'} des donnes – séance du {date} – Système SEF, marque {moi.MARQUES[moi.marque(data)]}")
     pied = re.sub(r"marque (IMP|match-points)", f"marque {moi.MARQUES[moi.marque(data)]}", pied)   # la marque de la séance, pas celle d'une analyse
     def footer(c, doc):
         c.saveState(); c.setFont("DV", 7.5); c.setFillColor(colors.HexColor("#888"))
@@ -1277,10 +1281,15 @@ def main():
         nums = couts.numeros_a_revoir(couts.bilan(donnes, an, MES, moi.marque(data)))
         donnes = [next(d for d in tout if d["n"] == n) for n in nums]
         if not donnes: raise SystemExit("Aucune donne à revoir dans cette séance : rien à mettre dans ce rapport.")
-    if an.get("seule"):                             # Analyse, « Imprimer cette donne » : sa page seule, pour un cours
-        donnes = [d for d in tout if d["n"] == an["seule"]]
-        if not donnes: raise SystemExit(f"La donne {an['seule']} n'est pas dans cette séance.")
-    synth = None if an.get("a_revoir") or an.get("seule") else synthese(dict(data, donnes=donnes), an)  # avec la synthèse, les explications y sont
+    choix = an.get("choix") or ([an["seule"]] if an.get("seule") else None)
+    seule = choix and len(choix) == 1               # Analyse, « Imprimer cette donne » : sa page seule, pour un cours
+    if choix:                                       # Rapports, « Choisir les donnes » : celles-là, dans l'ordre du rapport
+        donnes = [d for d in donnes if d["n"] in choix]
+        if not donnes: raise SystemExit(f"Les donnes {', '.join(map(str, choix))} ne sont pas dans cette séance.")
+    pages = set() if seule else set(an.get("pages") or ("champ", "parcours", "synthese"))   # les pages en plus
+    vue = {"donnes": {}} if faits else an           # ce que montrent les pages : rien du coach ni de l'expert pour les faits
+    synth = None if an.get("a_revoir") or choix or "synthese" not in pages or faits \
+        else synthese(dict(data, donnes=donnes), an)  # avec la synthèse, les explications y sont
 
     def fabriquer(an):
         doc = BaseDocTemplate(out, pagesize=A4, leftMargin=1.7*cm, rightMargin=1.7*cm, topMargin=1.5*cm, bottomMargin=1.5*cm,
@@ -1288,23 +1297,23 @@ def main():
         doc._spans = {}
         doc.addPageTemplates([PageTemplate(id="p", frames=[Frame(1.7*cm, 1.5*cm, 17.6*cm, 26.7*cm, id="f")],
                                            onPage=footer, onPageEnd=suite)])
-        story = [] if an.get("seule") else \
-            page_champ(tout, an or {"donnes": {}}, tours={d["n"]: moi.tour_infos(data, d["n"]) for d in data["donnes"]},
+        story = [] if "champ" not in pages else \
+            page_champ(tout, vue, tours={d["n"]: moi.tour_infos(data, d["n"]) for d in data["donnes"]},
                        marque=moi.marque(data), liens={d["n"] for d in donnes})    # vous avez choisi « Vous êtes » : vous face au champ (la séance en
                                                             # un coup d'œil, page_ensemble, essayée puis écartée : l'utilisateur)
         for k, d in enumerate(donnes):
-            story += page(d, an.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
-        parcours = [] if an.get("seule") else page_parcours(data)   # à la fin : votre parcours, puis la synthèse
+            story += page(d, vue.get("donnes", {}).get(str(d["n"]), {}), date, expliquer=not synth and k == 0)
+        parcours = page_parcours(data) if "parcours" in pages else []   # à la fin : votre parcours, puis la synthèse
         fin = parcours + synth if synth else parcours + [PageBreak()] if parcours else []
         if fin: story += [Marque(None)] + fin
-        doc.build((page_noms(data, sys.argv[4] if len(sys.argv) > 4 else None) if not an.get("seule") else []) + story[:-1])
+        doc.build((page_noms(data, sys.argv[4] if len(sys.argv) > 4 else None) if not seule else []) + story[:-1])
         return doc, {n: s[1] - s[0] + 1 for n, s in doc._spans.items() if s[1] - s[0] + 1 > 2}
 
     doc, longues = fabriquer(an)                   # deux pages par donne : un repère, pas une règle (l'utilisateur, 2026-11-09)
     manquantes = [d["n"] for d in data["donnes"] if str(d["n"]) not in an.get("donnes", {})]
     print(f"PDF écrit : {out.replace('.provisoire.pdf', '.pdf')} ({doc.page} pages, {len(donnes)} donnes)")
     if longues: print("ATTENTION, donnes de plus de deux pages :", longues)
-    if manquantes: print("Donnes sans analyse rédigée :", manquantes)
+    if manquantes and not faits: print("Donnes sans analyse rédigée :", manquantes)
 
 if __name__ == "__main__":
     main()

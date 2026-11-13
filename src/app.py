@@ -850,6 +850,15 @@ def retenir(c):
     ecrire_etat(seance=c)
 
 
+def icone_panneau(cachee):
+    """L'icône du bouton de la barre de gauche, comme celle de Claude : un carré arrondi, une colonne étroite à gauche,
+    pleine quand la barre est montrée, vide quand elle est cachée (pas le ☰ d'un menu principal : l'utilisateur, 2026-11-13)."""
+    plein = "" if cachee else "<rect x='4' y='5' width='5' height='14' rx='1' fill='currentColor' opacity='.35'/>"
+    return ("<svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' "
+            "style='display:block'><rect x='3' y='4' width='18' height='16' rx='3'/>"
+            f"<line x1='9.5' y1='4.5' x2='9.5' y2='19.5'/>{plein}</svg>")
+
+
 def nom_html(nom, deux_lignes=False, droite=False, etat="", siege="", une_ligne=False):
     """Le nom d'un joueur près de ses cartes, discret (l'utilisateur, 2026-11-11 : pas de bandeau ni de photo) : une
     ligne en gris foncé."""
@@ -3664,7 +3673,7 @@ def page():
         """La barre latérale : sur les onglets Donnes, Jouer et Analyse quand une séance est ouverte ; toujours sur
         Rapports, Réglages et l'aide."""
         cachee = bool(lire_etat().get("liste_cachee"))
-        bouton_barre.props(f"icon={'menu' if cachee else 'menu_open'}")   # le bouton de la barre de menus suit l'état
+        icone_barre.set_content(icone_panneau(cachee))   # le bouton de la barre de menus suit l'état
         bouton_barre._props["title"] = "Montrer la barre de gauche" if cachee else "Cacher la barre de gauche"
         bouton_barre.update()
         if plein["on"] and sur_jouer(): tiroir.set_value(False); return   # Jouer, table seule
@@ -3675,8 +3684,9 @@ def page():
 
     with ui.header(elevated=False).classes("bg-white text-primary px-2 py-0 border-b border-gray-300") as entete:   # la barre de menus
         with ui.row().classes("w-full items-center justify-between no-wrap"):
-            bouton_barre = ui.button(icon="menu_open", on_click=lambda: basculer_liste()) \
-                .props("flat dense round color=grey-7").classes("mr-1")   # montrer / cacher la barre de gauche, à sa place fixe
+            with ui.button(on_click=lambda: basculer_liste()).props("flat dense round color=grey-7").classes("mr-1") \
+                    as bouton_barre:                     # montrer / cacher la barre de gauche, à sa place fixe : l'icône d'un
+                icone_barre = ui.html(icone_panneau(False), sanitize=False)   # panneau latéral, pas un menu (l'utilisateur)
             with ui.tabs().props("no-caps dense inline-label align=left active-color=primary indicator-color=primary").classes("text-gray-700 grow") as onglets:   # les onglets, dans la barre
                 o_fichier = ui.tab("Fichier")                     # une page, comme Rapports et Réglages : sa barre à gauche
                 o_donnes = ui.tab("Donnes")

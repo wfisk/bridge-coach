@@ -645,7 +645,7 @@ user's folder, never in git. Only `--avec-noms` shows full names in a report: an
 - Jouer, second UX round (2026-11-11): the top line shows the small square (it turns with the table, its number and letters stay
   upright: .txt-carre, carre-contre), « Donne N », dealer and vulnerability in words, the round; no « Donnes » or full-screen button any
   more (plein stays in the code, unused). The left sidebar, on every page, is shown or hidden by a button at the far left of the top menu bar, before
-  Fichier (bouton_barre, basculer_liste, etat.json liste_cachee, remembered; 2026-11-13: it no longer moves or takes a line in the sidebar). The bidding box stays while the robots bid, greyed
+  Fichier (bouton_barre, basculer_liste, etat.json liste_cachee, remembered; 2026-11-13: it no longer moves or takes a line in the sidebar); its icon is a sidebar panel like Claude's, the left column filled while the sidebar shows (icone_panneau), not the ☰ of a main menu. The bidding box stays while the robots bid, greyed
   (boite_encheres actif=False, .en-attente, only the bids already shown count). Whose turn: only your own cards glow yellow when it is your turn (your hand, or dummy when you play
   from it: .a-vous); no glow on names or on the robots' hands, no green triangle, no underline or bold (the user, 2026-11-11). Names grow back by up to a third when the table shrinks (font-size / max(--echelle, .75)). After the auction the card play
   starts by itself after 1.8 s (« Voir les mains sans jouer » stays during the pause; depart_auto, not after ◀◀ back to the auction).

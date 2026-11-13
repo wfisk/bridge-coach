@@ -856,9 +856,12 @@ def nom_html(nom, deux_lignes=False, droite=False, etat="", siege="", une_ligne=
     import html as h_
     tete = f"<div class='siege-lbl'>{SIEGE[siege].upper()}</div>" if siege else ""   # la place, en gras, au-dessus du nom
     if une_ligne:                                        # le mort étalé en haut ou en bas : « OUEST Prénom NOM » sur une ligne,
-        return (f"<div class='nom-joueur {etat}' style='text-align:center;white-space:nowrap'>"   # ses cartes centrées dessous
+        mots = (nom or "").split()                       # ses cartes centrées dessous ; le prénom d'abord, comme sur deux lignes
+        k = next((i for i, m in enumerate(mots) if not m.isupper()), len(mots)) or 1
+        nom = " ".join(mots[k:] + mots[:k])
+        return (f"<div class='nom-joueur {etat}' style='text-align:center;white-space:nowrap'>"
                 + (f"<span class='siege-lbl' style='display:inline;margin-right:6px'>{SIEGE[siege].upper()}</span>" if siege else "")
-                + f"{h_.escape(nom or '')}</div>")
+                + f"{h_.escape(nom)}</div>")
     if deux_lignes:                                      # sur deux lignes : le prénom, puis le NOM (l'utilisateur, 2026-11-11)
         mots = (nom or "").split()
         k = next((i for i, m in enumerate(mots) if not m.isupper()), len(mots)) or 1
@@ -2174,8 +2177,10 @@ def page():
                if r else str(n))
         return f"<div class='{cls}' title='Les levées de ce camp'>{txt}</div>"
 
-    CROIX_BORD = 140      # le mort étalé en haut (en bas) : le centre de la croix à 140 px du bord d'en bas (d'en haut), au-dessus
-                          # des plis gardés : une longue couleur du mort (8 cartes) garde sa place au-dessus
+    CARTE_H, PAS_COLONNE = 79, 26   # une carte, et ce qu'en montre la suivante dans une colonne du mort (.colonne-mort : −53 px)
+    HAUT_NOM_MORT = 12              # le bord de la table (le nom du mort est hors du tapis) : là commencent ses colonnes
+    BORD_PLIS = 12 + 28             # vos plis gardés : à 12 px du bord, hauts de 28 px
+    HAUTEUR_TABLE_HAUTE = COTE_TABLE_PX + HAUT_MORT   # la table quand le mort est étalé en haut ou en bas
     CROIX_DX, CROIX_DY = 60, 50   # le pli en croix : les cartes des côtés à ±60 px du centre, celles du haut et du bas à ±50
     BORD_PLI = 54          # une carte jouée : sur la table, devant son joueur, au-delà de ses plis gardés (12 + 30 px)
     ICI_PLI = {"haut": f"top:{BORD_PLI}px;left:50%;transform:translateX(-50%)",
@@ -2207,7 +2212,12 @@ def page():
         mort_ou = cote.get(mort)
         cx = {"gauche": f"calc(50% + {(LARGEUR_TABLE_LARGE_PX - COTE_TABLE_PX) // 2}px)",
               "droite": f"calc(50% - {(LARGEUR_TABLE_LARGE_PX - COTE_TABLE_PX) // 2}px)"}.get(mort_ou, "50%")
-        cy = {"haut": f"calc(100% - {CROIX_BORD}px)", "bas": f"{CROIX_BORD}px"}.get(mort_ou, "50%")   # à distance fixe du bord libre
+        cy = "50%"
+        if mort_ou in ("haut", "bas"):                  # à mi-chemin entre le bas de la plus longue colonne du mort (au début de la
+            longue = max(len(c.replace("-", "")) for c in p.d["mains"][mort].split())   # donne : la croix ne bouge pas quand le
+            bas_mort = HAUT_NOM_MORT + CARTE_H + (longue - 1) * PAS_COLONNE              # mort se vide) et vos plis gardés
+            milieu = (bas_mort + HAUTEUR_TABLE_HAUTE - BORD_PLIS) / 2                    # (l'utilisateur, 2026-11-13)
+            cy = f"{milieu:.0f}px" if mort_ou == "haut" else f"{HAUTEUR_TABLE_HAUTE - milieu:.0f}px"
         ici_ = {"haut": f"left:{cx};top:calc({cy} - {CROIX_DY}px)", "bas": f"left:{cx};top:calc({cy} + {CROIX_DY}px)",
                 "gauche": f"left:calc({cx} - {CROIX_DX}px);top:{cy}", "droite": f"left:calc({cx} + {CROIX_DX}px);top:{cy}"}
         for x, (c, r) in posees.items():
@@ -2462,11 +2472,9 @@ def page():
                 # à qui le tour : son nom et ses cartes luisent en jaune, vous comme les robots (l'utilisateur, 2026-11-11 :
                 # ni triangle, ni soulignement, ni gras)
                 etat = ""; qui = ""
-                if ou in ("haut", "bas") and ou in sur_table:   # le mort étalé en haut (en bas) : son nom sur une ligne au-dessus
-                    with ui.column().classes("items-center gap-1 w-full" + qui):   # (au-dessous), ses cartes centrées (2026-11-13)
-                        if ou == "haut": ui.html(nom_html(nom_x, etat=etat, siege=x, une_ligne=True), sanitize=False)
+                if ou in ("haut", "bas") and ou in sur_table:   # le mort étalé en haut (en bas) : ses cartes centrées sur la table,
+                    with ui.column().classes("items-center gap-1 w-full" + qui):   # son nom sur une ligne hors du tapis (nom_mort)
                         contenu(x, ou)
-                        if ou == "bas": ui.html(nom_html(nom_x, etat=etat, siege=x, une_ligne=True), sanitize=False)
                 elif ou in ("haut", "bas"):                # sur la même ligne : pas de hauteur en plus (en haut, aligné en haut)
                     with ui.row().classes(("items-start" if ou == "haut" else "items-center") + " no-wrap gap-3" + qui):
                         ui.html(nom_html(nom_x, deux_lignes=True, droite=True, etat=etat, siege=x), sanitize=False)   # Prénom / NOM, contre la main
@@ -2479,8 +2487,11 @@ def page():
                         ui.html(nom_html(nom_x, deux_lignes=True, etat=etat, siege=x), sanitize=False); contenu(x, ou)
             with ui.grid(columns="auto auto auto" if large else "1fr auto 1fr").style(tourne) \
                     .classes("items-center gap-x-2 gap-y-4"):            # les mains des côtés contre la table
+                def nom_mort(x):                         # le mort étalé en haut ou en bas : son nom hors du tapis, au-dessus
+                    ui.html(nom_html(noms.get(x, ""), siege=x, une_ligne=True), sanitize=False)   # (au-dessous) (2026-11-13)
                 with ui.column().classes("items-center").style("grid-column: 1 / 4"):
                     if "haut" not in sur_table: place(haut, "haut")
+                    else: nom_mort(haut)
                 with ui.column().classes("items-end"):
                     if "gauche" not in sur_table: place(gauche, "gauche")
                 with ui.column().classes("items-center gap-4").style(       # la table, carrée comme une vraie, à la taille de la fenêtre
@@ -2500,6 +2511,7 @@ def page():
                 with ui.column().classes("items-center").style(
                         "grid-column: 1 / 4" + ("" if "bas" in sur_table else ";margin-top:12px")):
                     if "bas" not in sur_table: place(bas, "bas")             # votre main, un peu en retrait de la table
+                    else: nom_mort(bas)
 
     def mains_fr(d, x):
         return dict(zip(carte.COULEURS, ("" if m == "-" else m for m in d["mains"][x].split())))
@@ -2653,7 +2665,9 @@ def page():
         """Va au pas k (0 : rien d'annoncé) ; une carte pas encore jouée est calculée (les robots réfléchissent)."""
         m = jeu.get("demo")
         if not m or jeu.get("demo_occupe"): return
-        k = max(0, k)
+        k = max(0, k); avant = jeu.get("pas", 0)
+        if k == avant + 1 and k <= m.n_pas() + 1:           # un pli fini reste sur la table tant qu'on en parle ; il part vers
+            await demo_ramasser(m, avant)                   # son gagnant quand on avance (l'utilisateur, 2026-11-13)
         if k > m.n_pas():                                  # une carte de plus : le robot réfléchit
             j = k - m.n_encheres - 1
             if m.fini(): return
@@ -2665,6 +2679,23 @@ def page():
                 jeu.update(demo_occupe=False, demo_msg="")
             if not ok: k = m.n_pas()
         jeu["pas"] = min(k, m.n_pas()); vue_jouer.refresh()
+
+    async def demo_ramasser(m, k):
+        """Le pas k a terminé un pli et l'on avance : la carte gagnante luit, puis les quatre cartes partent vers le joueur qui
+        l'a gagné, comme dans Jouer ; ensuite seulement la carte suivante (l'utilisateur, 2026-11-13)."""
+        c = k - m.n_encheres
+        if c <= 0 or c % 4 or c >= 52: return
+        q = m.position(c - 1)
+        if not q.plis: return
+        pli, g = q.plis[-1]
+        jeu.update(demo_occupe=True, gagnante=next(((cc, r.translate(carte.FR)) for x_, cc, r in pli if x_ == g), None))
+        try:
+            vue_jouer.refresh(); await asyncio.sleep(.35)
+            if jeu.get("pas") != k or jeu.get("demo") is not m: return
+            jeu["ramasse"] = dict(zip(jeu.get("demo_places") or (), ("haut", "gauche", "droite", "bas"))).get(g, "bas")
+            vue_jouer.refresh(); await asyncio.sleep(.45)
+        finally:
+            jeu.update(demo_occupe=False, gagnante=None, ramasse=None); vue_jouer.refresh()
 
     async def demo_pli(k):
         """▶ : jusqu'à la fin du pli en cours, une carte après l'autre (pendant les enchères : l'enchère suivante, que l'enseignant commente une à une),
@@ -2679,7 +2710,7 @@ def page():
                 if avant >= m.n_pas() and m.fini(): break
                 await demo_aller(avant + 1)
                 if jeu.get("pas", 0) == avant: break        # plus rien à jouer
-                if jeu["pas"] < cible: await asyncio.sleep(0.25 if jeu["pas"] <= m.n_encheres else 0.7)
+                # pas de pause ajoutée : elle ne sert qu'à Jouer, cartes cachées (l'utilisateur, 2026-11-13)
         finally:
             jeu["demo_suite"] = False; vue_jouer.refresh()
 
@@ -2689,9 +2720,8 @@ def page():
         cible = min(n - 1, ((k + 1) // 4 + 1) * 4 - 1)
         jeu["revoir_suite"] = True
         try:
-            while jeu.get("revoir", 0) < cible and jeu.get("mode") == "revoir":
-                jeu["revoir"] = jeu.get("revoir", 0) + 1; vue_jouer.refresh()
-                if jeu["revoir"] < cible: await asyncio.sleep(0.7)
+            if jeu.get("mode") == "revoir":              # tout le pli d'un coup : pas de pause ajoutée (2026-11-13)
+                jeu["revoir"] = cible; vue_jouer.refresh()
         finally:
             jeu["revoir_suite"] = False
 
@@ -2755,6 +2785,7 @@ def page():
         if vu and vu[:2] == (c, d["n"]) and vu[2] != bas: jeu["tourne"] = time.monotonic(); jeu["carre_avant"] = vu[2]
         jeu["demo_bas_vu"] = (c, d["n"], bas); jeu["carre_bas"] = bas
         places = (jouer.PART[bas], jouer.ROT[(jouer.ROT.index(bas) + 1) % 4], jouer.ROT[(jouer.ROT.index(bas) + 3) % 4], bas)
+        jeu["demo_places"] = places                         # pour ramasser le pli vers son gagnant (demo_ramasser)
         en_jeu = k > m.n_encheres                          # une carte au moins est jouée
         j = k - m.n_encheres - 1                           # la dernière carte montrée
         q = m.position(j) if m.decl and k >= m.n_encheres else None
@@ -2785,7 +2816,7 @@ def page():
                     table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places, m.seq[:k]), sanitize=False),
                           tour=None if k >= m.n_encheres else jouer.ROT[(jouer.ROT.index(d["donneur"]) + k) % 4])
                 else:
-                    pli = q.pos.pli or (q.plis[-1][0] if q.plis else [])
+                    pli = q.pos.pli or (q.plis[-1][0] if q.plis else [])   # un pli fini reste sur la table jusqu'au pas suivant
                     posees = {x: (cc, r_.translate(carte.FR)) for x, cc, r_ in pli}
                     bulles = {}                                 # au survol d'une carte du pli : pourquoi celle-là
                     for idx in range((j // 4) * 4, j + 1):

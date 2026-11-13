@@ -855,7 +855,7 @@ def nom_html(nom, deux_lignes=False, droite=False, etat="", siege="", une_ligne=
     ligne en gris foncé."""
     import html as h_
     tete = f"<div class='siege-lbl'>{SIEGE[siege].upper()}</div>" if siege else ""   # la place, en gras, au-dessus du nom
-    if une_ligne:                                        # le mort étalé en haut ou en bas : « OUEST William FISK » sur une ligne,
+    if une_ligne:                                        # le mort étalé en haut ou en bas : « OUEST Prénom NOM » sur une ligne,
         return (f"<div class='nom-joueur {etat}' style='text-align:center;white-space:nowrap'>"   # ses cartes centrées dessous
                 + (f"<span class='siege-lbl' style='display:inline;margin-right:6px'>{SIEGE[siege].upper()}</span>" if siege else "")
                 + f"{h_.escape(nom or '')}</div>")

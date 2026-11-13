@@ -80,8 +80,8 @@ def titre_propose(data, genre, nom_source=""):
     jour = date_longue(d) if d else ""
     propre = (s.get("titre") or nom_source or "").strip()
     if propre.lower() in NOMS_GENERIQUES: propre = ""
-    if genre in ("bws", "feuille-de-route") and not propre:
-        mot = moment(s.get("heure"))
+    if genre in ("bws", "feuille-de-route", "ffb-html") and not propre:
+        mot = moment(s.get("heure")) or s.get("moment", "")
         plus = ", ".join(x for x in (mot, f"{s['tables']} tables" if s.get("tables") else "") if x)
         return f"Tournoi du {jour}" + (f" ({plus})" if plus else "")
     if genre == "pbn" and not propre: return f"Donnes du {jour}" if jour else "Donnes PBN"
@@ -148,6 +148,12 @@ def lire_source(chemin):
         for r in T.get("Session", []):
             if isinstance(r.get("Date"), str): r["Date"] = datetime.datetime.fromisoformat(r["Date"])
         return construire(T), "feuille-de-route", ""
+    if ext in (".html", ".htm"):                          # les pages de résultats du site de la FFB (sans le nom du club)
+        import ffb_html
+        try:
+            return ffb_html.seance(chemin), "ffb-html", ""
+        except ffb_html.ErreurFFB as ex:
+            raise ValueError(str(ex))
     if ext == ".json":
         from bws_extract import extraire
         return extraire(chemin), "simulation", ""
@@ -160,9 +166,18 @@ def lire_source(chemin):
     return data, "bws", (s.get("Name") or "").strip()
 
 
+def nom_d_origine(chemin):
+    """Le nom du fichier importé, tel que source.fichier le garde ; pour les pages du site de la FFB (donne-01.html…,
+    un nom qui revient à chaque tournoi), la référence du tournoi : « ffbridge-seance-404407 »."""
+    if chemin and chemin.lower().endswith((".html", ".htm")):
+        import ffb_html
+        return ffb_html.reference(chemin) or os.path.basename(chemin)
+    return os.path.basename(chemin) if chemin else ""
+
+
 def deja_importe(chemin):
     """Le .bc.json déjà importé de ce fichier (même nom de fichier d'origine), ou None."""
-    base = os.path.basename(chemin)
+    base = nom_d_origine(chemin)
     for c in rapport.glob_seances("*" + rapport.BC):
         if entete(c).get("source", {}).get("fichier") == base: return c
     return None
@@ -189,7 +204,7 @@ def nouvel_entete(data, genre, origine=None, titre=None, texte=None):
     """Le bloc "fichier" d'un fichier qui naît : créé maintenant, avec cette version ; la source (type, nom, chemin et
     date du fichier d'origine) ; le titre dans session.titre."""
     import datetime as dt
-    src = {"type": genre, "fichier": os.path.basename(origine) if origine else "", "importe": maintenant()}
+    src = {"type": genre, "fichier": nom_d_origine(origine), "importe": maintenant()}
     if origine and os.path.isfile(origine):
         src["chemin"] = os.path.abspath(origine)
         src["date_fichier"] = dt.datetime.fromtimestamp(os.path.getmtime(origine)).isoformat(timespec="seconds")

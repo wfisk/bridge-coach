@@ -887,6 +887,7 @@ ouverture:
   - passe: { montre: "pas d'intervention" }
 
 "(3x) | (3x) passe":
+  - 3SA: { si: "arret U, levees 8+, TKCP !1-, H 13+", montre: "arrêt, huit levées de jeu (cinq perdantes), sans chicane ni singleton", nature: conclusion, source: à confirmer }   # pas avec une chicane : l'entame vient là (donne 24 du 12/11)
   - "*P": { si: "P 6+, non U est P, palier(P) 3-4, H 10-17, bonne P", montre: "6+ piques, 10–17 H", source: à confirmer }
   - "*C": { si: "C 6+, non U est C, palier(C) 3-4, H 10-17, bonne C", montre: "6+ cœurs, 10–17 H", source: à confirmer }
   - "*K": { si: "K 6+, non U est K, palier(K) 3-4, H 10-17, bonne K, K >= T", montre: "6+ carreaux, 10–17 H", source: à confirmer }
@@ -895,6 +896,8 @@ ouverture:
   - passe: { montre: "pas d'intervention au palier de 3" }
   - exemples:
       - { main: "ARDV53 95 873 D5", apres: (3C), attendu: 3P }     # donne 9 du 01/11 (224232)
+      - { main: "- RD3 AVX843 DVX5", apres: (3C), attendu: 4K }    # donne 24 du 12/11 : huit levées, mais la chicane à ♠ exclut 3SA
+      - { main: "85 RD3 ARDV43 A5", apres: (3C), attendu: 3SA }   # huit levées, arrêt, pas de chicane : 3SA
 
 # ------------------------------------------------------------------ le répondant après sa réponse au palier de 2 (11+)
 # Montrer d'abord une majeure 4e encore inconnue, puis conclure à SA ou dans le fit.

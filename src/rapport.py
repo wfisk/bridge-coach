@@ -371,7 +371,7 @@ def seances_du_dossier(dossier):
 def nom_seance(chemin):
     """Le nom de la séance dans seances/ et rapports/ : sans extension, sans date en tête, sans espace."""
     base = os.path.basename(chemin)
-    for ext in (BC, ANCIEN, ".json", ".bws", ".pdf", ".pbn"):   # .bc.json, .bws, séance simulée .json, feuille de route .pdf, .pbn
+    for ext in (BC, ANCIEN, ".json", ".bws", ".pdf", ".pbn", ".html"):   # .bc.json, .bws, séance simulée .json, feuille de route .pdf, .pbn, page FFB
         if base.lower().endswith(ext): base = base[:-len(ext)]; break
     base = re.sub(r"^\d{4}-\d\d-\d\d-", "", base)        # déjà rangée : pas de date en double
     return re.sub(r"\s+", "-", base.strip())               # pas d'espace dans les noms de fichier
@@ -521,13 +521,19 @@ def main():
         else {"champ", "parcours", "synthese", "comparaison"} | ({"noms"} if avec_noms else set())
     avec_noms = "noms" in pages and not seule
     if not args: args = [choisir_seance()]
+    if len(args) == 1 and os.path.isdir(args[0]):         # un dossier : les pages du site de la FFB qu'il contient
+        import ffb_html
+        try: args = [ffb_html.pages_du_tournoi(args[0])[1][0]]
+        except ffb_html.ErreurFFB as ex: raise SystemExit(str(ex))
     if len(args) != 1 or not os.path.isfile(args[0]):
         raise SystemExit("Usage : ./rapport.sh [séance.bws] [--sans-analyse] [--avec-noms] [--importer] [--rapports] [--analyse-seule] "
                          "[--a-revoir] [--donne=N] [--donnes=1,4,7] [--niveau=faits|coach|expert] [--pages=champ,parcours,synthese,noms,comparaison]")
 
     bws = os.path.abspath(args[0])
-    source = {".bws": "bws", ".pdf": "feuille-de-route", ".json": "simulation", ".pbn": "pbn"}.get(os.path.splitext(bws)[1].lower(), "inconnue")
-    origine = os.path.basename(bws)
+    source = {".bws": "bws", ".pdf": "feuille-de-route", ".json": "simulation", ".pbn": "pbn", ".html": "ffb-html",
+              ".htm": "ffb-html"}.get(os.path.splitext(bws)[1].lower(), "inconnue")
+    import fichiers
+    origine = fichiers.nom_d_origine(bws)
     if bws.lower().endswith(".pdf"):                    # feuille de route FFBClubNet : devient une séance JSON
         from feuille_route import convertir
         T, _ = convertir(bws)
@@ -537,7 +543,14 @@ def main():
     nom = nom_seance(bws)
     originel = os.path.abspath(args[0])                    # le fichier importé, avant toute conversion
 
-    if bws.lower().endswith(".pbn"):                       # PBN : les donnes (et une table jouée quand il la donne)
+    if source == "ffb-html":                               # les pages de résultats du site de la FFB
+        import ffb_html
+        try:
+            pret, data = None, ffb_html.seance(bws)
+        except ffb_html.ErreurFFB as ex:
+            raise SystemExit(str(ex))
+        nom = ffb_html.reference(bws) or nom
+    elif bws.lower().endswith(".pbn"):                     # PBN : les donnes (et une table jouée quand il la donne)
         from pbn import seance as seance_pbn, ErreurPBN
         try:
             pret, data = None, seance_pbn(bws)
@@ -559,7 +572,6 @@ def main():
     DATA = os.path.join(SEANCES, f"{a}-{m}"); SORTIE = os.path.join(RAPPORTS, f"{a}-{m}")
     if pret and bws.endswith(BC) and os.path.dirname(os.path.dirname(bws)) == os.path.abspath(SEANCES):
         DATA = os.path.dirname(bws); nom = os.path.basename(bws)[:-len(BC)]   # déjà rangée : elle reste où elle est, sous son nom
-    import fichiers
     if not pret:                                           # un import : le nom et le titre choisis, sinon ceux proposés
         titre = choisi.get("--titre") or (fichiers.entete(fichiers.deja_importe(originel)).get("session", {}).get("titre")
                                           if fichiers.deja_importe(originel) else None) \

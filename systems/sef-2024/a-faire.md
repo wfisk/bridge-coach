@@ -268,3 +268,10 @@ de 20 000 donnes, gardés :
    séquences, 25 gagnées, 1 perdue).
 2. `SAUT_4_CARTES` (sef2024.avance_contre) : sur un contre d'appel, pas de saut à 9–11 H dans une couleur de trois
    cartes : +30 et +27 IMP (11 et 13 séquences).
+
+## 3SA sur un barrage au palier de 3 (2026-11-13)
+Donne 24 du 12/11 (3♥ d'Est ; Sud ♠– ♥RD3 ♦AVX843 ♣DVX5) : le moteur n'avait que la couleur, le contre et passe. Ajouté,
+avant les couleurs : 3SA avec un arrêt dans leur couleur, huit levées de jeu (cinq perdantes, `levees 8+`), 13+ H, sans
+chicane ni singleton (l'entame viendrait là : l'avis de l'utilisateur sur cette donne, où la chicane à ♠ exclut 3SA ;
+Sud y dit toujours 4♦). +68 et +63 IMP sur deux lots de 20 000 donnes (18 et 21 séquences changées). Gardé.
+À voir : le saut à 4 en mineure dès 10 H paraît léger (la donne 24 fait 4♦ −3 ; passer était le mieux).

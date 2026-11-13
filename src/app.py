@@ -44,11 +44,11 @@ PAGES_EN_PLUS = (("noms", "Liste des joueurs", "les noms complets, en première 
 PAGES_DEFAUT = ["champ", "parcours", "synthese", "comparaison"]
 TYPES_FICHIERS = ("Tournois (*.bws;*.pdf;*.pbn;*.json)", "Tous les fichiers (*.*)")
 TYPES_SEANCES = ("Séances Bridge Coach (*.bc.json;*.json)", "Tous les fichiers (*.*)")
-TYPES_BWS = ("Bridgemate ou feuille de route (*.bws;*.pdf)", "Tous les fichiers (*.*)")
+TYPES_BWS = ("Bridgemate feuille de route ou pages du site de la FFB (*.bws;*.pdf;*.html)", "Tous les fichiers (*.*)")
 TYPES_PBN = ("PBN (*.pbn)", "Tous les fichiers (*.*)")
 TYPES_EXPERT = ("Analyse expert (*.json)", "Tous les fichiers (*.*)")   # pywebview : lettres et espaces seulement, pas d'apostrophe
 SOURCES = {"bws": "Bridgemate", "feuille-de-route": "Feuille de route", "entrainement": "Entraînement",
-           "saisie": "Donnes saisies", "simulation": "Simulation"}
+           "saisie": "Donnes saisies", "simulation": "Simulation", "ffb-html": "Site de la FFB"}
 AIDE = os.path.join(rapport.RACINE, "help", "index.html")
 IMAGES_AIDE = os.path.join(rapport.RACINE, "help", "images")   # les captures d'écran de l'aide, servies sous /aide-images/
 GENERIQUE = ("Le rapport n'a pas pu être créé. Le détail est dans le fichier derniere-erreur.txt du dossier des rapports : "
@@ -2475,13 +2475,17 @@ def page():
                 if ou in ("haut", "bas") and ou in sur_table:   # le mort étalé en haut (en bas) : ses cartes centrées sur la table,
                     with ui.column().classes("items-center gap-1 w-full" + qui):   # son nom sur une ligne hors du tapis (nom_mort)
                         contenu(x, ou)
+                elif ou == "haut":                        # en haut : les cartes, puis « SUD Prénom NOM » sur une ligne dessous
+                    with ui.column().classes("items-center gap-1" + qui):   # (l'utilisateur, 2026-11-13)
+                        contenu(x, ou)
+                        ui.html(nom_html(nom_x, etat=etat, siege=x, une_ligne=True), sanitize=False)
                 elif ou in ("haut", "bas"):                # sur la même ligne : pas de hauteur en plus (en haut, aligné en haut)
                     with ui.row().classes(("items-start" if ou == "haut" else "items-center") + " no-wrap gap-3" + qui):
                         ui.html(nom_html(nom_x, deux_lignes=True, droite=True, etat=etat, siege=x), sanitize=False)   # Prénom / NOM, contre la main
                         contenu(x, ou)
-                elif ou in sur_table:                    # le mort étalé sur un côté de la table : son nom dessous, loin du pli
-                    with ui.column().classes("items-start gap-1" + qui):
-                        contenu(x, ou); ui.html(nom_html(nom_x, deux_lignes=True, etat=etat, siege=x), sanitize=False)
+                elif ou in sur_table:                    # le mort étalé sur un côté de la table : son nom hors du tapis, dans
+                    with ui.column().classes("items-start gap-1" + qui):   # la marge de ce côté (nom_mort, 2026-11-13)
+                        contenu(x, ou)
                 else:                                    # au-dessus de la main, aligné à gauche sur ses cartes
                     with ui.column().classes("items-start gap-1" + qui):
                         ui.html(nom_html(nom_x, deux_lignes=True, etat=etat, siege=x), sanitize=False); contenu(x, ou)
@@ -2494,6 +2498,7 @@ def page():
                     else: nom_mort(haut)
                 with ui.column().classes("items-end"):
                     if "gauche" not in sur_table: place(gauche, "gauche")
+                    else: ui.html(nom_html(noms.get(gauche, ""), deux_lignes=True, droite=True, siege=gauche), sanitize=False)
                 with ui.column().classes("items-center gap-4").style(       # la table, carrée comme une vraie, à la taille de la fenêtre
                         f"{forme}background:#f3efe7;border:1px solid #e3dccf;border-radius:28px;padding:12px 16px;"
                         "justify-content:space-between;position:relative"):
@@ -2508,6 +2513,7 @@ def page():
                     if "bas" in sur_table: place(bas, "bas")
                 with ui.column().classes("items-start"):
                     if "droite" not in sur_table: place(droite, "droite")
+                    else: ui.html(nom_html(noms.get(droite, ""), deux_lignes=True, siege=droite), sanitize=False)
                 with ui.column().classes("items-center").style(
                         "grid-column: 1 / 4" + ("" if "bas" in sur_table else ";margin-top:12px")):
                     if "bas" not in sur_table: place(bas, "bas")             # votre main, un peu en retrait de la table
@@ -2944,10 +2950,6 @@ def page():
         barres). Les cartes grandissent avec la place (l'utilisateur, 2026-11-11)."""
         with ui.row().classes("w-full gap-x-4 gap-y-1 items-center").style(   # remontée : le titre à la même distance du haut
                 "margin-bottom:-8px;white-space:nowrap"):   # pas de marge négative en haut : le panneau rognait le carré
-            if lire_etat().get("liste_cachee"):            # la liste cachée : un petit signe discret au bord gauche pour la rouvrir
-                ui.button(icon="keyboard_double_arrow_right", on_click=lambda: basculer_liste(False)) \
-                    .props("flat dense round size=sm color=grey-6") \
-                    .style(f"position:fixed;left:4px;top:{HAUTEUR_BARRE + 10}px;z-index:5").tooltip("Montrer la liste des donnes")
             # le carré tourne comme la table : la place du bas en bas ; quand la table fait son demi-tour, il le fait avec elle
             angle = {"S": 0, "O": -90, "N": 180, "E": 90}
             bas_c = jeu.get("carre_bas") or "S"
@@ -3639,10 +3641,6 @@ def page():
         if not data: return
         a_finir = {f"d{d['n']}" for d in data["donnes"] if d.get("a_completer")}
         es = entrees_de(data); haut = [x for x in es if not x[0].startswith("d")]
-        if sur_jouer():                                   # cacher la liste, pour donner la place à la table
-            with ui.row().classes("w-full justify-end -mb-2"):
-                ui.button(icon="keyboard_double_arrow_left", on_click=lambda: basculer_liste(True)) \
-                    .props("flat dense round size=sm color=grey-7").tooltip("Cacher la liste des donnes")
         for k, (cle, nom) in enumerate(es):
             if cle in a_finir: nom += " · à compléter"
             choisie = cle == entree_effective(data)            # comme la barre de Claude : un fond un peu plus soutenu
@@ -3655,23 +3653,30 @@ def page():
             ui.button("Ajouter une donne", icon="add", on_click=lambda: ajouter()).props("flat no-caps align=left dense no-wrap") \
                 .classes("entree-barre mt-2 text-primary")
 
-    def basculer_liste(cachee):
-        """La liste des donnes de Jouer, cachée ou montrée (gardé dans etat.json : d'une donne à l'autre, d'une fois sur
-        l'autre ; l'utilisateur, 2026-11-11)."""
+    def basculer_liste(cachee=None):
+        """La barre de gauche, cachée ou montrée, sur toutes les pages, par le bouton tout à gauche de la barre de menus
+        (gardé dans etat.json, d'une fois sur l'autre ; l'utilisateur, 2026-11-11, puis 2026-11-13 : le bouton ne bouge
+        plus et ne prend plus de ligne dans la barre)."""
+        if cachee is None: cachee = not lire_etat().get("liste_cachee")
         ecrire_etat(liste_cachee=cachee); montrer_barre(); vue_jouer.refresh()
 
     def montrer_barre():
         """La barre latérale : sur les onglets Donnes, Jouer et Analyse quand une séance est ouverte ; toujours sur
         Rapports, Réglages et l'aide."""
+        cachee = bool(lire_etat().get("liste_cachee"))
+        bouton_barre.props(f"icon={'menu' if cachee else 'menu_open'}")   # le bouton de la barre de menus suit l'état
+        bouton_barre._props["title"] = "Montrer la barre de gauche" if cachee else "Cacher la barre de gauche"
+        bouton_barre.update()
         if plein["on"] and sur_jouer(): tiroir.set_value(False); return   # Jouer, table seule
-        if sur_jouer() and str(vue.get("entree") or "").startswith("d") and lire_etat().get("liste_cachee"):
-            tiroir.set_value(False); return                # Jouer, une donne : la liste cachée par vous (« « » en haut de la liste)
+        if cachee: tiroir.set_value(False); return          # cachée par vous (le bouton tout à gauche de la barre de menus)
         tiroir.set_value(sur_aide() or bool(onglet_a_pages()) or (onglets.value in (o_donnes, "Donnes", o_jouer, "Jouer", o_analyse, "Analyse")
                                         and lire_seance(choix["chemin"]) is not None))   # l'aide a toujours sa barre
     vu = {"fini": None}; vu_d = {"fini": None}; vu_i = {"fini": None}
 
     with ui.header(elevated=False).classes("bg-white text-primary px-2 py-0 border-b border-gray-300") as entete:   # la barre de menus
         with ui.row().classes("w-full items-center justify-between no-wrap"):
+            bouton_barre = ui.button(icon="menu_open", on_click=lambda: basculer_liste()) \
+                .props("flat dense round color=grey-7").classes("mr-1")   # montrer / cacher la barre de gauche, à sa place fixe
             with ui.tabs().props("no-caps dense inline-label align=left active-color=primary indicator-color=primary").classes("text-gray-700 grow") as onglets:   # les onglets, dans la barre
                 o_fichier = ui.tab("Fichier")                     # une page, comme Rapports et Réglages : sa barre à gauche
                 o_donnes = ui.tab("Donnes")
@@ -4303,9 +4308,11 @@ def page():
                 ui.button(f"{date_lisible(b)}  –  {os.path.basename(b)}{fait}", on_click=lambda b=b: preparer_import(b)) \
                     .props("flat align=left no-caps").classes("w-full")
         liste_i()
-        ui.label("Ou un tournoi ailleurs sur l'ordinateur : un .bws, ou la feuille de route .pdf de FFBClubNet "
-                 "(les mains et les résultats, sans les enchères).").classes("text-base mt-2")
-        envoi_i = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".bws,.pdf"').classes("hidden")
+        ui.label("Ou un tournoi ailleurs sur l'ordinateur : un .bws, la feuille de route .pdf de FFBClubNet, ou les pages "
+                 "du site de la FFB enregistrées depuis le navigateur (choisissez une page « Donne n° », par exemple "
+                 "donne-01.html : les autres pages du même tournoi, dans le même dossier, sont lues avec elle). Ces deux "
+                 "dernières donnent les mains et les résultats, sans les enchères.").classes("text-base mt-2")
+        envoi_i = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".bws,.pdf,.html,.htm"').classes("hidden")
         ui.button("Choisir un fichier…", icon="folder_open", on_click=lambda: parcourir_i(TYPES_BWS, envoi_i)).props("outline").classes("self-start")
 
     with pages_ui["nouveau"], ui.column().classes("w-full gap-2") as sections_n["pbn"]:   # Nouveau, depuis un fichier PBN

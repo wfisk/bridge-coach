@@ -523,6 +523,9 @@ def cote_ouvreur(m, s, hist, infos, etat, ouvreur):
     return placer(m, s, nos or [(PART[s], dp)], infos, dernier, adverse=camp(etat["par"]) != camp(s))
 
 
+RESERVE_SA = True   # pas de points empruntés en réveil quand ils s'arrêtent à SA après un échange (2026-11-13)
+
+
 def cote_defense(m, s, hist, infos, etat, seq):
     dernier = etat["dernier"]
     nos = [(x, a) for x, a in hist if camp(x) == camp(s)]
@@ -533,7 +536,10 @@ def cote_defense(m, s, hist, infos, etat, seq):
         if not adverse: return Appel("passe", "")
         reveil = seq[-2:] == ["passe", "passe"]
         ouv = next(a.enchere for x, a in hist if camp(x) != camp(s) and a.enchere not in DOUBLES)
-        return S.intervention(m, ouv, reveil, dernier)
+        # ils se sont arrêtés à SA après un échange (1♣ – 1♠ – 1SA) : chacun a limité sa main, le partenaire n'a pas
+        # les points qu'on lui emprunte en réveil (donne 2 du 13/11 : contre avec 9 H, 3♥X −800)
+        emprunt = not (RESERVE_SA and reveil and len(eux) >= 2 and eux[-1] == "SA")
+        return S.intervention(m, ouv, reveil, dernier, emprunt)
     if not mes:                                           # le partenaire est intervenu : avancer
         dp = du_part[-1]
         i = max(j for j, (x, _) in enumerate(hist) if x == PART[s])

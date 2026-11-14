@@ -239,9 +239,10 @@ def bonne_couleur(m, c):
     """Couleur 5e+ avec au moins deux des honneurs A R D V X (ou 6e+)."""
     return m.L[c] >= 6 or (m.L[c] >= 5 and sum(x in "ARDVX" for x in m.cartes[c]) >= 2)
 
-def intervention(m, ouv, reveil, dernier):
-    """Première action du camp adverse sur une ouverture (ouv = enchère de l'ouvreur, dernier = plus haute)."""
-    h = m.hcp + (3 if reveil else 0)                       # en réveil : on « emprunte » 3 points
+def intervention(m, ouv, reveil, dernier, emprunt=True):
+    """Première action du camp adverse sur une ouverture (ouv = enchère de l'ouvreur, dernier = plus haute).
+    emprunt : en réveil, compter 3 points du partenaire (pas quand ils se sont arrêtés à SA après un échange)."""
+    h = m.hcp + (3 if reveil and emprunt else 0)           # en réveil : on « emprunte » 3 points
     oc = ouv[1:]
     palier = int(dernier[0])
     if palier >= 4 or (reveil and palier >= 3):            # pas d'intervention sur une manche

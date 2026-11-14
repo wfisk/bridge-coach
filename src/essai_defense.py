@@ -25,6 +25,8 @@ VARIANTES["menee"] = dict(VARIANTES["base"], SEQUENCE=True)          # mener le 
 VARIANTES["lecture"] = dict(VARIANTES["base"], **{"modele.LIRE_HONNEURS": True})   # lire les honneurs fournis, seulement
 VARIANTES["difficile"] = dict(VARIANTES["base"], MONDES_DIFFICILE=48)
 VARIANTES["coupe"] = dict(VARIANTES["base"], PREF_COUPE=True)
+VARIANTES["sansregles"] = dict(VARIANTES["base"], REGLES_SIGNAL=False)  # sans les règles générales de l'appel (2026-11-14)
+VARIANTES["marge25"] = dict(VARIANTES["base"], MARGE_CONTINUER=0.25)   # l'ancienne marge pour « continuez » (avant le 2026-11-14)
 VARIANTES["tout"] = dict(SIGNAUX=True, MODELE=True, HABITUDES=True, SEQUENCE=True, PREF_COUPE=True,
                          MONDES_DIFFICILE=48, **{"modele.LIRE_HONNEURS": True})
 

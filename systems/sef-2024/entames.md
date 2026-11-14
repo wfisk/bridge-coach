@@ -90,11 +90,26 @@ règles).
 Les robots signalent et lisent avec les mêmes règles (src/signaux.py) : un défenseur lit son partenaire comme il
 aurait signalé lui-même. Un signal ne se donne que parmi des cartes également bonnes : il ne coûte jamais de levée.
 
+**Quel sens a cette carte ?** La situation le dit, pas la carte (le coach l'explique ainsi dans l'Indice et dans
+Revoir, carte.explication_signal, 2026-11-14) :
+
+| La situation | Le sens de la petite carte |
+|---|---|
+| Le partenaire a mené la couleur, je fournis pour la première fois | **Appel pair-impair** (impaire : continuez ; paire : changez, et sa hauteur dit pour quelle couleur) |
+| Le déclarant (ou le mort) a mené la couleur | **Parité** (le nombre de cartes) |
+| Je n'ai plus la couleur menée et je ne coupe pas | **Préférence** (défausse) |
+| Je mène une couleur que le partenaire coupe | **Préférence** pour le retour (écrit, éteint) |
+| La couleur d'atout, ou un honneur | **Rien** |
+
+
 - **Sur l'entame (ou la couleur menée) du partenaire, la première carte : pair-impair.** Une carte impaire demande
   de continuer la couleur. Une carte paire demande de changer ; sa hauteur dit pour quelle couleur : paire haute
   (7 ou plus) la plus chère des deux autres couleurs, paire basse (6 ou moins) la moins chère. À la couleur, les
   deux autres sont les couleurs hors atout autres que celle menée ; à sans-atout, la plus chère et la moins chère
-  des trois autres.
+  des trois autres. **« Continuez » seulement quand rejouer la couleur est vraiment le mieux** (carte.MARGE_CONTINUER,
+  2026-11-14) : quand le mort garde la couleur (son As sur le Roi du partenaire), quand elle ne rapporte plus rien, la
+  carte paire demande le changement. Donne 5 du 13/11 : ♠V de Sud, ♠D du mort (AD), Nord ♠8743 fournit le ♠4 (paire
+  basse : ♦), pas le ♠3.
 - **En défausse : préférence de couleur.** On défausse dans une couleur qu'on ne veut pas ; une carte haute (7 ou
   plus) demande la plus chère des deux autres couleurs (hors atout), une basse (6 ou moins) la moins chère. À
   sans-atout, les deux autres sont celles qui ne sont ni la défausse ni la couleur menée.

@@ -32,6 +32,9 @@ SEQUENCE = True                                           # en tête (hors entam
                                                           # (0,000 ± 0,014), gardé : un partenaire humain le lit comme à la table
 MONDES_DIFFICILE = 16                                     # > MONDES : sur une carte difficile, plus de mondes ; 48 essayé (600 donnes,
                                                           # essai_defense.py, 2026-11-11) : −0,005 levée (± 0,030), plus lent : non gardé
+REGLES_SIGNAL = True                                      # les règles générales de l'appel (regle_signal) passent avant les donnes imaginées
+MARGE_CONTINUER = 0.05                                    # « continuez » (impaire) seulement quand rejouer la couleur est vraiment le mieux : avec 0,25, une égalité
+                                                           # approximative disait « continuez » quand changer valait mieux (donne 5 du 13/11, 2026-11-14)
 PREF_COUPE = False                                        # en donnant une coupe, la hauteur demande le retour : rare, −0,005 (± 0,004) : non gardé
 MODELE_DECLARANT = False                                  # vrai : la réserve du déclarant simulé vient aussi du modèle ;
                                                           # « suivi » : renouvelée à chaque carte par le modèle mis à jour
@@ -107,6 +110,8 @@ class Partie:
                  ((k, v) for k, v in cv.items() if k != "n") if v * 3 >= cv.get("n", 99)]   # au moins un tiers des donnes
         return dict(n=len(self.pos.jouees), siege=s, carte=carte_fr(*x), humain=humain, plan=plan, coups=coups,
                     signal=(ch.get("signal") if ch and ch.get("role") == "defense" else None),
+                    voeu=(ch.get("voeu") if ch and ch.get("role") == "defense" else None), den=self.den,
+                    regle=(ch.get("regle") if ch and ch.get("role") == "defense" else None),
                     suit=(ch.get("suit") if ch and ch.get("role") == "defense" else None),   # la demande du partenaire suivie
                     habitude=(ch.get("habitude") if ch and ch.get("role") == "defense" else None),
                     role="declarant" if self.camp(s) else "defense",
@@ -299,8 +304,11 @@ class Partie:
                 sig = self.signal_coupe(s, memes)
                 if sig: meilleure, self.dernier["signal"] = sig
         elif SIGNAUX and avec_signal and self.pos.pli:   # entre cartes aussi bonnes, celle qui renseigne le partenaire
+            self._voeu_signal = None
             sig = self.signal(s, egales)
-            if sig: meilleure, self.dernier["signal"] = sig
+            if sig:
+                meilleure, self.dernier["signal"] = sig
+                if self._voeu_signal: self.dernier["voeu"] = self._voeu_signal   # (couleur menée, {couleur: levées})
         # difficile : l'application réfléchit plus longtemps ; si toutes chutent aussi souvent, rien ne se décide ici
         self.difficile = self._difficile(leg, chute, meilleure, n)
         return meilleure
@@ -348,6 +356,29 @@ class Partie:
             for c, t in meilleur.items(): somme[c] += t; n[c] += 1
         return {c: somme[c] / n[c] for c in COULEURS if n[c]}
 
+    def regle_signal(self, s, c0):
+        """Les règles générales de l'appel sur l'entame du partenaire, comme on les enseigne (l'utilisateur, 2026-11-14) :
+        (continuer : True, False ou None si la règle n'impose rien, la phrase qui l'explique) ou None. Le mort tient la
+        couleur (sa carte maîtresse) ou la coupera au tour suivant : rejouer ne sert à rien, la carte paire demande le
+        changement. Le partenaire a mené l'As ou le Roi et l'on tient l'honneur suivant, ou un doubleton qu'on coupera au
+        troisième tour : la phrase de « continuez » (les donnes imaginées le confirment)."""
+        mort = self.mort(); mien = self.pos.reste[s].get(c0, ""); au_mort = self.pos.reste[mort].get(c0, "")
+        vivantes = {r for x in ROT for r in self.pos.reste[x].get(c0, "")}
+        dehors = sorted(vivantes - set(mien), key=RANGS.index)
+        fr = lambda r: r.translate(FR)
+        if self.den != "SA" and not au_mort and self.pos.reste[mort].get(self.den) and s != mort:
+            return False, f"le mort n'a plus de {c0} : il couperait le tour suivant"
+        if dehors and dehors[0] in au_mort and len(au_mort) >= 1:
+            return False, f"le mort garde le {c0}{fr(dehors[0])}, maître : rejouer {c0} ne ferait pas de levée"
+        mene = self.pos.pli[0][2]
+        if mene in "AK":
+            suivant = "K" if mene == "A" else "Q"
+            if suivant in mien:
+                return None, f"vous avez le {c0}{fr(suivant)} sous son {c0}{fr(mene)} : la couleur continue"
+        if self.den != "SA" and len(mien) == 2 and self.pos.reste[s].get(self.den):
+            return None, f"un doubleton : vous couperez le troisième tour"
+        return None
+
     def signal(self, s, egales):
         """(carte, sens) : le signal du défenseur s parmi des cartes également bonnes, ou None (signaux.py, entames.md).
         Sur la couleur du partenaire, la première fois : pair-impair (impaire = continuez ; paire = changez, haute ou
@@ -369,7 +400,11 @@ class Partie:
                 v = self.voeu(s)
                 if c0 not in v: return None
                 deux = signaux.autres(self.den, c0, c0)
-                continuer = v[c0] >= max([v[c] for c in v if c != c0] or [0]) - 0.25
+                continuer = v[c0] >= max([v[c] for c in v if c != c0] or [0]) - MARGE_CONTINUER
+                regle = self.regle_signal(s, c0) if REGLES_SIGNAL else None
+                if regle and regle[0] is not None: continuer = regle[0]
+                if regle: self.dernier["regle"] = regle[1]
+                self._voeu_signal = (c0, v)                 # pour l'expliquer (explication_signal)
                 pref = max(deux, key=lambda c: v.get(c, -1)) if deux else None
                 choix = signaux.carte_attitude(rangs, continuer, pref, deux)
             elif self.camp(meneur):                     # le déclarant mène : la parité
@@ -381,6 +416,7 @@ class Partie:
             par = {}
             for c, r in egales: par.setdefault(c, []).append(r)
             v = self.voeu(s)
+            self._voeu_signal = (c0, v)
             ordre = sorted(COULEURS, key=lambda c: -v.get(c, -1))
             choix = signaux.carte_defausse(par, ordre, self.den, c0)
             return choix
@@ -587,6 +623,52 @@ def _texte_pensee(pz, decl):
     return dict(titre=titre, raison=raison, croyance=list(pz.get("croyance") or []), plan=pz.get("plan") or "")
 
 
+def explication_signal(sig, c, voeu=None, den=None, regle=None):
+    """Pourquoi cette petite carte, comme un professeur le dirait (l'utilisateur, 2026-11-14) : quelle sorte de signal
+    la situation demande (l'appel pair-impair sur l'entame du partenaire, la parité quand le déclarant mène, la
+    préférence en défausse ou en donnant une coupe), ce que le défenseur veut dire, et pourquoi (voeu : (couleur menée,
+    {couleur: levées de la défense si le partenaire la joue}), lu dans ses donnes imaginées). Règles : signaux.py."""
+    import signaux
+    co = c[0]
+    debut = f"Ses petites cartes à {co} se valent : la carte sert à renseigner le partenaire. "
+    def chere(x, deux): return "la plus chère" if deux and x == deux[0] else "la moins chère"
+    if sig == "impair" or sig == "pair" or sig.startswith("pair "):
+        t = debut + "Sur la couleur menée par le partenaire, la première carte est un appel pair-impair. "
+        mieux = None
+        if voeu and voeu[1]:
+            v = voeu[1]; mieux = max(v, key=v.get)
+        maj = lambda x: x[0].upper() + x[1:]
+        if sig == "impair":
+            return t + (f"{maj(regle)} : " if regle else f"Rejouer {co} est ce qui rapporte le plus à la défense : ") \
+                + "une carte impaire dit « continuez »."
+        deux = signaux.autres(den, co, co)
+        if regle: pourquoi = maj(regle) + (f" ; un retour à {mieux} vaut mieux. " if mieux and mieux != co else ". ")
+        else: pourquoi = (f"Rejouer {co} ne rapporte rien de plus : un retour à {mieux} vaut mieux. " if mieux and mieux != co
+                          else f"Rejouer {co} ne rapporte rien de plus. ")
+        if sig == "pair": return t + pourquoi + "Une carte paire dit « changez »."
+        h, x = sig[5:].split(":")
+        return (t + pourquoi + f"Une carte paire dit « changez » ; {'haute (7 ou plus)' if h == 'haut' else 'basse (6 ou moins)'}, elle "
+                f"demande {chere(x, deux)} des deux autres couleurs ({deux[0]} ou {deux[-1]}) : {x}.")
+    if sig.startswith("parité"):
+        pair_ = sig.endswith("paire")
+        return (debut + f"Le déclarant mène {co} : la carte donne la parité, pour que le partenaire compte la main. "
+                + ("Avec un nombre pair de cartes, la grosse d'abord." if pair_ else
+                   "Avec un nombre impair de cartes, la plus petite."))
+    if sig.startswith("défausse"):
+        m = sig.split(":")
+        t = (f"Il défausse : c'est un appel de préférence. Il jette dans la couleur dont il ne veut pas ({m[1]})")
+        if len(m) == 3:
+            deux = signaux.autres(den, m[1], None) if den in COULEURS else None
+            h = "haute" if m[0].endswith("haute") else "basse"
+            return t + f" ; {h} ({'7 ou plus' if h == 'haute' else '6 ou moins'}), la carte demande {chere(m[2], deux) if deux else 'une des deux autres couleurs'} : {m[2]}."
+        return t + "."
+    if sig.startswith("coupe "):
+        h, x = sig[6:].split(":")
+        return (f"Il donne une coupe à son partenaire : la hauteur de la carte demande le retour ; "
+                f"{'haute' if h == 'haute' else 'basse'}, elle demande {x}.")
+    return f"Ses cartes se valent : il prend celle qui signale ({sens_signal(sig, co)})."
+
+
 def justification(pz, decl):
     """En une phrase simple, pourquoi cette carte plutôt qu'une autre (la Démo, au survol ; l'utilisateur, 2026-11-11) :
     sans « mondes » ni croyances. pz : Partie.pensee d'un robot."""
@@ -611,7 +693,7 @@ def justification(pz, decl):
             phrase = "Ses cartes se valent : il joue la plus petite."
     sig = pz.get("signal")
     if sig and (not phrase or "se valent" in phrase):
-        phrase = f"Ses cartes se valent : il prend celle qui signale ({sens_signal(sig, c[0])})."
+        phrase = explication_signal(sig, c, pz.get("voeu"), pz.get("den"), pz.get("regle"))
     elif pz.get("habitude") and (not phrase or "se valent" in phrase):
         phrase = "Ses cartes se valent ; l'habitude : " + pz["habitude"][0].lower() + pz["habitude"][1:]
     elif pz.get("suit") and (not phrase or "se valent" in phrase):

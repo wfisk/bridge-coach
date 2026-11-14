@@ -275,3 +275,21 @@ avant les couleurs : 3SA avec un arrêt dans leur couleur, huit levées de jeu (
 chicane ni singleton (l'entame viendrait là : l'avis de l'utilisateur sur cette donne, où la chicane à ♠ exclut 3SA ;
 Sud y dit toujours 4♦). +68 et +63 IMP sur deux lots de 20 000 donnes (18 et 21 séquences changées). Gardé.
 À voir : le saut à 4 en mineure dès 10 H paraît léger (la donne 24 fait 4♦ −3 ; passer était le mieux).
+
+## Pas de réveil emprunté quand ils s'arrêtent à SA après un échange (2026-11-13)
+Donne 2 du 13/11 : 1♣ – 1♠ – 1SA – passe – passe ; Sud (9 H, ♠R973 ♥X87 ♦A864 ♣D2) contrait : le code de
+l'intervention sur l'ouverture « empruntait » 3 points en réveil (9 → 12 H, court à ♣ : contre d'appel). Mais l'ouvreur a
+limité sa main (12–14) et le répondant la sienne (6–10) : le partenaire n'a pas ces points. Fin : 3♥X par Nord, −800.
+`RESERVE_SA` (encheres.cote_defense) : pas d'emprunt quand leur dernière enchère est SA après deux enchères ou plus de
+leur camp. +357 et +511 IMP sur deux lots de 20 000 donnes (232 et 266 séquences, 262 gagnées, 180 perdues). Gardé.
+À voir : l'ouvreur qui dit 2SA « invitation » sur ce contre alors que son partenaire a déjà passé 1SA.
+
+## La majeure 4e avant le fit mineur, sur un saut au palier de 3 (2026-11-14)
+Donne 7 du 13/11 : 1♦ – (3♣) ; Nord (♠RD93 ♥AD9 ♦8653 ♣RD, 16 H) disait 3SA (« fit mineur, arrêt »), 8 levées au double
+mort, alors que 4♠ en fait 10 (cinq tables sur six, et l'expert). Le contre (Spoutnik) venait après le fit mineur et
+s'éteignait au palier de 3. Première version, le contre dès 10 H avant le fit mineur à tous les paliers : −10 et −20 IMP
+sur deux lots de 20 000 donnes (117 et 123 séquences) : au palier de 1 il mène à de mauvais 3SA, et le contreur ne
+reparle pas après la réponse du partenaire (1♦ (2♥) contre – 3♦ passe avec 13+ H). Gardée, la version étroite : sur un
+saut au palier de 3 (les piques au palier de 3), 13+ H et une majeure 4e libre, le contre d'abord : +47 et +12 IMP
+(18 et 7 séquences, 12 gagnées, 5 perdues).
+À voir : le contreur Spoutnik qui a les points de la manche doit reparler après la réponse minimum du partenaire.

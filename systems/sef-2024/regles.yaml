@@ -606,6 +606,7 @@ ouverture:
 "1N (2x) | 1N (3x)":
   - 2SA: { si: "reg, H 11-12, arret Y, non majeure libre", montre: "11–12 H, régulier, arrêt : invitation", nature: invite }
   - 3SA: { si: "reg, H 13+, arret Y, non majeure libre", montre: "13+ H, régulier, arrêt : manche", nature: conclusion }
+  - contre: { si: "H 13+, palier(P) 3, majeure libre", montre: "Spoutnik : 13+ H, 4 cartes dans la majeure libre, sur un saut au palier de 3 (la majeure avant le fit mineur)", nature: spoutnik, alerte: oui }   # donne 7 du 13/11 (2026-11-14)
   - 3SA: { si: "U 4+, H 13+, arret Y", montre: "fit mineur, 13+ H, arrêt : manche", nature: conclusion }
   - "*Y": { si: "U 4+, H 12+, non arret Y, palier(Y) 3-, non majeure libre", montre: "cue-bid : fit mineur, 12+ H, forcing de manche, sans arrêt", nature: cue, atout: U }
   - "*U+1": { si: "U 4+, HLD 11+, palier(U) 2-", montre: "fit, 11+ points : invitation", nature: invite }
@@ -622,6 +623,8 @@ ouverture:
   - 2SA: { si: "H 11-12, arret Y", montre: "11–12 H, arrêt : invitation", nature: invite }
   - 3SA: { si: "H 13+, arret Y", montre: "13+ H, arrêt : manche", nature: conclusion }
   - passe: { montre: "rien d'adapté après l'intervention" }
+  - exemples:
+      - { main: "RD93 AD9 8653 RD", apres: 1K (3T), attendu: contre }   # donne 7 du 13/11 : les piques avant le fit carreau
 
 "1SA (2x)":
   - passe: { si: "H 5-", montre: "moins de 6 H" }

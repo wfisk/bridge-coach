@@ -364,11 +364,32 @@ def reponse_concurrence(m, ouv, oc, dernier):
                              nature="invite" if niv == 2 else "conclusion" if niv == 3 else "limite")
     return Appel("passe", "rien d'adapté après l'intervention")
 
+BICOLORE_CONCURRENCE = 16   # l'ouvreur, partenaire muet, nomme une 2e couleur 4e au palier de 2 dès ces HL (0 : jamais ; donne 22 du 13/11)
+
+
+def soutien_bicolore(m, c2, dernier):
+    """Le partenaire de l'ouvreur, qui a passé, soutient sa 2e couleur (bicolore 16+ en concurrence) : forme comprise."""
+    if m.L[c2] < 4: return None
+    dh = m.dh(c2) + max(0, m.L[c2] - 4); n = plus_bas(c2, dernier)   # chaque atout au-delà du 4e : un point
+    if dh >= 9 and rang(e(MANCHE[c2], c2)) > rang(dernier):
+        return Appel(e(MANCHE[c2], c2), f"{m.L[c2]} cartes à {c2}, {dh} DH face à un bicolore 16+ : manche",
+                     (9, 12), {c2: 4}, nature="conclusion")
+    if dh >= 6 and n <= 3:
+        return Appel(e(n, c2), f"{m.L[c2]} cartes à {c2}, {dh} DH : invitation", (6, 8), {c2: 4}, nature="invite")
+    return None
+
+
 def relance_ouvreur(m, ouv, oc, dernier):
     """L'ouvreur reparle alors que le partenaire a passé (intervention ou contre adverse)."""
     h = m.hl; c = ouv[1:]
     if c in MAJEURES and m.L[c] >= 7 and h >= 19 and rang(e(4, c)) > rang(dernier):
         return Appel(e(4, c), f"{m.L[c]} cartes à {c}, 19+ HL : manche", (19, 21), {c: 7}, nature="conclusion")
+    if BICOLORE_CONCURRENCE and c != "SA" and m.L[c] >= 5 and h >= BICOLORE_CONCURRENCE:
+        for c2 in sorted(COULEURS, key=lambda x: (-m.L[x], -rang(e(1, x)))):
+            if c2 not in (c, oc) and m.L[c2] >= 4 and plus_bas(c2, dernier) <= 2:
+                return Appel(e(plus_bas(c2, dernier), c2), f"{m.L[c]} cartes à {c}, {m.L[c2]} à {c2} : bicolore, "
+                             f"{BICOLORE_CONCURRENCE}+ HL", (BICOLORE_CONCURRENCE, 21), {c: 5, c2: 4},
+                             nature="bicolore", atout=c2)
     if c != "SA" and m.L[c] >= 6:
         n = plus_bas(c, dernier)
         if n <= 2 or (n == 3 and h >= 16): return Appel(e(n, c), f"{m.L[c]} cartes à {c}, répète en concurrence", L={c: 6})

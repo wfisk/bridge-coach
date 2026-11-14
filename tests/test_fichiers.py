@@ -52,15 +52,15 @@ open(os.path.join(dossier, "2026-11-05-tournoi-jeudi-jeu.json"), "w").write("{}"
 os.makedirs(os.path.join(dossier, "versions"))
 open(os.path.join(dossier, "versions", "2026-11-05-tournoi-jeudi-v-2026-11-06-101010.bc.json"), "w").write("{}")
 r = os.path.join(rapport.RAPPORTS, "2026-11"); os.makedirs(r)
-for n in ("analyse-AB-CD", "comparaison", "analyse 2", "donnes-3-17-5", "releve-AB-CD", "releve-donne-12"):
+for n in ("analyse-AB-CD", "comparaison", "analyse 2", "donnes-3-17-5", "releve-AB-CD", "resume-donne-12"):
     open(os.path.join(r, f"2026-11-05-tournoi-jeudi-{n}.pdf"), "w").write("%PDF")
 open(os.path.join(r, "2026-11-05-tournoi-jeudi-2-analyse.pdf"), "w").write("%PDF")   # une autre séance : pas à elle
 os.makedirs(F.dossier_claude(c))
 assert len(F.pdfs(c)) == 6, F.pdfs(c)
 import app
 rp = app.rapports_de(c)
-assert sorted(rp) == ["analyse", "comparaison", "donnes", "releve", "releve-donnes"] and rp["analyse"][0][1] == "AB/CD", rp
-assert rp["donnes"][0][1] == "3, 17, 5" and rp["releve-donnes"][0][1] == "12" and rp["releve"][0][1] == "AB/CD"
+assert sorted(rp) == ["analyse", "comparaison", "donnes", "resume", "resume-donnes"] and rp["analyse"][0][1] == "AB/CD", rp
+assert rp["donnes"][0][1] == "3, 17, 5" and rp["resume-donnes"][0][1] == "12" and rp["resume"][0][1] == "AB/CD"   # -releve : l'ancien nom
 assert app.args_rapports("choisir", [3, 5])[-1] == "--donnes=3,5" and "--a-revoir" in app.args_rapports("revoir")
 assert app.titre_fenetre(c) == "Bridge Coach – Tournoi du jeudi"
 
@@ -71,7 +71,7 @@ assert os.path.exists(os.path.join(dossier, "jeudi-au-club-jeu.json"))
 assert os.path.exists(os.path.join(dossier, "versions", "jeudi-au-club-v-2026-11-06-101010.bc.json"))
 assert sorted(os.listdir(r)) == ["2026-11-05-jeudi-au-club-analyse 2.pdf", "2026-11-05-jeudi-au-club-analyse-AB-CD.pdf",
                                  "2026-11-05-jeudi-au-club-comparaison.pdf", "2026-11-05-jeudi-au-club-donnes-3-17-5.pdf",
-                                 "2026-11-05-jeudi-au-club-releve-AB-CD.pdf", "2026-11-05-jeudi-au-club-releve-donne-12.pdf",
+                                 "2026-11-05-jeudi-au-club-releve-AB-CD.pdf", "2026-11-05-jeudi-au-club-resume-donne-12.pdf",
                                  "2026-11-05-tournoi-jeudi-2-analyse.pdf"]
 assert os.path.isdir(F.dossier_claude(n))
 assert rapport.lire_bc(n)["fichier"]["journal"][-1]["quoi"] == "Renommée : 2026-11-05-tournoi-jeudi → jeudi-au-club"

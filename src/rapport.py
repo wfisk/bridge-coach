@@ -33,7 +33,7 @@ d'espace dans les noms (remplacés par des tirets) :
 Avec --rapports, les options de l'onglet Rapports, en trois groupes (2026-11-13) :
   les donnes : toutes, --a-revoir (celles où vous pouviez faire mieux) ou --donnes=1,4,7 (celles-là ; une seule :
       <date>-<nom>-donne-N.pdf, plusieurs : -donnes-1-4-7.pdf) ; l'ordre (numéro ou ordre joué) est celui d'etat.json ;
-  --niveau=faits|coach|expert : les faits seulement (résultats, enchères aux tables, double mort et par : -releve.pdf),
+  --niveau=faits|coach|expert : la version courte, sans commentaires (résultats, enchères aux tables, enchères recommandées, double mort et par : -resume.pdf),
       l'analyse du coach, ou le coach et l'expert (le défaut) ;
   --pages=champ,parcours,synthese,noms,comparaison : les pages en plus (« Vous face au champ », votre parcours,
       la synthèse des contrats, la page des joueurs, le rapport à part « Le Coach face à l'Expert ») ; sans --pages :
@@ -662,7 +662,7 @@ def main():
 
     import moi
     pour = moi.initiales(data).replace("/", "-")           # le rapport d'une paire porte ses initiales (« SS-AR ») : celui de chacune reste
-    pdf = lambda quoi: os.path.join(SORTIE, f"{date}-{nom_court(nom)}-{quoi}{'-' + pour if pour and quoi.endswith(('analyse', 'a-revoir', 'releve')) else ''}.pdf")
+    pdf = lambda quoi: os.path.join(SORTIE, f"{date}-{nom_court(nom)}-{quoi}{'-' + pour if pour and quoi.endswith(('analyse', 'a-revoir', 'resume', 'releve')) else ''}.pdf")
     connues = {d["n"] for d in data["donnes"]}
     if any(n not in connues for n in choix_n):
         raise SystemExit(f"Donne inconnue dans cette séance : {', '.join(str(n) for n in choix_n if n not in connues)}.")
@@ -675,10 +675,19 @@ def main():
         return "a-revoir" if a_revoir else base
     if a_revoir and not pour:
         raise SystemExit("Les donnes à revoir sont celles de votre paire : choisissez d'abord « Vous êtes ».")
-    if niveau == "faits":                                  # les faits seulement (-releve…) : l'analyse du coach ne sert qu'à
-        quoi = nom_pdf("releve")                           # choisir les donnes à revoir
-        construire_pdf(donnes, dict(extra, faits=True), auto, pdf(quoi if quoi == "releve" else "releve-" + quoi))
-        chrono.etape("relevé des donnes"); chrono.ecrire(len(data["donnes"])); return
+    if niveau == "faits":                                  # la version courte (-resume…, -releve avant le 14/11) : l'analyse du
+        quoi = nom_pdf("resume")                           # coach ne sert qu'à choisir les donnes à revoir
+        ex = (analyse_de(seance, "expert") or {}).get("donnes", {})   # les enchères recommandées restent, celles de
+        reco = {}                                          # l'expert s'il y en a, sinon du coach (l'utilisateur, 2026-11-14)
+        for d in data["donnes"]:
+            n = str(d["n"])
+            if (ex.get(n) or {}).get("enc"): reco[n] = {"enc": ex[n]["enc"], "qui": "expert"}
+            elif (auto.get("donnes", {}).get(n) or {}).get("enc"): reco[n] = {"enc": auto["donnes"][n]["enc"], "qui": "coach"}
+        quoi = quoi if quoi == "resume" else "resume-" + quoi
+        construire_pdf(donnes, dict(extra, faits=True, reco_enc=reco), auto, pdf(quoi))
+        ancien = pdf(quoi.replace("resume", "releve"))     # le même rapport sous son ancien nom : remplacé
+        if os.path.exists(ancien): os.remove(ancien)
+        chrono.etape("version courte"); chrono.ecrire(len(data["donnes"])); return
     an = analyse_de(seance, "expert")
     redigee = bool(an and an.get("donnes"))
     def anciens():                                         # avant la 1.4 : -standard et -expert, que -analyse remplace, et le

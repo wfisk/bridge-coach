@@ -109,9 +109,22 @@ ouverture:
   - 2P:  { si: "P 4+", montre: "4 piques, pas 4 cœurs" }
   - 2K:  { montre: "pas de majeure 4e" }
 "1SA - 2K":
+  - 3C:  { si: "C 4+, H 16-17", montre: "rectification fittée : 4 cœurs et 16–17 H", nature: invite, source: à confirmer }
   - 2C:  { montre: "complète le texas", nature: relais }
+  - exemples:
+      - { main: "AD4 R853 AV7 R92", apres: 1SA - 2K, attendu: 3C }
+      - { main: "AD4 R853 AV7 V92", apres: 1SA - 2K, attendu: 2C }
 "1SA - 2C":
+  - 3P:  { si: "P 4+, H 16-17", montre: "rectification fittée : 4 piques et 16–17 H", nature: invite, source: à confirmer }
   - 2P:  { montre: "complète le texas", nature: relais }
+# le répondant après la rectification fittée (neuf atouts au moins, 16–17 H en face) : la manche dès 5 H ou 7 HLD ;
+# au-delà de 14 H, le moteur cherche le chelem
+"1SA - 2K - 3C":
+  - 4C:  { si: "H 5-14 || HLD(C) 7-14", montre: "neuf atouts, 16–17 H en face : la manche", nature: conclusion }
+  - passe: { si: "H 14-", montre: "trop faible même face à 16–17 H" }
+"1SA - 2C - 3P":
+  - 4P:  { si: "H 5-14 || HLD(P) 7-14", montre: "neuf atouts, 16–17 H en face : la manche", nature: conclusion }
+  - passe: { si: "H 14-", montre: "trop faible même face à 16–17 H" }
 "2SA - 4T | 2SA - 4K":
   - exemples:
       - { main: "2 RV2 642 AV8754", apres: 2SA, attendu: 4T }     # donne 20 du 01/11 (214059)
@@ -1067,12 +1080,48 @@ ouverture:
   - passe: { montre: "minimum : refuse" }
 
 # ------------------------------------------------------------------ 1.4 réponses aux deux faibles et aux barrages
+# Sur un deux faible (2026-11-14) : 2SA relais forcing (réponses par paliers, Ogust), changement de couleur forcing
+# (5 cartes, 14+ H, pas de fit), 3M barrage (trois atouts : neuf ensemble, loi des levées), 4M pour jouer.
 "2M":
   - 4U:  { si: "U 3+, HLD(U) 16+ || U 2, HLD(U) 17+", montre: "fit et assez de points : manche", nature: conclusion }
   - 4U:  { si: "fit(U) 10+", montre: "dix atouts ensemble : 4M pour jouer (loi des levées)", nature: conclusion }
+  - 2P:  { si: "P 5+, bonne P, H 14+, U 1-", montre: "5+ piques, 14+ H : forcing un tour", nature: forcing, apres: 2C }
+  - 3K:  { si: "K 6+, bonne K, K >= T, H 14+, U 1-", montre: "6+ carreaux, 14+ H : forcing un tour", nature: forcing }
+  - 3T:  { si: "T 6+, bonne T, H 14+, U 1-", montre: "6+ trèfles, 14+ H : forcing un tour", nature: forcing }
+  - 2SA: { si: "H 15+", montre: "relais : 15+ H, intérêt pour la manche ; l'ouvreur dit son minimum ou maximum, sa couleur bonne ou non", nature: relais }
+  - 3U:  { si: "U 3, H 14-", montre: "trois atouts : barrage (neuf atouts ensemble, loi des levées), pour jouer", nature: conclusion }
   - passe: { montre: "pas de manche face au deux faible" }
+  - exemples:
+      - { main: "A852 R4 AR93 D72", apres: 2C, attendu: 2SA }
+      - { main: "AR9752 4 AD3 R72", apres: 2C, attendu: 2P }
+      - { main: "V85 D94 R9763 82", apres: 2C, attendu: 3C }
+      - { main: "8 R4 AR9763 AD72", apres: 2P, attendu: 3K }
 "2M - 3U | 2M - 4U":
   - passe: { montre: "le partenaire a décidé" }
+# l'ouvreur répond au relais 2SA, par paliers : minimum ou maximum (5–8 / 9–10 H), couleur bonne (deux des trois
+# gros honneurs) ou non ; 3SA avec ARD sixième
+"2M - 2SA":
+  - 3SA: { si: "H(U) 9+", montre: "couleur pleine (ARD) : 3SA pour jouer", nature: conclusion }
+  - 3T:  { si: "H 8-, H(U) 4-", montre: "minimum (5–8 H), couleur sans deux gros honneurs" }
+  - 3K:  { si: "H 8-, H(U) 5+", montre: "minimum (5–8 H), deux des trois gros honneurs" }
+  - 3C:  { si: "H 9+, H(U) 4-", montre: "maximum (9–10 H), couleur sans deux gros honneurs" }
+  - 3P:  { si: "H 9+, H(U) 5+", montre: "maximum (9–10 H), deux des trois gros honneurs" }
+  - exemples:
+      - { main: "84 D97532 R95 82", apres: 2C 2SA, attendu: 3T }
+      - { main: "84 AD9753 V95 82", apres: 2C 2SA, attendu: 3K }
+      - { main: "A4 D97532 R95 82", apres: 2C 2SA, attendu: 3C }
+# le répondant place le contrat après la réponse au relais
+"2M - 2SA - 3T | 2M - 2SA - 3K | 2M - 2SA - 3C | 2M - 2SA - 3P":
+  - "*U": { si: "U 2+, camp HLD(U) 25+", montre: "fit : la manche", nature: conclusion }
+  - 3SA: { si: "camp H 25+", montre: "assez pour la manche à SA", nature: conclusion }
+  - "*U": { montre: "pas de manche : la partielle dans la couleur du deux faible", nature: conclusion }
+"2M - 2SA - 3SA":
+  - passe: { montre: "3SA pour jouer" }
+# l'ouvreur après le changement de couleur forcing : soutien avec trois cartes ou un doubleton honneur, sinon il
+# répète sa couleur
+"2C - 2P | 2M - 3N":
+  - "*W": { si: "W 3+ || W 2, H(W) 3+", montre: "soutien", nature: limite }
+  - "*U": { montre: "pas de soutien : répète sa couleur", nature: limite }
 "3M":
   - 4U:  { si: "U 2+, HLD(U) 12+", montre: "fit : manche", nature: conclusion }
   - 4U:  { si: "fit(U) 10+", montre: "dix atouts ensemble : 4M pour jouer (loi des levées)", nature: conclusion }

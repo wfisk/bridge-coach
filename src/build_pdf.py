@@ -923,40 +923,15 @@ def annexe(d, expliquer=True, pieces=False):
                 ("TOPPADDING", (0, 0), (-1, -1), 1), ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
                 ("LEFTPADDING", (0, 0), (-1, -1), 2), ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
         return dict(dd=dd, par=Paragraph(suits(ptxt), S_notes), tc=tc)
-    tt = Table(tr, colWidths=[2.6*cm, 3.2*cm, 2.4*cm, 2.4*cm, 1.6*cm, 3.4*cm], hAlign="LEFT")
-    tt.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, 0), 0.6, colors.HexColor(INK)),
-        ("LINEBELOW", (0, -1), (-1, -1), 0.4, colors.HexColor("#aab")), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]))
-    note = Paragraph("« Écart » : levées faites moins levées au double mort (+ : gagnée par le déclarant ou donnée "
-                     "par la défense). « Écart au par » : ce que la table a gagné (+) ou perdu (−) pour Nord-Sud "
-                     "par rapport au par, en IMP.", S_notes)
-    if len(d["tables"]) > 2 and not expliquer:
-        # plusieurs tables : le tableau des tables à côté de la grille, le par dessous (gain de place)
-        tc = Table([[P("<b>Tables</b>"), P("<b>Contrat</b>"), P("<b>Lev.</b>"), P("<b>DM</b>"),
-                     P("<b>Écart</b>"), P("<b>IMP / par</b>")]] + tr[1:],
-                   colWidths=[2.5*cm, 2.0*cm, 1.0*cm, 0.9*cm, 1.2*cm, 1.6*cm], hAlign="LEFT")
-        tc.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, 0), 0.6, colors.HexColor(INK)),
-            ("LINEBELOW", (0, -1), (-1, -1), 0.4, colors.HexColor("#aab")), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("TOPPADDING", (0, 0), (-1, -1), 1), ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-            ("LEFTPADDING", (0, 0), (-1, -1), 2), ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
-        cote = Table([[dd, tc]], colWidths=[7.6*cm, 10.0*cm])
-        cote.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                                  ("RIGHTPADDING", (0, 0), (0, 0), 12)]))
-        return [KeepTogether([Paragraph("Double mort et par", S_h), cote, Spacer(1, 3),
-                              Paragraph(suits(ptxt), S_notes)])]
-    if not d["tables"]: return [KeepTogether([Paragraph("Double mort et par", S_h), duo])]
-    # le titre reste avec la grille ; le tableau des tables peut suivre sur la page d'après
-    return [KeepTogether([Paragraph("Double mort et par", S_h), duo]), Spacer(1, 6),
-            KeepTogether([tt] + ([Spacer(1, 3), note] if expliquer else []))]
+    # le tableau des tables (levées, double mort, écart au par) n'est plus montré : il répétait « Résultats à la
+    # table » (l'utilisateur, 2026-11-14)
+    return [KeepTogether([Paragraph("Double mort et par", S_h), duo])]
 
 
 EXPLICATIONS = ("<b>Double mort et par</b> (en fin de chaque donne). Le tableau donne le nombre de levées que "
                 "chaque joueur réalise comme déclarant, cartes vues (double mort). Fond vert : une manche se gagne ; vert soutenu : un "
                 "chelem ; cadre : le contrat du par. Le par est le résultat obtenu "
-                "si les deux camps enchérissent parfaitement. « Écart » : levées faites moins levées au double "
-                "mort (+ : gagnée par le déclarant ou donnée par la défense). « Écart au par » (« IMP / par » quand il y a "
-                "plusieurs tables) : ce que la table a gagné (+) ou perdu (−) pour Nord-Sud par rapport au par, "
-                "en IMP. Avec plus de deux tables, « Lev. » : levées faites, « DM » : double mort.")
+                "si les deux camps enchérissent parfaitement.")
 
 class Marque(Flowable):
     def __init__(self, n): super().__init__(); self.n = n
@@ -1052,6 +1027,17 @@ def page(d, a, date, expliquer=True):
             tete.append(Paragraph(txt(f"<b>Entame recommandée :</b> {e['carte']} ({e['joueur']})."), S_body))
         suite = avec_avis(a["defense"]) if a.get("defense") else []
         el += [KeepTogether(tete + suite[:3])] + suite[3:]   # le titre suit son bloc : jamais seul en bas de page
+    if a.get("faits"):                  # les faits seulement : les enchères recommandées (l'expert, sinon le coach) à
+        pc = annexe(d, pieces=True)     # gauche, le double mort et le par à droite, sans autre texte (l'utilisateur, 2026-11-14)
+        qui = "l'expert" if a.get("faits_qui") == "expert" else "le coach"
+        gauche = [Paragraph(f"<a name='reco{d['n']}'/>Enchères recommandées ({qui})", S_titre_avis), Spacer(1, 2),
+                  bidding(a["faits_enc"], 2.0*cm)]
+        droite = [Paragraph("Double mort et par", S_titre_avis), Spacer(1, 2), pc["dd"], Spacer(1, 3), pc["par"]] if pc else []
+        tb = Table([[gauche, droite]], colWidths=[8.6*cm, 8.6*cm])
+        tb.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                                ("RIGHTPADDING", (0, 0), (0, 0), 10), ("RIGHTPADDING", (1, 0), (1, 0), 0)]))
+        tb.hAlign = "LEFT"
+        return el + [Spacer(1, 6), KeepTogether([tb]), PageBreak()]
     texte = lambda x: [Paragraph(txt(p_), S_avis) for p_ in paragraphes(x)]
     titre_comm = "Commentaire sur les contrats joués" if d["tables"] else "Commentaire"
     pc = None if expliquer else annexe(d, pieces=True)
@@ -1261,7 +1247,7 @@ def main():
     TOURS = {d["n"]: moi.tour_de(data, d["n"]) for d in data["donnes"]}
     date = data["session"]["date"]
     faits = bool(an.get("faits"))                   # Rapports, « Les faits seulement » : ni coach ni expert à l'écran
-    pied = an.get("titre_pied", f"{'Relevé' if faits else 'Analyse'} des donnes – séance du {date} – Système SEF, marque {moi.MARQUES[moi.marque(data)]}")
+    pied = an.get("titre_pied", f"{'Résumé' if faits else 'Analyse'} des donnes – séance du {date} – Système SEF, marque {moi.MARQUES[moi.marque(data)]}")
     pied = re.sub(r"marque (IMP|match-points)", f"marque {moi.MARQUES[moi.marque(data)]}", pied)   # la marque de la séance, pas celle d'une analyse
     def footer(c, doc):
         c.saveState(); c.setFont("DV", 7.5); c.setFillColor(colors.HexColor("#888"))
@@ -1287,7 +1273,10 @@ def main():
         donnes = [d for d in donnes if d["n"] in choix]
         if not donnes: raise SystemExit(f"Les donnes {', '.join(map(str, choix))} ne sont pas dans cette séance.")
     pages = set() if seule else set(an.get("pages") or ("champ", "parcours", "synthese"))   # les pages en plus
-    vue = {"donnes": {}} if faits else an           # ce que montrent les pages : rien du coach ni de l'expert pour les faits
+    vue = {"donnes": {}} if faits else an           # ce que montrent les pages : rien du coach ni de l'expert pour les faits,
+    if faits:                                       # sauf les enchères recommandées, à côté du double mort
+        vue = {"donnes": {n: {"faits": True, "faits_enc": r["enc"], "faits_qui": r["qui"]}
+                          for n, r in (an.get("reco_enc") or {}).items()}}
     synth = None if an.get("a_revoir") or choix or "synthese" not in pages or faits \
         else synthese(dict(data, donnes=donnes), an)  # avec la synthèse, les explications y sont
 

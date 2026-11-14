@@ -9,9 +9,16 @@ dans `ffb/` avant de s'y fier.
 - 1♦ : 12–21 H, 4+ carreaux sauf exceptions **(à confirmer)**
 - 1♥ / 1♠ : 12–21 H, 5+ cartes
 - 1SA : 15–17 H, régulier **(à confirmer : avec une majeure 5e ?)**
+  Sur un texas, rectification fittée avec quatre atouts et 16–17 H : 1SA – 2♦ – 3♥, 1SA – 2♥ – 3♠ ; le répondant
+  dit la manche dès 5 H. **(à confirmer)**
 - 2♣ : fort indéterminé **(à confirmer)**
 - 2♦ : forcing de manche **(à confirmer)**
 - 2♥ / 2♠ : faible, 6 cartes **(à confirmer : zone de points)**
+  Réponses au deux faible (2026-11-14) : 2SA relais forcing (15+ H), l'ouvreur répond par paliers : 3♣ minimum
+  (5–8 H) couleur sans deux des trois gros honneurs, 3♦ minimum bonne couleur, 3♥ maximum (9–10 H) mauvaise
+  couleur, 3♠ maximum bonne couleur, 3SA avec ARD ; changement de couleur forcing un tour (5+ piques sur 2♥, 6+
+  cartes en mineure au palier de 3, 14+ H, pas de fit), l'ouvreur soutient avec trois cartes ou Hx, sinon répète ;
+  3M barrage avec trois atouts (neuf ensemble), pour jouer. **(à confirmer : les paliers du relais)**
   Réponses aux deux faibles et aux barrages majeurs : 4M avec dix atouts ensemble (4 sur un deux faible, 3 sur un
   barrage de 3), pour jouer, quels que soient les points (loi des levées) ; sur 3M, la manche aussi avec deux atouts et
   12 HLD (au lieu de 15). **(à confirmer)**

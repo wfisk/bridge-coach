@@ -293,3 +293,44 @@ reparle pas après la réponse du partenaire (1♦ (2♥) contre – 3♦ passe 
 saut au palier de 3 (les piques au palier de 3), 13+ H et une majeure 4e libre, le contre d'abord : +47 et +12 IMP
 (18 et 7 séquences, 12 gagnées, 5 perdues).
 À voir : le contreur Spoutnik qui a les points de la manche doit reparler après la réponse minimum du partenaire.
+
+## L'ouvreur bicolore quand le partenaire a passé (2026-11-14)
+Donne 22 du 13/11 : 1♦ – passe – passe – (1SA) ; Est (♠A ♥ARD8 ♦RVX652 ♣43, 17 H) répétait 2♦ et Ouest (♠R9643
+♥VX765 ♦– ♣V85) passait : 4♥ fait 10 levées (l'expert : 2♥ puis 4♥). `relance_ouvreur` ne connaissait que « répéter sa
+couleur » ou le contre fort. `BICOLORE_CONCURRENCE` (sef2024) : 16+ HL, 5+ cartes dans la couleur d'ouverture et 4+
+dans une couleur libre nommable au palier de 2 : la nommer (nature bicolore) ; le partenaire qui a passé la soutient
+(`soutien_bicolore`) : DH + un point par atout au-delà du 4e, 9+ la manche, 6–8 au palier de 3. +66 et +73 IMP sur
+deux lots de 20 000 donnes (142 et 170 séquences, 97 gagnées, 71 perdues). Gardé.
+
+## Répondre au 4SA quantitatif vulnérable (2026-11-14, essai rejeté)
+Donne 26 du 13/11 : 1♣ – 1♦ – 1SA – 4SA ; Est (12 H, 4-3-3-3) accepte 6SA (« maximum ») : la remise vulnérable
+(`INVITE_MILIEU_VUL`, faite pour la manche) baisse le seuil à 11½ dans 11–14. 6SA chute d'une (11 levées au double mort),
+l'expert passe. Sans la remise sur 4SA : −195 et −143 IMP (25 et 13 séquences, presque toutes des 6SA vulnérables
+gagnés puis manqués) ; au banc (IMP, double mort) le chelem vulnérable à 50 % rapporte. En match-points (la séance du
+13/11) le passe de l'expert est meilleur : le moteur ne connaît pas la marque. À voir : passer session.marque au moteur.
+
+## Les réponses au deux faible (2026-11-14)
+Le fichier ne connaissait sur 2♥ / 2♠ que 4M (manche ou dix atouts) et passe. Ajouté (section « 2M ») : 2SA relais
+forcing 15+ H et les réponses par paliers (minimum / maximum, couleur bonne ou non, 3SA avec ARD), le changement de
+couleur forcing (14+ H, 5+ piques sur 2♥, 6+ en mineure, pas de fit) et la redemande de l'ouvreur, le 3M barrage avec
+trois atouts. +139 et +108 IMP sur deux lots de 20 000 donnes (162 et 158 séquences, 119 gagnées, 94 perdues) ; le
+3M barrage seul +106 / +90, le relais et les couleurs +33 / +18. Gardé.
+
+## La rectification fittée sur un texas (2026-11-14)
+1SA – 2♦ – 3♥ (1SA – 2♥ – 3♠) avec quatre atouts et 16–17 H ; le répondant dit la manche dès 5 H ou 7 HLD, au-delà
+de 14 H le moteur cherche le chelem. +24 et +75 IMP sur deux lots de 20 000 donnes (68 et 79 séquences, 41 gagnées,
+35 perdues ; les pertes : des chelems à 30–31 points après la rectification). Gardé.
+
+## Les donnes du 12/11 revues avec l'expert (2026-11-14)
+Quatre corrections essayées, chacune sur deux lots de 20 000 donnes contre la version du jour :
+- Donne 32, gardée : sur notre cue-bid (1♥ (2♦) 3♦), l'ouvreur compte sa courte et l'atout en plus (DH + un point
+  par atout au-delà du 4e, 14+ : 3♥, des points en plus) ; le cue-bidder, 16+ H, demande les clés. +6 et +46 IMP
+  (23 et 26 séquences, 7 gagnées, 3 perdues). La donne arrive à 6♥.
+- Donne 24, rejetée : l'intervention à 4♦ sur un barrage de 3 avec neuf levées de jeu (−41 / −42 IMP) ou 14+ H
+  (−26 / −53). La main (♠– ♥RD3 ♦AVX843 ♣DVX5) compte huit levées : la mesure `levees` est trop généreuse ici
+  (♥RD3 derrière le barreur vaut en défense, pas en attaque).
+- Donne 15, rejetée : pas de fit mineur forcing (4♣ plutôt que 3SA) avec une main régulière : −221 / −124 IMP.
+  À l'IMP, 4♣ mène à des chelems ; en match-points, 3SA serait meilleur : le moteur ne connaît pas la marque.
+- Donne 20, rejetée : deux faible à 6–7 H seulement non vulnérable (tous vulnérables compris) : −245 / −39 IMP.
+  Sans le 2♥, la donne finit à 5♦ par Sud (1♦ – 2♦ – 5♦) : à voir, l'ouvreur fort qui saute à 5♦ sans chercher 3SA.
+Les donnes 15 et 17 (6SA plutôt que 6♥, 3SA plutôt que 5♣) attendent toujours que le moteur connaisse la marque.

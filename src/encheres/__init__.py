@@ -506,6 +506,9 @@ def cote_ouvreur(m, s, hist, infos, etat, ouvreur):
                 return Appel("passe", f"{m.L[oc]} cartes à {oc} derrière l'intervenant : on laisse le contre, punitif",
                              nature="punitif")
             return S.avance_contre(m, [c for c in (x[1:] for x in eux) if c != "SA"], dernier, False)
+        if dp and dp.nature == "bicolore":                 # l'ouvreur a nommé sa 2e couleur : la soutenir
+            a = S.soutien_bicolore(m, dp.atout, dernier)
+            if a: return a
         return S.reponse_concurrence(m, ouv, oc, dernier)
     dp = du_part[-1]
     if dp.nature == "rois": return S.reponse_rois(m, dp.atout)
@@ -578,7 +581,8 @@ def reponse_cue(m, dp, oc, dernier):
     15+ HL (arriver lentement montre des points en plus). Mineure : l'arrêt, sinon on répète sa couleur."""
     c = dp.atout
     if c in MAJEURES:
-        if m.hl >= 15 and rang(e(3, c)) > rang(dernier):
+        # la courte et l'atout en plus comptent face au cue-bid (donne 32 du 12/11 : singleton dans leur couleur)
+        if max(m.hl, m.dh(c) + max(0, m.L[c] - 4)) >= 14 and rang(e(3, c)) > rang(dernier):
             return Appel(e(3, c), f"sur le cue-bid : {m.hl} HL, des points en plus", (15, 21), {c: 5})
         return Appel(e(4, c), "sur le cue-bid : la manche, sans rien de plus", (12, 14), {c: 5}, nature="conclusion")
     if S.arret(m, oc):
@@ -608,7 +612,10 @@ def apres_mon_cue(m, s, moi, etat, intervenant):
         if m.dh(c) < 13 and part == PART[s] and int(dernier[0]) <= 2:
             return Appel("passe", "face à une intervention sans ouverture : pas de manche")
         return Appel(e(4, c), "fit, valeur de manche ensemble", nature="conclusion")
-    if c in MAJEURES: return Appel(e(4, c), "la manche", nature="conclusion")
+    if c in MAJEURES:
+        if part == PART[s] and dernier == e(3, c) and m.hcp >= 16 and rang("4SA") > rang(dernier):   # des points en plus
+            return Appel("4SA", f"{m.hcp} H face à des points en plus : Blackwood 3041", nature="blackwood", atout=c)
+        return Appel(e(4, c), "la manche", nature="conclusion")
     if part == PART[s] and dernier[1:] == "SA" and rang("3SA") > rang(dernier):
         return Appel("3SA", "le partenaire a l'arrêt : la manche", nature="conclusion")
     if m.L[c] >= 3 and rang(e(5, c)) > rang(dernier):

@@ -31,11 +31,11 @@ NB_PDF = 2                                                 # l'analyse, la compa
 RAPPORTS = (("analyse", "Analyse", "enchères, entame, plan de jeu, conseil du coach et, si vous l'incluez, avis de l'expert"),
             ("a-revoir", "Donnes à revoir", "seulement les donnes où vous pouviez faire mieux, la plus coûteuse d'abord"),
             ("donnes", "Donnes", "les donnes choisies"),
-            ("releve", "Relevé", "les faits seulement : résultats, enchères aux tables, double mort et par"),
-            ("releve-a-revoir", "Relevé des donnes à revoir", "les faits seulement"),
-            ("releve-donnes", "Relevé des donnes", "les faits seulement, les donnes choisies"),
+            ("resume", "Version courte", "sans commentaires : résultats, enchères aux tables, enchères recommandées, double mort et par"),
+            ("resume-a-revoir", "Version courte des donnes à revoir", "sans commentaires"),
+            ("resume-donnes", "Version courte des donnes choisies", "sans commentaires"),
             ("comparaison", "Comparaison", "le Coach face à l'Expert"))
-NIVEAUX = {"faits": "Les faits seulement", "coach": "Le coach", "expert": "Le coach et l'expert"}   # Rapports, l'analyse
+NIVEAUX = {"faits": "Version courte (sans commentaires)", "coach": "Le coach", "expert": "Le coach et l'expert"}   # Rapports, l'analyse
 PAGES_EN_PLUS = (("noms", "Liste des joueurs", "les noms complets, en première page"),   # dans l'ordre du rapport (l'utilisateur,
                  ("champ", "Vous face au champ", "votre % donne par donne face aux autres tables, et où vous pouviez faire mieux"),   # 2026-11-13)
                  ("parcours", "Votre parcours", "tour par tour : la table, les donnes, les adversaires"),
@@ -111,10 +111,11 @@ def rapports_de(chemin):
     debut = f"{d.isoformat()}-{rapport.nom_court(rapport.nom_seance(chemin))}-"
     trouves = {}
     for f in fichiers.pdfs(chemin):
-        m = re.match(r"(releve-a-revoir|(?:releve-)?donnes?-[\d-]+|analyse|a-revoir|releve|comparaison|standard|expert|diff)"
-                     r"(?:-(.+))?\.pdf$", os.path.basename(f)[len(debut):])
+        m = re.match(r"((?:releve|resume)-a-revoir|(?:(?:releve|resume)-)?donnes?-[\d-]+|analyse|a-revoir|releve|resume|comparaison"
+                     r"|standard|expert|diff)(?:-(.+))?\.pdf$", os.path.basename(f)[len(debut):])
         if not m or ".provisoire" in f: continue           # (« analyse 2.pdf » : une copie d'iCloud, pas un rapport)
-        d_ = re.match(r"(releve-)?donnes?-([\d-]+)$", m[1])
+        m = [m[0], m[1].replace("releve", "resume"), m[2]] # « -releve » : l'ancien nom de la version courte (avant le 14/11)
+        d_ = re.match(r"(resume-)?donnes?-([\d-]+)$", m[1])
         if d_:                                             # des donnes choisies : leurs numéros à la place des initiales
             trouves.setdefault((d_[1] or "") + "donnes", []).append((f, ", ".join(d_[2].strip("-").split("-"))))
         else:
@@ -962,6 +963,9 @@ def lire_seance(c):
         return None
 
 
+AUTRE_FICHE = "Autre…"                      # Réglages › Votre système : écrire son propre choix
+
+
 def rouge(t):
     """Cœurs et carreaux en rouge, pour le HTML."""
     return str(t).replace("♥", '<span style="color:#c0141c">♥</span>').replace("♦", '<span style="color:#c0141c">♦</span>')
@@ -1791,10 +1795,12 @@ def page():
         except NameError: pass
         ui.notify(f"Bonjour {question_expert.prenom_de(n_)} ! Vos tables sont maintenant surlignées.")
 
-    def imprimer_fiche():
-        """La fiche en PDF (documents/fiche-de-conventions.pdf), ouverte : de là on l'imprime ou on l'envoie."""
+    def imprimer_fiche(quoi):
+        """La feuille de prévisions (« feuille »), la carte FFB complète (« ffb ») ou la fiche pour le partenaire
+        (« partenaire ») en PDF, dans documents/, ouverte : de là on l'imprime ou on l'envoie."""
         try:
-            f_ = fiche_conventions.pdf()
+            f_ = {"feuille": fiche_conventions.pdf_feuille, "ffb": fiche_conventions.pdf_ffb,
+                  "partenaire": fiche_conventions.pdf_partenaire}[quoi]()
         except Exception:
             ui.notify("La fiche n'a pas pu être écrite.", type="negative"); return
         ouvrir(f_)
@@ -1802,7 +1808,7 @@ def page():
 
     def remettre_fiche():
         fiche_conventions.tout_remettre(); remettre_fiche_d.close()
-        ui.notify("Toutes les lignes sont revenues au système de Bridge Coach.")
+        ui.notify("La carte est préremplie avec les choix standard du SEF 2024.")
         ui.navigate.reload()
 
     def rejouer_donne(d):
@@ -3805,7 +3811,7 @@ def page():
                          "" if vous else SANS_VOUS)
 
                     titre("L'analyse")                      # une case : l'analyse est là par défaut, celle de l'expert quand
-                    case("Sans l'analyse du coach ni de l'expert", niveau == "faits",   # il y en a une (l'utilisateur, 2026-11-13)
+                    case("Version courte (sans commentaires)", niveau == "faits",   # il y en a une (l'utilisateur, 2026-11-13)
                          lambda v: niveau_("faits" if v else "expert"))
 
                     titre("Pages en plus")
@@ -3926,66 +3932,184 @@ def page():
                 ui.button("Modifier les réglages", on_click=ouvrir_reglages).classes("w-full text-base py-3")
                 ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-base text-gray-700")
 
-              with ui.column().classes("w-full gap-2") as pages_ui["systeme"]:   # Réglages, Votre système : la fiche de conventions
+              with ui.column().classes("w-full gap-2") as pages_ui["systeme"]:   # Réglages, Votre système : la carte de conventions
                 titre_page("Votre système", "systeme")
-                ui.label("Votre fiche de conventions, à imprimer ou à garder en PDF pour un partenaire. Chaque ligne part de ce "
-                         "que joue Bridge Coach (SEF 2024) : changez ce que votre paire joue autrement. Ce qui est écrit ici "
-                         "ne change pas ce que jouent les robots.").classes("text-base text-gray-700")
+                ui.label("Votre feuille de prévisions, rangée comme celle de la FFB : ouvertures, interventions, flanc. Tout "
+                         "est déjà coché comme le joue Bridge Coach (SEF 2024) : changez seulement ce que votre paire joue "
+                         "autrement. Ce qui est écrit ici ne change pas ce que jouent les robots.").classes("text-base text-gray-700")
+                # les noms : vous (« Votre nom ») et votre partenaire de la séance ouverte, s'ils sont encore vides ; l'IV à la main
+                try:
+                    mien_ = lire_etat().get("mon_nom") or moi.nom()
+                    c_s = seance_active()
+                    part_ = fiche_conventions.partenaire_de(lire_seance(c_s), mien_) if (c_s and mien_) else None
+                    fiche_conventions.proposer_joueurs(mien_, part_)
+                except Exception:
+                    pass
                 fiche_ = fiche_conventions.lire()
-                joueurs_in = ui.input("Les joueurs", value=fiche_.get("joueurs") or "",
-                                      placeholder="Par exemple : MARTIN Anne et BERNARD Henri").props("outlined").classes("w-full text-base")
-                joueurs_in.on("blur", lambda: fiche_conventions.changer_entete(joueurs=joueurs_in.value))
-                with ui.row().classes("gap-3 mt-1"):
-                    ui.button("Imprimer ou garder en PDF", icon="print", on_click=lambda: imprimer_fiche()).props("unelevated")
-                    ui.button("Tout remettre comme Bridge Coach", icon="restart_alt", on_click=lambda: remettre_fiche_d.open()).props("flat")
-                def lignes_texte(section_, lignes_):
-                    """Une section de lignes à réécrire (le système, les entames, la signalisation)."""
-                    ui.label(section_).classes("text-base font-bold mt-4")
-                    for cle_, titre_l, defaut_, incertain_ in lignes_:
-                        val_, change_ = fiche_conventions.valeur(cle_, fiche_)
-                        with ui.row().classes("w-full items-start no-wrap gap-3"):
-                            ui.html(rouge(html_.escape(titre_l)), sanitize=False).classes("text-base font-bold pt-2 shrink-0").style("width:190px")
-                            with ui.column().classes("grow gap-0"):
-                                zone = ui.textarea(value=val_).props("outlined dense autogrow").classes("w-full text-base")
-                                with ui.row().classes("items-center gap-2"):
-                                    a_verifier = ui.label("à vérifier").classes("text-sm").style("color:#8a5a00") \
-                                        .tooltip("Le système de Bridge Coach n'est pas sûr de cette ligne : relisez-la")
-                                    change_lbl = ui.label("changé").classes("text-sm text-primary font-bold")
-                                    retour = ui.button("Revenir à Bridge Coach", icon="undo").props("flat dense no-caps size=sm")
-                                def montrer_etat(cle=cle_, inc=incertain_, av=a_verifier, ch=change_lbl, rt=retour):
-                                    c_ = fiche_conventions.valeur(cle)[1]
-                                    av.set_visibility(inc and not c_); ch.set_visibility(c_); rt.set_visibility(c_)
-                                def enregistrer_ligne(cle=cle_, z=zone, m=montrer_etat):
-                                    fiche_conventions.changer(cle, z.value); m()
-                                def revenir(cle=cle_, z=zone, d=defaut_, m=montrer_etat):
-                                    fiche_conventions.changer(cle, ""); z.value = d; m()
-                                zone.on("blur", enregistrer_ligne); retour.on_click(revenir)
-                                montrer_etat()
+                ui.label("Les joueurs").classes("text-lg font-bold mt-2")
+                for n_ in (1, 2):
+                    with ui.row().classes("w-full no-wrap gap-3"):
+                        for k_, lib_, ex_, larg_ in ((f"nom{n_}", "Nom", "MARTIN", "grow"), (f"prenom{n_}", "Prénom", "Anne", "grow"),
+                                                     (f"classement{n_}", "IV (indice de valeur)", "45", "")):
+                            z_ = ui.input(lib_, value=fiche_.get(k_) or "", placeholder=f"Par exemple : {ex_}") \
+                                .props("outlined").classes(f"text-base {larg_}")
+                            if not larg_: z_.style("width:190px")
+                            z_.on("blur", lambda _, k=k_, z=z_: fiche_conventions.changer_entete(**{k: z.value}))
+                ui.label("Le niveau de la compétition").classes("text-lg font-bold mt-2")
+                niveau_ = ui.radio(fiche_conventions.NIVEAUX, value=fiche_.get("niveau") or None).props("inline").classes("text-base")
+                niveau_.on_value_change(lambda e: fiche_conventions.changer_entete(niveau=e.value or ""))
+                ui.label("Il est imprimé sur la feuille FFB. Les choix proposés sont les mêmes à tous les niveaux : le SEF 2024.") \
+                    .classes("text-base text-gray-700")
+                # un bouton par document, chacun dit ce qu'il imprime (l'utilisateur, 2026-11-14 : un bouton pour deux
+                # documents prêtait à confusion)
+                with ui.column().classes("gap-2 mt-2"):
+                    for lib_, ic_, quoi_, dit_ in (
+                            ("Feuille de prévisions", "print", "feuille", "1 page : la feuille FFB, pour la table"),
+                            ("Carte de conventions complète", "print", "ffb",
+                             "2 pages recto verso : toute la carte FFB SEF, les conventions non jouées rayées"),
+                            ("La fiche pour mon partenaire", "handshake", "partenaire", "Pour en discuter ensemble")):
+                        with ui.row().classes("items-center no-wrap gap-3"):
+                            ui.button(lib_, icon=ic_, on_click=lambda q=quoi_: imprimer_fiche(q)) \
+                                .props("unelevated no-caps align=left").classes("text-base shrink-0").style("width:300px")
+                            ui.label(dit_).classes("text-base text-gray-700")
+                ui.button("Préremplir avec les choix standard (SEF 2024)", icon="restart_alt",
+                          on_click=lambda: remettre_fiche_d.open()).props("outline no-caps").classes("text-base")
+                with ui.row().classes("items-center gap-2"):
+                    ui.label("à vérifier").classes("text-base").style("color:#8a5a00")
+                    ui.label(": Bridge Coach n'en est pas sûr, ou la carte FFB SEF le joue autrement ;").classes("text-base text-gray-700")
+                    ui.label("changé").classes("text-base text-primary font-bold")
+                    ui.label(": votre paire joue autrement que Bridge Coach.").classes("text-base text-gray-700")
 
-                lignes_texte(*fiche_conventions.MODELE[0])        # le système en une ligne
-                ui.label("Conventions d'enchères").classes("text-base font-bold mt-4")
-                ui.label("Oui ou Non pour chacune : au départ, ce que joue Bridge Coach.").classes("text-base text-gray-700")
-                for cle_, nom_c, desc_c, defaut_c, incertain_c in fiche_conventions.CONVENTIONS:
-                    oui_, change_c = fiche_conventions.convention(cle_, fiche_)
-                    with ui.row().classes("w-full items-center no-wrap gap-3 py-1").style("border-bottom:1px solid #eceff1"):
+                def ligne_fiche(it, rafraichir, titre=None):
+                    """Une ligne de la carte : Oui / Non pour une convention, un texte sinon ; « à vérifier », « changé »,
+                    « Revenir à Bridge Coach »."""
+                    cle_ = it["cle"]
+                    val_, _ = fiche_conventions.valeur(cle_, fiche_)
+                    with ui.row().classes("w-full items-start no-wrap gap-3 py-1").style("border-bottom:1px solid #eceff1"):
+                        with ui.column().classes("gap-0 shrink-0").style("width:240px"):
+                            ui.html(rouge(html_.escape(titre or it["titre"])), sanitize=False).classes("text-base font-bold pt-2")
+                            if it["desc"]:
+                                ui.html(rouge(html_.escape(it["desc"])), sanitize=False).classes("text-base text-gray-700")
                         with ui.column().classes("grow gap-0"):
-                            ui.html(f"<b>{rouge(html_.escape(nom_c))}</b>", sanitize=False).classes("text-base")
-                            ui.html(rouge(html_.escape(desc_c)), sanitize=False).classes("text-sm text-gray-600")
-                        av_c = ui.label("à vérifier").classes("text-sm shrink-0").style("color:#8a5a00") \
-                            .tooltip("Bridge Coach n'est pas sûr de jouer cette convention comme la FFB : vérifiez")
-                        ch_c = ui.label("changé").classes("text-sm text-primary font-bold shrink-0") \
-                            .tooltip("Bridge Coach dit " + ("Oui" if defaut_c else "Non"))
-                        bascule = ui.toggle({True: "Oui", False: "Non"}, value=oui_).props("no-caps dense toggle-color=primary").classes("shrink-0")
-                        def montrer_c(cle=cle_, inc=incertain_c, av=av_c, ch=ch_c):
-                            c_ = fiche_conventions.convention(cle)[1]
-                            av.set_visibility(inc and not c_); ch.set_visibility(c_)
-                        bascule.on_value_change(lambda e, cle=cle_, m=montrer_c: (fiche_conventions.choisir_convention(cle, e.value), m()))
-                        montrer_c()
-                for section_, lignes_ in fiche_conventions.MODELE[1:]:   # le jeu de la carte
-                    lignes_texte(section_, lignes_)
-                ui.label("Nos accords particuliers").classes("text-base font-bold mt-4")
-                accords_in = ui.textarea(value=fiche_.get("accords") or "", placeholder="Ce qui n'est pas dans la fiche : une convention "
-                                         "à vous, une exception, un rappel…").props("outlined autogrow").classes("w-full text-base")
+                            sens = libre = autre_cb = None; cases_ = []
+                            if it["type"] == "cases":           # plusieurs cases à la fois (les texas, le flanc…)
+                                libre_v = fiche_conventions.libre_de(cle_, fiche_)
+                                with ui.row().classes("items-center gap-4"):
+                                    for o_, _ in it["options"]:
+                                        cases_.append((o_, ui.checkbox(o_, value=o_ in val_).classes("text-base")))
+                                    if it.get("autre"):
+                                        autre_cb = ui.checkbox(AUTRE_FICHE, value=bool(libre_v)).classes("text-base")
+                                if it.get("autre"):
+                                    sens = ui.html("", sanitize=False).classes("text-base text-gray-700")
+                                    libre = ui.textarea(value=libre_v, placeholder="Ce que vous jouez") \
+                                        .props("outlined dense rows=2").classes("w-full text-base")
+                                    libre.set_visibility(bool(libre_v))
+                                zone = None
+                            elif it["type"] == "oui":
+                                zone = ui.toggle({True: "Oui", False: "Non"}, value=val_) \
+                                    .props("no-caps toggle-color=primary").classes("text-base mt-1")
+                            elif it["type"] == "choix":
+                                # un choix, le standard déjà coché ; « Autre… » pour écrire le sien (l'utilisateur, 2026-11-14)
+                                libelles = dict(it["options"])
+                                zone = ui.radio([l for l, _ in it["options"]] + [AUTRE_FICHE],
+                                                value=val_ if val_ in libelles else AUTRE_FICHE) \
+                                    .props("inline").classes("text-base")
+                                sens = ui.html("", sanitize=False).classes("text-base text-gray-700")
+                                libre = ui.textarea(value="" if val_ in libelles else val_,
+                                                    placeholder="Ce que vous jouez") \
+                                    .props("outlined dense rows=2").classes("w-full text-base")
+                            else:
+                                # pas d'autogrow : dans une section repliée, la hauteur se mesure à zéro et le texte est coupé
+                                zone = ui.textarea(value=val_).props(f"outlined dense rows={max(1, -(-len(val_) // 38))}") \
+                                    .classes("w-full text-base")
+                            with ui.row().classes("items-center gap-2"):
+                                av = ui.label("à vérifier").classes("text-base").style("color:#8a5a00") \
+                                    .tooltip(fiche_conventions.POURQUOI.get(it["incertain"], ""))
+                                ch = ui.label("changé").classes("text-base text-primary font-bold") \
+                                    .tooltip("Bridge Coach : " + (fiche_conventions.texte(cle_, defaut=True) or
+                                                                  fiche_conventions.RIEN))
+                                rt = ui.button("Revenir à Bridge Coach", icon="undo").props("flat dense no-caps")
+                        def montrer(cle=cle_, av=av, ch=ch, rt=rt):
+                            x_ = fiche_conventions.lire()
+                            c_ = fiche_conventions.valeur(cle, x_)[1]
+                            av.set_visibility(bool(fiche_conventions.a_verifier(cle, x_))); ch.set_visibility(c_); rt.set_visibility(c_)
+                            rafraichir()
+                        def expliquer(it=it, z=zone, sens=sens, libre=libre, cs=cases_, acb=autre_cb):
+                            """Sous un choix : ce qu'il veut dire sur la carte ; la zone à écrire pour « Autre… »."""
+                            if sens is None: return
+                            if it["type"] == "cases":                 # le sens de chaque case cochée
+                                d_ = dict(it["options"])
+                                t_ = [f"<b>{html_.escape(o)}</b> : {html_.escape(d_[o])}" for o, b in cs if b.value and d_[o] != o]
+                                sens.set_content(rouge("<br/>".join(t_))); sens.set_visibility(bool(t_))
+                                libre.set_visibility(bool(acb and acb.value)); return
+                            t_ = dict(it["options"]).get(z.value, "")
+                            sens.set_content(rouge(html_.escape(t_)) if t_ and t_ != z.value else "")
+                            sens.set_visibility(bool(t_ and t_ != z.value)); libre.set_visibility(z.value == AUTRE_FICHE)
+                        def revenir(cle=cle_, z=zone, d=it["defaut"], m=montrer, e_=expliquer, libre=libre, cs=cases_,
+                                    acb=autre_cb):
+                            fiche_conventions.changer(cle, d)
+                            if cs:
+                                for o_, b_ in cs: b_.value = o_ in d
+                                if acb is not None: acb.value = False
+                            else: z.value = d
+                            if libre is not None: libre.value = ""
+                            e_(); m()
+                        def choisir(e, cle=cle_, libre=libre, m=montrer, e_=expliquer):
+                            e_()
+                            if e.value != AUTRE_FICHE: fiche_conventions.changer(cle, e.value); m()
+                            elif (libre.value or "").strip(): fiche_conventions.changer(cle, libre.value); m()
+                        if it["type"] == "cases":
+                            def cocher(_=None, cle=cle_, cs=cases_, acb=autre_cb, libre=libre, m=montrer, e_=expliquer):
+                                v_ = [o for o, b in cs if b.value]
+                                if acb is not None and acb.value and (libre.value or "").strip(): v_.append(libre.value)
+                                fiche_conventions.changer(cle, v_); e_(); m()
+                            for _, b_ in cases_: b_.on_value_change(cocher)
+                            if autre_cb is not None:
+                                autre_cb.on_value_change(cocher); libre.on("blur", cocher)
+                            expliquer()
+                        elif it["type"] == "oui":
+                            zone.on_value_change(lambda e, cle=cle_, m=montrer: (fiche_conventions.changer(cle, e.value), m()))
+                        elif it["type"] == "choix":
+                            zone.on_value_change(choisir)
+                            libre.on("blur", lambda _, cle=cle_, z=libre, m=montrer:
+                                     (fiche_conventions.changer(cle, z.value), m()) if (z.value or "").strip() else None)
+                            expliquer()
+                        else:
+                            zone.on("blur", lambda _, cle=cle_, z=zone, m=montrer: (fiche_conventions.changer(cle, z.value), m()))
+                        rt.on_click(revenir)
+                        av.set_visibility(bool(fiche_conventions.a_verifier(cle_, fiche_)))
+                        ch.set_visibility(fiche_conventions.valeur(cle_, fiche_)[1]); rt.set_visibility(ch.visible)
+
+                ui.label("Méthode de base").classes("text-lg font-bold mt-4")
+                ligne_fiche(fiche_conventions.ITEMS["systeme"], lambda: None, "Méthode de base")
+                # d'abord la feuille de prévisions de la FFB, dépliée : ses lignes, rangées comme elle (l'utilisateur, 2026-11-14)
+                for partie_, groupes_ in fiche_conventions.FEUILLE:
+                    ui.label(partie_.upper()).classes("text-xl font-bold mt-6").style("color:#c0141c")
+                    for sous_t, cles_ in groupes_:
+                        if sous_t:
+                            ui.html(rouge(html_.escape(sous_t)), sanitize=False).classes("text-lg font-bold mt-3")
+                        for c_ in cles_:
+                            ligne_fiche(fiche_conventions.ITEMS[c_], lambda: None, fiche_conventions.titre_feuille(c_))
+                # puis le reste de la carte FFB SEF, replié : ce qu'il faut de plus pour la carte officielle
+                ui.label("LE DÉTAIL DE LA CARTE FFB SEF").classes("text-xl font-bold mt-8").style("color:#c0141c")
+                ui.label("Ce que la carte officielle imprime en plus, déjà rempli comme le joue Bridge Coach ; ce que vous "
+                         "avez choisi plus haut y est repris.").classes("text-base text-gray-700")
+                for partie_, nom_partie in fiche_conventions.PARTIES:      # rangé comme sur la carte FFB
+                    sections_ = [(sec_, titre_sec, fiche_conventions.reste(items_))
+                                 for sec_, titre_sec, col_, items_ in fiche_conventions.TOUTES if col_ == partie_]
+                    sections_ = [x_ for x_ in sections_ if x_[2]]
+                    if not sections_: continue
+                    ui.label(nom_partie).classes("text-lg font-bold mt-4")
+                    if partie_ == "ouvertures":
+                        ui.label("Le verso de la carte : pour chaque ouverture, les colonnes du tableau.") \
+                            .classes("text-base text-gray-700")
+                    for sec_, titre_sec, items_ in sections_:      # tout ouvert, pas de section repliée (l'utilisateur, 2026-11-14)
+                        ui.html(rouge(html_.escape(titre_sec)), sanitize=False).classes("text-lg font-bold mt-3")
+                        for it_ in items_:
+                            ligne_fiche(fiche_conventions.ITEMS[it_["cle"]], lambda: None)
+                ui.label("Nos accords particuliers").classes("text-lg font-bold mt-4")
+                accords_in = ui.textarea(value=fiche_.get("accords") or "", placeholder="Ce qui n'est pas sur la carte : une "
+                                         "convention à vous, une exception, un rappel…").props("outlined autogrow").classes("w-full text-base")
                 accords_in.on("blur", lambda: fiche_conventions.changer_entete(accords=accords_in.value))
 
               with ui.column().classes("w-full gap-3") as pages_ui["expert"]:   # Réglages, L'expert : l'outil d'IA et le prénom
@@ -4353,11 +4477,12 @@ def page():
             ui.button("Supprimer", icon="delete", on_click=lambda: supprimer()).props("color=red")
 
     with ui.dialog() as remettre_fiche_d, ui.card().classes("w-full max-w-md"):
-        ui.label("Remettre toutes les lignes de la fiche comme les joue Bridge Coach ? Vos changements sont effacés ; les noms "
-                 "des joueurs et vos accords particuliers restent.").classes("text-base")
+        ui.label("Préremplir toute la carte avec les choix standard du SEF 2024 (ce que joue Bridge Coach) ? Les lignes que "
+                 "vous avez changées sont effacées ; les noms, les IV, le niveau et vos accords particuliers restent.") \
+            .classes("text-base")
         with ui.row().classes("gap-3 justify-end w-full"):
             ui.button("Annuler", on_click=lambda: remettre_fiche_d.close()).props("flat")
-            ui.button("Tout remettre", icon="restart_alt", on_click=lambda: remettre_fiche()).props("color=red")
+            ui.button("Préremplir", icon="restart_alt", on_click=lambda: remettre_fiche()).props("color=red")
 
     with ui.dialog() as qui_d, ui.card().classes("w-full max-w-md gap-3"):   # après le premier import : qui êtes-vous ?
         @ui.refreshable

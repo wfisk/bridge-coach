@@ -3822,8 +3822,9 @@ def page():
                 o_donnes = ui.tab("Donnes")
                 o_jouer = ui.tab("Jouer")
                 o_analyse = ui.tab("Analyse")
-                o_systeme = ui.tab("Système")                     # le système des robots et votre fiche (2026-11-16)
                 o_rapports = ui.tab("Rapports")
+                o_systeme = ui.tab("Système")                     # le système des robots et votre fiche : comme Réglages, il ne
+                                                                  # dépend pas de la séance ouverte, à côté de lui (2026-11-16)
                 o_reglages = ui.tab("Réglages")
                 o_aide = ui.tab("Aide").classes("hidden")          # la page d'aide : montrée par le bouton de droite
             @ui.refreshable

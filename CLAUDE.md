@@ -191,7 +191,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         test checks none is left raw), badges (convention, Alerte, À confirmer, Standard américain, nature), « La
                         suite : 1SA – 2♣ → » when the next sequence is described (index / suite; JS_SYSTEME → event
                         systeme_vers → app.aller_sequence scrolls to it, framed), and the example hands. Search by auction or
-                        name (chercher). app: tab o_systeme between Analyse and Rapports, a pages tab like Réglages
+                        name (chercher). app: tab o_systeme between Rapports and Réglages (it does not depend on the open séance, like Réglages), a pages tab like Réglages
                         (SYSTEME_PAGES: Vue d'ensemble with systeme.md, the families, Entames et signaux, the four conventions'
                         .md, then « Votre partenariat »: the convention card, moved here from Réglages (pages_ui["systeme"].move),
                         and « Écarts fiche / robots » (ecarts_fiche: every card line that differs from Bridge Coach, i.e. from

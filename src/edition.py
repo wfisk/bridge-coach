@@ -15,7 +15,7 @@ from donnes import SAISIE, SIEGES, VUL16, donne_complete, nom_entrainement
 from jeu import ORDRE
 
 COULEURS = "♠♥♦♣"
-MODIFIABLES = ("entrainement", "saisie")
+MODIFIABLES = ("entrainement", "saisie", "brouillon")
 ECART_VERSIONS = 600                                       # secondes entre deux copies gardées
 NB_VERSIONS = 20
 POINTS = {"A": 4, "R": 3, "D": 2, "V": 1}
@@ -49,9 +49,16 @@ def modifiable(c):
         data = lire(c)
     except (OSError, ValueError):
         return False, "Cette séance n'est pas lisible."
-    if data.get("source", {}).get("type") not in MODIFIABLES:
-        return False, "Les donnes d'un tournoi sont celles qui ont été jouées : elles ne se modifient pas."
+    if data.get("source", {}).get("type") not in MODIFIABLES and not est_copie(data):
+        return False, ("Séance importée : ses donnes sont celles qui ont été jouées. Dupliquez-la d'abord (Fichier, Infos, "
+                       "Dupliquer…) pour modifier, réorganiser ou renuméroter la copie.")
     return True, ""
+
+
+def est_copie(data):
+    """Une copie faite dans Bridge Coach (Fichier, Infos, Dupliquer…) : elle se modifie, même copiée d'un tournoi."""
+    f = data.get("fichier") or {}
+    return bool(f.get("copie_de")) or any(str(x.get("quoi", "")).startswith("Copie de") for x in f.get("journal") or [])
 
 
 def a_analyse_expert(c, n):
@@ -210,10 +217,96 @@ def completer_au_hasard(c, n, rnd=random):
 
 
 def supprimer_donne(c, n):
-    """Retire la donne ; les suivantes prennent le numéro d'avant (leur donneur et leur vulnérabilité ne changent pas)."""
+    """Retire la donne ; les suivantes prennent le numéro d'avant, avec leurs analyses et leurs parties de Jouer (leur
+    donneur et leur vulnérabilité ne changent pas, sauf si la séance les veut selon le numéro)."""
     data = lire(c)
     data["donnes"] = [d for d in data["donnes"] if d["n"] != n]
     ancien = {}
     for k, d in enumerate(sorted(data["donnes"], key=lambda d: d["n"]), 1):
         ancien[d["n"]] = k; d["n"] = k
-    enregistrer(c, data); oublier_analyse(c, {n}, ancien)
+    enregistrer(c, data); oublier_analyse(c, {n}, ancien); renumeroter_jeu(c, ancien, {n})
+    if par_numero(c): appliquer_numero(c)
+
+
+# ---------------------------------------------------------------- l'ordre des donnes, et donneur / vulnérabilité selon le numéro
+def renumeroter_jeu(c, ancien, retirees=()):
+    """Les parties de l'onglet Jouer (<nom>-jeu.json) suivent les donnes : {ancien numéro: nouveau}."""
+    f = c[:-len(rapport.BC)] + "-jeu.json"
+    try:
+        x = json.load(open(f, encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    for cle in ("donnes", "en_cours"):
+        v = x.get(cle)
+        if isinstance(v, dict):
+            x[cle] = {str(ancien[int(k)]): e for k, e in v.items() if k.isdigit() and int(k) in ancien and int(k) not in retirees}
+    json.dump(x, open(f, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
+def renumeroter_analyses(c, ancien):
+    """Les analyses (standard, expert) suivent les donnes : {ancien numéro: nouveau}."""
+    for quoi in rapport.ANALYSES:
+        an = rapport.analyse_de(c, quoi)
+        if not an or not an.get("donnes"): continue
+        d = {str(ancien[int(k)]): v for k, v in an["donnes"].items() if k.isdigit() and int(k) in ancien}
+        if d != an["donnes"]: rapport.ecrire_analyse(c, quoi, dict(an, donnes=d), dater=False)
+
+
+def deplacer(c, n, vers):
+    """Met la donne n à la place vers (1 à N) ; les autres se décalent. Ses analyses et ses parties de Jouer la suivent.
+    Renvoie les numéros dont le donneur ou la vulnérabilité a changé (séance selon le numéro), sinon []."""
+    data = lire(c)
+    ordre = [d["n"] for d in sorted(data["donnes"], key=lambda d: d["n"])]
+    if n not in ordre: return []
+    vers = max(1, min(len(ordre), vers))
+    ordre.remove(n); ordre.insert(vers - 1, n)
+    ancien = {a: k for k, a in enumerate(ordre, 1)}
+    if all(a == k for a, k in ancien.items()): return []
+    for d in data["donnes"]: d["n"] = ancien[d["n"]]
+    data["donnes"].sort(key=lambda d: d["n"])
+    enregistrer(c, data); renumeroter_analyses(c, ancien); renumeroter_jeu(c, ancien)
+    return appliquer_numero(c) if par_numero(c) else []
+
+
+def par_numero(c):
+    """La séance veut-elle le donneur et la vulnérabilité de chaque donne selon son numéro (comme au club) ?"""
+    try: return bool(lire(c).get("session", {}).get("donneur_par_numero"))
+    except (OSError, ValueError): return False
+
+
+def selon_numero(n):
+    return SIEGES[(n - 1) % 4], VUL16[(n - 1) % 16]
+
+
+def changeraient(c):
+    """Les numéros des donnes dont le donneur ou la vulnérabilité changeraient selon le numéro."""
+    return [d["n"] for d in lire(c)["donnes"] if (d["donneur"], d["vul"]) != selon_numero(d["n"])]
+
+
+def appliquer_numero(c):
+    """Donneur et vulnérabilité selon le numéro, pour chaque donne qui en change. Leur analyse n'est plus sûre :
+    celle du coach est retirée (Analyse, « Lancer l'analyse » la refait) ; celle de l'expert, qui ne se refait pas
+    toute seule, est gardée mais marquée « a_revoir ». Renvoie les numéros changés."""
+    data = lire(c); changees = []
+    for d in data["donnes"]:
+        if (d["donneur"], d["vul"]) != selon_numero(d["n"]):
+            d["donneur"], d["vul"] = selon_numero(d["n"]); finir(d); changees.append(d["n"])
+    if not changees: return []
+    enregistrer(c, data)
+    std = rapport.analyse_de(c, "standard")
+    if std and std.get("donnes"):
+        rapport.ecrire_analyse(c, "standard", dict(std, donnes={k: v for k, v in std["donnes"].items() if int(k) not in changees}), dater=False)
+    exp = rapport.analyse_de(c, "expert")
+    if exp and any(str(n) in exp.get("donnes", {}) for n in changees):
+        rapport.ecrire_analyse(c, "expert", dict(exp, donnes={k: (dict(v, a_revoir=True) if int(k) in changees else v)
+                                                               for k, v in exp["donnes"].items()}), dater=False)
+    return changees
+
+
+def regler_par_numero(c, oui):
+    """L'option de la séance (Fichier, Infos) ; oui : appliquée tout de suite. Renvoie les numéros changés."""
+    data = lire(c)
+    if bool(data.get("session", {}).get("donneur_par_numero")) == bool(oui): return []
+    data.setdefault("session", {})["donneur_par_numero"] = bool(oui)
+    enregistrer(c, data)
+    return appliquer_numero(c) if oui else []

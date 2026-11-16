@@ -13,7 +13,7 @@ import html as html_
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import carte, classement, donnes, edition, exporter, fichiers, fiche_conventions, jouer, maj, moi, palette, question_expert, rapport, systeme_vue
+import brouillon, carte, classement, donnes, edition, exporter, fichiers, fiche_conventions, jouer, maj, moi, palette, question_expert, rapport, systeme_vue
 from nicegui import app, background_tasks, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -64,7 +64,7 @@ TYPES_BWS = ("Bridgemate feuille de route ou pages du site de la FFB (*.bws;*.pd
 TYPES_PBN = ("PBN (*.pbn)", "Tous les fichiers (*.*)")
 TYPES_EXPERT = ("Analyse expert (*.json)", "Tous les fichiers (*.*)")   # pywebview : lettres et espaces seulement, pas d'apostrophe
 SOURCES = {"bws": "Bridgemate", "feuille-de-route": "Feuille de route", "entrainement": "Entraînement",
-           "saisie": "Donnes saisies", "simulation": "Simulation", "ffb-html": "Site de la FFB"}
+           "saisie": "Donnes saisies", "simulation": "Simulation", "ffb-html": "Site de la FFB", "brouillon": "Brouillon"}
 AIDE = os.path.join(rapport.RACINE, "help", "index.html")
 IMAGES_AIDE = os.path.join(rapport.RACINE, "help", "images")   # les captures d'écran de l'aide, servies sous /aide-images/
 GENERIQUE = ("Le rapport n'a pas pu être créé. Le détail est dans le fichier derniere-erreur.txt du dossier des rapports : "
@@ -592,7 +592,7 @@ AIDE_POUR = {
     ("Rapports",): "rapport", ("Rapports", "creer"): "rapport", ("Rapports", "seance"): "perdu",
     ("Réglages",): "reglages", ("Réglages", "affichage"): "taille", ("Réglages", "nom"): "votre-table",
     ("Réglages", "dossiers"): "reglages", ("Réglages", "sauvegarde"): "sauvegarde", ("Réglages", "maj"): "mise-a-jour",
-    ("Réglages", "contact"): "signaler", ("Réglages", "expert"): "questions-expert", ("Système",): "systeme-robots", ("Système", "systeme"): "systeme",
+    ("Réglages", "contact"): "signaler", ("Réglages", "expert"): "questions-expert", ("Système",): "systeme-robots", ("Fichier", "infos", "brouillon"): "brouillon", ("Système", "systeme"): "systeme",
 }
 
 
@@ -1103,6 +1103,10 @@ def page_donne(d, mes=frozenset(), tour="", reco=None):
     surlignée. tour : « Tour 1 · table 4 · … » (moi.tour_de) quand la séance décrit son mouvement. reco : le contrat
     recommandé (comparer.table_recommandee), rangé parmi les tables sur fond vert pâle."""
     mains_grille(d)
+    if d.get("origine"):                                   # une donne du Brouillon (ou d'une séance faite avec lui) : d'où elle vient
+        o = d["origine"]
+        ui.html(f"<div style='font-size:15px;color:#555b66'>Venue de la donne {o.get('n')} de <b>{html_.escape(str(o.get('titre', '')))}</b>"
+                + (f" ({o['date']})" if o.get("date") else "") + "</div>", sanitize=False).classes("mt-2")
     if tour: ui.label(tour).classes("text-base text-gray-700 mt-2")
     if d.get("tables"):
         ui.label("Aux tables").classes("text-base font-bold mt-2")
@@ -1568,6 +1572,10 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
     html = lambda h, style="": ui.html(f"<div style='font-size:15px;line-height:1.5;{style}'>{h}</div>", sanitize=False).classes("w-full")
     vul = {"Personne": "Personne", "Tous": "Tous", "N-S": "Nord-Sud", "E-O": "Est-Ouest"}.get(d.get("vul"), d.get("vul", ""))
     ui.label(f"Donne n° {d['n']}").classes("text-lg font-bold")
+    if a and a.get("a_revoir"):                             # donneur ou vulnérabilité changés depuis (edition.appliquer_numero)
+        ui.html("<div style='font-size:15px;background:var(--bc-warning-bg-subtle);border-left:4px solid var(--bc-carreau-500);"
+                "padding:6px 10px'>Le donneur ou la vulnérabilité de cette donne ont changé depuis l'analyse de l'expert : "
+                "<b>à revoir</b>. Ses enchères et ses conseils peuvent ne plus convenir.</div>", sanitize=False).classes("w-full")
     sous = f"Donneur : <b>{SIEGE[d['donneur']]}</b> · Vulnérable : <b>{vul}</b>" + (f" · Thème : <b>{d['theme']}</b>" if d.get("theme") else "")
     tour = moi.tour_de(data, d["n"]) if data else ""
     html(sous + (f"<br/>{tour}" if tour else ""), "color:#555b66;margin-top:-6px")
@@ -1663,7 +1671,8 @@ def page():
     z = taille_texte()
     ui.add_head_html(f"<style>:root {{ zoom: {z}; --zoom: {z}; }}</style>")   # la taille du texte choisie dans Réglages
     seances, dossier = reglages()
-    deja = seances_bc()
+    deja = [x for x in seances_bc() if not brouillon.est_brouillon(x)]   # la séance ouverte par défaut : pas le Brouillon
+    brouillon.assurer()                                    # le Brouillon existe toujours
     choix = {"chemin": T.seance or seance_active() or (deja[0] if deja else None)}
     choix_r = {"quelles": "toutes", "nums": []}            # Rapports, « Les donnes » : le temps de la séance ouverte
     ui.page_title(titre_fenetre(choix["chemin"]))
@@ -1842,7 +1851,43 @@ def page():
                     ui.html(etui(d, ("N", "O", "E", "S"), petit=True), sanitize=False)
                 if d.get("theme"): ui.label(f"Thème : {d['theme']}").classes("text-base text-gray-700")
                 if par and d.get("par"): ui.html(f"<div style='font-size:15px'>{par_html(d)}</div>", sanitize=False)
+                bouton_brouillon(d)
         return col
+
+    def bouton_brouillon(d):
+        """« Ajouter au Brouillon » ; « ✓ Dans le Brouillon » (un clic l'en retire) ; dans le Brouillon lui-même :
+        « Retirer du Brouillon »."""
+        c = choix["chemin"]
+        if not c or not os.path.isfile(c) or d.get("a_completer"): return
+        if brouillon.est_brouillon(c):
+            ui.button("Retirer du Brouillon", icon="remove_shopping_cart", on_click=lambda: brouillon_retirer(c, d["n"])) \
+                .props("outline no-caps color=grey-8").classes("w-full")
+        elif brouillon.numero_de(c, d["n"]):
+            ui.button("Dans le Brouillon", icon="check", on_click=lambda: brouillon_retirer(c, d["n"])) \
+                .props("unelevated no-caps color=positive").classes("w-full").tooltip("Un clic l'en retire")
+        else:
+            ui.button("Ajouter au Brouillon", icon="add_shopping_cart", on_click=lambda: brouillon_ajouter(c, d["n"])) \
+                .props("outline no-caps").classes("w-full").tooltip("Le Brouillon prépare un cours : Fichier, Ouvrir une séance")
+
+    def brouillon_change():
+        """Après un ajout ou un retrait : le compteur de la barre du haut, et les pages de la donne."""
+        badge_brouillon.refresh()
+        try: vue_seance.refresh(); vue_analyse.refresh(); vue_jouer.refresh(); barre_seance.refresh(); liste.refresh()
+        except NameError: pass
+
+    def brouillon_ajouter(c, n):
+        k = brouillon.ajouter(c, n)
+        ui.notify(f"Donne {n} ajoutée au Brouillon (donne {k} du Brouillon).")
+        brouillon_change()
+
+    def brouillon_retirer(c, n):
+        brouillon.retirer(c, n)
+        if brouillon.est_brouillon(c): vue["entree"] = "seance"
+        ui.notify("Donne retirée du Brouillon.")
+        brouillon_change()
+
+    def ouvrir_brouillon():
+        choisir(brouillon.assurer()); onglets.set_value(o_donnes)
 
     jeu = {"cle": None, "mode": lire_etat().get("mode_jouer") or "jouer"}   # la donne en cours dans l'onglet Jouer ; Jouer | Démonstration (gardé)
 
@@ -2684,6 +2729,7 @@ def page():
                     b.set_enabled(False); b.tooltip("Jouez d'abord la donne jusqu'au bout")
                 elif cle == "revoir":
                     b.tooltip("Votre partie, carte par carte, avec ce que pensaient les robots")
+        bouton_brouillon(d)
 
     def mode_de(c, d):
         """Le mode montré pour cette donne : Revoir seulement si elle a été jouée jusqu'au bout, sinon Jouer."""
@@ -3437,6 +3483,9 @@ def page():
     def sur_jouer():
         return onglets.value in (o_jouer, "Jouer")
 
+    def sur_donnes():
+        return onglets.value in (o_donnes, "Donnes")
+
     def sur_aide():
         return onglets.value in (o_aide, "Aide")
 
@@ -3532,6 +3581,7 @@ def page():
         o = onglets.value; nom = o if isinstance(o, str) else o.props.get("name", "")
         if nom in ("Fichier", "Système", "Rapports", "Réglages"):
             pg = vue_page[nom]
+            if (nom, pg) == ("Fichier", "infos") and brouillon.est_brouillon(choix["chemin"]): return (nom, pg, "brouillon")
             return (nom, pg, facon["k"]) if (nom, pg) == ("Fichier", "nouveau") else (nom, pg)
         e = vue.get("entree") or ""
         if nom == "Jouer":
@@ -3686,8 +3736,9 @@ def page():
                 if groupe:                                  # l'intertitre d'un groupe de pages, petit et discret
                     ui.label(groupe).classes("text-xs text-gray-600 uppercase font-bold px-2 " + ("mt-1" if k_ == 0 else "mt-4")) \
                         .style("letter-spacing:.06em")
-                ui.button(titre, on_click=lambda c=cle: voir_page(nom, c)).props("flat no-caps align=left dense color=grey-10") \
-                    .classes("entree-barre text-left" + (" choisie" if vue_page[nom] == cle else ""))
+                with ui.button(on_click=lambda c=cle: voir_page(nom, c)).props("flat no-caps align=left dense color=grey-10") \
+                        .classes("entree-barre text-left" + (" choisie" if vue_page[nom] == cle else "")):
+                    ui.html(systeme_vue.rouge(html_.escape(titre)), sanitize=False)   # « Après 1♥ / 1♠ » : ♥ ♦ en rouge
             return
         if sur_aide():                                    # l'aide : une entrée par page (peu de pages, plus longues)
             cats, avant = categories_aide(), None
@@ -3707,6 +3758,16 @@ def page():
         for k, (cle, nom) in enumerate(es):
             if cle in a_finir: nom += " · à compléter"
             choisie = cle == entree_effective(data)            # comme la barre de Claude : un fond un peu plus soutenu
+            if vue.get("reorg") and cle.startswith("d") and sur_donnes():   # Réorganiser : ↑ ↓ au bout de chaque donne
+                n_ = int(cle[1:]); dernier = max(x["n"] for x in data["donnes"])
+                with ui.row().classes("w-full items-center no-wrap gap-0"):
+                    ui.button(nom, on_click=lambda k=cle: aller(k)).props("flat no-caps align=left dense color=grey-10") \
+                        .classes("entree-barre grow min-w-0" + (" choisie" if choisie else ""))
+                    ui.button(icon="arrow_upward", on_click=lambda n_=n_: deplacer_(n_, n_ - 1)).props("flat round dense color=grey-8") \
+                        .set_enabled(n_ > 1)
+                    ui.button(icon="arrow_downward", on_click=lambda n_=n_: deplacer_(n_, n_ + 1)).props("flat round dense color=grey-8") \
+                        .set_enabled(n_ < dernier)
+                continue
             ui.button(nom, on_click=lambda k=cle: aller(k)).props("flat no-caps align=left dense color=grey-10") \
                 .classes("entree-barre" + (" choisie" if choisie else ""))
             if k == len(haut) - 1:                            # deux places en haut, puis un trait : Donne 1 ne bouge pas
@@ -3715,6 +3776,20 @@ def page():
         if not sur_analyse() and not sur_jouer() and edition.modifiable(choix["chemin"])[0]:
             ui.button("Ajouter une donne", icon="add", on_click=lambda: ajouter()).props("flat no-caps align=left dense no-wrap") \
                 .classes("entree-barre mt-2 text-primary")
+            if len(data["donnes"]) > 1:
+                ui.button("Terminer" if vue.get("reorg") else "Réorganiser les donnes", icon="check" if vue.get("reorg") else "swap_vert",
+                          on_click=lambda: (vue.update(reorg=not vue.get("reorg")), barre_seance.refresh())) \
+                    .props("flat no-caps align=left dense no-wrap").classes("entree-barre text-primary")
+
+    def deplacer_(n, vers):
+        """Donnes, Réorganiser : la donne n va à la place vers ; la donne montrée la suit."""
+        c = choix["chemin"]
+        if T.actif or D.actif or I.actif: ui.notify("Un calcul est en cours : attendez qu'il se termine."); return
+        ch = edition.deplacer(c, n, vers)
+        if vue.get("entree") == f"d{n}": vue["entree"] = f"d{vers}"
+        if ch: ui.notify(f"Donneur et vulnérabilité selon le numéro : donne{'s' if len(ch) > 1 else ''} {', '.join(map(str, ch))} "
+                         "changée(s) ; l'analyse de l'expert y est « à revoir ».", multi_line=True)
+        barre_seance.refresh(); vue_seance.refresh(); vue_analyse.refresh(); badge_brouillon.refresh()
 
     def basculer_liste(cachee=None):
         """La barre de gauche, cachée ou montrée, sur toutes les pages, par le bouton tout à gauche de la barre de menus
@@ -3750,6 +3825,17 @@ def page():
                 o_rapports = ui.tab("Rapports")
                 o_reglages = ui.tab("Réglages")
                 o_aide = ui.tab("Aide").classes("hidden")          # la page d'aide : montrée par le bouton de droite
+            @ui.refreshable
+            def badge_brouillon():                               # le Brouillon, toujours à portée : ouvert d'un clic
+                n_ = brouillon.nombre()
+                with ui.button(on_click=lambda: ouvrir_brouillon()).props("flat no-caps dense").classes("px-3") \
+                        .tooltip("Le Brouillon : les donnes que vous y avez mises, pour préparer un cours"):
+                    with ui.row().classes("items-center gap-1 no-wrap"):
+                        ui.icon("shopping_basket", size="20px").classes("text-gray-700")
+                        ui.label("Brouillon").classes("text-gray-800")
+                        if n_: ui.label(str(n_)).style("background:var(--bc-success-bg-subtle);color:var(--bc-success-text-emphasis);"
+                                                       "border-radius:10px;padding:0 7px;font-size:13px;font-weight:700")
+            badge_brouillon()
             with ui.button(on_click=lambda: ouvrir_aide()).props("flat no-caps dense").classes("px-3") as aide:   # l'aide de la page ouverte
                 with ui.row().classes("items-center gap-1 no-wrap"):   # une icône de couleur : l'aide se voit (l'utilisateur, 2026-11-12)
                     ui.icon("help", size="22px").style("color:#1976d2")
@@ -3915,7 +4001,7 @@ def page():
                         if not cle.startswith("sy-"): return
                         titre_ = dict(SYSTEME_PAGES).get(cle, "")
                         with ui.row().classes("w-full items-center justify-between gap-3"):
-                            ui.label(titre_).classes("text-lg font-bold")
+                            ui.html(systeme_vue.rouge(html_.escape(titre_)), sanitize=False).classes("text-lg font-bold")
                             ui.input(placeholder="Chercher : 1SA 2♣, Stayman, contre…", value=sy_cherche["t"],
                                      on_change=lambda e: (sy_cherche.update(t=e.value or ""), resultats_sy.refresh())) \
                                 .props("outlined dense clearable debounce=400").classes("w-80")
@@ -3948,7 +4034,8 @@ def page():
                                 alts_ = systeme_vue.alternatives(cle_)
                                 lib_ = ("Ouverture" if cle_ == "ouverture" else systeme_vue.sequence_texte(systeme_vue.jetons(alts_[0]))
                                         + (f" (et {len(alts_) - 1} autre{'s' if len(alts_) > 2 else ''})" if len(alts_) > 1 else ""))
-                                ui.button(lib_, on_click=lambda c_=cle_, f_=fam_: aller_sequence(c_, f_)).props("outline no-caps dense")
+                                with ui.button(on_click=lambda c_=cle_, f_=fam_: aller_sequence(c_, f_)).props("outline no-caps dense color=grey-9"):
+                                    ui.html(systeme_vue.rouge(html_.escape(lib_)), sanitize=False)
                         if len(r_) > 30: ui.label(f"… et {len(r_) - 30} autres : précisez.").classes("text-base text-gray-700")
                     page_systeme()
                 with ui.column().classes("w-full gap-3") as systeme_col:   # votre fiche (déplacée ici à la fin) et les écarts
@@ -4499,7 +4586,18 @@ def page():
         faute_o = {"texte": ""}
         @ui.refreshable
         def liste():
-            tout = seances_bc()
+            b_ = brouillon.assurer()
+            tout = [x for x in seances_bc() if not brouillon.est_brouillon(x)]
+            n_b = brouillon.nombre(); ouv_b = brouillon.est_brouillon(choix["chemin"])
+            with ui.row().classes("w-full items-center no-wrap gap-2 px-3 py-2 mb-2").style(   # le Brouillon, toujours en tête
+                    "border:2px solid var(--bc-trefle-200);border-radius:10px;background:var(--bc-trefle-50)"):
+                ui.icon("shopping_basket", size="26px").style("color:var(--bc-trefle-700)")
+                with ui.button(on_click=lambda: choisir(b_)).props("flat align=left no-caps").classes("grow min-w-0"):
+                    with ui.column().classes("gap-0 items-start text-left"):
+                        ui.label("Brouillon" + ("  · ouvert" if ouv_b else "")).classes("text-base font-bold")
+                        ui.label((f"{n_b} donne{'s' if n_b > 1 else ''}" if n_b else "vide")
+                                 + " · « Ajouter au Brouillon » sur n'importe quelle donne ; Fichier, Infos, « Enregistrer sous… » pour garder le cours") \
+                            .classes("text-sm text-gray-700")
             if not tout: ui.label("Aucune séance pour l'instant : Fichier, Nouveau").classes("text-base text-gray-700")
             rappel = rappel_sauvegarde(len(tout))
             if rappel:                                     # une sauvegarde vieille d'un mois, ou jamais faite
@@ -4648,6 +4746,24 @@ def page():
         with ui.row().classes("gap-3 justify-end w-full"):
             ui.button("Annuler", on_click=lambda: corbeille_d.close()).props("flat")
             ui.button("Mettre à la corbeille", icon="delete", on_click=lambda: mettre_a_la_corbeille()).props("color=red")
+    numero_c = {"c": None}; vider_apres = {"c": None}
+    with ui.dialog() as numero_d, ui.card().classes("w-full max-w-md"):   # Infos : donneur et vulnérabilité selon le numéro
+        numero_texte = ui.label("").classes("text-base")
+        with ui.row().classes("gap-3 justify-end w-full"):
+            ui.button("Annuler", on_click=lambda: (numero_d.close(), page_infos.refresh())).props("flat")
+            ui.button("Changer", on_click=lambda: appliquer_numero_(numero_c["c"])).props("unelevated")
+    with ui.dialog() as vider_d_b, ui.card().classes("w-full max-w-md"):   # Infos du Brouillon : le vider
+        ui.label("Vider le Brouillon ? Ses donnes, leurs analyses et vos parties jouées dessus partent. La version d'avant "
+                 "est gardée (Versions gardées, dans Donnes, Séance).").classes("text-base")
+        with ui.row().classes("gap-3 justify-end w-full"):
+            ui.button("Annuler", on_click=lambda: vider_d_b.close()).props("flat")
+            ui.button("Vider", icon="remove_shopping_cart", on_click=lambda: vider_brouillon_()).props("color=red")
+    with ui.dialog() as vider_apres_d, ui.card().classes("w-full max-w-md"):   # après « Enregistrer sous… »
+        ui.label("Le cours est enregistré. Vider le Brouillon pour le prochain ?").classes("text-base")
+        with ui.row().classes("gap-3 justify-end w-full"):
+            ui.button("Garder le Brouillon", on_click=lambda: (vider_apres_d.close(), choisir(vider_apres["c"]),
+                                                                 onglets.set_value(o_fichier), voir_page("Fichier", "infos"))).props("flat")
+            ui.button("Vider le Brouillon", icon="remove_shopping_cart", on_click=lambda: vider_brouillon_(vider_apres["c"])).props("unelevated")
     with ui.dialog() as vider_d, ui.card().classes("w-full max-w-md"):   # Ouvrir une séance, la corbeille : la vider
         vider_texte = ui.label("").classes("text-base")
         with ui.row().classes("gap-3 justify-end w-full"):
@@ -4698,6 +4814,55 @@ def page():
     with panneau_fichier, ui.column().classes("w-full gap-3") as pages_ui["infos"]:   # Fichier, Infos
         titre_page("Infos sur la séance", "infos")
         infos_ui = {"copie": False, "faute": "", "fait": ""}
+        def bloc_ordre(c, data):
+            """Fichier, Infos : « Donneur et vulnérabilité selon le numéro », pour les séances faites dans Bridge Coach ; une
+            séance importée garde ceux qui ont été joués (la dupliquer d'abord)."""
+            ui.label("Donneur et vulnérabilité").classes("text-base font-bold mt-3")
+            ok_, pourquoi = edition.modifiable(c)
+            if not ok_:
+                ui.label(pourquoi).classes("text-base text-gray-700"); return
+            on = bool((data.get("session") or {}).get("donneur_par_numero"))
+            ui.checkbox("Selon le numéro de la donne, comme au club et pour une machine à donnes", value=on,
+                        on_change=lambda e: demander_numero(c, e.value)).classes("text-base")
+            ui.label("Sinon, chaque donne garde le donneur et la vulnérabilité qu'elle avait (une donne venue d'un tournoi, ceux de "
+                     "son tournoi).").classes("text-base text-gray-700")
+
+        def demander_numero(c, oui):
+            if not oui:
+                edition.regler_par_numero(c, False); page_infos.refresh(); return
+            ch = edition.changeraient(c)
+            an_ = (rapport.lire_bc(c).get("analyses") or {})
+            exp_ = [n for n in ch if str(n) in ((an_.get("expert") or {}).get("donnes") or {})]
+            if not exp_:
+                appliquer_numero_(c); return
+            numero_texte.text = (f"{len(ch)} donne{'s' if len(ch) > 1 else ''} change{'nt' if len(ch) > 1 else ''} de donneur ou de "
+                                 f"vulnérabilité, dont {len(exp_)} avec une analyse de l'expert (donne{'s' if len(exp_) > 1 else ''} "
+                                 f"{', '.join(map(str, exp_))}). Son texte reste, marqué « à revoir » ; l'analyse du coach se refait "
+                                 "(Analyse, « Lancer l'analyse »).")
+            numero_c["c"] = c; numero_d.open()
+
+        def appliquer_numero_(c):
+            numero_d.close()
+            ch = edition.regler_par_numero(c, True)
+            ui.notify(f"Donneur et vulnérabilité selon le numéro : {len(ch)} donne{'s' if len(ch) > 1 else ''} changée{'s' if len(ch) > 1 else ''}."
+                      if ch else "Donneur et vulnérabilité selon le numéro : aucune donne ne change.")
+            page_infos.refresh(); vue_seance.refresh(); vue_analyse.refresh(); barre_seance.refresh()
+
+        def enregistrer_brouillon(nom, titre):
+            try:
+                c = brouillon.enregistrer_sous(nom, titre)
+            except ValueError as ex:
+                infos_ui["faute"] = str(ex); page_infos.refresh(); return
+            infos_ui.update(copie=False, faute="")
+            vider_apres["c"] = c; vider_apres_d.open()
+
+        def vider_brouillon_(ouvrir_c=None):
+            vider_d_b.close(); vider_apres_d.close()
+            brouillon.vider(); badge_brouillon.refresh()
+            if ouvrir_c: choisir(ouvrir_c); onglets.set_value(o_fichier); voir_page("Fichier", "infos")
+            else: page_infos.refresh(); vue_seance.refresh(); barre_seance.refresh()
+            ui.notify("Le Brouillon est vide.")
+
         @ui.refreshable
         def page_infos():
             c = choix["chemin"]
@@ -4708,12 +4873,13 @@ def page():
             except (OSError, ValueError):
                 ui.label("Cette séance ne se lit pas.").classes("text-base text-red-800"); return
             s = data.get("session", {}); src = data.get("source") or {}; f = data.get("fichier") or {}
-            lies_ = fichiers.lies(c)
+            lies_ = fichiers.lies(c); est_b = brouillon.est_brouillon(c)
             titre_in = ui.input("Titre", value=s.get("titre") or "").props("outlined").classes("w-full text-base")
+            titre_in.set_visibility(not est_b)                 # le Brouillon garde son nom : on l'enregistre sous un autre
             b_titre = ui.button("Enregistrer le titre", icon="check", on_click=lambda: changer_titre_(c, titre_in.value)).props("outline").classes("self-start")
-            b_titre.set_enabled(False)
+            b_titre.set_enabled(False); b_titre.set_visibility(not est_b)
             titre_in.on_value_change(lambda e: b_titre.set_enabled(bool(e.value.strip()) and e.value.strip() != (s.get("titre") or "")))
-            prop = fichiers.proposer_pour(c)                # une séance d'avant les titres : titre et nom proposés
+            prop = None if est_b else fichiers.proposer_pour(c)   # une séance d'avant les titres : titre et nom proposés
             if prop:
                 with ui.column().classes("w-full gap-1 p-3").style("border-radius:10px;background:#eef4fb"):
                     ui.label("Ce fichier date d'avant les titres. Bridge Coach propose :").classes("text-base")
@@ -4734,10 +4900,10 @@ def page():
                                 ("Avec Bridge Coach", f.get("cree_avec")),
                                 ("Modifié le", quand_iso(f.get("modifie_le") or datetime.datetime.fromtimestamp(os.path.getmtime(c)).isoformat(timespec="seconds")))])
             bloc("D'où elle vient", [("Source", SOURCES.get(src.get("type"), src.get("type"))),
-                                     ("Fichier d'origine", src.get("fichier") if src.get("type") not in ("entrainement", "saisie") else ""),
+                                     ("Fichier d'origine", src.get("fichier") if src.get("type") not in ("entrainement", "saisie", "brouillon") else ""),
                                      ("Il était dans", os.path.dirname(src["chemin"]) if src.get("chemin") else ""),
                                      ("Daté du", quand_iso(src.get("date_fichier"))),
-                                     ("Importée le", quand_iso(src.get("importe")) if src.get("type") not in ("entrainement", "saisie") else "")])
+                                     ("Importée le", quand_iso(src.get("importe")) if src.get("type") not in ("entrainement", "saisie", "brouillon") else "")])
             a_finir = sum(1 for x in data.get("donnes", []) if x.get("a_completer"))
             mes = moi.paires(data)
             bloc("La séance", [("Date", fichiers.date_longue(d) if d else s.get("date")), ("Heure", s.get("heure")),
@@ -4757,6 +4923,27 @@ def page():
                                      ("Donnes rejouées", joues or ""),
                                      ("Versions gardées", len([v for v in lies_["versions"] if v.endswith(rapport.BC)]) or "")])
 
+            bloc_ordre(c, data)
+            if brouillon.est_brouillon(c):                  # le Brouillon : ni renommé ni jeté ; on l'enregistre sous un nom
+                ui.label("Le Brouillon").classes("text-base font-bold mt-3")
+                ui.label("Il est toujours là. Pour garder le cours que vous y avez préparé : « Enregistrer sous… » en fait une "
+                         "séance datée d'aujourd'hui ; vous pouvez ensuite vider le Brouillon pour le prochain.").classes("text-base text-gray-700")
+                with ui.row().classes("gap-3"):
+                    ui.button("Enregistrer sous…", icon="save_as", on_click=lambda: (infos_ui.update(copie=True), page_infos.refresh())) \
+                        .props("unelevated").set_enabled(bool(data.get("donnes")))
+                    ui.button("Vider le Brouillon…", icon="remove_shopping_cart", on_click=lambda: vider_d_b.open()) \
+                        .props("outline color=red").set_enabled(bool(data.get("donnes")))
+                if infos_ui["copie"]:
+                    n0, t0 = brouillon.proposer()
+                    with ui.column().classes("w-full gap-2 p-3").style("border:2px solid #1976d2;border-radius:10px;background:#f7fafd"):
+                        ui.label("Une séance avec les donnes du Brouillon et leurs analyses :").classes("text-base")
+                        t_in = ui.input("Titre", value=t0).props("outlined").classes("w-full text-base")
+                        n_in = ui.input("Nom du fichier", value=n0).props("outlined suffix=.bc.json").classes("w-full text-base")
+                        with ui.row().classes("gap-3"):
+                            ui.button("Enregistrer", icon="save", on_click=lambda: enregistrer_brouillon(n_in.value, t_in.value)).props("unelevated")
+                            ui.button("Annuler", on_click=lambda: (infos_ui.update(copie=False), page_infos.refresh())).props("flat")
+                if infos_ui["faute"]: ui.label(infos_ui["faute"]).classes("text-base text-red-800")
+                return
             ui.label("Le fichier").classes("text-base font-bold mt-3")
             with ui.row().classes("items-start gap-3 w-full no-wrap"):
                 nom_in = ui.input("Nom du fichier", value=fichiers.base(c)).props("outlined suffix=.bc.json").classes("grow text-base")

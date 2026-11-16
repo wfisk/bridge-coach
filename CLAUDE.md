@@ -164,6 +164,24 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         where it is, under its own name (even with a date in it): no undated copy is made.
                         migrer(), on every start: reports/ → rapports/, <name>-donnes.json → <name>.bc.json with
                         its source and players (<name>-paires.json merged in, then removed)
+      brouillon.py      the Brouillon (2026-11-16, the user: one permanent séance to gather a lesson's deals, « like a shopping
+                        basket »): seances/brouillon/brouillon.bc.json, source "brouillon", always there (assurer at start-up),
+                        never trashed or renamed. « Ajouter au Brouillon » on every deal page (app.bouton_brouillon: Donnes and
+                        Analyse right panel, Jouer's tete_donne; green « Dans le Brouillon » removes it; in the Brouillon itself
+                        « Retirer du Brouillon »); a deal brings its hands, dealer, vulnerability, theme, dm, par, both analyses
+                        and "origine" {fichier, n, titre, date} (shown on its Donnes page), not the tables (ajouter, one write).
+                        Top bar: a Brouillon badge with its count (badge_brouillon) opens it in Donnes; Ouvrir pins it at the top.
+                        Fichier › Infos for it: « Enregistrer sous… » (enregistrer_sous: a normal "saisie" séance dated today,
+                        proposer: « Cours du lundi 16 novembre 2026 », 2026-11-16-cours) then « Vider le Brouillon ? », and
+                        « Vider le Brouillon… » (vider: version kept first). Reordering, for any séance edition.modifiable allows
+                        (training, typed-in, Brouillon, and since 2026-11-16 any duplicate: fichier.copie_de, edition.est_copie;
+                        an imported séance says « dupliquez-la d'abord »): Donnes sidebar « Réorganiser les donnes », ↑ ↓ per deal
+                        (app.deplacer_, edition.deplacer: analyses and -jeu.json follow, renumeroter_analyses / renumeroter_jeu;
+                        supprimer_donne now renumbers -jeu.json too). Fichier › Infos « Donneur et vulnérabilité selon le numéro »
+                        (session.donneur_par_numero, edition.regler_par_numero / appliquer_numero, after a confirm naming the deals
+                        with an expert analysis): a deal that changes loses its coach analysis (redone by « Lancer l'analyse ») and
+                        keeps the expert's marked a_revoir (a banner in Analyse); also applied after a move, a removal or an
+                        addition. Help « Le Brouillon » under Faire cours. tests/test_brouillon.py
       systeme_vue.py    the « Système » tab (2026-11-16, the user: review the robots' system; read-only, editing later):
                         reads systems/sef-2024/regles.yaml with ruamel (lire: sections by the file's « # ---- » headings, each
                         sequence's rules si / montre / nature / nom / alerte / source / note / apres and its examples), groups the
@@ -177,7 +195,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (SYSTEME_PAGES: Vue d'ensemble with systeme.md, the families, Entames et signaux, the four conventions'
                         .md, then « Votre partenariat »: the convention card, moved here from Réglages (pages_ui["systeme"].move),
                         and « Écarts fiche / robots » (ecarts_fiche: every card line that differs from Bridge Coach, i.e. from
-                        what the robots play). Family pages are drawn on demand (page_systeme). tests/test_systeme_vue.py
+                        what the robots play). Family pages are drawn on demand (page_systeme). ♥ and ♦ are red in every text of the tab (systeme_vue.rouge, the global .rouge class: meanings, notes, headings, links, examples, the .md pages, page titles, search buttons, and the Fichier / Système / Rapports / Réglages sidebar entries; the user, 2026-11-16: « it makes a big difference »). tests/test_systeme_vue.py
       palette.py        the colour palette (2026-11-16, the user: Bootstrap's approach, colours from bridge): six bases, each the
                         exact colour at its nearest step: trefle #1d7a35 (♣ of the bidding box, PASS, not vulnerable), coeur
                         #c0141c (♥♦, X, vulnerable), pique #1f3fa0 (♠ of the box, XX, ALERT), carreau #c86a00 (♦ of the box),

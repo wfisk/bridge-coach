@@ -129,6 +129,11 @@ def jetons(cle):
     return out
 
 
+def rouge(t):
+    """♥ et ♦ en rouge dans un texte déjà échappé (pas dans un attribut : title='…' garde ses symboles tels quels)."""
+    return str(t).replace("♥", "<span class='rouge'>♥</span>").replace("♦", "<span class='rouge'>♦</span>")
+
+
 def alternatives(cle):
     return [x.strip() for x in cle.split("|")]
 
@@ -342,7 +347,7 @@ CSS = """
 .syst .carton-s { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 28px;
   padding: 0 var(--sp-2); border-radius: 5px; border: 1px solid var(--bc-tapis-300); background: var(--bc-blanc);
   font-weight: 700; font-size: 16px; color: var(--bc-tapis-900); white-space: nowrap; }
-.syst .carton-s.rouge, .syst .rouge { color: var(--bc-coeur-600); }
+.syst .carton-s.rouge, .rouge { color: var(--bc-coeur-600); }   /* ♥ ♦ en rouge, partout où rouge() les met */
 .syst .carton-s.adv { background: var(--bc-tapis-100); color: var(--bc-tapis-600); font-weight: 600; }
 .syst .carton-s.attente { border-style: dashed; color: var(--bc-tapis-400); }
 .syst .seq { display: inline-flex; gap: var(--sp-1); align-items: center; flex-wrap: wrap; }
@@ -380,11 +385,10 @@ def regle_html(r, cle, ix, definitions):
     elif src == "sa": badges.append("<span class='badge b-sa' title='Emprunté au Standard américain'>Standard américain</span>")
     if r["nature"] in NATURE: badges.append(f"<span class='badge b-nat'>{NATURE[r['nature']]}</span>")
     k = suite(ix, cle, r["enchere"])
-    lien = (f"<span class='suite' data-vers='{ancre(k[0])}'>La suite : {html.escape(k[1])} →</span>" if k else "")
-    note = f"<div class='note'>{html.escape(str(r['note']))}</div>" if r["note"] else ""
-    apres = f" <span class='note'>(seulement après {html.escape(sequence_texte(jetons(str(r['apres']))))})</span>" if r["apres"] else ""
-    montre = html.escape(str(r["montre"])) or "&nbsp;"
-    for l, c in COUL.items(): montre = montre  # le texte de « montre » a déjà ses symboles
+    lien = (f"<span class='suite' data-vers='{ancre(k[0])}'>La suite : {rouge(html.escape(k[1]))} →</span>" if k else "")
+    note = f"<div class='note'>{rouge(html.escape(str(r['note'])))}</div>" if r["note"] else ""
+    apres = f" <span class='note'>(seulement après {rouge(html.escape(sequence_texte(jetons(str(r['apres'])))))})</span>" if r["apres"] else ""
+    montre = rouge(html.escape(str(r["montre"]))) or "&nbsp;"
     return (f"<div class='regle'><div>{enchere_html(r['enchere'])}</div>"
             f"<div><div class='montre'>{montre}{apres}</div><div class='cond'>{condition(r['si'], definitions)}</div>{note}{lien}</div>"
             f"<div class='badges'>{''.join(badges)}</div></div>")
@@ -398,9 +402,9 @@ def sequence_bloc(cle, regles, exemples, ix, definitions):
             if not isinstance(e, dict) or "main" not in e: continue
             plus = []
             if e.get("position"): plus.append(f"en {e['position']}{'re' if str(e['position']) == '1' else 'e'} position")
-            if e.get("apres"): plus.append(f"après {html.escape(sequence_texte(jetons(str(e['apres']))))}")
+            if e.get("apres"): plus.append(f"après {rouge(html.escape(sequence_texte(jetons(str(e['apres'])))))}")
             if e.get("vul"): plus.append(atome(str(e["vul"])) or str(e["vul"]))
-            if e.get("partenaire"): plus.append(f"partenaire : {html.escape(str(e['partenaire']))}")
+            if e.get("partenaire"): plus.append(f"partenaire : {rouge(html.escape(str(e['partenaire'])))}")
             lignes.append(f"<div>{main_html(e['main'])} → {enchere_html(e.get('attendu', ''))}"
                           + (f" <span class='note'>{', '.join(plus)}</span>" if plus else "") + "</div>")
         if lignes:
@@ -422,7 +426,7 @@ def page_famille(cle_famille, s=None):
                    "les enchères dans l'ordre où le robot les essaie : il fait la première dont la condition est vraie. "
                    "Ce qui n'est pas décrit ici, il le joue avec ses règles générales.</p>")
         for t, seqs in sections:
-            out.append(f"<h3>{html.escape(t[0].upper() + t[1:])}</h3>")
+            out.append(f"<h3>{rouge(html.escape(t[0].upper() + t[1:]))}</h3>")
             out += [sequence_bloc(c, r, e, ix, defs) for c, r, e in seqs]
         out.append("</div>")
         return "".join(out)
@@ -459,7 +463,7 @@ def lire_doc(nom):
     for f in (os.path.join(SYSTEMES, SYSTEME, nom), os.path.join(SYSTEMES, nom)):
         if os.path.exists(f):
             t = open(f, encoding="utf-8").read()
-            return re.sub(r"\[([^\]]+)\]\([^)]+\.md\)", r"\1", t)
+            return rouge(re.sub(r"\[([^\]]+)\]\([^)]+\.md\)", r"\1", t))   # ♥ ♦ en rouge, même dans le markdown
     return ""
 
 

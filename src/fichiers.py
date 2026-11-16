@@ -367,7 +367,7 @@ def dupliquer(c, nom, titre):
     data = rapport.lire_bc(c)
     avant = data.get("session", {}).get("titre") or base(c)
     data.setdefault("session", {})["titre"] = (titre or "").strip() or f"{avant} (copie)"
-    data["fichier"] = {"cree_le": maintenant(), "cree_avec": version_programme(), "journal": []}
+    data["fichier"] = {"cree_le": maintenant(), "cree_avec": version_programme(), "journal": [], "copie_de": base(c)}
     journal(data, f"Copie de « {avant} » ({base(c)})")
     rapport.ecrire_bc(data, cible)
     return cible

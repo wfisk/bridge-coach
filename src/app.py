@@ -13,7 +13,7 @@ import html as html_
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import brouillon, carte, classement, donnes, edition, exporter, fichiers, fiche_conventions, jouer, maj, moi, palette, question_expert, rapport, systeme_vue
+import brouillon, carte, classement, quiz, donnes, edition, exporter, fichiers, fiche_conventions, jouer, maj, moi, palette, question_expert, rapport, systeme_vue
 from nicegui import app, background_tasks, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -2632,9 +2632,12 @@ def page():
 
     def options_joueurs(*garder):
         """Le choix d'un joueur : « Aucun (tous les joueurs) », puis votre nom (Réglages, « Votre nom »), une ligne de
-        séparation, puis tous les autres, par ordre alphabétique. garder : des noms à montrer même s'ils ne sont plus
-        dans les séances."""
-        noms_ = moi.tous_les_noms(rapport.glob_seances("*" + rapport.BC))
+        séparation, puis les autres joueurs de la séance ouverte, par ordre alphabétique (pas ceux de toutes les
+        séances : l'utilisateur, 2026-11-16). garder : des noms à montrer même s'ils ne sont pas dans cette séance
+        (le choix en cours, pour que la liste l'affiche)."""
+        data_ = lire_seance(seance_active()) or {}
+        noms_ = sorted({(j.get("nom") or "").strip() for v in (data_.get("joueurs") or {}).values() for j in v} - {""},
+                       key=str.lower)
         noms_ += [x for x in garder if x and x not in noms_]
         mien = lire_etat().get("mon_nom")
         out = {"": "Aucun (tous les joueurs)"}
@@ -2750,6 +2753,10 @@ def page():
         m = jeu.get("demo")
         if not m or jeu.get("demo_occupe"): return
         k = max(0, k); avant = jeu.get("pas", 0)
+        qz = quiz_de(m)
+        if qz and not jeu.get("quiz_revele") and avant >= qz["pas"] and k > qz["pas"]:
+            await quiz_reveler(m); return                   # la question posée : ▶ montre d'abord la réponse
+        if k == 0: jeu.update(quiz_revele=False, quiz_choix=None)   # au début : la question se repose
         if k == avant + 1 and k <= m.n_pas() + 1:           # un pli fini reste sur la table tant qu'on en parle ; il part vers
             await demo_ramasser(m, avant)                   # son gagnant quand on avance (l'utilisateur, 2026-11-13)
         if k > m.n_pas():                                  # une carte de plus : le robot réfléchit
@@ -2763,6 +2770,66 @@ def page():
                 jeu.update(demo_occupe=False, demo_msg="")
             if not ok: k = m.n_pas()
         jeu["pas"] = min(k, m.n_pas()); vue_jouer.refresh()
+
+    def quiz_de(m):
+        """La question de la démonstration m quand l'interrupteur « Quiz » est mis (quiz.question_entame), sinon None ;
+        gardée tant qu'on reste sur la même donne."""
+        if not lire_etat().get("demo_quiz") or not m: return None
+        if jeu.get("quiz_cle") != jeu.get("demo_cle"):
+            try: qz = quiz.question_entame(m)
+            except Exception: qz = None
+            jeu.update(quiz=qz, quiz_cle=jeu.get("demo_cle"), quiz_revele=False, quiz_choix=None)
+        return jeu.get("quiz")
+
+    def quiz_en_attente(m, k):
+        """La question n'a pas encore sa réponse et la démonstration n'est pas plus loin : on ne montre que ce que voit le
+        joueur qui décide (sa main ; les autres mains de dos, pas de double mort)."""
+        qz = quiz_de(m)
+        return bool(qz) and not jeu.get("quiz_revele") and k <= qz["pas"]
+
+    async def quiz_reveler(m):
+        """« Montrer la réponse » : la réponse du coach, pourquoi, puis le double mort de chaque choix (calculé ici)."""
+        qz = quiz_de(m)
+        if not qz or jeu.get("demo_occupe"): return
+        jeu.update(demo_occupe=True, quiz_revele=True, demo_msg="Le coach regarde les quatre mains…"); vue_jouer.refresh()
+        try: await run.io_bound(quiz.apres_coup, m, qz)
+        except Exception: qz["apres_coup"] = ""
+        finally: jeu.update(demo_occupe=False, demo_msg="")
+        vue_jouer.refresh()
+
+    def quiz_choisir(x):
+        """L'enseignant marque la réponse de la classe (un second clic l'ôte)."""
+        jeu["quiz_choix"] = None if jeu.get("quiz_choix") == x else x; vue_jouer.refresh()
+
+    def quiz_panneau(qz):
+        """Dans la barre de droite, à la fin des enchères : la question, les choix en grandes cartes ; puis la réponse."""
+        vu = jeu.get("quiz_revele"); pris = jeu.get("quiz_choix")
+        with ui.element("div").classes("w-full rounded-xl p-3").style(
+                "background:var(--bc-highlight-bg-subtle,#fff8dc);border:1px solid var(--bc-highlight-border-subtle,#f2d675)"):
+            ui.html(f"<div style='font-size:18px;font-weight:700;line-height:1.35'>{rouge(qz['question'])}</div>", sanitize=False)
+            with ui.row().classes("gap-2 mt-3 no-wrap"):
+                for x in qz["choix"]:
+                    c_ = x["carte"]; bord = "#2563eb" if c_ == pris else "#d1d5db"
+                    fond = ("#dcfce7" if x["bonne"] else "#fff") if vu else ("#eff6ff" if c_ == pris else "#fff")
+                    if vu and x["bonne"]: bord = "#1d7a35"
+                    ui.button(on_click=lambda c_=c_: quiz_choisir(c_)).props("flat no-caps").style(
+                        f"background:{fond};border:2px solid {bord};border-radius:10px;min-width:58px;padding:6px 4px")                         .add_slot("default", f"<div style='font-size:24px;line-height:1.1;color:{'#c0141c' if c_[0] in '♥♦' else '#2a2620'}'>"
+                                             f"{c_[0]}<br/>{c_[1:].replace('X', '10')}</div>")
+            if not vu:
+                ui.label("La classe répond ; un clic marque sa réponse.").classes("text-base text-gray-700 mt-2")
+                ui.button("Montrer la réponse", icon="visibility", on_click=lambda: quiz_reveler(jeu.get("demo")))                     .props("unelevated no-caps").classes("text-base mt-2").set_enabled(not jeu.get("demo_occupe"))
+                return
+            bon = qz["reponse"]
+            if pris: ui.html(f"<div style='font-size:17px;margin-top:10px'><b>{'Bravo !' if pris == bon else 'Pas tout à fait.'}</b> "
+                             f"La classe a choisi {rouge(pris)}.</div>", sanitize=False)
+            ui.html(f"<div style='font-size:17px;margin-top:8px'><b>Le coach entame {rouge(bon)}.</b> {rouge(qz['explication'])}"
+                    + (f"<br/>{rouge(qz['lecture'])}" if qz.get("lecture") else "") + "</div>", sanitize=False)
+            lignes = [f"{rouge(x['carte'])} : {quiz.texte_levees(qz, x)}" for x in qz["choix"] if quiz.texte_levees(qz, x)]
+            if lignes or qz.get("apres_coup"):
+                ui.html("<div style='font-size:16px;margin-top:8px;color:#374151'><b>Après coup</b> (les quatre mains vues), "
+                        "levées de la défense :<br/>" + " · ".join(lignes)
+                        + (f"<br/>{rouge(qz['apres_coup'])}" if qz.get("apres_coup") else "") + "</div>", sanitize=False)
+            ui.label("▶ : l'entame est jouée, la démonstration continue.").classes("text-base text-gray-700 mt-2")
 
     async def demo_ramasser(m, k):
         """Le pas k a terminé un pli et l'on avance : la carte gagnante luit, puis les quatre cartes partent vers le joueur qui
@@ -2873,6 +2940,8 @@ def page():
         # les onglets prennent les flèches quand ils ont le focus : on le leur ôte, ← → restent à la démonstration
         ui.run_javascript("var a = document.activeElement; if (a && a.closest && a.closest('.q-tabs')) a.blur()")
         bas = siege_pour(c, d) or m.decl or "S"             # la même place en bas que dans Jouer et Revoir (l'utilisateur, 2026-11-11)
+        qz = quiz_de(m); attente = quiz_en_attente(m, k)
+        if qz: bas = qz["siege"]                             # le quiz : la classe est à la place de celui qui décide
         if m.decl and bas == jouer.PART[m.decl] and k > m.n_encheres:
             bas = m.decl                                    # le mort n'est jamais en bas : dès l'entame, le déclarant passe devant vous
         vu = jeu.get("demo_bas_vu")                          # et la table tourne d'un demi-tour, comme dans Jouer
@@ -2885,7 +2954,7 @@ def page():
         j = k - m.n_encheres - 1                           # la dernière carte montrée
         q = m.position(j) if m.decl and k >= m.n_encheres else None
         marques_dm.clear()
-        voir_dm = jeu.get("demo_dm") and q is not None and not q.fini()
+        voir_dm = jeu.get("demo_dm") and q is not None and not q.fini() and not attente   # la réponse ne se lit pas sur les cartes
         if voir_dm:
             v = m.dm(j)
             if v:
@@ -2896,7 +2965,11 @@ def page():
         with ui.row().classes("w-full no-wrap items-start gap-4").style(f"padding-right:{LARGEUR_PANNEAU}px"):
             with ui.column().classes("grow min-w-0 gap-2 relative"):
                 def interrupteur_dm():                   # dès la fin des enchères : sous chaque carte jouable, le double mort
-                    if m.decl and k >= m.n_encheres:
+                    ui.switch("Quiz", value=bool(qz), on_change=lambda ev: (ecrire_etat(demo_quiz=ev.value), jeu.update(quiz_cle=None),
+                                                                           vue_jouer.refresh())).classes("text-base") \
+                        .tooltip("La démonstration s'arrête à l'entame : la classe ne voit que la main de l'entameur et répond, "
+                                 "puis « Montrer la réponse ».")
+                    if m.decl and k >= m.n_encheres and not attente:
                         ui.switch("Double mort", value=bool(jeu.get("demo_dm")),
                                   on_change=lambda ev: (jeu.update(demo_dm=ev.value), vue_jouer.refresh())).classes("text-base") \
                             .tooltip("Sous chaque carte jouable : les levées du déclarant au double mort (en vert la meilleure). "
@@ -2904,6 +2977,8 @@ def page():
                 outils_table(d, extra=interrupteur_dm)
                 if q is None or not en_jeu:                 # les enchères : les mains entières, les cartons sur la table
                     def contenu(x, ou):
+                        if attente and x != qz["siege"]:            # le quiz : les autres mains de dos
+                            dos(ou, 13); return
                         if q is not None and voir_dm and x == q.au_trait():   # l'entame au double mort
                             eventail(mains_fr(d, x), jouables, clic, colonnes=ou in ("gauche", "droite"), cote=ou, grande=x == bas, depart=mains_fr(d, x))
                         else:
@@ -2967,7 +3042,9 @@ def page():
                 if k <= m.n_encheres:                       # les enchères : la grille seule, sur sa carte blanche (l'utilisateur,
                     with ui.element("div").classes("w-full rounded-xl border border-gray-200 bg-white p-2"):   # 2026-11-11)
                         grille_demo()
-                    if k == m.n_encheres and m.notes and m.decl:     # la fin des enchères : l'avis de qui les recommande
+                    if qz and k == qz["pas"]:
+                        quiz_panneau(qz)
+                    if k == m.n_encheres and m.notes and m.decl and not attente:     # la fin des enchères : l'avis de qui les recommande
                         ui.html(f"<div style='font-size:16px'><b>L'avis {src} :</b> {rouge(m.notes)}</div>", sanitize=False)
                     if k == m.n_encheres and not m.decl:
                         ui.label("La donne se passe : rien à montrer au jeu de la carte.").classes("text-base")
@@ -5022,6 +5099,8 @@ def page():
         choix["chemin"] = c; faute.text = ""
         retenir(c); montrer_titre(); vue["entree"] = "seance"; vue.pop("version", None); expert_msg.update(texte="", faute=False); vue_seance.refresh(); barre_seance.refresh(); montrer_barre(); montrer_controles()
         resultats.refresh(); vue_analyse.refresh(); choix_r.update(quelles="toutes", nums=[]); options_rapports.refresh()
+        try: choix_moi.set_options(options_joueurs(moi.nom()), value=moi.nom() or "")   # « Vous êtes » : les joueurs de cette séance
+        except NameError: pass
         if onglets.value not in (o_donnes, o_analyse, o_rapports, "Donnes", "Analyse", "Rapports"): onglets.set_value(o_donnes)
 
     async def preparer_import(b):

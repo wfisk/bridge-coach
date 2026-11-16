@@ -406,6 +406,15 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (demo_touche); in the play ▶ (filled) plays the next card and, when it is your side's (bottom player or partner, jeu["demo_bas"]) and the trick goes on, the opponent's card after it (an opponent's lead alone: W | N E | S; the user, 2026-11-13: fewer clicks but not the whole trick; Revoir's ▶ still plays the whole trick), and a light › one card
                         (demo_pli; in Revoir too, revoir_pli; no added pause in Démo or Revoir, pauses are for Jouer only; a finished trick in Démo stays on the table while the teacher talks about it; the next ▶ or › first ends it as in Jouer (the winning card glows 0.35 s, the four cards fly to the winner: demo_ramasser), then plays on; → the trick, Maj + → one card; the user, 2026-11-13: less clicking); during the
                         auction ▶ is one call; double-mort counts as badges on the cards' top corner (marques_dm, .carte .dm). tests/test_demo.py
+      quiz.py           the quiz in Démo (2026-11-16, the user: inside Démo, not a new menu; a « Quiz » switch on Démo's top
+                        line, etat demo_quiz): question_entame(m) for a demo.Demo is plain data (pas = the end of the auction,
+                        siege = the leader, voit = only their hand and the auction, question, choix = one card per suit, the
+                        rule's card in its suit, reponse = the card Démo then leads, explication, lecture), so phones can be
+                        served the same later; apres_coup adds each choice's defence tricks double dummy, only after the answer.
+                        app: quiz_de, quiz_en_attente (the leader at the bottom, other hands face down, no Double mort until the
+                        answer), quiz_panneau in the right sidebar (a click marks the class's answer), ▶ / → at the question
+                        shows the answer first (quiz_reveler), ⏮ asks it again. Leads only so far; next: close bids, hard
+                        cards, the teacher's choice of questions in Donnes. tests/test_quiz.py
       classement.py     the tournament replay scoreboard (Jouer tab, sidebar entry « Classement » under Options, 2026-11-11;
                         app.page_classement): for each deal the latest finished attempt in <name>-jeu.json (card play to the
                         last trick, "levees", or a passed-out deal; bidding alone does not count: fini, dernier_fini), the score

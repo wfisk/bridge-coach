@@ -10,7 +10,7 @@ plus : on ne le copie pas et on n'y revient pas (l'utilisateur, 2026-11-12).
 Renommer, dupliquer et mettre à la corbeille emportent tout ce qui va avec la séance : ses essais de l'onglet Jouer
 (-jeu.json), ses versions gardées, ses rapports PDF et le dossier préparé pour Claude.
 """
-import os, re, json, glob, shutil, datetime, unicodedata
+import os, re, sys, json, glob, shutil, datetime, unicodedata
 
 import rapport
 
@@ -415,6 +415,65 @@ def dans_la_corbeille():
         quand = f"{m[3]}/{m[2]}/{m[1]} à {m[4]}:{m[5]}" if m else ""
         out.append((d, e.get("session", {}).get("titre") or bc[0][:-len(rapport.BC)], e.get("session", {}).get("date", ""), quand))
     return out
+
+
+def taille_corbeille():
+    """La place que prend la corbeille, en octets."""
+    n = 0
+    for racine, _, fs in os.walk(corbeille_dossier()):
+        for f in fs:
+            try: n += os.path.getsize(os.path.join(racine, f))
+            except OSError: pass
+    return n
+
+
+def en_mots(octets):
+    """« 2,4 Mo », « 830 ko »."""
+    if octets >= 1e6: return f"{octets / 1e6:.1f} Mo".replace(".", ",")
+    return f"{max(1, round(octets / 1e3))} ko"
+
+
+def vers_corbeille_systeme(chemin):
+    """Met un fichier ou un dossier dans la Corbeille de l'ordinateur (Mac : la Corbeille du Finder ; Windows : la
+    Corbeille), d'où l'on peut encore le reprendre. OSError si ce n'est pas possible : rien n'est alors effacé."""
+    chemin = os.path.abspath(chemin)
+    if sys.platform == "darwin":
+        try:
+            from Foundation import NSFileManager, NSURL          # pyobjc, déjà là pour la fenêtre (pywebview)
+        except ImportError as ex:
+            raise OSError("La Corbeille du Mac n'est pas joignable.") from ex
+        ok, _, err = NSFileManager.defaultManager().trashItemAtURL_resultingItemURL_error_(
+            NSURL.fileURLWithPath_(chemin), None, None)
+        if not ok: raise OSError(str(err) if err else "La Corbeille du Mac a refusé.")
+    elif sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+
+        class SHFILEOPSTRUCTW(ctypes.Structure):
+            _fields_ = [("hwnd", wintypes.HWND), ("wFunc", wintypes.UINT), ("pFrom", wintypes.LPCWSTR),
+                        ("pTo", wintypes.LPCWSTR), ("fFlags", ctypes.c_ushort), ("fAnyOperationsAborted", wintypes.BOOL),
+                        ("hNameMappings", ctypes.c_void_p), ("lpszProgressTitle", wintypes.LPCWSTR)]
+        FO_DELETE, FOF_SILENT, FOF_NOCONFIRMATION, FOF_ALLOWUNDO, FOF_NOERRORUI = 3, 4, 0x10, 0x40, 0x400
+        op = SHFILEOPSTRUCTW(None, FO_DELETE, chemin + "\0", None,
+                             FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI, False, None, None)
+        r = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op))
+        if r or op.fAnyOperationsAborted: raise OSError(f"La Corbeille de Windows a refusé (code {r}).")
+    else:
+        raise OSError("Pas de Corbeille de l'ordinateur connue sur ce système.")
+    if os.path.exists(chemin): raise OSError("Le dossier est encore là après l'envoi à la Corbeille.")
+
+
+def vider_corbeille():
+    """Vide la corbeille de Bridge Coach dans la Corbeille de l'ordinateur, séance par séance (chacune reste un dossier
+    à son nom, qu'on peut encore y reprendre). Rien n'est effacé pour de bon. Renvoie le nombre de séances envoyées ;
+    OSError à la première qui ne part pas (les autres restent dans la corbeille de Bridge Coach)."""
+    racine = corbeille_dossier()
+    n = 0
+    for f in sorted(os.listdir(racine)) if os.path.isdir(racine) else []:
+        if f.startswith("."): continue
+        vers_corbeille_systeme(os.path.join(racine, f))
+        n += 1
+    return n
 
 
 def remettre(dossier):

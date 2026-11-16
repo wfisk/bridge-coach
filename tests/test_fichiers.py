@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Le fichier d'une séance (titre, nom proposé, en-tête, renommer, dupliquer, corbeille) et l'export (PBN, CSV,
 Excel) : .venv/bin/python -I -X utf8 tests/test_fichiers.py"""
-import csv, datetime, json, os, sys, tempfile, zipfile
+import csv, datetime, json, os, shutil, sys, tempfile, zipfile
 ESSAI = tempfile.mkdtemp()
 os.environ["BRIDGE_COACH_DONNEES"] = ESSAI
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
@@ -143,6 +143,22 @@ noms = zipfile.ZipFile(zf).namelist()
 assert k == sum(1 for x in noms if x.endswith(rapport.BC)) >= 3 and "seances/2026-11/jeudi-au-club.bc.json" in noms
 assert "seances/2026-11/jeudi-au-club-jeu.json" in noms and "documents/exemple.json" in noms
 assert not any("versions" in x or x.endswith((".bws", ".pdf")) for x in noms)
+
+# vider la corbeille : chaque séance part dans la Corbeille de l'ordinateur (ici simulée : un essai n'y met rien)
+assert F.taille_corbeille() > 0 and F.en_mots(2_400_000) == "2,4 Mo" and F.en_mots(830_000) == "830 ko"
+envoyes = []
+vrai = F.vers_corbeille_systeme
+F.vers_corbeille_systeme = lambda p: (envoyes.append(p), shutil.rmtree(p))
+n_ = len(os.listdir(F.corbeille_dossier()))
+assert F.vider_corbeille() == n_ >= 1 and len(envoyes) == n_ and F.dans_la_corbeille() == []
+# un refus : rien n'est effacé, ce qui reste reste dans la corbeille de Bridge Coach
+F.corbeille(os.path.join(dossier, "double" + rapport.BC)) if os.path.exists(os.path.join(dossier, "double" + rapport.BC)) else None
+def refus(p): raise OSError("non")
+F.vers_corbeille_systeme = refus
+avant = sorted(os.listdir(F.corbeille_dossier())) if os.path.isdir(F.corbeille_dossier()) else []
+try: F.vider_corbeille(); assert not avant
+except OSError: assert sorted(os.listdir(F.corbeille_dossier())) == avant
+F.vers_corbeille_systeme = vrai
 
 # ce qui part chez Claude ne nomme pas le fichier d'origine
 assert "fichier" not in app.seance_pour_claude(rapport.lire_bc(cp)) and "source" not in app.seance_pour_claude(rapport.lire_bc(cp))

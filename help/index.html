@@ -104,7 +104,8 @@
   <li><b>Changer le titre</b> : tapez-le en haut, puis <b>Enregistrer le titre</b>.</li>
   <li><b>Renommer</b> le fichier : ses rapports et vos parties suivent le nouveau nom.</li>
   <li><b>Dupliquer…</b> : une copie sous un autre titre, avec ses analyses.</li>
-  <li><b>Mettre à la corbeille…</b> : rien n'est effacé. Pour la reprendre : <b>Ouvrir une séance</b>, la <b>Corbeille</b> en bas de la liste, <b>Remettre</b>.</li>
+  <li><b>Mettre à la corbeille…</b> : rien n'est effacé. Pour la reprendre : <b>Ouvrir une séance</b>, la <b>Corbeille</b> en bas de la liste, <b>Remettre</b>. La petite poubelle au bout de chaque séance d'<b>Ouvrir une séance</b> fait la même chose, pour n'importe quelle séance.</li>
+  <li><b>Vider la corbeille…</b> (dans la Corbeille, en bas d'<b>Ouvrir une séance</b>) : les séances partent dans la Corbeille de l'ordinateur (celle du Mac, ou de Windows). Vous pouvez encore les y reprendre, jusqu'à ce que vous vidiez celle-ci.</li>
 </ul>
 <p>Une séance importée avant l'arrivée des titres reçoit une proposition de titre et de nom : <b>Utiliser ces propositions</b> les applique d'un coup.</p>
 
@@ -332,7 +333,6 @@
 <p><b>Vous</b></p>
 <dl>
   <dt>Votre nom</dt><dd>Qui utilise Bridge Coach : votre nom tel que l'écrit la FFB, et votre licence. Votre table est surlignée partout et votre nom vient en premier dans les listes de joueurs.</dd>
-  <dt>Votre système</dt><dd>Votre carte de conventions FFB SEF, modifiable, et deux PDF : la carte officielle et une fiche pour votre partenaire (ci-dessous).</dd>
   <dt>Taille du texte</dt><dd>Normale, Grande ou Très grande : toute la fenêtre grandit.</dd>
   <dt>L'expert</dt><dd>L'adresse de l'outil d'intelligence artificielle (claude.ai par défaut) et le prénom par lequel il vous salue.</dd>
 </dl>
@@ -347,8 +347,19 @@
   <dt>Un problème, une idée ?</dt><dd>Signaler un problème ou proposer une idée (ci-dessous).</dd>
 </dl>
 
+<h3 id="systeme-robots">Le système des robots</h3>
+<p>L'onglet <b>Système</b> montre ce que jouent les robots de Bridge Coach : le SEF 2024, tel qu'il est écrit dans leur fichier de règles. Il se lit, il ne se modifie pas.</p>
+<ul>
+  <li>À gauche, les familles : <b>Ouvertures</b>, <b>Après 1SA et 2SA</b>, <b>Interventions</b>, <b>Contres</b>… Chaque séquence montre les enchères possibles <b>dans l'ordre où le robot les essaie</b> : il fait la première qui convient à sa main.</li>
+  <li>Pour chaque enchère : ce qu'elle montre, en gros ; dessous, la condition en clair (« 8 H ou plus, une majeure de 4 cartes ») ; à droite, le nom de la convention (Stayman, Texas), <b>Alerte</b> quand le partenaire l'alerte, <b>À confirmer</b> quand le point n'est pas encore vérifié dans le livret FFB.</li>
+  <li><b>La suite →</b> mène à la séquence d'après ; la case <b>Chercher</b> trouve une séquence (« 1SA 2♣ ») ou une convention (« Stayman »).</li>
+  <li>Les mains d'exemple sont vérifiées à chaque lancement : avec cette main, le robot fait bien cette enchère.</li>
+  <li>Ce qui n'est pas décrit, les robots le jouent avec des règles générales.</li>
+</ul>
+<p><b>Écarts fiche / robots</b> liste les points où votre fiche de conventions diffère de ce que jouent les robots : votre fiche ne change jamais leur façon de jouer.</p>
+
 <h3 id="systeme">Votre carte de conventions</h3>
-<p>Pour jouer avec un nouveau partenaire, ou en compétition, remplissez votre carte de conventions. Onglet <b>Réglages</b>, <b>Votre système</b> (ou, dans <b>Jouer</b>, <b>Options</b>, <b>Votre fiche de conventions</b>). Tout est sur une seule page, rangé comme la feuille de prévisions de la FFB : <b>Ouvertures</b>, <b>Interventions</b>, <b>Flanc</b>, puis le détail de la carte FFB SEF.</p>
+<p>Pour jouer avec un nouveau partenaire, ou en compétition, remplissez votre carte de conventions. Onglet <b>Système</b>, <b>Votre fiche de conventions</b> (ou, dans <b>Jouer</b>, <b>Options</b>, <b>Votre fiche de conventions</b>). Tout est sur une seule page, rangé comme la feuille de prévisions de la FFB : <b>Ouvertures</b>, <b>Interventions</b>, <b>Flanc</b>, puis le détail de la carte FFB SEF.</p>
 <ol class="etapes">
   <li>En haut, le nom, le prénom et l'IV (indice de valeur) des deux joueurs. Bridge Coach écrit déjà votre nom (<b>Votre nom</b>) et celui de votre partenaire de la séance ouverte quand il le connaît ; l'IV se tape à la main. Puis, si vous voulez, le niveau de la compétition : il est imprimé sur la feuille.</li>
   <li>Tout est déjà coché avec le choix standard du SEF 2024, celui que joue Bridge Coach, à commencer par la <b>Méthode de base</b> : vous ne changez que ce que votre paire joue autrement. Selon la ligne : <b>Oui</b> ou <b>Non</b> ; un choix à cocher (par exemple 1SA <b>15–17 H</b>, <b>14–16 H</b>…), avec en dessous ce qu'il veut dire ; ou plusieurs cases (les texas que vous jouez sur 1SA ; au flanc, l'entame, l'appel et la défausse, où vous pouvez cocher plusieurs choix). Les bicolores ont une ligne par enchère : sur 1♣ / 1♦, 2♦ et 2SA ; sur 1♥ / 1♠, le cue-bid, 2SA et 3♣. <b>Autre…</b> ouvre une case pour écrire ce que vous jouez.</li>

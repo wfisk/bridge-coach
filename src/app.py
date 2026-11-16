@@ -13,7 +13,7 @@ import html as html_
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-import carte, classement, donnes, edition, exporter, fichiers, fiche_conventions, jouer, maj, moi, question_expert, rapport
+import carte, classement, donnes, edition, exporter, fichiers, fiche_conventions, jouer, maj, moi, palette, question_expert, rapport, systeme_vue
 from nicegui import app, background_tasks, run, ui
 
 if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son processus s'appelle Python, le Dock garde Bridge Coach
@@ -25,6 +25,22 @@ if __name__ == "__mp_main__" and sys.platform == "darwin":  # la fenêtre : son 
 
 TITRE = "Bridge Coach"
 PORT = int(os.environ.get("BRIDGE_COACH_PORT") or 8123)    # un autre port : une seconde instance d'essai
+CORBEILLE_SYSTEME = "Corbeille de Windows" if sys.platform == "win32" else "Corbeille du Mac"   # où va la corbeille vidée
+DEV = maj.est_depot_git()
+SYSTEME_DATA = systeme_vue.lire()                          # le système des robots (regles.yaml), lu une fois : lecture seule
+SYSTEME_PAGES = ([("sy-vue", "Vue d'ensemble")] + [("sy-" + k, t) for k, t, _ in systeme_vue.familles(SYSTEME_DATA)]
+                 + [("sy-entames", "Entames et signaux")] + [("sy-conv-" + k, t) for k, t, _ in systeme_vue.CONVENTIONS]
+                 + [("systeme", "Votre fiche de conventions"), ("ecarts", "Écarts fiche / robots")])
+SYSTEME_ANCRES = {systeme_vue.ancre(c): c for _, l in SYSTEME_DATA["sections"] for c, _, _ in l}
+JS_SYSTEME = """<script>
+// Système : « La suite : 1SA - 2T → » mène à cette séquence (l'événement systeme_vers, côté Python : aller_sequence)
+document.addEventListener('click', function (e) {
+  var s = e.target.closest && e.target.closest('.syst .suite[data-vers]');
+  if (s) emitEvent('systeme_vers', s.getAttribute('data-vers'));
+});
+</script>"""
+SYSTEME_GROUPES = {"sy-vue": "Les robots · SEF 2024", "sy-conv-" + systeme_vue.CONVENTIONS[0][0]: "Conventions",
+                   "systeme": "Votre partenariat"}                                  # un dépôt Git : le développement (Réglages, Outils de développement)
 LARGEUR_BARRE = 220                                        # la barre de gauche (Donnes, Jouer, Analyse) : « Donne 24 » et la barre de défilement
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
 NB_PDF = 2                                                 # l'analyse, la comparaison
@@ -140,7 +156,7 @@ def date_lisible(chemin):
 GRIS_BARRE = "#f3f3f1"
 LARGEUR_PANNEAU = 300                                     # la barre de droite de l'onglet Jouer
 # le côté de la table de l'onglet Jouer, dans les unités du dessin : la table, les mains autour et les cartons forment un
-# seul bloc, que JS_AJUSTE agrandit ou rétrécit pour remplir la place (ECHELLE_MAX) ; sur un grand écran ou une
+# seul bloc de taille fixe, que le CSS (.cadre-table) agrandit ou rétrécit pour remplir la place (de 0,45 à 2,4 fois) ; sur un grand écran ou une
 # télévision, les cartes grandissent avec, la table garde la même proportion (l'utilisateur, 2026-11-11 : lire les cartes
 # de loin, pas une grande table)
 COTE_TABLE = "440px"
@@ -210,7 +226,7 @@ JS_GLISSE = """<script>
 (function () {
   var places = new Map(), donne = null, envol = new Set(), calme = false, prevu = false;
   function ou(el) {                            // la place d'une carte dans la table, en unités de la table : quand la table
-    var t = el.closest('.ajuste'), r = el.getBoundingClientRect();   // change d'échelle (JS_AJUSTE), rien ne bouge
+    var t = el.closest('.ajuste'), r = el.getBoundingClientRect();   // change d'échelle (.cadre-table), rien ne bouge
     if (!t) return {x: r.left, y: r.top, w: r.width};
     var c = t.getBoundingClientRect(), e = c.width / (t.offsetWidth || c.width) || 1;
     return {x: (r.left - c.left) / e, y: (r.top - c.top) / e, w: r.width};
@@ -264,54 +280,42 @@ JS_GLISSE = """<script>
 })();
 </script>"""
 
-JS_AJUSTE = """<script>
-// La table de l'onglet Jouer rétrécit avec la fenêtre plutôt que d'ouvrir une barre de défilement : le bloc .ajuste
-// garde sa taille naturelle et prend l'échelle qui le fait tenir dans la largeur de son parent et la hauteur de la fenêtre.
-(function () {
-  function ajuster() {
-    document.querySelectorAll('.ajuste').forEach(function (el) {
-      var parent = el.parentElement, w = el.offsetWidth, h = el.offsetHeight;
-      if (!w || !h) return;
-      var marge = parseFloat(getComputedStyle(parent).paddingTop) || 0;
-      // la taille du texte (zoom de la page, --zoom) : la fenêtre compte en points d'écran, la page en points agrandis
-      var z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--zoom')) || 1;
-      var haut = marge;
-      for (var p = parent; p; p = p.offsetParent) haut += p.offsetTop;
-      var e = Math.min(2.4, (parent.clientWidth - 16) / w, (window.innerHeight / z - haut - 24) / h);   // ECHELLE_MAX : jusqu'à 2,4 fois
-      e = Math.max(e, 0.45);
-      // pas de va-et-vient : agrandir fait parfois apparaître une barre de défilement, qui fait rétrécir, qui la fait
-      // disparaître… (la table tremblait). On ne regrandit que d'un vrai pas ; un petit écart ne change rien.
-      var avant = parseFloat(el.dataset.echelle || '0');
-      if (avant && (Math.abs(e - avant) < 0.01 || (e > avant && e - avant < 0.06))) e = avant;
-      // pendant une même donne, à fenêtre égale, la table ne grandit pas parce que les mains se vident (l'utilisateur,
-      // 2026-11-11) : elle ne regrandit qu'à une autre donne ou quand la fenêtre change
-      // (chaque redessin refait l'élément : la mémoire est dans la page, par donne et taille de fenêtre)
-      var cle = (el.getAttribute('data-donne') || '') + '|' + parent.clientWidth + 'x' + window.innerHeight;   // la place, pas la fenêtre
-      var memo = window.__echelleDonne || (window.__echelleDonne = {});
-      if (memo[cle] && e > memo[cle]) e = memo[cle];
-      memo[cle] = e;
-      el.dataset.echelle = e;
-      el.style.transform = 'scale(' + e + ')';
-      el.style.setProperty('--echelle', e);                 // les bulles s'en défont : toujours à leur taille
-      el.style.marginLeft = Math.max(0, (parent.clientWidth - w * e) / 2) + 'px';
-      parent.style.height = Math.ceil(h * e + marge) + 'px';
-    });
-  }
-  var vus = new WeakSet(), ro = new ResizeObserver(ajuster);
-  function suivre() {
-    document.querySelectorAll('.ajuste').forEach(function (el) {
-      if (!vus.has(el)) { vus.add(el); ro.observe(el); ro.observe(el.parentElement); }
-    });
-  }
-  window.addEventListener('resize', ajuster);
-  document.addEventListener('DOMContentLoaded', function () {
-    new MutationObserver(function () { suivre(); ajuster(); }).observe(document.body, {childList: true, subtree: true});
-    suivre(); ajuster();
-  });
-})();
-</script>"""
-
 CSS_CARTES = """
+/* Les mesures de la table (l'utilisateur, 2026-11-16) : une seule proportion, celle de la carte (55 de large, 2:3 comme une vraie, coin de 6 px),
+   et une seule échelle d'espaces, comme Bootstrap (0,25 / 0,5 / 1 / 1,5 / 3 rem). Le tapis fait huit cartes de côté, une
+   main sur un côté quatre cartes de large, son coin quatre coins de carte. */
+:root { --sp-1: .25rem; --sp-2: .5rem; --sp-3: 1rem; --sp-4: 1.5rem; --sp-5: 3rem;
+  --carte-l: 55px; --carte-h: calc(var(--carte-l) * 3 / 2); --carte-r: 6px;   /* 2:3 (l'utilisateur, 2026-11-16) */
+  --table-cote: calc(8 * var(--carte-l)); --table-large: calc(var(--table-cote) + 84px); --haut-mort: 100px;
+  --table-r: calc(4 * var(--carte-r)); }
+/* La table de Jouer, Démo et Revoir : une boîte de taille fixe (--W × --H : le tapis le plus large, deux côtés, le tapis le
+   plus haut, une rangée de cartes en haut et en bas), mise à l'échelle par le CSS seul de la place que lui laisse la
+   fenêtre (.zone-table, un conteneur : 100cqw × 100cqh). tan(atan2(a, b)) donne le nombre a / b. Rien ne se mesure : la
+   table ne change pas de taille quand les mains se vident (elle tremblait en fin de donne avec l'ancien script). */
+@property --echelle { syntax: '<number>'; inherits: true; initial-value: 1; }
+/* la colonne de la table remplit la fenêtre : 109 px = la barre du haut et la marge de la page (53) + les marges du bas (56) */
+div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
+.zone-table { flex: 1 1 0; min-height: 200px; container-type: size; overflow: hidden; --cotes: calc(2 * var(--carte-l)); }
+.zone-table.ouverte { --cotes: calc(4 * var(--carte-l)); }   /* les mains des côtés visibles */
+.cadre-table { --W: calc(var(--table-large) + 2 * var(--cotes) + 2 * var(--sp-2));
+  --H: calc(var(--table-cote) + var(--haut-mort) + 2 * var(--carte-h) + 2 * var(--sp-3) + var(--sp-2));
+  --echelle: clamp(.45, min(tan(atan2(100cqw, var(--W))), tan(atan2(100cqh, var(--H)))), 2.4);
+  width: calc(var(--W) * var(--echelle)); height: calc(var(--H) * var(--echelle)); margin: 0 auto; }
+.ajuste { width: var(--W); height: var(--H); transform: scale(var(--echelle)); transform-origin: 0 0; }
+.grille-table { width: 100%; height: 100%; display: grid; align-items: center; column-gap: var(--sp-2); row-gap: var(--sp-3);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto; }
+.grille-table > .rang-haut, .grille-table > .rang-bas { grid-column: 1 / 4; }
+.grille-table > .rang-haut { align-self: end; }              /* la main du haut contre la table, l'espace libre au-dessus */
+.grille-table > .rang-bas { align-self: start; }
+.grille-table > .rang-bas.en-retrait { margin-top: var(--sp-2); }   /* votre main, un peu en retrait de la table */
+.grille-table .nom-joueur.deux { white-space: normal; }      /* un long nom sur un côté passe à la ligne */
+/* la place d'une main : une carte de haut au moins (un éventail de dos, 60 px de large, sur un côté), quatre rangées quand
+   les mains des côtés sont visibles ; vide, elle garde sa taille */
+.emplacement { display: flex; min-height: var(--carte-h); }
+.emplacement.haut { align-items: flex-end; } .emplacement.bas { align-items: flex-start; }
+.emplacement.gauche, .emplacement.droite { min-width: 60px; align-items: center; }
+.zone-table.ouverte .emplacement.gauche, .zone-table.ouverte .emplacement.droite {
+  min-height: calc(4 * var(--carte-h) + 3 * var(--sp-1)); min-width: calc(4 * var(--carte-l)); }
 ::-webkit-scrollbar { width: 14px; height: 14px; background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cfcfcb; border-radius: 7px; border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { background-color: #b5b5b0; }
@@ -322,37 +326,37 @@ CSS_CARTES = """
 .entree-barre.choisie { background: #e4e3df; font-weight: 600; }
 .entree-barre .q-btn__content { text-align: left; justify-content: flex-start; line-height: 1.3; padding: 2px 0; }
 .entree-barre.aide-sujet { height: auto; min-height: 32px; padding-top: 6px; padding-bottom: 6px; flex-shrink: 0; }   /* un sujet sur deux lignes ne déborde pas */
-.carte { width: 55px; height: 79px; margin-right: -22px; padding: 3px 5px; background: #fff; border: 1px solid #b9c0c7;
-  border-radius: 6px; font-size: 20px; line-height: 1.05; font-weight: 600; color: #1b1b1b; }   /* une seule taille partout :
-   les mains, le mort, le pli (l'utilisateur, 2026-11-11) ; le bloc de la table grandit avec la fenêtre (JS_AJUSTE) */
-.carte.r { color: #c0141c; }
+.carte { width: var(--carte-l); height: var(--carte-h); margin-right: -22px; padding: 3px 5px; background: var(--bc-blanc); border: 1px solid var(--bc-tapis-300);
+  border-radius: 6px; font-size: 20px; line-height: 1.05; font-weight: 600; color: var(--bc-tapis-900); }   /* une seule taille partout :
+   les mains, le mort, le pli (l'utilisateur, 2026-11-11) ; le bloc de la table grandit avec la fenêtre (.cadre-table) */
+.carte.r { color: var(--bc-coeur-600); }
 .carte { position: relative; }
 .carte .dm { position: absolute; left: -6px; top: -12px; min-width: 26px; padding: 1px 5px;   /* le coin visible, même recouverte */
-  border-radius: 9px; font-size: 15px; font-weight: 800; color: #fff; text-align: center; line-height: 1.25; z-index: 2;
-  box-shadow: 0 0 0 2px #fff; }   /* démonstration, double mort : les levées du déclarant avec cette carte */
-.carte .dm.mieux { background: #1f6b45; } .carte .dm.moins { background: #c0141c; }
+  border-radius: 9px; font-size: 15px; font-weight: 800; color: var(--bc-blanc); text-align: center; line-height: 1.25; z-index: 2;
+  box-shadow: 0 0 0 2px var(--bc-blanc); }   /* démonstration, double mort : les levées du déclarant avec cette carte */
+.carte .dm.mieux { background: var(--bc-trefle-700); } .carte .dm.moins { background: var(--bc-coeur-600); }
 .carte.jouable { cursor: pointer; }   /* sans couleur : rien ne dit quelles cartes sont permises (comme à la table) */
-.carte.secoue { animation: secoue .45s ease-in-out; border-color: #c62828; }   /* une carte qui ne peut pas être jouée */
+.carte.secoue { animation: secoue .45s ease-in-out; border-color: var(--bc-coeur-600); }   /* une carte qui ne peut pas être jouée */
 @keyframes secoue { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
 .carte.jouable:hover { transform: translateY(-6px); }
-.carte.terne { background: #eceae5; border-color: #cfd3d7; color: #9a9fa5; }   /* pas jouable : terne mais opaque,
+.carte.terne { background: var(--bc-tapis-100); border-color: var(--bc-tapis-200); color: var(--bc-tapis-400); }   /* pas jouable : terne mais opaque,
    les cartes en dessous ne se voient pas au travers */
-.carte.r.terne { color: #d6a3a6; }
+.carte.r.terne { color: var(--bc-coeur-300); }
 .colonne-mort .carte { margin-right: 0; }
-.colonne-mort > * + * { margin-top: -53px; }
+.colonne-mort > * + * { margin-top: calc(26px - var(--carte-h)); }   /* chaque carte montre 26 px de la précédente (PAS_COLONNE) */
 .ligne-mort > :last-child .carte { margin-right: 0; }   /* le mort sur un côté : une ligne par couleur, chevauchée comme une main
    (chaque carte est seule dans son enveloppe : c'est la dernière enveloppe de la ligne qui compte) */
-.nom-joueur { display: flex; align-items: center; gap: 6px; font-size: calc(15px / max(var(--echelle, 1), .75)); color: #4a4f57;
+.nom-joueur { display: flex; align-items: center; gap: 6px; font-size: calc(15px / max(var(--echelle, 1), .75)); color: var(--bc-tapis-800);
   white-space: nowrap; }   /* la table rapetisse (--echelle) : le nom grandit d'autant, d'un tiers au plus, pour rester lisible */
-.nom-joueur.tour { color: #1b1b1b; font-weight: 700; text-decoration: underline 3px #1f6b45; text-underline-offset: 5px; }
+.nom-joueur.tour { color: var(--bc-tapis-900); font-weight: 700; text-decoration: underline 3px var(--bc-trefle-700); text-underline-offset: 5px; }
 .nom-joueur.tour.pense-doux { text-decoration: none; animation: doux 1.4s ease-in-out infinite; }   /* un robot réfléchit */
 @keyframes doux { 50% { opacity: .45; } }
-.nom-joueur .siege-lbl { font-weight: 800; letter-spacing: .5px; color: #2b2b2b; }
+.nom-joueur .siege-lbl { font-weight: 800; letter-spacing: .5px; color: var(--bc-tapis-900); }
 /* à qui le tour : sa place et son nom ensemble sur un fond jaune plein, sans halo (le texte reste net ; l'utilisateur,
    2026-11-14). Le fond déborde de 8 px de chaque côté (marge négative) : le texte ne bouge pas quand il s'allume */
 .nom-joueur { padding: 2px 8px; margin: 0 -8px; border-radius: 6px; transition: background .2s; }
-.nom-joueur.a-jouer { background: #ffd54a; color: #1b1b1b; }
-.nom-joueur.a-jouer .siege-lbl { color: #1b1b1b; }
+.nom-joueur.a-jouer { background: var(--bc-jaune-200); color: var(--bc-tapis-900); }
+.nom-joueur.a-jouer .siege-lbl { color: var(--bc-tapis-900); }
 .nom-joueur.deux { display: block; line-height: 1.2; }   /* à l'ouest, aligné contre la table (à droite) */
 .enc-sens { position: relative; cursor: pointer; text-decoration: underline dotted #9aa3ad; text-underline-offset: 4px; }
 .enc-sens .bulle { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; width: 230px; padding: 8px 10px;
@@ -362,7 +366,7 @@ CSS_CARTES = """
 .enc-sens:hover .bulle, .enc-sens.ouverte .bulle { display: block; }
 .marque-alerte { display: inline-block; margin-left: 3px; padding: 0 4px; border-radius: 4px; background: #1565c0; color: #fff;
   font-size: 11px; font-weight: 700; line-height: 15px; vertical-align: 2px; }
-.carte.gagnante { box-shadow: 0 0 0 2px #d9a400, 0 0 14px rgba(217,164,0,.55); transform: translateY(-3px);
+.carte.gagnante { box-shadow: 0 0 0 2px var(--bc-jaune-400), 0 0 14px color-mix(in srgb, var(--bc-jaune-400) 55%, transparent); transform: translateY(-3px);
   transition: box-shadow .3s, transform .3s; }   /* la carte qui gagne le pli : une lueur dorée, discrète */
 .carte.vers-bas { animation: vers-bas .45s ease-in forwards; } .carte.vers-haut { animation: vers-haut .45s ease-in forwards; }
 .carte.vers-gauche { animation: vers-gauche .45s ease-in forwards; } .carte.vers-droite { animation: vers-droite .45s ease-in forwards; }
@@ -374,11 +378,11 @@ CSS_CARTES = """
 .carte-sens { position: relative; cursor: help; }
 .carte-sens .bulle { display: none; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 40;
   width: calc(240px / var(--echelle, 1)); padding: calc(8px / var(--echelle, 1)) calc(10px / var(--echelle, 1));
-  background: #fff; border: 1px solid #cfd5db; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18);
-  font-size: calc(16px / var(--echelle, 1)); line-height: 1.35; font-weight: 400; color: #2b2b2b; white-space: normal; }
-  /* dans la table mise à l'échelle (JS_AJUSTE, --echelle), la bulle garde sa vraie taille : 16 px à l'écran */
+  background: var(--bc-blanc); border: 1px solid var(--bc-tapis-200); border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  font-size: calc(16px / var(--echelle, 1)); line-height: 1.35; font-weight: 400; color: var(--bc-tapis-900); white-space: normal; }
+  /* dans la table mise à l'échelle (.cadre-table, --echelle), la bulle garde sa vraie taille : 16 px à l'écran */
 .carte-sens:hover .bulle, .carte-sens.ouverte .bulle { display: block; }
-.carte.vide { width: 28px; border: none; background: none; margin-right: 0; padding: 4px 0 3px 6px; color: #c9c7c1; }   /* une chicane : la couleur
+.carte.vide { width: 28px; border: none; background: none; margin-right: 0; padding: 4px 0 3px 6px; color: var(--bc-tapis-300); }   /* une chicane : la couleur
    en gris pâle, là où elle serait sur une carte, sous le rang (invisible) : alignée sur les autres couleurs (l'utilisateur, 2026-11-13) */
 .carte.vide .rang-vide { visibility: hidden; }
 .eventail .groupe { margin-right: 26px; }
@@ -388,33 +392,33 @@ CSS_CARTES = """
 .groupe.colonne > :last-child .carte { margin-right: 0; }
 .ajuste .carte { position: relative; z-index: 1; }      /* sur la table, les cartes passent au-dessus de l'étui en filigrane */
 .groupe.colonne .dix { letter-spacing: -1px; }             /* le 10 tient dans la part visible de la carte */  /* sinon la ligne paraît plus courte : à gauche, elle passerait sous la table */
-.dos { width: 32px; height: 46px; border-radius: 4px; border: 2px solid #fff; outline: 1px solid #c3cbd4;
-  background: repeating-linear-gradient(45deg, #9aa8b8 0 3px, #b0bccA 3px 6px); }
+.dos { width: 32px; height: 46px; border-radius: 4px; border: 2px solid var(--bc-blanc); outline: 1px solid var(--bc-pique-200);
+  background: repeating-linear-gradient(45deg, var(--bc-pique-300) 0 3px, var(--bc-pique-200) 3px 6px); }
 .plis-gardes { display: flex; align-items: center; min-height: 30px; }
 .plis-gardes .dos { width: 20px; height: 28px; border-width: 1px; border-radius: 3px; flex: none; }
 .plis-gardes .dos.couche { width: 28px; height: 20px; }   /* comme en duplicate : vers le partenaire gagné, en travers perdu */
 .plis-gardes .dos + .dos { margin-left: -9px; }           /* chaque carte posée en partie sur la précédente */
 .plis-gardes .dos[onclick] { pointer-events: auto; cursor: pointer; }   /* la dernière carte : voir le dernier pli */
-.plis-gardes .dos:not(.gagne) { background: #dcdfe2; outline-color: #b9bfc5; }   /* perdu : gris uni, pas le dos des mains cachées */
-.plis-gardes .dos.gagne { background: repeating-linear-gradient(45deg, #2e7d32 0 3px, #5a9e5f 3px 6px); outline-color: #1f5e24; }
+.plis-gardes .dos:not(.gagne) { background: var(--bc-tapis-200); outline-color: var(--bc-tapis-300); }   /* perdu : gris uni, pas le dos des mains cachées */
+.plis-gardes .dos.gagne { background: repeating-linear-gradient(45deg, var(--bc-trefle-600) 0 3px, var(--bc-trefle-500) 3px 6px); outline-color: var(--bc-trefle-800); }
 .plis-gardes.colonne { flex-direction: column; min-height: 0; min-width: 30px; }
 .compte-plis { position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); min-width: 24px; height: 24px;
-  padding: 0 6px; border-radius: 12px; background: #2e7d32; color: #fff; font-size: 15px; font-weight: 700; line-height: 24px;
+  padding: 0 6px; border-radius: 12px; background: var(--bc-trefle-600); color: var(--bc-blanc); font-size: 15px; font-weight: 700; line-height: 24px;
   text-align: center; box-sizing: border-box; }   /* hors de la rangée : elle reste centrée */
 .plis-gardes.colonne .dos + .dos { margin-left: 0; margin-top: -9px; }
 .plis-gardes.colonne .compte-plis { left: 50%; top: calc(100% + 8px); transform: translateX(-50%); }   /* sous la colonne */
-.compte-plis.autre { background: #c62828; }
+.compte-plis.autre { background: var(--bc-coeur-600); }
 /* la levée qui vient d'être gagnée : le cercle reste, l'ancien nombre monte et sort, le nouveau monte à sa place */
 .compte-plis.roule { overflow: hidden; }
 .compte-plis .pile { display: block; animation: compte-monte .45s ease-out forwards; }
 .compte-plis .pile span { display: block; height: 24px; }
 @keyframes compte-monte { from { transform: translateY(0); } to { transform: translateY(-24px); } }   /* les levées de l'autre camp en rouge, les vôtres en vert (l'utilisateur, 2026-11-11) */
-.plis-gardes.adverse .dos.gagne { background: repeating-linear-gradient(45deg, #c62828 0 3px, #e06666 3px 6px); outline-color: #8e1b1b; }
+.plis-gardes.adverse .dos.gagne { background: repeating-linear-gradient(45deg, var(--bc-coeur-600) 0 3px, var(--bc-coeur-500) 3px 6px); outline-color: var(--bc-coeur-800); }
 .main-grande .groupe { margin-right: 30px; }
 .main-grande .groupe:last-child { margin-right: 22px; }   /* juste ce que dépasse la dernière carte : le trait s'arrête avec elle */
 /* à vous d'enchérir ou de jouer : les cartes à jouer (votre main, ou le mort quand vous en jouez) luisent en jaune ;
    ni les noms ni les mains des robots (l'utilisateur, 2026-11-11) */
-.main-grande.a-vous, .mort-table.a-vous { filter: drop-shadow(0 0 6px rgba(242, 183, 5, .9)); }
+.main-grande.a-vous, .mort-table.a-vous { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--bc-jaune-300) 90%, transparent)); }
 /* à qui le tour (vous ou un joueur du programme) : un petit triangle sur le bord de la table, tourné vers ce joueur */
 .fleche-tour { position: absolute; width: 0; height: 0; z-index: 4; pointer-events: none; }
 .fleche-tour.bas { bottom: -10px; left: 50%; transform: translateX(-50%); border: 9px solid transparent; border-bottom: 0;
@@ -442,26 +446,26 @@ CSS_CARTES = """
 /* posés sur la table comme les vrais : tournés d'un quart de tour par rapport à la boîte. Vu du lecteur (.face) : les
    enchères plus larges que hautes, le niveau et la couleur sur la bande de droite ; PASS, X, XX presque carrés, le
    nom le long du bord droit, l'onglet (sans texte) sur le bord gauche. La bande de droite reste visible sous le suivant */
-.carton.bid { width: 84px; height: 50px; } .carton.bid .face { background: #fff; border: 1px solid #b8bfc6; }
+.carton.bid { width: 89px; height: 50px; }   /* 16:9 (l'utilisateur, 2026-11-16) */ .carton.bid .face { background: var(--bc-blanc); border: 1px solid var(--bc-tapis-300); }
 .carton.bid .grand { position: absolute; right: 5px; top: 0; bottom: 0; display: flex; align-items: center;
   font-weight: 700; line-height: 1; }                     /* le niveau, la couleur à sa droite : « 1♦ » sur une ligne */
 .carton.bid .grand b { font-size: 26px; } .carton.bid .grand i { font-style: normal; font-size: 24px; margin-left: 1px; }
 .carton.bid .grand i.sa { font-size: 26px; font-weight: 700; background: none; margin-left: 1px; }   /* SA de la taille du chiffre */
-.carton.bid.sa .grand { color: #2b2b2b; } .carton.bid.pique .grand { color: #1f3fa0; }
-.carton.bid.coeur .grand { color: #c0141c; } .carton.bid.carreau .grand { color: #c86a00; }
-.carton.bid.trefle .grand { color: #1d7a35; }
-.carton.carre { width: 56px; height: 50px; }   /* même hauteur que les enchères */ .carton.carre .face { color: #fff; border: 2px solid #f1f1ec; }   /* le bord presque blanc sépare deux cartons pareils */
+.carton.bid.sa .grand { color: var(--bc-tapis-900); } .carton.bid.pique .grand { color: var(--bc-pique-800); }
+.carton.bid.coeur .grand { color: var(--bc-coeur-600); } .carton.bid.carreau .grand { color: var(--bc-carreau-500); }
+.carton.bid.trefle .grand { color: var(--bc-trefle-600); }
+.carton.carre { width: 50px; height: 50px; }   /* carrés, avec leur onglet (l'utilisateur, 2026-11-16) */ .carton.carre .face { color: var(--bc-blanc); border: 2px solid var(--bc-tapis-100); }   /* le bord presque blanc sépare deux cartons pareils */
 .carton .tab { position: absolute; left: -10px; top: 6px; width: 10px; min-height: 20px;
-  border-radius: 3px 0 0 3px; background: inherit; border: 2px solid #f1f1ec; border-right: 0; }
+  border-radius: 3px 0 0 3px; background: inherit; border: 2px solid var(--bc-tapis-100); border-right: 0; }
 .carton .tab.gauche { top: auto; bottom: 6px; }
 .carton .base { position: absolute; right: 3px; top: 3px; bottom: 3px; width: 22px; display: flex; flex-direction: column;
   align-items: center; justify-content: space-between; font-weight: 800; line-height: 1; }
 .carton .base b { writing-mode: vertical-rl; }            /* chaque lettre tournée : le mot se lit le long du bord droit */
 .carton .base.mot { font-size: 13px; } .carton .base.croix { font-size: 22px; justify-content: space-around; }
 .carton .base.croix b + b { margin-top: -2px; }
-.carton.passe .face { background: #2e7d32; } .carton.contre .face { background: #c62828; }
-.carton.surcontre .face { background: #1565c0; } .carton.stop .face { background: #c62828; }
-.carton.alerte .face { background: #1565c0; }
+.carton.passe .face { background: var(--bc-trefle-600); } .carton.contre .face { background: var(--bc-coeur-600); }
+.carton.surcontre .face { background: var(--bc-pique-700); } .carton.stop .face { background: var(--bc-coeur-600); }
+.carton.alerte .face { background: var(--bc-pique-700); }
 .carton:not(.derniere) .face { filter: saturate(.75) brightness(1.04) contrast(.88); }   /* les précédentes un peu effacées, sans cadre */
 .cadre .a-part { margin-right: 14px; }      /* Stop et Alerte : posés à gauche de la rangée, pas parmi les enchères */
 @keyframes tourne { from { transform: rotate(180deg); } to { transform: none; } }   /* la table, d'un demi-tour (TOURNE) */
@@ -588,7 +592,7 @@ AIDE_POUR = {
     ("Rapports",): "rapport", ("Rapports", "creer"): "rapport", ("Rapports", "seance"): "perdu",
     ("Réglages",): "reglages", ("Réglages", "affichage"): "taille", ("Réglages", "nom"): "votre-table",
     ("Réglages", "dossiers"): "reglages", ("Réglages", "sauvegarde"): "sauvegarde", ("Réglages", "maj"): "mise-a-jour",
-    ("Réglages", "contact"): "signaler", ("Réglages", "expert"): "questions-expert", ("Réglages", "systeme"): "systeme",
+    ("Réglages", "contact"): "signaler", ("Réglages", "expert"): "questions-expert", ("Système",): "systeme-robots", ("Système", "systeme"): "systeme",
 }
 
 
@@ -992,6 +996,13 @@ def page_seance(data, c):
             devinee = ui.label("devinée d'après le nombre de tables").classes("text-base text-gray-600")
             devinee.set_visibility(not s.get("marque"))
             choix_m.on_value_change(lambda e: (changer_marque(c, e.value), devinee.set_visibility(False)))
+    tours = moi.parcours(data)
+    if tours:                                              # le mouvement : vos tours, tables et adversaires
+        ui.label(f"Parcours de {moi.qui_parcourt(data)}").classes("text-base font-bold mt-4")
+        ui.table(columns=[{"name": k, "label": l, "field": k, "align": a} for k, l, a in
+                          (("tour", "Tour", "right"), ("table", "Table", "right"), ("donnes", "Donnes", "left"),
+                           ("adversaires", "Adversaires", "left"), ("pct", "Votre %", "right"))],
+                 rows=tours, row_key="tour").props("flat dense").classes("text-base")
 
 
 def changer_marque(c, marque):
@@ -1002,13 +1013,6 @@ def changer_marque(c, marque):
     data["session"].update(marque=marque, marque_choisie=True)
     edition.enregistrer(c, data)
     ui.notify(f"Marque : {moi.MARQUES[marque]}. Les rapports la suivront à la prochaine création.")
-    tours = moi.parcours(data)
-    if tours:                                              # le mouvement : vos tours, tables et adversaires
-        ui.label(f"Parcours de {moi.qui_parcourt(data)}").classes("text-base font-bold mt-4")
-        ui.table(columns=[{"name": k, "label": l, "field": k, "align": a} for k, l, a in
-                          (("tour", "Tour", "right"), ("table", "Table", "right"), ("donnes", "Donnes", "left"),
-                           ("adversaires", "Adversaires", "left"), ("pct", "Votre %", "right"))],
-                 rows=tours, row_key="tour").props("flat dense").classes("text-base")
 
 
 def page_joueurs(data):
@@ -1653,8 +1657,9 @@ def page():
                # lisible de loin (des joueurs âgés, un écran de télévision en cours) : le contenu qui change en grand ; les
                # libellés fixes que chacun connaît (onglets, barres latérales, boutons) gardent leur taille (le choix de l'utilisateur)
                ".q-table th, .q-table td { font-size: 15px !important; padding: 4px 6px !important; } .q-table th { font-weight: 700; }"
-               ".classement th, .classement td { font-size: 17px !important; padding: 6px 10px !important; }" + CSS_AIDE + CSS_CARTES)
-    ui.add_head_html(JS_AJUSTE + JS_GLISSE + JS_SENS + JS_SUR_PAGE)
+               ".classement th, .classement td { font-size: 17px !important; padding: 6px 10px !important; }" + CSS_AIDE + CSS_CARTES
+               + systeme_vue.CSS)
+    ui.add_head_html(palette.css() + JS_GLISSE + JS_SENS + JS_SUR_PAGE + JS_SYSTEME)   # les couleurs : --bc-… (palette.py)
     z = taille_texte()
     ui.add_head_html(f"<style>:root {{ zoom: {z}; --zoom: {z}; }}</style>")   # la taille du texte choisie dans Réglages
     seances, dossier = reglages()
@@ -2184,7 +2189,7 @@ def page():
                if r else str(n))
         return f"<div class='{cls}' title='Les levées de ce camp'>{txt}</div>"
 
-    CARTE_H, PAS_COLONNE = 79, 26   # une carte, et ce qu'en montre la suivante dans une colonne du mort (.colonne-mort : −53 px)
+    CARTE_H, PAS_COLONNE = CARTE_L * 3 / 2, 26   # une carte (2:3, --carte-h), et ce qu'en montre la suivante dans une colonne du mort
     HAUT_NOM_MORT = 12              # le bord de la table (le nom du mort est hors du tapis) : là commencent ses colonnes
     BORD_PLIS = 12 + 28             # vos plis gardés : à 12 px du bord, hauts de 28 px
     HAUTEUR_TABLE_HAUTE = COTE_TABLE_PX + HAUT_MORT   # la table quand le mort est étalé en haut ou en bas
@@ -2270,12 +2275,12 @@ def page():
             place = {gauche: "1 / 1 / 4 / 2", droite: "1 / 3 / 4 / 4", haut: "1 / 2 / 2 / 3", bas: "3 / 2 / 4 / 3"}
         P = ETUI_PALE
         def bande(x):
-            teinte = (P["rouge"] if vul(x) else P["vert"]) if pale else "#c0141c" if vul(x) else "#2e7d32"
-            blanc = P["fond"] if pale else "#fff"
+            teinte = (P["rouge"] if vul(x) else P["vert"]) if pale else "var(--bc-danger)" if vul(x) else "var(--bc-success)"
+            blanc = P["fond"] if pale else "var(--bc-blanc)"
             if x == d["donneur"]:                             # le donneur : « Donneur » en couleur sur blanc
                 nom, fond, encre = "Donneur", f"{blanc};border:2px solid {teinte}", P["encre"] if pale else teinte
             else:                                             # les autres : le nom en capitales, blanc sur la couleur
-                nom, fond, encre = SIEGE[x].upper(), teinte, P["encre"] if pale else "#fff"
+                nom, fond, encre = SIEGE[x].upper(), teinte, P["encre"] if pale else "var(--bc-blanc)"
             if x in (haut, bas):
                 forme = "width:100%;height:100%;" + ("transform:rotate(180deg);" if x == haut else "")
             else:
@@ -2286,15 +2291,16 @@ def page():
         return (f"<div title='En rouge les camps vulnérables, en vert les autres' style='display:grid;box-sizing:border-box;"
                 f"width:{W}px;height:{H}px;grid-template-columns:{h}px 1fr {h}px;grid-template-rows:{h}px 1fr {h}px;gap:4px;"
                 f"padding:6px;border-radius:8px;" + (f"background:{P['fond']};border:1px solid {P['bord']}'>" if pale else
-                "background:#e4e7eb;border:1px solid #c8ced5;box-shadow:0 1px 2px rgba(0,0,0,.12)'>") +
+                "background:var(--bc-tapis-200);border:1px solid var(--bc-tapis-300);box-shadow:0 1px 2px rgba(0,0,0,.12)'>") +
                 f"{bande(haut)}{bande(gauche)}{bande(droite)}{bande(bas)}</div>")
 
     ETUI = (135, 240, 30, 14)    # les côtés de l'étui (9:16), l'épaisseur des bandes, le texte
     TOURNE = 1.4                 # secondes : la table tourne d'un demi-tour quand le déclarant que vous jouez passe devant vous
-    # l'étui en filigrane pendant le jeu de la carte : quelques nuances de la table (#f3efe7), sans rouge ni vert
-    ETUI_PALE = {"fond": "#ece6db", "bord": "#e2dacc", "rouge": "#e0d8ca", "vert": "#e0d8ca", "encre": "#b3a796"}
+    # l'étui en filigrane pendant le jeu de la carte : quelques nuances de la table (tapis-100), sans rouge ni vert
+    ETUI_PALE = {"fond": "var(--bc-tapis-200)", "bord": "var(--bc-tapis-300)", "rouge": "var(--bc-tapis-300)",
+                 "vert": "var(--bc-tapis-300)", "encre": "var(--bc-tapis-500)"}
 
-    LARGEUR_CARTON = {"bid": 84, "carre": 56}             # .carton.bid, .carton.carre
+    LARGEUR_CARTON = {"bid": 89, "carre": 50}             # .carton.bid, .carton.carre
     VU_CARTON = {"bid": 58, "carre": 36}                   # ce qui dépasse d'un carton recouvert : son indice, ou son onglet
 
     lettres = lambda m: "".join(f"<b>{c}</b>" for c in m)   # un mot écrit tout le long du bord du carton
@@ -2467,22 +2473,30 @@ def page():
         ui.html(f"<div style='position:relative;width:{l}px;height:{h}px'><div style='position:absolute;left:50%;top:50%;"
                 f"width:70px;height:60px;transform:translate(-50%,-50%) rotate({tour}deg)'>{cartes}</div></div>", sanitize=False)
 
-    def table(d, places, contenu, centre=None, sur_table=(), tour=None):
+    def table(d, places, contenu, centre=None, sur_table=(), tour=None, ouvert=True):
         """La table, une grande surface vert clair : l'étui, les cartons, le pli et le mort posé dessus ; les mains des
         joueurs autour. contenu(siège, position) dessine une place ; sur_table : les positions posées sur la table (le mort) ;
-        tour : le siège qui doit enchérir ou jouer, montré par un petit triangle sur le bord de la table, de son côté."""
+        tour : le siège qui doit enchérir ou jouer. ouvert : des mains visibles sur les côtés (Démo, Revoir, les mains
+        montrées) : les côtés ont la place de quatre cartes, sinon de deux (les mains cachées de Jouer).
+        Le dessin est une boîte de taille fixe (CSS : .cadre-table, en largeurs de carte et en --sp-*) que le CSS met à
+        l'échelle de la place disponible : sa taille ne dépend jamais des cartes qui restent (la table tremblait en fin de
+        donne quand un script la mesurait ; l'utilisateur, 2026-11-16 : la mise en page au CSS seul)."""
         haut, gauche, droite, bas = places
         large = "gauche" in sur_table or "droite" in sur_table          # le mort sur un côté : la table en 16:9
         haute = "haut" in sur_table or "bas" in sur_table               # le mort en haut ou en bas : la table plus haute que large
-        forme = (f"width:{LARGEUR_TABLE_LARGE};height:{COTE_TABLE};" if large else
-                 f"width:{COTE_TABLE};height:calc({COTE_TABLE} + {HAUT_MORT}px);" if haute else f"width:{COTE_TABLE};aspect-ratio:1 / 1;")
-        with ui.element("div").classes("w-full").style("overflow:hidden;padding-top:8px"), \
-                ui.element("div").classes("ajuste").style("width:max-content;transform-origin:0 0") \
-                    .props(f'data-donne="{d["n"]}-{bas}"'):             # rétrécit avec la fenêtre (JS_AJUSTE) ; JS_GLISSE
+        forme = ("width:var(--table-large);height:var(--table-cote);" if large else
+                 "width:var(--table-cote);height:calc(var(--table-cote) + var(--haut-mort));" if haute else
+                 "width:var(--table-cote);height:var(--table-cote);")
+        with ui.element("div").classes("w-full zone-table" + (" ouverte" if ouvert else "")), \
+                ui.element("div").classes("cadre-table"), \
+                ui.element("div").classes("ajuste").props(f'data-donne="{d["n"]}-{bas}"'):   # JS_GLISSE : la donne
             ecoule = time.monotonic() - jeu.get("tourne", -99)   # la table qui tourne : le demi-tour reprend où il en était
             tourne = f"animation:tourne {TOURNE}s ease-in-out;animation-delay:-{ecoule:.2f}s" if ecoule < TOURNE else ""
             noms = jeu.get("noms") or {}
             v = d["vul"]; vul = lambda x: v == "Tous" or v == ("N-S" if x in "NS" else "E-O")
+            def emplacement(x, ou):                      # la place d'une main, gardée même vide (.emplacement) : les noms et
+                with ui.element("div").classes("emplacement " + ou):   # la table ne bougent pas quand les cartes s'en vont
+                    contenu(x, ou)
             def place(x, ou):                            # sa place (NORD…) et son nom (s'il est connu), discrets, près de sa main
                 nom_x = noms.get(x, "")
                 # à qui le tour : son nom et ses cartes luisent en jaune, vous comme les robots (l'utilisateur, 2026-11-11 :
@@ -2494,34 +2508,33 @@ def page():
                 elif ou in ("haut", "bas"):               # « SUD Prénom NOM » sur une ligne, du côté extérieur : au-dessus des
                     with ui.column().classes("items-center gap-1" + qui):   # cartes en haut (un peu d'espace sous le titre de la
                         if ou == "haut":                                    # page : il appartient à la table), dessous en bas
-                            ui.html(nom_html(nom_x, etat=etat, siege=x, une_ligne=True), sanitize=False).style("margin-top:14px")
-                        contenu(x, ou)
+                            ui.html(nom_html(nom_x, etat=etat, siege=x, une_ligne=True), sanitize=False).style("margin-top:var(--sp-3)")
+                        emplacement(x, ou)
                         if ou == "bas": ui.html(nom_html(nom_x, etat=etat, siege=x, une_ligne=True), sanitize=False)
                 elif ou in sur_table:                    # le mort étalé sur un côté de la table : son nom hors du tapis, dans
                     with ui.column().classes("items-start gap-1" + qui):   # la marge de ce côté (nom_mort, 2026-11-13)
                         contenu(x, ou)
                 else:                                    # au-dessus de la main, aligné à gauche sur ses cartes
                     with ui.column().classes("items-start gap-1" + qui):
-                        ui.html(nom_html(nom_x, deux_lignes=True, etat=etat, siege=x), sanitize=False); contenu(x, ou)
-            with ui.grid(columns="auto auto auto" if large else "1fr auto 1fr").style(tourne) \
-                    .classes("items-center gap-x-2 gap-y-4"):            # les mains des côtés contre la table
+                        ui.html(nom_html(nom_x, deux_lignes=True, etat=etat, siege=x), sanitize=False); emplacement(x, ou)
+            with ui.element("div").classes("grille-table").style(tourne):   # trois colonnes : la table au milieu, les côtés égaux
                 def nom_mort(x):                         # le mort étalé en haut ou en bas : son nom hors du tapis, au-dessus
                     ui.html(nom_html(noms.get(x, ""), siege=x, une_ligne=True, etat=" a-jouer" if tour == x else ""),
-                            sanitize=False).style("margin-top:14px" if x == haut else "")   # (au-dessous) (2026-11-13)
-                with ui.column().classes("items-center").style("grid-column: 1 / 4"):
+                            sanitize=False).style("margin-top:var(--sp-3)" if x == haut else "")   # (au-dessous) (2026-11-13)
+                with ui.column().classes("items-center rang-haut"):
                     if "haut" not in sur_table: place(haut, "haut")
                     else: nom_mort(haut)
                 with ui.column().classes("items-end"):
                     if "gauche" not in sur_table: place(gauche, "gauche")
                     else: ui.html(nom_html(noms.get(gauche, ""), deux_lignes=True, droite=True, siege=gauche,
                                            etat=" a-jouer" if tour == gauche else ""), sanitize=False)
-                with ui.column().classes("items-center gap-4").style(       # la table, carrée comme une vraie, à la taille de la fenêtre
-                        f"{forme}background:#f3efe7;border:1px solid #e3dccf;border-radius:28px;padding:12px 16px;"
-                        "justify-content:space-between;position:relative"):
+                with ui.column().classes("items-center gap-4 tapis").style(       # la table, carrée comme une vraie, à la taille de la fenêtre
+                        f"{forme}background:var(--bc-tapis-100);border:1px solid var(--bc-tapis-200);border-radius:var(--table-r);padding:var(--sp-3);"
+                        "justify-content:space-between;position:relative;box-sizing:border-box"):
                     if "haut" in sur_table: place(haut, "haut")
                     for ou, x in (("gauche", gauche), ("droite", droite)):   # le mort d'un côté : sur la table, contre son bord
                         if ou in sur_table:
-                            with ui.element("div").style(f"position:absolute;{'left' if ou == 'gauche' else 'right'}:14px;"
+                            with ui.element("div").style(f"position:absolute;{'left' if ou == 'gauche' else 'right'}:var(--sp-3);"
                                                          "top:50%;transform:translateY(-50%);z-index:2"):
                                 place(x, ou)
                     if centre: centre()
@@ -2531,8 +2544,7 @@ def page():
                     if "droite" not in sur_table: place(droite, "droite")
                     else: ui.html(nom_html(noms.get(droite, ""), deux_lignes=True, siege=droite,
                                            etat=" a-jouer" if tour == droite else ""), sanitize=False)
-                with ui.column().classes("items-center").style(
-                        "grid-column: 1 / 4" + ("" if "bas" in sur_table else ";margin-top:12px")):
+                with ui.column().classes("items-center rang-bas" + ("" if "bas" in sur_table else " en-retrait")):
                     if "bas" not in sur_table: place(bas, "bas")             # votre main, un peu en retrait de la table
                     else: nom_mort(bas)
 
@@ -2566,9 +2578,11 @@ def page():
                                        a_vous=cliquable and tour == x)   # les cartes jouables ont déjà leur bord
             elif not p.fini():                               # un adversaire : sa main cachée, en éventail fermé
                 dos(ou, sum(len(v) for v in p.pos.reste[x].values()))
-        table(d, places, contenu, lambda: ui.html(pli_html(p, places, None if p.fini() else p.mort()), sanitize=False),
-              sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == p.mort() and not p.fini()],
-              tour=None if p.fini() or jeu["pli_vu"] else tour)
+        # la donne finie, la table garde sa forme (le mort à sa place, même vide) : rien ne bouge à la dernière carte
+        # (l'utilisateur, 2026-11-16)
+        table(d, places, contenu, lambda: ui.html(pli_html(p, places, p.mort()), sanitize=False),
+              sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == p.mort()],
+              tour=None if p.fini() or jeu["pli_vu"] else tour, ouvert=False)
 
     def options_joueurs(*garder):
         """Le choix d'un joueur : « Aucun (tous les joueurs) », puis votre nom (Réglages, « Votre nom »), une ligne de
@@ -3005,7 +3019,7 @@ def page():
             with ui.row().classes("items-center gap-2"):          # le système des robots, sur la fiche de conventions
                 ui.label("Les robots jouent le SEF 2024.").classes("text-base text-gray-700")
                 ui.button("Votre fiche de conventions", icon="description",
-                          on_click=lambda: (onglets.set_value(o_reglages), voir_page("Réglages", "systeme"))).props("flat dense no-caps")
+                          on_click=lambda: (onglets.set_value(o_systeme), voir_page("Système", "systeme"))).props("flat dense no-caps")
             ui.label("La place que vous jouez").classes("text-base font-bold mt-2")
             ui.label("Le déclarant est celui de la séquence recommandée (l'analyse de l'expert, sinon la standard, sinon "
                      "les enchères du coach). Le choix vaut pour toutes les donnes et reste d'une fois sur l'autre.") \
@@ -3093,7 +3107,8 @@ def page():
                                      a_vous=x == s and not fini and not attente and not jeu.get("attend"))
                         else: dos(ou, 13)
                     table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places), sanitize=False),
-                          tour=None if jeu.get("attend") else jeu["pense"] if attente else (s if not fini else None))
+                          tour=None if jeu.get("attend") else jeu["pense"] if attente else (s if not fini else None),
+                          ouvert=bool(montrer))
             expert_ici = {"fait": False}                  # « Demander à l'expert » placé sur la ligne de l'Indice ?
             with panneau_droit():                                                         # la barre de droite : l'essentiel
                 appliquer_plein()
@@ -3430,16 +3445,42 @@ def page():
     PAGES = {"Fichier": [("nouveau", "Nouveau"), ("ouvrir", "Ouvrir une séance"),   # (Importer : une des trois façons de Nouveau)
                          ("infos", "Infos"), ("exporter", "Exporter…"), ("dossier", "Ouvrir le dossier de travail")],
              "Rapports": [("creer", "Créer les rapports"), ("seance", "Rapports de la séance")],   # (le bilan : bilan.py, à la main)
-             "Réglages": [("nom", "Votre nom"), ("systeme", "Votre système"), ("affichage", "Taille du texte"), ("expert", "L'expert"),
+             "Système": SYSTEME_PAGES,                                      # le système des robots, puis votre fiche
+             "Réglages": [("nom", "Votre nom"), ("affichage", "Taille du texte"), ("expert", "L'expert"),
                           ("dossiers", "Dossiers"), ("sauvegarde", "Sauvegarder mes séances"),
-                          ("maj", "Mise à jour et nouveautés"), ("contact", "Un problème, une idée ?")]}     # la barre de gauche de ces onglets
-    # les intertitres de la barre de Réglages : vous, vos séances, le programme (l'utilisateur, 2026-11-12 : un peu d'ordre)
-    GROUPES_PAGES = {"Réglages": {"nom": "Vous", "dossiers": "Vos séances", "maj": "Le programme"}}
+                          ("maj", "Mise à jour et nouveautés"), ("contact", "Un problème, une idée ?")]
+             + [("design", "Conception de l'interface")] * DEV}     # la barre de gauche de ces onglets
+    # les intertitres de la barre de Réglages : vous, vos séances, le programme (l'utilisateur, 2026-11-12 : un peu d'ordre) ;
+    # les outils de développement, dans un dépôt Git seulement (DEV : pas chez les membres)
+    GROUPES_PAGES = {"Système": SYSTEME_GROUPES, "Réglages": {"nom": "Vous", "dossiers": "Vos séances", "maj": "Le programme", "design": "Outils de développement"}}
     vue_page = {"Fichier": "nouveau" if PAGE.get("fichier") == "importer" else
                            PAGE.get("fichier") if PAGE.get("fichier") in ("nouveau", "ouvrir", "infos", "exporter", "dossier") else "ouvrir",
                 "Rapports": PAGE.get("rapports") if PAGE.get("rapports") in ("creer", "seance") else "creer",
-                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "systeme", "dossiers", "expert", "sauvegarde", "maj", "contact") else
-                    "maj" if PAGE.get("reglages") == "nouveautes" else "affichage"}
+                "Réglages": PAGE.get("reglages") if PAGE.get("reglages") in ("affichage", "nom", "dossiers", "expert", "sauvegarde", "maj", "contact") + ("design",) * DEV else
+                    "maj" if PAGE.get("reglages") == "nouveautes" else "affichage",
+                "Système": PAGE.get("systeme") if PAGE.get("systeme") in dict(SYSTEME_PAGES) else
+                    "systeme" if PAGE.get("reglages") == "systeme" else "sy-vue"}
+    sy_cherche = {"t": ""}                                # Système : la recherche
+
+    def aller_sequence(cle, famille=None):
+        """Système : ouvre la famille de cette séquence et la fait défiler à l'écran, encadrée."""
+        famille = famille or systeme_vue.famille_de_cle(cle, SYSTEME_DATA)
+        if not famille: return
+        sy_cherche["t"] = ""
+        voir_page("Système", "sy-" + famille)
+        a_ = systeme_vue.ancre(cle)
+        ui.run_javascript(f"setTimeout(function(){{document.querySelectorAll('.sequence.vise').forEach(function(x){{x.classList.remove('vise')}});"
+                          f"var e=document.getElementById({json.dumps(a_)}); if(e){{e.classList.add('vise'); e.scrollIntoView({{behavior:'smooth',block:'start'}});}}}}, 150)")
+
+    def ecarts_fiche():
+        """[(section, point, votre fiche, les robots)] : les lignes de votre fiche qui diffèrent de Bridge Coach."""
+        x = fiche_conventions.lire(); out = []
+        for sec, titre_sec, _, items in fiche_conventions.TOUTES:
+            for it in items:
+                if fiche_conventions.valeur(it["cle"], x)[1]:
+                    out.append((titre_sec, it["titre"], fiche_conventions.texte(it["cle"], x) or "—",
+                                fiche_conventions.texte(it["cle"], defaut=True) or "—"))
+        return out
 
     facon = {"k": PAGE.get("nouveau") if PAGE.get("nouveau") in ("bws", "pbn", "themes") else   # Fichier, Nouveau : la façon choisie
              ("bws" if PAGE.get("fichier") == "importer" else "themes")}
@@ -3451,12 +3492,12 @@ def page():
         """La page ouverte (onglet, entrée de la barre, version de l'analyse, page de l'aide) : rouverte au prochain lancement."""
         o = onglets.value; nom = o if isinstance(o, str) else o.props.get("name", "Donnes")
         ecrire_etat(page={"onglet": nom, "entree": vue.get("entree"), "version": vue.get("version"), "aide": vue_aide["k"],
-                          "fichier": vue_page["Fichier"], "rapports": vue_page["Rapports"], "reglages": vue_page["Réglages"],
+                          "fichier": vue_page["Fichier"], "rapports": vue_page["Rapports"], "reglages": vue_page["Réglages"], "systeme": vue_page["Système"],
                           "nouveau": facon["k"], "replis": replis})
 
     def onglet_a_pages():
         """« Fichier », « Rapports » ou « Réglages » quand l'un d'eux est ouvert, sinon None."""
-        for nom, o in (("Fichier", o_fichier), ("Rapports", o_rapports), ("Réglages", o_reglages)):
+        for nom, o in (("Fichier", o_fichier), ("Système", o_systeme), ("Rapports", o_rapports), ("Réglages", o_reglages)):
             if onglets.value in (o, nom): return nom
         return None
 
@@ -3467,12 +3508,15 @@ def page():
         for nom, cles in PAGES.items():
             for cle, _ in cles:
                 if cle in pages_ui: pages_ui[cle].set_visibility(vue_page[nom] == cle)   # (celles déjà construites)
+        if "sy" in pages_ui:                               # Système : les pages des robots, dessinées à la demande
+            pages_ui["sy"].set_visibility(vue_page["Système"].startswith("sy-")); page_systeme.refresh()
 
     def voir_page(nom, cle):
         vue_page[nom] = cle; montrer_pages(); barre_seance.refresh(); retenir_page()
         if cle == "seance": resultats.refresh()
         if nom == "Fichier": rafraichir_fichier()
         if cle == "contact": fichier_erreur.refresh()
+        if cle == "ecarts": page_ecarts.refresh()          # la fiche a pu changer depuis
 
     def rafraichir_fichier():
         """Les pages de Fichier se mettent à jour quand on y vient : les séances, les .bws, la séance à exporter."""
@@ -3486,7 +3530,7 @@ def page():
     def cle_aide():
         """Où l'on est, pour AIDE_POUR : (onglet, page ou entrée, précision)."""
         o = onglets.value; nom = o if isinstance(o, str) else o.props.get("name", "")
-        if nom in ("Fichier", "Rapports", "Réglages"):
+        if nom in ("Fichier", "Système", "Rapports", "Réglages"):
             pg = vue_page[nom]
             return (nom, pg, facon["k"]) if (nom, pg) == ("Fichier", "nouveau") else (nom, pg)
         e = vue.get("entree") or ""
@@ -3702,6 +3746,7 @@ def page():
                 o_donnes = ui.tab("Donnes")
                 o_jouer = ui.tab("Jouer")
                 o_analyse = ui.tab("Analyse")
+                o_systeme = ui.tab("Système")                     # le système des robots et votre fiche (2026-11-16)
                 o_rapports = ui.tab("Rapports")
                 o_reglages = ui.tab("Réglages")
                 o_aide = ui.tab("Aide").classes("hidden")          # la page d'aide : montrée par le bouton de droite
@@ -3862,6 +3907,70 @@ def page():
                 with ui.column().classes("w-full gap-2") as pages_ui["seance"]:
                     resultats()
 
+            with ui.tab_panel(o_systeme).classes("px-0 pt-0 gap-3"):   # Système : lecture seule (systeme_vue.py)
+                with ui.column().classes("w-full gap-3") as pages_ui["sy"]:
+                    @ui.refreshable
+                    def page_systeme():
+                        cle = vue_page["Système"]
+                        if not cle.startswith("sy-"): return
+                        titre_ = dict(SYSTEME_PAGES).get(cle, "")
+                        with ui.row().classes("w-full items-center justify-between gap-3"):
+                            ui.label(titre_).classes("text-lg font-bold")
+                            ui.input(placeholder="Chercher : 1SA 2♣, Stayman, contre…", value=sy_cherche["t"],
+                                     on_change=lambda e: (sy_cherche.update(t=e.value or ""), resultats_sy.refresh())) \
+                                .props("outlined dense clearable debounce=400").classes("w-80")
+                        resultats_sy()
+                        if cle == "sy-vue":
+                            n_seq, n_enc, n_ex = systeme_vue.compter(SYSTEME_DATA)
+                            ui.html(f"<div class='syst'><p>Les robots de Bridge Coach jouent le <b>SEF 2024</b>, tel qu'il est écrit "
+                                    f"dans son fichier de règles : <b>{n_seq}</b> séquences, <b>{n_enc}</b> enchères décrites, "
+                                    f"<b>{n_ex}</b> mains d'exemple vérifiées à chaque lancement. Les pages à gauche les montrent "
+                                    "famille par famille, en lecture seule. Ce qui n'y est pas décrit, les robots le jouent avec "
+                                    "leurs règles générales.</p><p>Votre fiche de conventions dit ce que <b>vous</b> jouez avec "
+                                    "votre partenaire ; elle ne change pas les robots. « Écarts fiche / robots » liste où les deux "
+                                    "diffèrent.</p></div>", sanitize=False)
+                            ui.markdown(systeme_vue.lire_doc("systeme.md")).classes("syst aide")
+                        elif cle == "sy-entames":
+                            ui.markdown(systeme_vue.lire_doc("entames.md")).classes("syst aide")
+                        elif cle.startswith("sy-conv-"):
+                            doc = next((d for k_, _, d in systeme_vue.CONVENTIONS if "sy-conv-" + k_ == cle), "")
+                            ui.markdown(systeme_vue.lire_doc(doc)).classes("syst aide")
+                        else:
+                            ui.html(systeme_vue.page_famille(cle[3:], SYSTEME_DATA), sanitize=False)
+                    @ui.refreshable
+                    def resultats_sy():
+                        t_ = sy_cherche["t"].strip()
+                        if len(t_) < 2: return
+                        r_ = systeme_vue.chercher(t_, SYSTEME_DATA)
+                        if not r_: ui.label("Rien de tel dans le système.").classes("text-base text-gray-700"); return
+                        with ui.row().classes("w-full gap-2 flex-wrap"):
+                            for cle_, fam_ in r_[:30]:
+                                alts_ = systeme_vue.alternatives(cle_)
+                                lib_ = ("Ouverture" if cle_ == "ouverture" else systeme_vue.sequence_texte(systeme_vue.jetons(alts_[0]))
+                                        + (f" (et {len(alts_) - 1} autre{'s' if len(alts_) > 2 else ''})" if len(alts_) > 1 else ""))
+                                ui.button(lib_, on_click=lambda c_=cle_, f_=fam_: aller_sequence(c_, f_)).props("outline no-caps dense")
+                        if len(r_) > 30: ui.label(f"… et {len(r_) - 30} autres : précisez.").classes("text-base text-gray-700")
+                    page_systeme()
+                with ui.column().classes("w-full gap-3") as systeme_col:   # votre fiche (déplacée ici à la fin) et les écarts
+                    pass
+                with ui.column().classes("w-full gap-3") as pages_ui["ecarts"]:
+                    ui.label("Écarts fiche / robots").classes("text-lg font-bold")
+                    @ui.refreshable
+                    def page_ecarts():
+                        ec = ecarts_fiche()
+                        ui.label("Les robots jouent toujours le système de Bridge Coach. Votre fiche dit ce que vous jouez avec "
+                                 "votre partenaire : voici où elle s'en écarte.").classes("text-base text-gray-700 max-w-3xl")
+                        if not ec:
+                            ui.label("Aucun écart : votre fiche est celle de Bridge Coach.").classes("text-base font-bold"); return
+                        ui.html("<table class='syst' style='border-collapse:collapse'><tr style='text-align:left'><th style='padding:6px 12px 6px 0'>"
+                                "Point</th><th style='padding:6px 12px'>Votre fiche</th><th style='padding:6px 12px'>Les robots</th></tr>"
+                                + "".join(f"<tr style='border-top:1px solid var(--bc-tapis-200)'><td style='padding:6px 12px 6px 0'>"
+                                          f"<span class='note'>{html_.escape(sec_)}</span><br><b>{html_.escape(tit_)}</b></td>"
+                                          f"<td style='padding:6px 12px'>{html_.escape(v_)}</td><td style='padding:6px 12px;"
+                                          f"color:var(--bc-tapis-700)'>{html_.escape(d_)}</td></tr>" for sec_, tit_, v_, d_ in ec)
+                                + "</table>", sanitize=False)
+                    page_ecarts()
+
             with ui.tab_panel(o_reglages).classes("px-0 pt-0 gap-5 max-w-xl"):
               with ui.column().classes("w-full gap-3") as pages_ui["affichage"]:
                 titre_page("Taille du texte", "taille")
@@ -3933,7 +4042,7 @@ def page():
                 ui.label("Après une modification : enregistrez, puis fermez et rouvrez Bridge Coach.").classes("text-base text-gray-700")
 
               with ui.column().classes("w-full gap-2") as pages_ui["systeme"]:   # Réglages, Votre système : la carte de conventions
-                titre_page("Votre système", "systeme")
+                titre_page("Votre fiche de conventions", "systeme")
                 ui.label("Votre feuille de prévisions, rangée comme celle de la FFB : ouvertures, interventions, flanc. Tout "
                          "est déjà coché comme le joue Bridge Coach (SEF 2024) : changez seulement ce que votre paire joue "
                          "autrement. Ce qui est écrit ici ne change pas ce que jouent les robots.").classes("text-base text-gray-700")
@@ -4181,6 +4290,12 @@ def page():
                 ui.label("N'envoyez pas vos fichiers de séance (.bc.json) sur GitHub : ils contiennent les noms complets des "
                          "joueurs, et tout ce qu'on y dépose est public.").classes("text-base text-gray-700")
 
+              if DEV:                                            # Outils de développement : principes et fondations (palette.py)
+                with ui.column().classes("gap-3").style(f"width:min(1100px, calc(100vw / var(--zoom, 1) - {LARGEUR_BARRE + 64}px))") \
+                        as pages_ui["design"]:                   # plus large que les autres pages : dix nuances par ligne
+                  ui.label("Conception de l'interface").classes("text-lg font-bold")
+                  ui.html(palette.html_page(), sanitize=False)
+
               with ui.column().classes("w-full gap-3") as pages_ui["maj"]:
                 titre_page("Mise à jour et nouveautés", "mise-a-jour")
                 ui.label(f"Bridge Coach, version {maj.version_locale()}").classes("text-base font-bold")
@@ -4409,10 +4524,13 @@ def page():
                     for c in cs:                           # le titre, la date et d'où elle vient ; le nom du fichier en petit
                         date, source = infos_seance(c)
                         est = ouverte == os.path.abspath(c)
-                        with ui.button(on_click=lambda c=c: choisir(c)).props("flat align=left no-caps").classes("w-full"):
+                        with ui.row().classes("w-full items-center no-wrap gap-1"):   # la séance, et sa corbeille au bout
+                          with ui.button(on_click=lambda c=c: choisir(c)).props("flat align=left no-caps").classes("grow min-w-0"):
                             with ui.column().classes("gap-0 items-start text-left"):
                                 ui.label(fichiers.titre_de(c) + ("  · ouverte" if est else "")).classes("text-base font-bold")
                                 ui.label(f"{date}  ·  {source + '  ·  ' if source else ''}{os.path.basename(c)}").classes("text-sm text-gray-600 break-all")
+                          ui.button(icon="delete_outline", on_click=lambda c=c: demander_corbeille(c)) \
+                              .props("flat round color=grey-7").classes("shrink-0").tooltip("Mettre à la corbeille…")
             jetees = fichiers.dans_la_corbeille()
             if jetees:                                     # la corbeille, repliée : on en remet une d'un clic
                 with ui.expansion(f"Corbeille · {len(jetees)} séance{'s' if len(jetees) > 1 else ''}", icon="delete") \
@@ -4425,7 +4543,13 @@ def page():
                                 ui.label(titre_).classes("text-base font-bold")
                                 ui.label(f"Séance du {date_} · mise à la corbeille le {quand_}").classes("text-sm text-gray-600")
                             ui.button("Remettre", icon="restore_from_trash", on_click=lambda d_=d_: remettre_(d_)).props("outline").classes("shrink-0")
-                    ui.button("Ouvrir la corbeille", icon="folder_open", on_click=lambda: ouvrir(fichiers.corbeille_dossier())).props("flat")
+                    with ui.row().classes("items-center gap-3 mt-2"):
+                        ui.button("Vider la corbeille…", icon="delete_sweep", on_click=lambda n_=len(jetees): demander_vider(n_)) \
+                            .props("outline color=red")
+                        ui.button("Ouvrir la corbeille", icon="folder_open", on_click=lambda: ouvrir(fichiers.corbeille_dossier())).props("flat")
+                    ui.label(f"Elle occupe {fichiers.en_mots(fichiers.taille_corbeille())}. La vider envoie ces séances dans la "
+                             f"{CORBEILLE_SYSTEME}, d'où vous pouvez encore les reprendre tant que vous ne la videz pas.") \
+                        .classes("text-base text-gray-700")
             if faute_o["texte"]: ui.label(faute_o["texte"]).classes("text-base text-red-800")
         liste()
         ui.label("Ou une séance Bridge Coach (.bc.json) ailleurs sur l'ordinateur :").classes("text-base mt-2")
@@ -4524,6 +4648,11 @@ def page():
         with ui.row().classes("gap-3 justify-end w-full"):
             ui.button("Annuler", on_click=lambda: corbeille_d.close()).props("flat")
             ui.button("Mettre à la corbeille", icon="delete", on_click=lambda: mettre_a_la_corbeille()).props("color=red")
+    with ui.dialog() as vider_d, ui.card().classes("w-full max-w-md"):   # Ouvrir une séance, la corbeille : la vider
+        vider_texte = ui.label("").classes("text-base")
+        with ui.row().classes("gap-3 justify-end w-full"):
+            ui.button("Annuler", on_click=lambda: vider_d.close()).props("flat")
+            ui.button("Vider la corbeille", icon="delete_sweep", on_click=lambda: vider_corbeille_()).props("color=red")
 
     envoi_x = ui.upload(on_upload=lambda e: recu_x(e), auto_upload=True, max_files=1).props('accept=".json"').classes("hidden")
 
@@ -4825,23 +4954,51 @@ def page():
         choisir(c); onglets.set_value(o_fichier); voir_page("Fichier", "ouvrir")
         ui.notify(f"Séance remise : {fichiers.titre_de(c)}")
 
+    a_jeter = {"c": None}                                  # la séance que la fenêtre de confirmation mettra à la corbeille
+
     def demander_corbeille(c):
+        a_jeter["c"] = c
         corbeille_texte.text = (f"Mettre « {fichiers.titre_de(c)} » à la corbeille, avec ses rapports, ses parties jouées et ses "
                                 "versions gardées ? Rien n'est effacé : tout va dans le dossier corbeille du dossier de travail, "
                                 "d'où vous pouvez le remettre.")
         corbeille_d.open()
 
     def mettre_a_la_corbeille():
-        corbeille_d.close(); c = choix["chemin"]
+        """Depuis Infos (la séance ouverte) ou depuis une ligne d'Ouvrir une séance (n'importe laquelle)."""
+        corbeille_d.close(); c = a_jeter["c"] or choix["chemin"]
         if not c: return
-        if T.actif or D.actif or I.actif:
-            infos_ui["faute"] = "Un calcul est en cours : attendez qu'il se termine."; page_infos.refresh(); return
+        ouverte = bool(choix["chemin"]) and os.path.abspath(c) == os.path.abspath(choix["chemin"])
+        def faute(texte):
+            if vue_page["Fichier"] == "infos": infos_ui["faute"] = texte; page_infos.refresh()
+            else: faute_o["texte"] = texte; liste.refresh()
+        if T.actif or D.actif or I.actif: faute("Un calcul est en cours : attendez qu'il se termine."); return
+        titre_ = fichiers.titre_de(c)                     # avant : ensuite, le fichier n'est plus là
         try:
-            dossier_ = fichiers.corbeille(c)
+            fichiers.corbeille(c)
         except OSError:
-            infos_ui["faute"] = "La séance n'a pas pu aller à la corbeille (un fichier est ouvert ailleurs ?)."; page_infos.refresh(); return
-        apres_changement(None)
-        ui.notify(f"Séance mise à la corbeille : {dossier_}", multi_line=True, timeout=8000)
+            faute("La séance n'a pas pu aller à la corbeille (un fichier est ouvert ailleurs ?)."); return
+        faute_o["texte"] = ""
+        if ouverte: apres_changement(None)
+        else: liste.refresh(); liste_i.refresh()
+        ui.notify(f"« {titre_} » est dans la corbeille : « Remettre », en bas d'Ouvrir une séance, la replace.",
+                  multi_line=True, timeout=8000)
+
+    def demander_vider(n):
+        vider_texte.text = (f"Vider la corbeille de Bridge Coach ? {'Ses ' + str(n) + ' séances' if n > 1 else 'La séance qu’elle contient'}, "
+                            f"avec leurs rapports et leurs parties jouées, iront dans la {CORBEILLE_SYSTEME}. Vous pourrez encore "
+                            "les y reprendre, jusqu'à ce que vous la vidiez.")
+        vider_d.open()
+
+    def vider_corbeille_():
+        vider_d.close(); faute_o["texte"] = ""
+        try:
+            n = fichiers.vider_corbeille()
+        except OSError:
+            faute_o["texte"] = (f"La corbeille n'a pas pu être vidée dans la {CORBEILLE_SYSTEME}. Rien n'a été effacé ; vous pouvez "
+                                "la vider à la main : « Ouvrir la corbeille ».")
+            liste.refresh(); return
+        liste.refresh()
+        ui.notify(f"{n} séance{'s' if n > 1 else ''} dans la {CORBEILLE_SYSTEME}.")
 
     async def parcourir_i(types, envoi):
         if not app.native.main_window: return envoi.run_method("pickFiles")
@@ -4930,6 +5087,7 @@ def page():
                 if not erreur and not T.annule: voir_page("Rapports", "seance")   # les rapports prêts : leur liste
             resultats.refresh(); vue_analyse.refresh(); montrer_controles()
 
+    ui.on("systeme_vers", lambda e: aller_sequence(SYSTEME_ANCRES.get(e.args, "")) if isinstance(e.args, str) else None)
     ui.on("aide", lambda e: ouvrir_aide(e.args if isinstance(e.args, str) else None))   # les « ? » des titres (titre_page)
     try:                                                   # un tournoi pas encore importé : son import s'ouvre, une fois par fichier
         neuf_bws = next((b for b in reglages()[0] if not deja_importe(b)), None)
@@ -4963,7 +5121,8 @@ def page():
             ui.timer(1.0, quoi_neuf.open, once=True)
     ui.timer(.4, rafraichir)
     ui.timer(.5, lambda: montrer_titre(), once=True)
-    depart = {"Fichier": o_fichier, "Jouer": o_jouer, "Analyse": o_analyse, "Rapports": o_rapports, "Réglages": o_reglages,
+    pages_ui["systeme"].move(systeme_col)                # votre fiche de conventions : dans l'onglet Système (2026-11-16)
+    depart = {"Fichier": o_fichier, "Jouer": o_jouer, "Analyse": o_analyse, "Système": o_systeme, "Rapports": o_rapports, "Réglages": o_reglages,
               "Aide": o_aide}.get(PAGE.get("onglet"))
     if depart: ui.timer(.05, lambda: onglets.set_value(depart), once=True)   # l'onglet de la dernière fois
     montrer_barre(); montrer_controles()       # la fenêtre naît avec le titre du programme seul

@@ -268,6 +268,19 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         and compared to the page's grid, scores and notes compared to the page (alertes). No licences, no club name;
                         title from fichiers.titre_propose (session.moment « après-midi » from the page title). The app's Nouveau page
                         accepts .html (in the window; in browser mode only the uploaded page is seen). tests/test_ffb_html.py
+      ffb_pdf.py        an FFB website « Donne n°N » page printed to PDF (2026-11-16: a member took one for a feuille de route
+                        and the import failed). Text read with pdfium character by character, words by baseline (FPDFText_
+                        GetCharOrigin, so descenders stay in their word); the suit symbols are 10.5 pt form XObjects whose
+                        content pdfium doesn't expose, so each one's suit comes from the rendered page (ECHELLE 4): black ♠,
+                        red ♥, orange ♦ (also less filled, 0.37), green ♣ (_couleur). Their place says what they mark: four
+                        stacked under a hand (_mains: N top, S bottom, O / E by x; ranks to the right, a void when none), the
+                        « Score optimum » header (_optimum, compared with our double dummy), a contract or a lead in the « Fiche
+                        ambulante » (_tables: columns from the header row, a row per contract cell, names cut by a page break
+                        joined in page order). Several deals per PDF, a deal over several pages. lire() returns what
+                        ffb_html.lire_pages returns; seance() = ffb_html.seance(chemin, pages=…). rapport.py and fichiers.
+                        lire_source send a .pdf here when est_page_ffb (« Donne n° » and « Fiche ambulante »), else to
+                        feuille_route; source "ffb-pdf". tests/test_ffb_pdf.py (the full read runs only on a local PDF,
+                        BRIDGE_COACH_PDF_FFB: real names never go in the repository)
       feuille_route.py  FFBClubNet "feuille de route" PDF -> session JSON (hands by position on the
                         page, contracts, leads, results; no auctions, double-dummy computed with
                         endplay; the club name is not kept); rapport.sh accepts the PDF directly.

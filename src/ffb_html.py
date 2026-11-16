@@ -303,10 +303,11 @@ def _mitchell(donnes, num):
     return par_tour, npos
 
 
-def convertir(chemin):
-    """(tables Bridgemate, infos) : infos = {reference, club, titre, date, moment, paires, alertes}."""
+def convertir(chemin, pages=None):
+    """(tables Bridgemate, infos) : infos = {reference, club, titre, date, moment, paires, alertes}. pages : déjà lues
+    ailleurs, comme lire_pages les rend (une page imprimée en PDF : ffb_pdf.lire)."""
     from feuille_route import double_mort, verifier
-    ref, club, titre, donnes, paires = lire_pages(chemin)
+    ref, club, titre, donnes, paires = pages or lire_pages(chemin)
     date = _date(titre)
     if not date: raise ErreurFFB("La date du tournoi n'est pas sur les pages.")
     alertes = []
@@ -375,11 +376,11 @@ def convertir(chemin):
                    donnes=donnes, alertes=alertes, mitchell=bool(mitch))
 
 
-def seance(chemin):
+def seance(chemin, pages=None):
     """La séance (session, donnes, paires, alertes) des pages de la FFB, pour rapport.py ; les noms complets sont dans
-    bws_extract.JOUEURS, comme pour un .bws."""
+    bws_extract.JOUEURS, comme pour un .bws. pages : voir convertir."""
     from bws_extract import construire
-    T, info = convertir(chemin)
+    T, info = convertir(chemin, pages)
     T["Session"][0]["Date"] = datetime.datetime.fromisoformat(T["Session"][0]["Date"])
     data = construire(T)
     s = data["session"]

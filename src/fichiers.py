@@ -80,7 +80,7 @@ def titre_propose(data, genre, nom_source=""):
     jour = date_longue(d) if d else ""
     propre = (s.get("titre") or nom_source or "").strip()
     if propre.lower() in NOMS_GENERIQUES: propre = ""
-    if genre in ("bws", "feuille-de-route", "ffb-html") and not propre:
+    if genre in ("bws", "feuille-de-route", "ffb-html", "ffb-pdf") and not propre:
         mot = moment(s.get("heure")) or s.get("moment", "")
         plus = ", ".join(x for x in (mot, f"{s['tables']} tables" if s.get("tables") else "") if x)
         return f"Tournoi du {jour}" + (f" ({plus})" if plus else "")
@@ -142,6 +142,12 @@ def lire_source(chemin):
         import pbn
         return pbn.seance(chemin), "pbn", ""
     if ext == ".pdf":
+        import ffb_pdf
+        if ffb_pdf.est_page_ffb(chemin):                 # une page « Donne n° » du site de la FFB, imprimée en PDF
+            try:
+                return ffb_pdf.seance(chemin), "ffb-pdf", ""
+            except ffb_pdf.ErreurFFB as ex:
+                raise ValueError(str(ex))
         from feuille_route import convertir
         from bws_extract import construire
         T, _ = convertir(chemin)

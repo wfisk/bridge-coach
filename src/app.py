@@ -64,7 +64,8 @@ TYPES_BWS = ("Bridgemate feuille de route ou pages du site de la FFB (*.bws;*.pd
 TYPES_PBN = ("PBN (*.pbn)", "Tous les fichiers (*.*)")
 TYPES_EXPERT = ("Analyse expert (*.json)", "Tous les fichiers (*.*)")   # pywebview : lettres et espaces seulement, pas d'apostrophe
 SOURCES = {"bws": "Bridgemate", "feuille-de-route": "Feuille de route", "entrainement": "Entraînement",
-           "saisie": "Donnes saisies", "simulation": "Simulation", "ffb-html": "Site de la FFB", "brouillon": "Brouillon"}
+           "saisie": "Donnes saisies", "simulation": "Simulation", "ffb-html": "Site de la FFB",
+           "ffb-pdf": "Site de la FFB (page imprimée en PDF)", "brouillon": "Brouillon"}
 AIDE = os.path.join(rapport.RACINE, "help", "index.html")
 IMAGES_AIDE = os.path.join(rapport.RACINE, "help", "images")   # les captures d'écran de l'aide, servies sous /aide-images/
 GENERIQUE = ("Le rapport n'a pas pu être créé. Le détail est dans le fichier derniere-erreur.txt du dossier des rapports : "

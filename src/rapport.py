@@ -534,7 +534,10 @@ def main():
               ".htm": "ffb-html"}.get(os.path.splitext(bws)[1].lower(), "inconnue")
     import fichiers
     origine = fichiers.nom_d_origine(bws)
-    if bws.lower().endswith(".pdf"):                    # feuille de route FFBClubNet : devient une séance JSON
+    if bws.lower().endswith(".pdf"):
+        import ffb_pdf
+        if ffb_pdf.est_page_ffb(bws): source = "ffb-pdf"   # une page « Donne n° » du site de la FFB, imprimée en PDF
+    if source == "feuille-de-route":                       # feuille de route FFBClubNet : devient une séance JSON
         from feuille_route import convertir
         T, _ = convertir(bws)
         bws = os.path.join(tempfile.mkdtemp(), nom_seance(bws) + ".json")
@@ -543,7 +546,13 @@ def main():
     nom = nom_seance(bws)
     originel = os.path.abspath(args[0])                    # le fichier importé, avant toute conversion
 
-    if source == "ffb-html":                               # les pages de résultats du site de la FFB
+    if source == "ffb-pdf":                                # la même page, imprimée en PDF (ffb_pdf.py)
+        import ffb_pdf
+        try:
+            pret, data = None, ffb_pdf.seance(bws)
+        except ffb_pdf.ErreurFFB as ex:
+            raise SystemExit(str(ex))
+    elif source == "ffb-html":                             # les pages de résultats du site de la FFB
         import ffb_html
         try:
             pret, data = None, ffb_html.seance(bws)

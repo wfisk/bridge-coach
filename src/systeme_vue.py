@@ -344,6 +344,9 @@ def main_html(main):
 # ---------------------------------------------------------------- la page d'une famille
 CSS = """
 .syst { font-size: 16px; color: var(--bc-tapis-900); max-width: 980px; }
+/* les titres d'un document sous le titre de la page (22) : 18 comme une section, puis 16 (l'utilisateur, 2026-11-17) */
+.syst.aide h1, .syst.aide h2 { font-size: var(--fs-titre); color: var(--bc-trefle-800); margin: 1.2em 0 .4em; line-height: 1.3; }
+.syst.aide h3, .syst.aide h4 { font-size: var(--fs-texte); color: var(--bc-tapis-900); font-weight: 700; margin: 1em 0 .3em; }
 .syst .carton-s { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 28px;
   padding: 0 var(--sp-2); border-radius: 5px; border: 1px solid var(--bc-tapis-300); background: var(--bc-blanc);
   font-weight: 700; font-size: 16px; color: var(--bc-tapis-900); white-space: nowrap; }
@@ -458,11 +461,31 @@ def chercher(texte, s=None):
     return out
 
 
+DATE = r"20\d\d-\d\d-\d\d"
+
+
+def pour_membres(t):
+    """Un document du système tel que le lit un membre (l'utilisateur, 2026-11-17) : sans ce qui sert au développement,
+    les noms de fichiers et de fonctions, les dates de travail, les mesures du banc d'essai. Les règles et les
+    « (à confirmer) » restent. Le fichier, lui, ne change pas : Claude le lit tel quel."""
+    paras = re.split(r"\n[ \t]*\n", t)
+    paras = [p for p in paras if p.lstrip().startswith("#") or not re.search(r"Modifier les deux ensemble|que le programme lit", p)]
+    t = "\n\n".join(paras)
+    t = re.sub(r"\s+dans\s+`ffb/`", "", t)                                      # « à vérifier dans ffb/ » : à vérifier
+    t = re.sub(r"[^.\n]*:\s*voir\s+`[^`]+`\.?[ \t]*", "", t)                     # « Conventions jouées : voir conventions.md. »
+    t = re.sub(r"\s*Pour faire passer[^.]*`[^`]+\.yaml`\.", "", t)
+    t = re.sub(r"Le moteur : regles\.yaml[^.]*\.\s*", "", t)
+    t = re.sub(r"[ \t]*\([^()]*(?:" + DATE + r"|src/|`)[^()]*\)", "", t)         # (2026-11-14), (`stayman.md`), (… src/x.py)
+    t = re.sub(r"[ \t]*Mesuré le " + DATE + r"[^.]*\.", "", t)                   # les mesures du banc d'essai
+    return re.sub(r"`([^`]+)`", r"\1", t)
+
+
 def lire_doc(nom):
-    """Un document du système (systeme.md, entames.md, conventions/stayman.md…), sans les liens relatifs."""
+    """Un document du système (systeme.md, entames.md, conventions/stayman.md…), sans les liens relatifs ni les notes
+    de développement (pour_membres)."""
     for f in (os.path.join(SYSTEMES, SYSTEME, nom), os.path.join(SYSTEMES, nom)):
         if os.path.exists(f):
-            t = open(f, encoding="utf-8").read()
+            t = pour_membres(open(f, encoding="utf-8").read())
             return rouge(re.sub(r"\[([^\]]+)\]\([^)]+\.md\)", r"\1", t))   # ♥ ♦ en rouge, même dans le markdown
     return ""
 

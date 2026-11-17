@@ -843,6 +843,22 @@ def titre_court(titre):
     return t or titre or ""
 
 
+_TITRES_BWS = {}
+
+
+def titre_bws(b):
+    """(le titre lisible d'un tournoi Bridgemate, déjà importé ?), lu une fois par version du fichier ; le nom du
+    fichier quand il ne se lit pas."""
+    try:
+        cle = (b, os.path.getmtime(b))
+        if cle not in _TITRES_BWS:
+            p = fichiers.proposer(b)
+            _TITRES_BWS[cle] = (p["titre"], bool(p["deja"]))
+        return _TITRES_BWS[cle]
+    except (Exception, SystemExit):
+        return os.path.basename(b), bool(deja_importe(b))
+
+
 def deja_importe(bws):
     """Le .bc.json de ce fichier, s'il a déjà été importé (le nom du fichier d'origine gardé dans sa source, ou, pour
     une séance d'avant, le même nom) ; sinon None."""
@@ -1225,10 +1241,11 @@ def page_dm_par(d, par=True):
         ui.html(sanitize=False, content=f"<div style='font-size:var(--fs-texte)'>{par_html(d)}</div>")
 
 
-def titre_donne(d, centre=False, plus=""):
+def titre_donne(d, centre=True, plus=""):
     """La ligne de titre d'une donne, la même dans Donnes, Jouer et Analyse (l'utilisateur, 2026-11-17) : « Donne 1 »
     en gras, puis « Donneur : Nord · Vulnérabilité : personne » ; plus : un complément (le thème). Centrée au-dessus de
-    la table de Jouer, à gauche ailleurs."""
+    la table de Jouer et, à la même place, au-dessus de la donne dans Donnes et Analyse (l'utilisateur, 2026-11-17 :
+    « au même endroit sur chaque page ») ; centre=False la met à gauche."""
     with ui.row().classes("w-full gap-x-4 gap-y-1 items-baseline " + ("justify-center" if centre else "")).style("white-space:nowrap"):
         ui.label(f"Donne {d['n']}").classes("font-bold titre-page")
         ui.html(f"<div style='font-size:var(--fs-titre)'>Donneur : <b>{SIEGE[d['donneur']]}</b> · "
@@ -1411,14 +1428,6 @@ def fait_le(an):
 def quand(f):
     """« 02/11/2026 à 20:49 » : la date du fichier."""
     return datetime.datetime.fromtimestamp(os.path.getmtime(f)).strftime("%d/%m/%Y à %H:%M")
-
-
-def lien_pdf(f, nom, detail):
-    """Un rapport : son nom comme un lien qui l'ouvre, ce qu'il contient, le fichier et sa date."""
-    with ui.column().classes("gap-0"):
-        ui.label(nom).classes("text-base text-primary underline cursor-pointer").on("click", lambda f=f: ouvrir(f))
-        ui.html(f"<div class='text-base text-gray-700'>{detail} · <span style='word-break:break-all'>{os.path.basename(f)}</span> · "
-                f"<span style='white-space:nowrap'>{quand(f)}</span></div>", sanitize=False)
 
 
 def page_analyse_resume(data, an, expert):
@@ -1878,6 +1887,7 @@ def page():
             e = vue["entree"]
             ok, _ = edition.modifiable(c)
             if e == "seance":
+                nouveau()                                  # un tournoi Bridgemate pas encore importé : sur la page Séance seulement
                 page_seance(data, c)
                 if data.get("alertes"): page_alertes(data)
                 if ok: page_versions(c)
@@ -4123,7 +4133,7 @@ def page():
     with ui.column().classes("w-full px-0 pt-0 pb-6 gap-0"):   # la marge de la page seule (16 px), comme les barres (l'utilisateur)
 
         with ui.tab_panels(onglets, value=o_donnes, animated=False).classes("w-full"):
-            with ui.tab_panel(o_donnes).classes("px-0"):
+            with ui.tab_panel(o_donnes).classes("px-0 pt-0"):   # en haut comme Jouer : le titre de la donne au même endroit
                 @ui.refreshable
                 def nouveau():
                     neuf = next((b for b in reglages()[0] if not deja_importe(b)), None)
@@ -4133,16 +4143,17 @@ def page():
                             ui.label(f"Nouveau tournoi dans Bridgemate, du {date_lisible(neuf)}").classes("text-base")
                             ui.label(os.path.basename(neuf)).classes("text-base text-gray-700 break-all")
                         ui.button("Importer…", on_click=lambda b=neuf: preparer_import(b)).classes("shrink-0")
-                nouveau()
                 barre_i = ui.linear_progress(value=0, show_value=False).props("size=16px rounded indeterminate").classes("max-w-xl")
                 texte_i = ui.label("").classes("text-base")
                 faute_i = ui.label("").classes("text-base text-red-800")
+                for x_ in (barre_i, texte_i, faute_i): x_.set_visibility(False)   # vides : pas de place prise au-dessus de la donne
+                faute_i.bind_visibility_from(faute_i, "text", backward=bool)
                 vue_seance()
 
             with ui.tab_panel(o_jouer).classes("px-0 pt-0"):   # en haut, la marge de gauche seulement (l'utilisateur, 2026-11-11)
                 vue_jouer()
 
-            with ui.tab_panel(o_analyse).classes("px-0 gap-3"):
+            with ui.tab_panel(o_analyse).classes("px-0 pt-0 gap-3"):
                 with ui.column().classes("w-full gap-3 pb-3 border-b border-gray-200") as controles:   # fixe : la barre y avance
                     with ui.row().classes("w-full items-center gap-4 no-wrap"):
                         creer = ui.button("Lancer l'analyse", icon="play_arrow", on_click=lambda: demarrer()).classes("text-base px-6")
@@ -4251,12 +4262,24 @@ def page():
                     c = choix["chemin"]
                     if not c: ui.label("Aucune séance ouverte.").classes("text-base"); return
                     prets = rapports_de(c)
-                    ui.label(f"Rapports de la séance du {infos_seance(c)[0]}").classes("text-lg font-bold")
+                    ui.label(f"Rapports de la séance du {infos_seance(c)[0]}").classes("font-bold titre-page")
                     if not prets:
-                        ui.label("Pas encore de rapport : « Créer les rapports », dans la barre de gauche.").classes("text-base text-gray-700")
-                    for quoi, nom, detail in RAPPORTS:
-                        for f, pour in prets.get(quoi, []):        # l'analyse : une par paire (ses initiales)
-                            lien_pdf(f, f"{nom if ',' in pour else nom.replace('donnes', 'donne').replace('Donnes', 'Donne')} {pour}" if quoi.endswith("donnes") else f"{nom} pour {pour}" if pour else nom, detail)
+                        ui.label("Pas encore de rapport : « Créer les rapports », dans la barre de gauche.").classes("text-base text-gray-700"); return
+                    # une liste comme celle d'Ouvrir une séance (l'Explorateur, vue Détails) : un clic ouvre le PDF (2026-11-17)
+                    colonnes = "20px minmax(0, 1fr) minmax(0, 1.2fr) 150px"
+                    with ui.column().classes("w-full gap-0").style("max-width:980px"):
+                        with ui.element("div").classes("tableau-seances entete-seances").style(f"grid-template-columns:{colonnes}"):
+                            for t_ in ("", "Rapport", "Contenu", "Créé le"): ui.label(t_)
+                        for quoi, nom, detail in RAPPORTS:
+                            for f, pour in prets.get(quoi, []):    # l'analyse : une par paire (ses initiales)
+                                titre_r = (f"{nom if ',' in pour else nom.replace('donnes', 'donne').replace('Donnes', 'Donne')} {pour}"
+                                           if quoi.endswith("donnes") else f"{nom} pour {pour}" if pour else nom)
+                                with ui.element("div").classes("tableau-seances ligne-seance").style(f"grid-template-columns:{colonnes}") \
+                                        .on("click", lambda f=f: ouvrir(f)):
+                                    ui.icon("picture_as_pdf", size="18px").classes("icone-seance")
+                                    ui.label(titre_r).classes("titre-seance truncate")
+                                    ui.label(detail).classes("truncate text-gray-700")
+                                    ui.label(quand(f))
                     if prets:
                         ui.button("Ouvrir le dossier des rapports", on_click=lambda p=prets[next(iter(prets))][0][0]: ouvrir(os.path.dirname(p))) \
                             .props("flat no-caps").classes("mt-2 px-0")
@@ -4272,7 +4295,7 @@ def page():
                         if not cle.startswith("sy-"): return
                         titre_ = dict(SYSTEME_PAGES).get(cle, "")
                         with ui.row().classes("w-full items-center justify-between gap-3"):
-                            ui.html(systeme_vue.rouge(html_.escape(titre_)), sanitize=False).classes("text-lg font-bold")
+                            ui.html(systeme_vue.rouge(html_.escape(titre_)), sanitize=False).classes("font-bold titre-page")
                             ui.input(placeholder="Chercher : 1SA 2♣, Stayman, contre…", value=sy_cherche["t"],
                                      on_change=lambda e: (sy_cherche.update(t=e.value or ""), resultats_sy.refresh())) \
                                 .props("outlined dense clearable debounce=400").classes("w-80")
@@ -4683,8 +4706,8 @@ def page():
             with ui.tab_panel(o_fichier).classes("px-0 pt-0 max-w-3xl") as panneau_fichier, \
                     ui.column().classes("w-full gap-0") as pages_ui["nouveau"]:   # Fichier : ses pages, la première Nouveau
                 titre_page("Nouvelle séance", "importer")
-                ui.html("Une séance Bridge Coach est un seul fichier, <b>.bc.json</b> : les donnes, les joueurs, les "
-                        "résultats et les analyses. Trois façons d'en créer une :", sanitize=False).classes("text-base text-gray-700")
+                ui.html("Une séance réunit les donnes, les joueurs, les résultats et les analyses. Trois façons d'en créer "
+                        "une :", sanitize=False).classes("text-base text-gray-700")
                 FACONS = [("bws", "Importer un tournoi Bridgemate", "depuis le fichier .bws du tournoi", "table_restaurant"),
                           ("pbn", "Importer un fichier PBN", "des donnes de BBO, Funbridge, d'un autre logiciel…", "description"),
                           ("themes", "Créer des donnes d'entraînement", "sur des thèmes choisis, ou une séance vide", "school")]
@@ -4988,18 +5011,29 @@ def page():
         ui.button("Choisir un fichier…", on_click=lambda: parcourir()).props("outline")
 
     with pages_ui["nouveau"], ui.column().classes("w-full gap-2") as sections_n["bws"]:   # Nouveau, depuis un tournoi Bridgemate
-        ui.html("Bridge Coach <b>importe</b> les données du tournoi (donnes, joueurs, enchères, résultats) dans une "
-                "nouvelle séance <b>.bc.json</b>, sous un titre et un nom que vous choisissez. Le fichier .bws est seulement lu : "
-                "Bridge Coach n'y écrit jamais, et la séance n'en a plus besoin ensuite.", sanitize=False).classes("text-base text-gray-700")
+        ui.html("Choisissez un tournoi : Bridge Coach en reprend les donnes, les joueurs, les enchères et les résultats dans "
+                "une nouvelle séance, sous le titre que vous voulez. Le tournoi de Bridgemate reste tel quel.",
+                sanitize=False).classes("text-base text-gray-700")
         ui.label("Les tournois du dossier de Bridgemate, les plus récents d'abord :").classes("text-base mt-1")
         @ui.refreshable
         def liste_i():
             bws = reglages()[0][:10]
             if not bws: ui.label(f"Aucun fichier .bws dans {dossier}.").classes("text-base text-gray-700")
-            for b in bws:
-                fait = " (déjà importé)" if deja_importe(b) else ""
-                ui.button(f"{date_lisible(b)}  –  {os.path.basename(b)}{fait}", on_click=lambda b=b: preparer_import(b)) \
-                    .props("flat align=left no-caps").classes("w-full")
+            if not bws: return
+            # comme Ouvrir une séance : le titre lisible du tournoi (fichiers.proposer), pas le nom du fichier .bws (2026-11-17)
+            colonnes = "20px minmax(0, 1fr) 110px 110px"
+            with ui.column().classes("w-full gap-0").style("max-width:860px"):
+                with ui.element("div").classes("tableau-seances entete-seances").style(f"grid-template-columns:{colonnes}"):
+                    for t_ in ("", "Tournoi", "Date", ""): ui.label(t_)
+                for b in bws:
+                    titre_b, deja_b = titre_bws(b)
+                    with ui.element("div").classes("tableau-seances ligne-seance").style(f"grid-template-columns:{colonnes}") \
+                            .on("click", lambda b=b: preparer_import(b)):
+                        ui.icon("emoji_events", size="18px").classes("icone-seance")
+                        ui.label(titre_b).classes("titre-seance truncate")
+                        ui.label(date_lisible(b))
+                        ui.label("déjà importé" if deja_b else "nouveau").classes("text-right" + ("" if deja_b else " font-bold")) \
+                            .style("" if deja_b else "color:var(--bc-trefle-700)")
         liste_i()
         ui.label("Ou un tournoi ailleurs sur l'ordinateur : un .bws, la feuille de route .pdf de FFBClubNet, ou les pages "
                  "du site de la FFB enregistrées depuis le navigateur (choisissez une page « Donne n° », par exemple "
@@ -5011,8 +5045,8 @@ def page():
     with pages_ui["nouveau"], ui.column().classes("w-full gap-2") as sections_n["pbn"]:   # Nouveau, depuis un fichier PBN
         ui.html("Un fichier .pbn (Portable Bridge Notation) : les donnes d'un tournoi, de BBO, de Funbridge ou d'un autre "
                 "logiciel. Bridge Coach <b>importe</b> les mains, le donneur et la vulnérabilité, et, quand le fichier les donne, "
-                "le contrat, les enchères, l'entame et le résultat d'une table, dans une nouvelle séance <b>.bc.json</b>. Le "
-                "fichier .pbn est seulement lu : Bridge Coach n'y écrit jamais, et la séance n'en a plus besoin ensuite.",
+                "le contrat, les enchères, l'entame et le résultat d'une table, dans une nouvelle séance. Le fichier .pbn reste "
+                "tel quel.",
                 sanitize=False).classes("text-base text-gray-700")
         envoi_p = ui.upload(on_upload=lambda e: recu_i(e), auto_upload=True, max_files=1).props('accept=".pbn"').classes("hidden")
         ui.button("Choisir un fichier .pbn…", icon="folder_open", on_click=lambda: parcourir_i(TYPES_PBN, envoi_p)).props("unelevated").classes("self-start")

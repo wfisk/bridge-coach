@@ -340,6 +340,24 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
 .carte.secoue { animation: secoue .45s ease-in-out; border-color: var(--bc-coeur-600); }   /* une carte qui ne peut pas être jouée */
 @keyframes secoue { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
 .carte.jouable:hover { transform: translateY(-6px); }
+.tableau-seances { display: grid; width: 100%; align-items: center; column-gap: 12px; padding: 0 6px; min-height: 30px;   /* Ouvrir une séance, */
+  grid-template-columns: 20px minmax(0, 1fr) 84px 112px 52px minmax(0, .6fr) 92px 28px; font-size: var(--fs-liste);   /* comme l'Explorateur */
+  color: var(--bc-tapis-900); border: 1px solid transparent; }
+.entete-seances { min-height: 30px; font-size: var(--fs-petit); color: var(--bc-tapis-700); border-bottom: 1px solid var(--bc-tapis-200); }
+.entete-seances > * { padding: 0 2px; } .entete-seances > :hover { color: var(--bc-tapis-900); }
+.entete-seances > .actif { font-weight: 700; color: var(--bc-tapis-900); }
+.entete-seances > :nth-child(5), .entete-seances > :nth-child(7) { text-align: right; }
+.ligne-seance { cursor: pointer; }
+.ligne-seance:hover { background: var(--bc-pique-50); border-color: var(--bc-pique-100); }   /* la ligne sous la souris */
+.ligne-seance.ouverte { background: var(--bc-pique-100); border-color: var(--bc-pique-300); }   /* la séance ouverte : sélectionnée */
+.ligne-seance .icone-seance { color: var(--bc-tapis-600); }
+.ligne-seance .titre-seance { color: var(--bc-tapis-900); }
+.groupe-seances { display: flex; align-items: center; gap: 4px; margin: 10px 0 2px; padding: 0 2px; font-size: var(--fs-texte);
+  color: var(--bc-pique-800); }
+.groupe-seances .trait { flex: 1; height: 1px; background: var(--bc-tapis-200); margin-left: 8px; }
+.groupe-seances:hover { color: var(--bc-pique-600); }
+.ligne-seance .poubelle { opacity: 0; transition: opacity .15s; }      /* la corbeille seulement sur la ligne survolée */
+.ligne-seance:hover .poubelle, .ligne-seance .poubelle:focus-visible { opacity: 1; }
 .carte.terne { background: var(--bc-tapis-100); border-color: var(--bc-tapis-200); color: var(--bc-tapis-400); }   /* pas jouable : terne mais opaque,
    les cartes en dessous ne se voient pas au travers */
 .carte.r.terne { color: var(--bc-coeur-300); }
@@ -512,14 +530,14 @@ CSS_AIDE = """
 .aide p, .aide ul, .aide ol, .aide dl { margin: .6em 0; }
 .aide ul { list-style: disc; padding-left: 1.4em; } .aide ol { list-style: decimal; padding-left: 1.4em; }
 .aide li { margin-bottom: .4em; } .aide dt { font-weight: 600; margin-top: .7em; } .aide dd { margin: 0; }
-.aide code { background: #e6efe9; padding: .1em .35em; border-radius: 4px; font-size: 15px; word-break: break-all; }
+.aide code { background: #e6efe9; padding: .1em .35em; border-radius: 4px; font-size: var(--fs-liste); word-break: break-all; }
 .aide .note { background: #e6efe9; border-left: 4px solid #1f6b45; padding: .7em 1em; margin: 1em 0; }
 .aide h2 { font-size: 22px; color: #222; margin: 0 0 .6em; }                  /* le titre de la page */
 .aide h3 { font-size: 18px; margin-top: 1.8em; scroll-margin-top: 60px; }     /* une section : sous la barre du haut */
-.aide p.intro { font-size: 17px; color: #333; }
+.aide p.intro { font-size: var(--fs-titre); color: #333; }
 .aide figure { margin: 1em 0 1.4em; }
 .aide figure img { display: block; max-width: 100%; border: 1px solid #dfe3e6; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-.aide figcaption { font-size: 15px; color: #555; margin-top: .4em; }
+.aide figcaption { font-size: var(--fs-liste); color: #555; margin-top: .4em; }
 .aide .etapes { counter-reset: e; list-style: none; padding-left: 0; }
 .aide .etapes > li { counter-increment: e; position: relative; padding-left: 2.4em; margin-bottom: .8em; }
 .aide .etapes > li::before { content: counter(e); position: absolute; left: 0; top: 0; width: 1.7em; height: 1.7em; border-radius: 50%;
@@ -532,7 +550,7 @@ CSS_AIDE = """
 .image-aide-grande { position: fixed; inset: 0; z-index: 9999; background: rgba(20,20,20,.82); display: flex; align-items: center;
   justify-content: center; cursor: zoom-out; padding: 24px; }
 .image-aide-grande img { max-width: 100%; max-height: 100%; border-radius: 8px; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
-.sur-page a { display: block; font-size: 15px; line-height: 1.35; color: #444; text-decoration: none; padding: 5px 0 5px 12px;
+.sur-page a { display: block; font-size: var(--fs-liste); line-height: 1.35; color: #444; text-decoration: none; padding: 5px 0 5px 12px;
   border-left: 2px solid #e3e7ea; }
 .sur-page a:hover { color: #1f6b45; }
 .sur-page a.lue { color: #1f6b45; font-weight: 600; border-left-color: #1f6b45; }
@@ -751,6 +769,78 @@ def infos_seance(c):
         return _INFOS[cle]
     except Exception:
         return date_lisible(c), ""
+
+
+_RESUMES = {}
+
+
+def resume_seance(c):
+    """Ce que la liste d'Ouvrir une séance montre d'une séance, lu une fois par version du fichier : le nombre de donnes
+    et de tables, l'analyse de l'expert, et votre % quand « Vous êtes » y joue (l'utilisateur, 2026-11-17 : retrouver
+    sa séance d'un coup d'œil)."""
+    try:
+        qui = moi.nom() or lire_etat().get("mon_nom") or ""      # « Vous êtes », sinon « Votre nom » (Réglages)
+        cle = (c, os.path.getmtime(c), qui)
+        if cle not in _RESUMES:
+            d = json.load(open(c, encoding="utf-8"))
+            s = d.get("session") or {}
+            donnes_ = [x for x in d.get("donnes") or [] if not x.get("a_completer")]
+            pct = None
+            for k in sorted(moi.paires(d, qui)) if qui else []:
+                v = ((d.get("paires") or {}).get(k) or {}).get("pct")
+                if isinstance(v, (int, float)): pct = v; break
+            type_ = (d.get("source") or {}).get("type")
+            titre = s.get("titre") or ""
+            if not titre or re.match(r"Entraînement \d{4}-\d\d-\d\d$", titre):   # une ancienne séance : le titre proposé
+                try: titre = fichiers.titre_propose(d, type_ or "")
+                except Exception: titre = ""
+            r = dict(titre=titre, court=titre_court(titre),donnes=len(donnes_), tables=s.get("tables") if type_ in ("bws", "feuille-de-route", "ffb-html", "ffb-pdf", "simulation") else None,
+                     expert=bool(((d.get("analyses") or {}).get("expert") or {}).get("donnes")),
+                     coach=bool(((d.get("analyses") or {}).get("standard") or {}).get("donnes")),
+                     pct=pct, partenaire="", rang=None, paires=0, themes=s.get("themes") or [], moment=s.get("moment") or s.get("heure") or "",
+                     marque=moi.MARQUES.get(moi.marque(d), "") if s.get("tables") else "",
+                     modifie=(d.get("fichier") or {}).get("modifie_le") or "", rejouees=0)
+            ps = d.get("paires") or {}
+            mes = sorted(moi.paires(d, qui)) if qui else []
+            if mes:                                        # votre partenaire, votre rang
+                k = mes[0]; lic = moi.licence_de(qui)
+                r["partenaire"] = next((j.get("nom") or j.get("initiales") or "" for j in (d.get("joueurs") or {}).get(k, [])
+                                        if not moi.est(j, qui, lic)), "")
+                cote = k[-2:] if k[-2:] in ("NS", "EO") else ""     # un Mitchell : deux classements, N-S et E-O
+                pcts = [v.get("pct") for kk, v in ps.items() if isinstance(v.get("pct"), (int, float)) and kk.endswith(cote)]
+                r["paires"] = len(pcts); r["cote"] = {"NS": " Nord-Sud", "EO": " Est-Ouest"}.get(cote, "")
+                rg = (ps.get(k) or {}).get("rang")
+                if isinstance(rg, (int, float)): r["rang"] = int(rg)
+                elif pct is not None and pcts: r["rang"] = 1 + sum(1 for x in pcts if x > pct)
+            try:
+                es = jouer.lire_essais(base_seance(c))["donnes"]
+                r["rejouees"] = sum(1 for v in es.values() if classement.dernier_fini(v))
+            except Exception:
+                pass
+            _RESUMES[cle] = r
+        return _RESUMES[cle]
+    except Exception:
+        return dict(titre="", court="", donnes=None, tables=None, expert=False, coach=False, pct=None, partenaire="", rang=None, paires=0,
+                    themes=[], moment="", marque="", modifie="", rejouees=0)
+
+
+_DATE_LONGUE = re.compile(r"\s*(?:\bdu\b|–|-)?\s*\b(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+\d{1,2}(?:er)?\s+"
+                          r"(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4}",
+                          re.IGNORECASE)
+
+
+def titre_court(titre):
+    """Le titre sans ce que la ligne d'Ouvrir une séance dit déjà (la date, le nombre de tables) :
+    « Tournoi du vendredi 13 novembre 2026 (après-midi, 6 tables) » -> « Tournoi · après-midi »."""
+    t = _DATE_LONGUE.sub("", titre or "")
+    if t == (titre or ""): return titre or ""             # pas de date dans le titre : il reste tel quel
+    t = t.replace(" – ", " · ")
+    def parenthese(m):
+        reste = [x.strip() for x in m[1].split(",") if x.strip() and "table" not in x]
+        return (" · " + ", ".join(reste)) if reste else ""
+    t = re.sub(r"\s*\(([^)]*)\)", parenthese, t)
+    t = re.sub(r"\s{2,}", " ", t).strip(" –-·")
+    return t or titre or ""
 
 
 def deja_importe(bws):
@@ -1040,7 +1130,7 @@ def main_html(d, s):
     cartes = d["mains"][s].split()
     lignes = "".join(f"<div>{rouge(c)}&nbsp;{'—' if x == '-' else x}</div>" for c, x in zip("♠♥♦♣", cartes))
     don = " · donneur" if d["donneur"] == s else ""
-    return f'<div style="font-size:15px;line-height:1.35"><div style="color:#555;font-weight:600">{SIEGE[s]} · {d["hcp"][s]} H{don}</div>{lignes}</div>'
+    return f'<div style="font-size:var(--fs-texte);line-height:1.35"><div style="color:#555;font-weight:600;white-space:nowrap">{SIEGE[s]} · {d["hcp"][s]} H{don}</div>{lignes}</div>'
 
 
 def mains_grille(d):
@@ -1077,9 +1167,9 @@ def dm_html(d):
     corps = "".join(f"<tr><td style='{cell};font-weight:700'>{rouge(x)}</td>" + "".join(case(x, s) for s in "NSEO") + "</tr>"
                     for x in ("SA", "♠", "♥", "♦", "♣"))
     carre = lambda style: f"<span style='display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin:0 4px 0 0;{style}'></span>"
-    legende = (f"<div style='font-size:15px;color:#3f4651;margin-top:4px;line-height:1.6'>{carre(f'background:{FOND_MANCHE}')}manche "
+    legende = (f"<div style='font-size:var(--fs-texte);color:#3f4651;margin-top:4px;line-height:1.6'>{carre(f'background:{FOND_MANCHE}')}manche "
                f"&nbsp;{carre(f'background:{FOND_CHELEM}')}chelem &nbsp;{carre('box-shadow:inset 0 0 0 2px #1f5f3a')}par</div>")
-    return (f"<div style='font-size:15px;width:100%'><div style='font-weight:700;margin-bottom:4px'>Double mort</div>"
+    return (f"<div style='font-size:var(--fs-texte);width:100%'><div style='font-weight:700;margin-bottom:4px'>Double mort</div>"
             f"<table style='width:100%;table-layout:fixed;border-collapse:collapse;background:#fff;border:1px solid #9fb5a8;"
             f"border-radius:6px;overflow:hidden'><colgroup><col style='width:16%'/></colgroup>"
             f"<tr style='background:#e6efe9'><th></th>{tete}</tr>{corps}</table>{legende}</div>")
@@ -1093,9 +1183,19 @@ def page_dm_par(d, par=True):
         corps = "".join(f"<tr><td style='padding:2px 10px;font-weight:600'>{rouge(x)}</td>" +
                         "".join(f"<td style='padding:2px 10px;text-align:center'>{d['dm'][x][s]}</td>" for s in "NSEO") + "</tr>"
                         for x in ("SA", "♠", "♥", "♦", "♣"))
-        ui.html(sanitize=False, content=f"<table style='font-size:15px;border-collapse:collapse'><tr><th></th>{tete}</tr>{corps}</table>")
+        ui.html(sanitize=False, content=f"<table style='font-size:var(--fs-texte);border-collapse:collapse'><tr><th></th>{tete}</tr>{corps}</table>")
     if par and d.get("par"):
-        ui.html(sanitize=False, content=f"<div style='font-size:15px'>{par_html(d)}</div>")
+        ui.html(sanitize=False, content=f"<div style='font-size:var(--fs-texte)'>{par_html(d)}</div>")
+
+
+def titre_donne(d, centre=False, plus=""):
+    """La ligne de titre d'une donne, la même dans Donnes, Jouer et Analyse (l'utilisateur, 2026-11-17) : « Donne 1 »
+    en gras, puis « Donneur : Nord · Vulnérabilité : personne » ; plus : un complément (le thème). Centrée au-dessus de
+    la table de Jouer, à gauche ailleurs."""
+    with ui.row().classes("w-full gap-x-4 gap-y-1 items-baseline " + ("justify-center" if centre else "")).style("white-space:nowrap"):
+        ui.label(f"Donne {d['n']}").classes("text-xl font-bold")
+        ui.html(f"<div style='font-size:var(--fs-titre)'>Donneur : <b>{SIEGE[d['donneur']]}</b> · "
+                f"Vulnérabilité : <b>{VUL_TXT.get(d.get('vul'), d.get('vul', ''))}</b>{plus}</div>", sanitize=False)
 
 
 def page_donne(d, mes=frozenset(), tour="", reco=None):
@@ -1103,16 +1203,17 @@ def page_donne(d, mes=frozenset(), tour="", reco=None):
     dans la barre de droite. Le double mort est dans l'onglet Analyse. mes : vos paires (moi.paires), dont la ligne est
     surlignée. tour : « Tour 1 · table 4 · … » (moi.tour_de) quand la séance décrit son mouvement. reco : le contrat
     recommandé (comparer.table_recommandee), rangé parmi les tables sur fond vert pâle."""
+    titre_donne(d, plus=f" · Thème : <b>{html_.escape(str(d['theme']))}</b>" if d.get("theme") else "")
     mains_grille(d)
     if d.get("origine"):                                   # une donne du Brouillon (ou d'une séance faite avec lui) : d'où elle vient
         o = d["origine"]
-        ui.html(f"<div style='font-size:15px;color:#555b66'>Venue de la donne {o.get('n')} de <b>{html_.escape(str(o.get('titre', '')))}</b>"
+        ui.html(f"<div style='font-size:var(--fs-texte);color:#555b66'>Venue de la donne {o.get('n')} de <b>{html_.escape(str(o.get('titre', '')))}</b>"
                 + (f" ({o['date']})" if o.get("date") else "") + "</div>", sanitize=False).classes("mt-2")
     if tour: ui.label(tour).classes("text-base text-gray-700 mt-2")
     if d.get("tables"):
         ui.label("Aux tables").classes("text-base font-bold mt-2")
         rang = moi.votre_rang(d["tables"], mes, lambda t: f"{t['contrat']} {SIEGE.get(t['declarant'], t['declarant'])} {t['resultat']}".strip())
-        if rang: ui.html(f"<div style='font-size:15px;background:{moi.SURLIGNE};padding:2px 6px;border-radius:4px'>{rouge(rang)}</div>", sanitize=False)
+        if rang: ui.html(f"<div style='font-size:var(--fs-texte);background:{moi.SURLIGNE};padding:2px 6px;border-radius:4px'>{rouge(rang)}</div>", sanitize=False)
         tableau_resultats(d, mes, reco)
         if any(x.get("encheres") for x in d["tables"]):
             ui.label("Les enchères aux tables").classes("text-base font-bold mt-2")
@@ -1158,9 +1259,9 @@ def page_classement(c, data, aller_donne):
     with ui.column().classes("gap-1 rounded-xl border border-gray-200 bg-white px-4 py-3 my-2 max-w-4xl"):
         if cl["rejouees"]:
             tot = cl.get("total")
-            ui.label(classement.ligne_seance(cl)).style(f"font-size:24px;font-weight:700;color:{teinte(tot) if tot is not None else '#222'}")
+            ui.label(classement.ligne_seance(cl)).style(f"font-size:var(--fs-ecran);font-weight:700;color:{teinte(tot) if tot is not None else '#222'}")
         else:
-            ui.label("Aucune donne rejouée jusqu'au bout pour l'instant.").style("font-size:20px;font-weight:700;color:#222")
+            ui.label("Aucune donne rejouée jusqu'au bout pour l'instant.").style("font-size:var(--fs-grand);font-weight:700;color:#222")
             premiere_ = next((x["n"] for x in cl["lignes"] if x["etat"] == "a_rejouer"), None)
             if premiere_ is not None:                      # une invitation à commencer (l'utilisateur, 2026-11-11)
                 ui.button(f"Commencer par la donne {premiere_}", icon="arrow_forward",
@@ -1529,14 +1630,14 @@ def diagramme_html(d, a):
         lignes = "".join(f"<div>{rouge(c)}&nbsp;" + ("—" if x == "-" else "".join(carte(siege, c, y) for y in x)) + "</div>"
                          for c, x in zip(SUITS, d["mains"][siege].split()))
         don = " · donneur" if d["donneur"] == siege else ""
-        return f"<div style='font-size:15px;line-height:1.5'><div style='color:#555;font-weight:600;white-space:nowrap'>{SIEGE[siege]} · {d['hcp'][siege]} H{don}</div>{lignes}</div>"
+        return f"<div style='font-size:var(--fs-texte);line-height:1.5'><div style='color:#555;font-weight:600;white-space:nowrap'>{SIEGE[siege]} · {d['hcp'][siege]} H{don}</div>{lignes}</div>"
     v = d.get("vul", "Personne")
     c_ns = ROUGE_VUL if v in ("N-S", "Tous") else VERT; c_eo = ROUGE_VUL if v in ("E-O", "Tous") else VERT
     case = lambda t, c: f"<div style='background:{c};color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center'>{t}</div>"
     rose = (f"<div style='display:grid;grid-template:repeat(3,30px)/repeat(3,30px);border:1px solid #1d2430;width:92px'>"
             f"<div></div>{case('N', c_ns)}<div></div>{case('O', c_eo)}<div></div>{case('E', c_eo)}<div></div>{case('S', c_ns)}<div></div></div>")
     rond = lambda style: f"<span style='display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:8px;{style}'></span>"
-    legende = "<div style='font-size:15px;color:#3f4651;line-height:1.9;white-space:nowrap'><div style='font-weight:700'>Entame</div>"
+    legende = "<div style='font-size:var(--fs-texte);color:#3f4651;line-height:1.9;white-space:nowrap'><div style='font-weight:700'>Entame</div>"
     if d.get("tables"):
         legende += (f"<div>{rond(f'border:1.3px solid {ENCRE}')}jouée à une table</div>"
                     f"<div>{rond(f'border:1.3px solid {ENCRE};box-shadow:0 0 0 2px #fff,0 0 0 3.3px {ENCRE}')}jouée à plusieurs tables</div>")
@@ -1570,16 +1671,14 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
             .classes("w-full text-base").props("dense")
     from build_pdf import txt
     data = data or {}
-    html = lambda h, style="": ui.html(f"<div style='font-size:15px;line-height:1.5;{style}'>{h}</div>", sanitize=False).classes("w-full")
-    vul = {"Personne": "Personne", "Tous": "Tous", "N-S": "Nord-Sud", "E-O": "Est-Ouest"}.get(d.get("vul"), d.get("vul", ""))
-    ui.label(f"Donne n° {d['n']}").classes("text-lg font-bold")
+    html = lambda h, style="": ui.html(f"<div style='font-size:var(--fs-texte);line-height:1.5;{style}'>{h}</div>", sanitize=False).classes("w-full")
+    titre_donne(d, plus=f" · Thème : <b>{html_.escape(str(d['theme']))}</b>" if d.get("theme") else "")
     if a and a.get("a_revoir"):                             # donneur ou vulnérabilité changés depuis (edition.appliquer_numero)
-        ui.html("<div style='font-size:15px;background:var(--bc-warning-bg-subtle);border-left:4px solid var(--bc-carreau-500);"
+        ui.html("<div style='font-size:var(--fs-texte);background:var(--bc-warning-bg-subtle);border-left:4px solid var(--bc-carreau-500);"
                 "padding:6px 10px'>Le donneur ou la vulnérabilité de cette donne ont changé depuis l'analyse de l'expert : "
                 "<b>à revoir</b>. Ses enchères et ses conseils peuvent ne plus convenir.</div>", sanitize=False).classes("w-full")
-    sous = f"Donneur : <b>{SIEGE[d['donneur']]}</b> · Vulnérable : <b>{vul}</b>" + (f" · Thème : <b>{d['theme']}</b>" if d.get("theme") else "")
     tour = moi.tour_de(data, d["n"]) if data else ""
-    html(sous + (f"<br/>{tour}" if tour else ""), "color:#555b66;margin-top:-6px")
+    if tour: html(tour, "color:#555b66")
     ui.html(diagramme_html(d, a), sanitize=False).classes("mt-2")
     if d.get("tables"):                                     # les résultats : l'essentiel en vue, le tableau replié
         titre_section("Résultats à la table")
@@ -1632,12 +1731,12 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
 
 def pensee_html(t, ouvert=True):
     """Une pensée (carte.texte_pensee) : qui joue quoi, pourquoi, et ce qu'il croit des mains cachées."""
-    h = f"<div style='font-size:15px;font-weight:700'>{rouge(t['titre'])}</div>"
+    h = f"<div style='font-size:var(--fs-texte);font-weight:700'>{rouge(t['titre'])}</div>"
     if t["raison"]: h += f"<div style='font-size:16px;margin-top:2px'>{rouge(t['raison'])}</div>"
     if t.get("plan"):
-        h += f"<div style='font-size:15px;margin-top:4px'><b>Son plan :</b> {rouge(t['plan'])}</div>"
+        h += f"<div style='font-size:var(--fs-texte);margin-top:4px'><b>Son plan :</b> {rouge(t['plan'])}</div>"
     if t["croyance"]:
-        h += ("<div style='font-size:15px;color:#3f4651;margin-top:4px'><b>Ce qu'il croit :</b>"
+        h += ("<div style='font-size:var(--fs-texte);color:#3f4651;margin-top:4px'><b>Ce qu'il croit :</b>"
               + "".join(f"<div>{rouge(x)}</div>" for x in t["croyance"]) + "</div>")
     return f"<div style='background:#e6efe9;border-left:3px solid #1f5f3a;padding:6px 8px;border-radius:4px'>{h}</div>"
 
@@ -1654,7 +1753,7 @@ def encheres_html(d, x):
     fin = f"{rouge(x.get('contrat', ''))} {SIEGE.get(x.get('declarant'), '')} {x.get('resultat', '')}" + \
           (f", entame {rouge(x['entame'])}" if x.get("entame") else "")
     avis = "" if x.get("encheres_ok", True) else f"<div style='color:#c0141c'>{x.get('encheres_msg', '')}</div>"
-    return (f"<div style='font-size:15px'><div style='font-weight:600'>{titre}</div>"
+    return (f"<div style='font-size:var(--fs-texte)'><div style='font-weight:600'>{titre}</div>"
             f"<table style='border-collapse:collapse;margin:2px 0'><tr>{tete}</tr>{corps}</table><div>{fin}</div>{avis}</div>")
 
 
@@ -1662,11 +1761,17 @@ def encheres_html(d, x):
 def page():
     ui.colors(primary="#1f6b45")
     ui.add_css("body, .q-layout, .q-page, .q-page-container, .q-tab-panels, .q-tab-panel { background: #fff; } "   # une page toute blanche
-               "body { font-size: 16px; } .q-btn { text-transform: none; } "
+               # l'échelle du texte (palette.TEXTE, l'utilisateur, 2026-11-17) : 16 le texte et les boutons, 14 les listes, la
+               # navigation et les bulles, 13 les en-têtes de colonnes et les petites étiquettes ; jamais moins de 13
+               "body { font-size: var(--fs-texte); } .q-btn { text-transform: none; } .q-btn .block { font-size: var(--fs-texte); } "
+               ".entree-barre .block, .q-tab__label { font-size: var(--fs-liste); } .q-tooltip { font-size: var(--fs-liste); } "
+               ".q-field__native, .q-field__input { font-size: var(--fs-texte); } .q-notification__message { font-size: var(--fs-texte); } "
+               ".text-xs { font-size: var(--fs-petit) !important; line-height: 1.3 !important; } "
                # lisible de loin (des joueurs âgés, un écran de télévision en cours) : le contenu qui change en grand ; les
                # libellés fixes que chacun connaît (onglets, barres latérales, boutons) gardent leur taille (le choix de l'utilisateur)
-               ".q-table th, .q-table td { font-size: 15px !important; padding: 4px 6px !important; } .q-table th { font-weight: 700; }"
-               ".classement th, .classement td { font-size: 17px !important; padding: 6px 10px !important; }" + CSS_AIDE + CSS_CARTES
+               ".q-table td { font-size: var(--fs-texte) !important; padding: 4px 6px !important; } "
+               ".q-table th { font-size: var(--fs-petit) !important; padding: 4px 6px !important; font-weight: 700; }"
+               ".classement th, .classement td { font-size: var(--fs-titre) !important; padding: 6px 10px !important; }" + CSS_AIDE + CSS_CARTES
                + systeme_vue.CSS)
     ui.add_head_html(palette.css() + JS_GLISSE + JS_SENS + JS_SUR_PAGE + JS_SYSTEME)   # les couleurs : --bc-… (palette.py)
     z = taille_texte()
@@ -1731,7 +1836,7 @@ def page():
         n = str(d["n"])
         versions = [v for v, a in (("Standard", std), ("Expert", exp)) if a and (a.get("donnes") or {}).get(n, {}).get("enc")]
         if not versions:
-            ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
+            titre_donne(d)
             ui.label("Pas encore d'analyse : « Analyse du coach », puis « Lancer l'analyse ».").classes("text-base text-gray-700"); return
         if vue.get("version") not in versions: vue["version"] = "Expert" if "Expert" in versions else versions[0]
         a = (exp if vue["version"] == "Expert" else std)["donnes"][n]
@@ -1752,7 +1857,7 @@ def page():
             if isinstance(e_, dict) and e_.get("carte"):
                 lignes.append(f"<b>Entame</b> : {rouge(e_['carte'])} ({SIEGE.get(e_.get('joueur'), e_.get('joueur', ''))})")
             if d.get("par"): lignes.append(par_html(d))
-            ui.html("<div style='font-size:15px;line-height:1.6'>" + "<br/>".join(lignes) + "</div>", sanitize=False)
+            ui.html("<div style='font-size:var(--fs-texte);line-height:1.6'>" + "<br/>".join(lignes) + "</div>", sanitize=False)
             if d.get("dm"): ui.html(dm_html(d), sanitize=False).classes("w-full")
             with ui.column().classes("w-full gap-2 mt-3"):    # de l'analyse à la table, ou sur papier pour un cours
                 ui.button("Rejouer cette donne", icon="play_arrow", on_click=lambda: rejouer_donne(d)).props("outline no-caps").classes("w-full")
@@ -1840,18 +1945,16 @@ def page():
         ui.notify(f"La donne {d['n']} se prépare : le PDF s'ouvre dans un instant.")
 
     def panneau_droit(d=None, par=True):
-        """La barre de droite d'une donne, la même dans Donnes, Jouer et Analyse : même largeur, même gris, le nom de la
-        donne en haut ; avec d, l'étui (donneur, vulnérabilité), le thème et le par. Renvoie la colonne, à remplir."""
+        """La barre de droite d'une donne, la même dans Donnes, Jouer et Analyse : même largeur, même gris ; avec d, l'étui
+        et le par (le nom de la donne, son donneur et sa vulnérabilité sont dans le titre de la page, titre_donne). Renvoie la colonne, à remplir."""
         col = ui.column().classes("gap-3 p-4 overflow-y-auto").style(
             f"position:fixed;top:var(--haut-panneau, {HAUTEUR_BARRE}px);right:0;bottom:0;width:{LARGEUR_PANNEAU}px;background:{GRIS_BARRE};"
             "border-left:1px solid #dcdcd8;z-index:1;overflow-x:hidden")
         if d is not None:
-            with col:
-                ui.label(f"Donne {d['n']}").classes("text-lg font-bold")
-                with ui.row().classes("w-full justify-center"):
+            with col:                                      # « Donne N », le donneur, la vulnérabilité et le thème sont dans le
+                with ui.row().classes("w-full justify-center"):   # titre de la page (titre_donne), comme dans Jouer
                     ui.html(etui(d, ("N", "O", "E", "S"), petit=True), sanitize=False)
-                if d.get("theme"): ui.label(f"Thème : {d['theme']}").classes("text-base text-gray-700")
-                if par and d.get("par"): ui.html(f"<div style='font-size:15px'>{par_html(d)}</div>", sanitize=False)
+                if par and d.get("par"): ui.html(f"<div style='font-size:var(--fs-texte)'>{par_html(d)}</div>", sanitize=False)
                 bouton_brouillon(d)
         return col
 
@@ -2801,6 +2904,23 @@ def page():
         """L'enseignant marque la réponse de la classe (un second clic l'ôte)."""
         jeu["quiz_choix"] = None if jeu.get("quiz_choix") == x else x; vue_jouer.refresh()
 
+    def bouton_quiz(m, qz, k):
+        """Le quiz, bien en vue sous Jouer | Revoir | Démo (l'utilisateur, 2026-11-17 : l'interrupteur au-dessus de la table
+        passait inaperçu). Mis, la démonstration s'arrête à l'entame et pose la question."""
+        on = bool(lire_etat().get("demo_quiz"))
+        def basculer():
+            ecrire_etat(demo_quiz=not on); jeu.update(quiz_cle=None, quiz_revele=False, quiz_choix=None); vue_jouer.refresh()
+        ui.button("Quiz : activé" if on else "Faire un quiz", icon="quiz", on_click=basculer) \
+            .props(("unelevated" if on else "outline") + " no-caps color=amber-9" + ("" if on else " text-color=amber-10")) \
+            .classes("text-base w-full") \
+            .tooltip("Cliquer pour arrêter le quiz" if on else
+                     "La démonstration s'arrête à l'entame : la classe ne voit que la main de l'entameur et répond, "
+                     "puis « Montrer la réponse ».")
+        if on and not m.decl:
+            ui.label("Cette donne se passe : pas d'entame, donc pas de question.").classes("text-base text-gray-700")
+        elif on and qz and k < qz["pas"]:
+            ui.label("▶ jusqu'à la fin des enchères : la question d'entame s'affichera ici.").classes("text-base text-gray-700")
+
     def quiz_panneau(qz):
         """Dans la barre de droite, à la fin des enchères : la question, les choix en grandes cartes ; puis la réponse."""
         vu = jeu.get("quiz_revele"); pris = jeu.get("quiz_choix")
@@ -2820,9 +2940,9 @@ def page():
                 ui.button("Montrer la réponse", icon="visibility", on_click=lambda: quiz_reveler(jeu.get("demo")))                     .props("unelevated no-caps").classes("text-base mt-2").set_enabled(not jeu.get("demo_occupe"))
                 return
             bon = qz["reponse"]
-            if pris: ui.html(f"<div style='font-size:17px;margin-top:10px'><b>{'Bravo !' if pris == bon else 'Pas tout à fait.'}</b> "
+            if pris: ui.html(f"<div style='font-size:var(--fs-titre);margin-top:10px'><b>{'Bravo !' if pris == bon else 'Pas tout à fait.'}</b> "
                              f"La classe a choisi {rouge(pris)}.</div>", sanitize=False)
-            ui.html(f"<div style='font-size:17px;margin-top:8px'><b>Le coach entame {rouge(bon)}.</b> {rouge(qz['explication'])}"
+            ui.html(f"<div style='font-size:var(--fs-titre);margin-top:8px'><b>Le coach entame {rouge(bon)}.</b> {rouge(qz['explication'])}"
                     + (f"<br/>{rouge(qz['lecture'])}" if qz.get("lecture") else "") + "</div>", sanitize=False)
             lignes = [f"{rouge(x['carte'])} : {quiz.texte_levees(qz, x)}" for x in qz["choix"] if quiz.texte_levees(qz, x)]
             if lignes or qz.get("apres_coup"):
@@ -2965,10 +3085,6 @@ def page():
         with ui.row().classes("w-full no-wrap items-start gap-4").style(f"padding-right:{LARGEUR_PANNEAU}px"):
             with ui.column().classes("grow min-w-0 gap-2 relative"):
                 def interrupteur_dm():                   # dès la fin des enchères : sous chaque carte jouable, le double mort
-                    ui.switch("Quiz", value=bool(qz), on_change=lambda ev: (ecrire_etat(demo_quiz=ev.value), jeu.update(quiz_cle=None),
-                                                                           vue_jouer.refresh())).classes("text-base") \
-                        .tooltip("La démonstration s'arrête à l'entame : la classe ne voit que la main de l'entameur et répond, "
-                                 "puis « Montrer la réponse ».")
                     if m.decl and k >= m.n_encheres and not attente:
                         ui.switch("Double mort", value=bool(jeu.get("demo_dm")),
                                   on_change=lambda ev: (jeu.update(demo_dm=ev.value), vue_jouer.refresh())).classes("text-base") \
@@ -3017,6 +3133,7 @@ def page():
             with panneau_droit():
                 appliquer_plein()
                 tete_donne(d)
+                bouton_quiz(m, qz, k)
                 fin = m.fini() and k >= m.n_pas()
                 # les mêmes boutons de magnétoscope que Jouer (magneto), au même endroit ; ici ⏮ le début, ◀◀ un pas en
                 # arrière, ▶ un pas en avant (l'utilisateur, 2026-11-11 : la même allure, pas forcément le même sens)
@@ -3078,7 +3195,7 @@ def page():
                 h = (f"<div data-c='' class='carte{' r' if cc in '♥♦' else ''}{' gagnante' if s_ == g else ''}"
                      f"{f' premiere p-{ou}' if s_ == premier else ''}' style='margin:0'>{face(r)}<br/>{cc}</div>") if cc else ""
                 return (f"<div style='display:flex;flex-direction:column;align-items:center;gap:4px'>"
-                        f"<div style='font-size:15px;color:#4a4f57'>{nom(s_)}</div>{h}</div>")
+                        f"<div style='font-size:var(--fs-texte);color:#4a4f57'>{nom(s_)}</div>{h}</div>")
             ui.label("Le dernier pli").classes("text-lg font-bold")
             ui.html("<div style='display:grid;grid-template-columns:repeat(3,auto);gap:10px 18px;align-items:center;justify-items:center'>"
                     f"<div></div>{case(places[0], 'haut')}<div></div>"
@@ -3117,15 +3234,13 @@ def page():
         with ui.row().classes("w-full gap-x-4 gap-y-1 items-center justify-center").style(   # centrée au-dessus de la table (2026-11-14)
                 "margin-bottom:-8px;white-space:nowrap"):   # pas de marge négative en haut : le panneau rognait le carré
             # plus de petit carré de la donne : les mots disent le donneur et la vulnérabilité (l'utilisateur, 2026-11-14)
-            ui.label(f"Donne {d['n']}").classes("text-xl font-bold")
-            ui.html(f"<div style='font-size:17px'>Donneur : <b>{SIEGE[d['donneur']]}</b> · "
-                    f"Vulnérabilité : <b>{VUL_TXT.get(d.get('vul'), d.get('vul', ''))}</b></div>", sanitize=False)
+            with ui.element("div"): titre_donne(d, centre=True)
             if place_jouer() == "joueur":                  # comme un joueur de la séance : son tour, ses adversaires
                 pj = jeu.get("place_joueur")
                 if pj:                                     # les noms sont près des mains
-                    if pj.get("tour"): ui.html(f"<div style='font-size:17px'>Tour <b>{pj['tour']}</b></div>", sanitize=False)
+                    if pj.get("tour"): ui.html(f"<div style='font-size:var(--fs-titre)'>Tour <b>{pj['tour']}</b></div>", sanitize=False)
                 else:
-                    ui.html(f"<div style='font-size:17px;color:#6b6b6b'>{joueur_jouer()} n'a pas joué cette donne</div>", sanitize=False)
+                    ui.html(f"<div style='font-size:var(--fs-titre);color:#6b6b6b'>{joueur_jouer()} n'a pas joué cette donne</div>", sanitize=False)
             if extra:
                 with ui.row().classes("items-center gap-3 no-wrap"):   # Démo : le double mort, sur la même ligne
                     extra()                          # Démo : le double mort, au-dessus de la table
@@ -3279,7 +3394,7 @@ def page():
                                 f"Le coach dirait <b>{rouge(jeu['indice']['enchere'])}</b>"
                                 f"<span class='bulle'>{rouge(jeu['indice']['texte'])}</span></div>", sanitize=False)
                     if jeu.get("note"):
-                        ui.html(f"<div style='font-size:15px;color:#8a5a00'>{rouge(jeu['note'])}</div>", sanitize=False)
+                        ui.html(f"<div style='font-size:var(--fs-texte);color:#8a5a00'>{rouge(jeu['note'])}</div>", sanitize=False)
                     if jeu.get("clavier"):                      # un chiffre tapé au clavier : la couleur est attendue
                         ui.label(f"Au clavier : {jeu['clavier']}… puis T, K, C, P ou S (Échap pour effacer)").classes("text-base text-primary")
                     else:
@@ -3381,7 +3496,7 @@ def page():
                             "background:#f6f8fb;border:1px solid #dfe5ea;border-radius:6px;padding:8px 10px"):
                         ui.label("Résumé de la donne").classes("text-base font-bold")
                         for ligne in resume_de(d, p):
-                            ui.html(f"<div style='font-size:15px;margin-top:4px'>{rouge(ligne)}</div>", sanitize=False)
+                            ui.html(f"<div style='font-size:var(--fs-texte);margin-top:4px'>{rouge(ligne)}</div>", sanitize=False)
                 f_ = jeu.get("faute")                           # la carte qui a coûté la levée : le dire, et ce qui la gardait
                 if f_ and f_[0] is p and f_[1] == k:
                     ui.html(f"<div style='font-size:16px;background:#fdecea;border-left:3px solid #c62828;padding:6px 8px;"
@@ -3417,13 +3532,13 @@ def page():
             i = "" if x["imp"] is None else ("0" if x["imp"] == 0 else f"{x['imp']:+d}".replace("-", "−"))
             lignes.append(f"<tr><td style='padding:2px 12px;font-weight:600'>{x['nom']}</td><td style='padding:2px 12px'>{rouge(nom_contrat(x['texte']))}</td>"
                           f"<td style='padding:2px 12px;text-align:center'>{res}</td><td style='padding:2px 12px;text-align:right'>{i}</td></tr>")
-        ui.html("<table style='font-size:15px;border-collapse:collapse'><tr><th></th><th style='padding:2px 12px;text-align:left'>Contrat</th>"
+        ui.html("<table style='font-size:var(--fs-texte);border-collapse:collapse'><tr><th></th><th style='padding:2px 12px;text-align:left'>Contrat</th>"
                 "<th style='padding:2px 12px'>Double mort</th><th style='padding:2px 12px'>IMP pour vous</th></tr>" + "".join(lignes) + "</table>",
                 sanitize=False)
         ui.label("IMP pour vous : ce que votre contrat gagne (+) ou perd (−) face à celui de l'analyse, au double mort.").classes("text-base text-gray-700")
         if r["ecart"]:
             k = r["ecart"]
-            ui.html(f"<div style='font-size:15px;margin-top:6px'>Première différence : <b>{SIEGE[k['siege']]}</b> dit {rouge(k['vous'])}, "
+            ui.html(f"<div style='font-size:var(--fs-texte);margin-top:6px'>Première différence : <b>{SIEGE[k['siege']]}</b> dit {rouge(k['vous'])}, "
                     f"l'analyse {k['nom'].lower()} {rouge(k['reference'])}.</div>", sanitize=False)
         with ui.row().classes("gap-8 items-start mt-2"):
             for x in r["lignes"]:
@@ -3488,7 +3603,7 @@ def page():
         @ui.refreshable
         def resultat():                                   # le par seulement : le double mort est dans l'onglet Analyse
             dd = edition.donne_de(edition.lire(c), n)
-            if dd.get("par"): ui.html(f"<div style='font-size:15px'>{par_html(dd)}</div>", sanitize=False)
+            if dd.get("par"): ui.html(f"<div style='font-size:var(--fs-texte)'>{par_html(dd)}</div>", sanitize=False)
         resultat()
 
         def maj():
@@ -4663,20 +4778,84 @@ def page():
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["ouvrir"]:   # Fichier, Ouvrir une séance
         titre_page("Ouvrir une séance", "retrouver")
         faute_o = {"texte": ""}
+        recherche_o = {"texte": ""}
+        ui.input(placeholder="Chercher une séance : un mot du titre, une date (12/11)…",
+                 on_change=lambda e: (recherche_o.update(texte=e.value or ""), liste.refresh())) \
+            .props("outlined dense clearable debounce=250").classes("w-full text-base").style("max-width:760px")
+
+        tri_o = {"col": "date", "desc": True}             # Ouvrir une séance : la colonne de tri, comme l'Explorateur
+        fermes_o = set()                                   # les mois repliés (un clic sur leur titre)
+        ICONE_SOURCE = {"bws": "emoji_events", "ffb-html": "emoji_events", "ffb-pdf": "emoji_events",
+                        "feuille-de-route": "emoji_events", "entrainement": "school", "saisie": "edit_note",
+                        "pbn": "description", "simulation": "casino", "brouillon": "shopping_basket"}
+        COLONNES_O = (("nom", "Nom"), ("date", "Date"), ("type", "Type"), ("donnes", "Donnes"),
+                      ("partenaire", "Partenaire"), ("resultat", "Résultat"))
+
+        def trier_par(col):
+            if tri_o["col"] == col: tri_o["desc"] = not tri_o["desc"]
+            else: tri_o.update(col=col, desc=col in ("date", "donnes", "resultat"))
+            liste.refresh()
+
+        def cle_tri(c):
+            r = resume_seance(c); date, source = infos_seance(c)
+            j, m, a_ = (date.split("/") + ["", "", ""])[:3]
+            return {"nom": (r["court"] or r["titre"] or fichiers.titre_de(c)).lower(), "date": a_ + m + j,
+                    "type": source.lower(), "donnes": r["donnes"] or 0, "partenaire": (r["partenaire"] or "").lower(),
+                    "resultat": -1 if r["pct"] is None else r["pct"]}[tri_o["col"]]
+
+        def entete_ouvrir():
+            """La ligne des colonnes, une fois en haut, comme l'Explorateur de Windows (l'utilisateur, 2026-11-17) :
+            un clic trie, un second inverse ; la flèche dit l'ordre."""
+            with ui.element("div").classes("tableau-seances entete-seances"):
+                ui.element("div")                          # la colonne de l'icône
+                for col, t in COLONNES_O:
+                    fl = ("▼" if tri_o["desc"] else "▲") if tri_o["col"] == col else ""
+                    ui.label(f"{t} {fl}".strip()).classes("cursor-pointer select-none" + (" actif" if fl else "")) \
+                        .on("click", lambda col=col: trier_par(col))
+                ui.element("div")
+
+        def ligne_ouvrir(c, est, brouillon_=False, n_b=0):
+            """Une séance, une ligne de la liste comme dans l'Explorateur de Windows, vue Détails (l'utilisateur, 2026-11-17) :
+            l'icône du genre, le nom (le titre court), la date, le type, les donnes, votre partenaire, votre % et votre rang ;
+            une ligne fine, en bleu pâle sous la souris et en bleu pour la séance ouverte ; la corbeille au survol."""
+            date, source = infos_seance(c)
+            r = resume_seance(c)
+            res = ""
+            if r["pct"] is not None:
+                res = f"{r['pct']:.1f} %".replace(".", ",") + (f" · {r['rang']}{'re' if r['rang'] == 1 else 'e'}/{r['paires']}"
+                                                              if r["rang"] and r["paires"] else "")
+            genre = "brouillon" if brouillon_ else next((k for k, v in SOURCES.items() if v == source), "")
+            with ui.element("div").classes("tableau-seances ligne-seance" + (" ouverte" if est else "")) \
+                    .on("click", lambda c=c: choisir(c)):
+                ui.icon(ICONE_SOURCE.get(genre, "insert_drive_file"), size="18px").classes("icone-seance")
+                ui.label("Brouillon" if brouillon_ else (r["court"] or r["titre"] or fichiers.titre_de(c))).classes("titre-seance truncate")
+                ui.label("" if brouillon_ else date)
+                ui.label("Cours" if brouillon_ else source).classes("truncate")
+                n = n_b if brouillon_ else r["donnes"]
+                ui.label("" if n is None else str(n)).classes("text-right")
+                ui.label(r["partenaire"]).classes("truncate")
+                ui.label(res).classes("text-right")
+                if brouillon_: ui.element("div")
+                else:
+                    ui.button(icon="delete_outline", on_click=lambda c=c: demander_corbeille(c)) \
+                        .props("flat round dense size=sm color=grey-7").classes("poubelle").tooltip("Mettre à la corbeille…") \
+                        .on("click.stop", lambda: None)
+
+        def groupe_ouvrir(cle, titre, n):
+            """Le titre d'un groupe (un mois), comme ceux de l'Explorateur : « Novembre 2026 (8) » et un trait ; un clic replie."""
+            ferme = cle in fermes_o
+            with ui.element("div").classes("groupe-seances cursor-pointer select-none") \
+                    .on("click", lambda: (fermes_o.symmetric_difference_update({cle}), liste.refresh())):
+                ui.icon("chevron_right" if ferme else "expand_more", size="18px")
+                ui.label(f"{titre} ({n})")
+                ui.element("div").classes("trait")
+            return not ferme
+
         @ui.refreshable
         def liste():
             b_ = brouillon.assurer()
             tout = [x for x in seances_bc() if not brouillon.est_brouillon(x)]
             n_b = brouillon.nombre(); ouv_b = brouillon.est_brouillon(choix["chemin"])
-            with ui.row().classes("w-full items-center no-wrap gap-2 px-3 py-2 mb-2").style(   # le Brouillon, toujours en tête
-                    "border:2px solid var(--bc-trefle-200);border-radius:10px;background:var(--bc-trefle-50)"):
-                ui.icon("shopping_basket", size="26px").style("color:var(--bc-trefle-700)")
-                with ui.button(on_click=lambda: choisir(b_)).props("flat align=left no-caps").classes("grow min-w-0"):
-                    with ui.column().classes("gap-0 items-start text-left"):
-                        ui.label("Brouillon" + ("  · ouvert" if ouv_b else "")).classes("text-base font-bold")
-                        ui.label((f"{n_b} donne{'s' if n_b > 1 else ''}" if n_b else "vide")
-                                 + " · « Ajouter au Brouillon » sur n'importe quelle donne ; Fichier, Infos, « Enregistrer sous… » pour garder le cours") \
-                            .classes("text-sm text-gray-700")
             if not tout: ui.label("Aucune séance pour l'instant : Fichier, Nouveau").classes("text-base text-gray-700")
             rappel = rappel_sauvegarde(len(tout))
             if rappel:                                     # une sauvegarde vieille d'un mois, ou jamais faite
@@ -4685,29 +4864,27 @@ def page():
                     ui.label(rappel).classes("text-base")
                     ui.button("Sauvegarder", icon="save", on_click=lambda: (onglets.set_value(o_reglages), voir_page("Réglages", "sauvegarde"))) \
                         .props("outline").classes("shrink-0")
-            mois = {}                                      # toutes les séances, par mois de la séance, le plus récent d'abord
-            for c in tout:
-                j, m, a_ = (infos_seance(c)[0].split("/") + ["", "", ""])[:3]
-                mois.setdefault((a_, m), []).append(c)
+            cherche = recherche_o["texte"].strip().lower()
+            if cherche:                                    # la recherche : seulement les séances dont le titre ou la date répond
+                tout = [c for c in tout if cherche in (fichiers.titre_de(c) + " " + resume_seance(c)["titre"] + " " + infos_seance(c)[0] + " "
+                                                       + os.path.basename(c)).lower()]
             ouverte = os.path.abspath(choix["chemin"]) if choix["chemin"] else None
-            ouvert = next((k for k, cs in mois.items() if ouverte in map(os.path.abspath, cs)), next(iter(mois), None))
-            annee = None
-            for (a_, m), cs in mois.items():
-                if a_ != annee and len({k[0] for k in mois}) > 1:   # plusieurs années : l'année en tête de ses mois
-                    annee = a_; ui.label(a_).classes("text-base font-bold text-gray-700 mt-2")
-                nom_mois = (fichiers.MOIS[int(m) - 1].capitalize() + " " + a_) if m.isdigit() else "Sans date"
-                with ui.expansion(f"{nom_mois} · {len(cs)} séance{'s' if len(cs) > 1 else ''}", value=(a_, m) == ouvert) \
-                        .classes("w-full text-base").props("dense header-class='text-base font-bold'"):
-                    for c in cs:                           # le titre, la date et d'où elle vient ; le nom du fichier en petit
-                        date, source = infos_seance(c)
-                        est = ouverte == os.path.abspath(c)
-                        with ui.row().classes("w-full items-center no-wrap gap-1"):   # la séance, et sa corbeille au bout
-                          with ui.button(on_click=lambda c=c: choisir(c)).props("flat align=left no-caps").classes("grow min-w-0"):
-                            with ui.column().classes("gap-0 items-start text-left"):
-                                ui.label(fichiers.titre_de(c) + ("  · ouverte" if est else "")).classes("text-base font-bold")
-                                ui.label(f"{date}  ·  {source + '  ·  ' if source else ''}{os.path.basename(c)}").classes("text-sm text-gray-600 break-all")
-                          ui.button(icon="delete_outline", on_click=lambda c=c: demander_corbeille(c)) \
-                              .props("flat round color=grey-7").classes("shrink-0").tooltip("Mettre à la corbeille…")
+            with ui.column().classes("w-full gap-0 liste-seances"):
+                entete_ouvrir()
+                if not cherche: ligne_ouvrir(b_, ouv_b, brouillon_=True, n_b=n_b)   # le Brouillon, toujours en tête
+                if tri_o["col"] == "date":                 # par date : groupés par mois, comme l'Explorateur
+                    mois = {}
+                    for c in sorted(tout, key=cle_tri, reverse=tri_o["desc"]):
+                        j, m, a_ = (infos_seance(c)[0].split("/") + ["", "", ""])[:3]
+                        mois.setdefault((a_, m), []).append(c)
+                    for (a_, m), cs in mois.items():
+                        nom_mois = (fichiers.MOIS[int(m) - 1].capitalize() + " " + a_) if m.isdigit() else "Sans date"
+                        if groupe_ouvrir((a_, m), nom_mois, len(cs)):
+                            for c in cs: ligne_ouvrir(c, ouverte == os.path.abspath(c))
+                else:
+                    for c in sorted(tout, key=cle_tri, reverse=tri_o["desc"]): ligne_ouvrir(c, ouverte == os.path.abspath(c))
+            if cherche and not tout:
+                ui.label(f"Aucune séance ne contient « {recherche_o['texte'].strip()} ».").classes("text-base text-gray-700")
             jetees = fichiers.dans_la_corbeille()
             if jetees:                                     # la corbeille, repliée : on en remet une d'un clic
                 with ui.expansion(f"Corbeille · {len(jetees)} séance{'s' if len(jetees) > 1 else ''}", icon="delete") \
@@ -4814,7 +4991,7 @@ def page():
             ui.button("Montrer le fichier", icon="folder_open", on_click=lambda: montrer_fichier(question["f"])).props("outline")
             etape_(3, "Collez le message (⌘V sur Mac, Ctrl+V sous Windows ; il est déjà copié), puis envoyez. L'expert vous "
                       "salue et vous demande ce que vous voulez savoir.")
-            ui.html(f"<div style='font-size:15px;color:#555;background:#f3f3f1;padding:6px 10px;border-radius:6px'>"
+            ui.html(f"<div style='font-size:var(--fs-texte);color:#555;background:#f3f3f1;padding:6px 10px;border-radius:6px'>"
                     f"{html_.escape(question['message'])}</div>", sanitize=False)
             with ui.row().classes("w-full justify-end"):
                 ui.button("Fermer", on_click=lambda: question_d.close()).props("flat")

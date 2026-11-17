@@ -159,6 +159,7 @@ def variables():
     v["--bc-dark"] = f"var(--bc-{NEUTRE}-900)"
     v["--bc-body-color"] = f"var(--bc-{NEUTRE}-900)"
     v["--bc-border-color"] = f"var(--bc-{NEUTRE}-200)"
+    for nom, px, *_ in TEXTE: v[nom] = f"{px}px"
     return v
 
 
@@ -208,9 +209,42 @@ PRINCIPES = (
     ("Un seul gris, chaud.", "Celui du tapis, du blanc cassé au presque noir."),
     ("La mise en page au CSS seul.", "Les tailles se connaissent d'avance : rien ne se mesure, rien ne tremble. La table est "
      "une boîte de taille fixe que le CSS met à l'échelle de la fenêtre."),
-    ("Lisible de loin.", "Les joueurs sont surtout des seniors et l'écran peut être une télévision : ce qui change (enchères, "
-     "résultats, explications) fait 15 à 16 px au moins, en gris foncé ; un texte tient le contraste AA (4,5:1)."),
+    ("Lisible de loin.", "Les joueurs sont surtout des seniors et l'écran peut être une télévision : ce qui se lit (enchères, "
+     "résultats, explications, aide) fait 16 px, en gris foncé ; un texte tient le contraste AA (4,5:1)."),
+    ("Une seule échelle de texte : 16 / 14 / 13.", "16 px le texte, les boutons, les champs, les messages ; 14 px une liste "
+     "qu'on parcourt des yeux (les séances, les fichiers), la navigation (onglets, barres latérales) et les bulles ; 13 px les "
+     "en-têtes de colonnes et les petites étiquettes. Jamais moins de 13 px. Au-dessus, 18 / 22 / 26 pour les titres et ce qui se "
+     "lit de loin. Un bouton fait toujours 16 px. Seuls les dessins (cartes, cartons, boîte à enchères, étui) gardent leurs "
+     "propres tailles : ils grandissent avec la table."),
 )
+
+# l'échelle du texte (l'utilisateur, 2026-11-17 : « j'aime la taille utilisée partout ; 14 px pour une liste de fichiers »)
+TEXTE = (
+    ("--fs-petit", 13, "en-têtes de colonnes, étiquettes connues de tous (jour de la semaine, « Ouverte »)", ""),
+    ("--fs-liste", 14, "une liste qu'on parcourt des yeux : les séances, les rapports, les fichiers", ""),
+    ("--fs-texte", 16, "le défaut : tout ce qui se lit, les boutons, les enchères, les résultats, l'aide", "text-base"),
+    ("--fs-titre", 18, "le titre d'une page ou d'une section", "text-lg"),
+    ("--fs-grand", 22, "le titre d'une page d'aide, un chiffre qui compte (votre %)", ""),
+    ("--fs-ecran", 26, "une ligne qui se lit de loin, en classe (le classement, le quiz)", ""),
+)
+TAILLE_PX = re.compile(r"font-size:\s*(\d+(?:\.\d+)?)px|\btext-(xs|sm|base|lg|xl|2xl)\b|var\((--fs-[a-z]+)\)")
+TAILWIND = {"xs": 13, "sm": 14, "base": 16, "lg": 18, "xl": 20, "2xl": 24}
+
+
+def tailles_ecrites(fichiers=("app.py",)):
+    """Les tailles de texte écrites dans le code : [(px, nombre, la variable la plus proche, écart en px)], comme
+    l'inventaire des couleurs."""
+    compte = {}
+    for f in fichiers:
+        t = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f), encoding="utf-8").read()
+        for m in TAILLE_PX.finditer(t):
+            px = float(m[1]) if m[1] else TAILWIND[m[2]] if m[2] else dict((n, v) for n, v, *_ in TEXTE)[m[3]]
+            compte[px] = compte.get(px, 0) + 1
+    res = []
+    for px, n in sorted(compte.items()):
+        nom, v = min(((nom, v) for nom, v, *_ in TEXTE), key=lambda x: (abs(x[1] - px), -x[1]))   # à égalité, la plus grande
+        res.append((px, n, nom, px - v))
+    return res
 
 ESPACES = (("--sp-1", ".25rem", 4), ("--sp-2", ".5rem", 8), ("--sp-3", "1rem", 16), ("--sp-4", "1.5rem", 24), ("--sp-5", "3rem", 48))
 PROPORTIONS = (
@@ -279,6 +313,25 @@ def html_page():
     for v, rem, px in ESPACES:
         h.append(f"<div><div style='width:var({v});height:var({v});background:var(--bc-trefle-300)'></div>"
                  f"<div style='font-size:13px;margin-top:4px'><code>{v}</code><br>{rem} · {px} px</div></div>")
+    h.append("</div>")
+
+    h.append("<h3 style='font-size:18px;font-weight:700;margin:24px 0 4px'>Fondations · Texte</h3>"
+             "<p style='margin:0 0 8px'>Une taille par usage. Avec « Taille du texte » (Réglages), toute la page grandit "
+             "d'un quart ou de moitié : l'échelle reste la même.</p><table style='border-collapse:collapse'>")
+    for nom, px, usage, avant in TEXTE:
+        h.append(f"<tr style='border-bottom:1px solid var(--bc-tapis-200)'><td style='padding:6px 12px 6px 0;white-space:nowrap'><code>{nom}</code></td>"
+                 f"<td style='padding:6px 12px;text-align:right;white-space:nowrap'>{px} px</td>"
+                 f"<td style='padding:6px 12px;font-size:var({nom});white-space:nowrap'>Tournoi · 4♥ par Sud</td>"
+                 f"<td style='padding:6px 12px;color:var(--bc-tapis-700)'>{usage}"
+                 + (f" <span style='color:var(--bc-tapis-500)'>· aujourd'hui {avant}</span>" if avant else "") + "</td></tr>")
+    h.append("</table>")
+    ecrites = tailles_ecrites()
+    h.append("<p style='margin:10px 0 4px'>Les tailles écrites aujourd'hui dans app.py (Tailwind compris : text-sm = 14, "
+             "text-base = 16, text-lg = 18) :</p><div style='display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px'>")
+    for px, n, nom, e in ecrites:
+        hors = e != 0
+        h.append(f"<span style='{'color:var(--bc-coeur-700);font-weight:700' if hors else ''}'>{px:g} px × {n}"
+                 + (f" → <code>{nom}</code>" if hors else "") + "</span>")
     h.append("</div>")
 
     h.append("<h3 style='font-size:18px;font-weight:700;margin:24px 0 4px'>Fondations · Proportions</h3>"

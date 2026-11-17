@@ -25,4 +25,7 @@ assert p.css().startswith("<style>:root {")
 inv = p.inventaire()
 assert inv and all(e >= 0 for *_, e in inv)
 assert "Principes" in p.html_page() and "--bc-trefle-50" in p.html_page()
+assert [v[n] for n in ("--fs-liste", "--fs-texte", "--fs-titre")] == ["14px", "16px", "18px"]   # l'échelle du texte
+assert dict((px, nom) for px, _, nom, _ in p.tailles_ecrites()).get(16) in (None, "--fs-texte")
+assert "Fondations · Texte" in p.html_page()
 print("ok")

@@ -313,6 +313,8 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
 /* la place d'une main : une carte de haut au moins (un éventail de dos, 60 px de large, sur un côté), quatre rangées quand
    les mains des côtés sont visibles ; vide, elle garde sa taille */
 .emplacement { display: flex; min-height: var(--carte-h); }
+.main-cote { position: relative; }                       /* un côté : la main centrée sur la table, son nom au-dessus */
+.main-cote > .nom-cote { position: absolute; bottom: calc(100% + var(--sp-1)); left: 0; }
 .emplacement.haut { align-items: flex-end; } .emplacement.bas { align-items: flex-start; }
 .emplacement.gauche, .emplacement.droite { min-width: 60px; align-items: center; }
 .zone-table.ouverte .emplacement.gauche, .zone-table.ouverte .emplacement.droite {
@@ -2777,9 +2779,10 @@ def page():
                 elif ou in sur_table:                    # le mort étalé sur un côté de la table : son nom hors du tapis, dans
                     with ui.column().classes("items-start gap-1" + qui):   # la marge de ce côté (nom_mort, 2026-11-13)
                         contenu(x, ou)
-                else:                                    # au-dessus de la main, aligné à gauche sur ses cartes
-                    with ui.column().classes("items-start gap-1" + qui):
-                        ui.html(nom_html(nom_x, deux_lignes=True, etat=etat, siege=x), sanitize=False); emplacement(x, ou)
+                else:                                    # au-dessus de la main, aligné à gauche sur ses cartes ; la main seule
+                    with ui.element("div").classes("main-cote" + qui):   # centrée sur le milieu de la table, le nom posé
+                        ui.html(nom_html(nom_x, deux_lignes=True, etat=etat, siege=x), sanitize=False).classes("nom-cote")   # juste
+                        emplacement(x, ou)                                  # au-dessus (l'utilisateur, 2026-11-17)
             with ui.element("div").classes("grille-table").style(tourne):   # trois colonnes : la table au milieu, les côtés égaux
                 def nom_mort(x):                         # le mort étalé en haut ou en bas : son nom hors du tapis, au-dessus
                     ui.html(nom_html(noms.get(x, ""), siege=x, une_ligne=True, etat=" a-jouer" if tour == x else ""),

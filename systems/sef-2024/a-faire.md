@@ -341,3 +341,17 @@ Donne 7 du 17/11 : E (17 H, 5 piques, 4 cœurs) disait 3SA ; l'expert dit 3♥, 
 3♠ avec trois piques, sinon 3SA) et « … - 3C - 3P » (4♠, les contrôles d'abord quand le chelem est possible).
 Rare : −1 et +16 IMP seule (11 et 5 séquences) ; avec l'atout fixé avant les contrôles, +14 et +53 IMP sur deux lots de
 20 000 donnes (135 et 102 séquences). Gardé.
+
+## Chelems : un état des lieux et trois défauts corrigés (2026-11-17)
+Sur 6 000 donnes (banc_encheres, graine 11) : 215 chelems demandés, 149 faits au double mort, 66 chutés ; 798 chelems
+faisables au double mort, dont 166 demandés, mais la plupart ne s'annoncent pas (moins de 29 H ensemble, des impasses).
+Manqués avec 31+ H ensemble : 45 (0,75 % des donnes), le plus souvent 3SA sans fit clair : normal en club. Grands chelems :
+un seul demandé (les robots ne demandent pas les rois ; seul le joueur de Jouer a 5SA). Le jeu du déclarant simulé : 73 des
+88 chelems faisables gagnés (12,06 levées contre 12,44), les chutes surtout d'une levée, là où seul le double mort devine.
+Corrigé, chacun mesuré sur deux lots de 20 000 donnes :
+- « 1M - 2N - … » du répondant : la passe finale « préfère la mineure » sans borne passait 2♣ avec 24 H ; bornée à 6–12 H :
+  +15 et +15 IMP (une séquence par lot).
+- Sur un deux faible : avec un fit et 20+ points, le relais 2SA d'abord (plus 4M tout de suite) ; et après la réponse au
+  relais, la manche s'écrit 4U (« *U » restait au palier de 3) : +141 et +64 IMP (27 et 34 séquences).
+Essayé et retiré : 3SA = 18–19 H régulier après une réponse au palier de 2 (+31 et −19 IMP, des chelems en majeure perdus) ;
+sans plafond « H 13+ » au 3SA du répondant (−63 et −107 IMP : les mains de 19+ trouvaient 6SA par le code général).

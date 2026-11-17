@@ -464,7 +464,7 @@ ouverture:
   - 2C:  { si: "C 2+, C >= T", montre: "préférence cœur", nature: conclusion, apres: 1C - 1P - 2T }
   - 2C:  { si: "C 2+, C >= K", montre: "préférence cœur", nature: conclusion, apres: 1C - 1P - 2K }
   - 2C:  { si: "C 3+", montre: "préférence cœur", nature: conclusion }
-  - passe: { montre: "préfère la mineure" }
+  - passe: { si: "H 6-12", montre: "préfère la mineure" }   # plus fort : la suite générale (24 H passait 2♣, 2026-11-17)
 
 # ------------------------------------------------------------------ l'ouvreur a sauté dans sa couleur (16–18, 6+)
 "1N - 1M - 3U":
@@ -1105,6 +1105,9 @@ ouverture:
 # Sur un deux faible (2026-11-14) : 2SA relais forcing (réponses par paliers, Ogust), changement de couleur forcing
 # (5 cartes, 14+ H, pas de fit), 3M barrage (trois atouts : neuf ensemble, loi des levées), 4M pour jouer.
 "2M":
+  # fit et 20+ points : le relais d'abord, pour savoir si l'ouvreur est maximum (le chelem), pas 4M tout de suite
+  # (donnes 638 et 787 du banc, 21–22 H face au deux faible : 4M, chelem au double mort ; 2026-11-17)
+  - 2SA: { si: "U 2+, HLD(U) 20+", montre: "relais : fit et 20+ points, intérêt pour le chelem ; l'ouvreur dit son minimum ou maximum, sa couleur bonne ou non", nature: relais }
   - 4U:  { si: "U 3+, HLD(U) 16+ || U 2, HLD(U) 17+", montre: "fit et assez de points : manche", nature: conclusion }
   - 4U:  { si: "fit(U) 10+", montre: "dix atouts ensemble : 4M pour jouer (loi des levées)", nature: conclusion }
   - 2P:  { si: "P 5+, bonne P, H 14+, U 1-", montre: "5+ piques, 14+ H : forcing un tour", nature: forcing, apres: 2C }
@@ -1134,7 +1137,7 @@ ouverture:
       - { main: "A4 D97532 R95 82", apres: 2C 2SA, attendu: 3C }
 # le répondant place le contrat après la réponse au relais
 "2M - 2SA - 3T | 2M - 2SA - 3K | 2M - 2SA - 3C | 2M - 2SA - 3P":
-  - "*U": { si: "U 2+, camp HLD(U) 25+", montre: "fit : la manche", nature: conclusion }
+  - 4U:  { si: "U 2+, camp HLD(U) 25+", montre: "fit : la manche", nature: conclusion }   # « *U » restait sous la manche (2026-11-17)
   - 3SA: { si: "camp H 25+", montre: "assez pour la manche à SA", nature: conclusion }
   - "*U": { montre: "pas de manche : la partielle dans la couleur du deux faible", nature: conclusion }
 "2M - 2SA - 3SA":

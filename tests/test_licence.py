@@ -6,6 +6,13 @@ os.environ["BRIDGE_COACH_DONNEES"] = ESSAI
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
 import bws_extract, moi, rapport
 
+# « Vous êtes » : tant qu'il n'a pas été choisi, « Votre nom » ; « Aucun » choisi exprès : personne (2026-11-17)
+os.makedirs(os.path.dirname(moi.ETAT), exist_ok=True)
+for etat, attendu in (({"mon_nom": "A B"}, "A B"), ({"mon_nom": "A B", "moi": None}, "A B"), ({"mon_nom": "A B", "moi": "C D"}, "C D"),
+                      ({"mon_nom": "A B", "moi": moi.AUCUN}, None), ({}, None)):
+    json.dump(etat, open(moi.ETAT, "w")); assert moi.nom() == attendu, (etat, moi.nom())
+os.remove(moi.ETAT)
+
 # le numéro de Bridgemate, sans zéro de tête ; autre chose que des chiffres : rien
 assert bws_extract.licence_ffb("90000001") == "90000001" and bws_extract.licence_ffb("09000003") == "9000003"
 assert bws_extract.licence_ffb(9000003) == "9000003" and bws_extract.licence_ffb("") == bws_extract.licence_ffb("A1") == bws_extract.licence_ffb("0") == ""

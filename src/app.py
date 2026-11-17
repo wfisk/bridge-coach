@@ -666,7 +666,7 @@ def section_aide(*cle):
     return "premiere-fois"
 
 
-def titre_page(texte, ancre, classes="text-lg font-bold"):
+def titre_page(texte, ancre, classes="font-bold titre-page"):
     """Le titre d'une page et, à côté, un petit « ? » bleu qui ouvre l'aide à la bonne section (l'événement « aide »)."""
     with ui.row().classes("items-center gap-1 no-wrap"):
         ui.label(texte).classes(classes)
@@ -981,7 +981,7 @@ def joueur_jouer(data=None):
     """Option « Comme un joueur de la séance » : le nom choisi (etat.json joueur_jouer), sinon « Vous êtes », sinon
     « Votre nom »."""
     e = lire_etat()
-    return e.get("joueur_jouer") or e.get("moi") or e.get("mon_nom") or ""
+    return e.get("joueur_jouer") or moi.nom() or e.get("mon_nom") or ""
 
 
 def place_jouer():
@@ -1067,33 +1067,70 @@ def rouge(t):
 
 
 def page_seance(data, c):
-    s = data["session"]; src = data.get("source", {})
-    ui.label(s.get("titre") or f"Séance du {s['date']}").classes("text-lg font-bold")
-    lignes = [("Source", " – ".join(x for x in (SOURCES.get(src.get("type"), src.get("type", "")), src.get("fichier", "")) if x)),
-              ("Importée le", (src.get("importe") or "").replace("T", " à ")),
-              ("Donnes", str(len(data["donnes"]))),
-              ("Tables", str(s.get("tables") or "aucune : donnes non jouées")),
-              ("Sections", ", ".join(s.get("sections") or [])),
-              ("Mouvement", "Mitchell" if s.get("mitchell") else "Howell ou tables fixes" if s.get("tables") else ""),
-              ("Thèmes", ", ".join(s.get("themes") or [])),
-              ("Fichier", c)]
-    with ui.grid(columns="auto 1fr").classes("gap-x-6 gap-y-1 text-base"):
-        for k, v in lignes:
-            if v:
-                ui.label(k).classes("text-gray-700"); ui.label(v).classes("break-all")
-        ui.label("Marque").classes("text-gray-700")          # lue à l'import, devinée sinon ; corrigeable ici
-        with ui.row().classes("items-center gap-3"):
-            choix_m = ui.toggle({"MP": "Match-points", "IMP": "IMP"}, value=moi.marque(data)).props("dense no-caps")
-            devinee = ui.label("devinée d'après le nombre de tables").classes("text-base text-gray-600")
-            devinee.set_visibility(not s.get("marque"))
-            choix_m.on_value_change(lambda e: (changer_marque(c, e.value), devinee.set_visibility(False)))
+    """La séance, côté bridge (l'utilisateur, 2026-11-17 : « pas trop technique, pas de fichiers ») : son titre, quand,
+    combien de tables et de donnes ; votre résultat et votre partenaire ; votre parcours ; le classement des paires ; la
+    marque, corrigeable. Le fichier lui-même est dans Fichier, Infos."""
+    s = data["session"]
+    ui.label(s.get("titre") or f"Séance du {s['date']}").classes("font-bold titre-page")
+    d0 = fichiers.date_de(data)
+    quand = fichiers.date_longue(d0) if d0 else s.get("date", "")
+    if s.get("moment"): quand += f", {s['moment']}"
+    elif s.get("heure"): quand += " à " + str(s["heure"]).replace(":", " h ")
+    faits = [quand]
+    if s.get("tables"): faits.append(f"{s['tables']} tables" + (" en Mitchell" if s.get("mitchell") else ""))
+    n_d = len(data["donnes"]); faits.append(f"{n_d} donne{'s' if n_d > 1 else ''}")
+    ui.label(" · ".join(faits)).classes("text-base text-gray-700")
+    if s.get("themes"): ui.label("Thèmes : " + ", ".join(s["themes"])).classes("text-base")
+    if not s.get("tables"):
+        ui.label("Des donnes d'entraînement : elles n'ont pas été jouées en tournoi.").classes("text-base text-gray-700")
+    r = resume_seance(c)
+    if r["pct"] is not None or r["partenaire"]:            # votre soirée, en une ligne
+        h = "<b>Vous</b>" + (f" avec <b>{html_.escape(r['partenaire'])}</b>" if r["partenaire"] else "")
+        if r["pct"] is not None: h += f" : <b>{r['pct']:.1f} %</b>".replace(".", ",")
+        if r["rang"]: h += f", {r['rang']}{'re' if r['rang'] == 1 else 'e'}" + (f" sur {r['paires']} paires{r.get('cote', '')}" if r["paires"] else "")
+        ui.html(f"<div style='font-size:var(--fs-titre);background:{moi.SURLIGNE};padding:8px 14px;border-radius:6px'>{h}</div>",
+                sanitize=False).classes("mt-2")
     tours = moi.parcours(data)
     if tours:                                              # le mouvement : vos tours, tables et adversaires
-        ui.label(f"Parcours de {moi.qui_parcourt(data)}").classes("text-base font-bold mt-4")
+        titre_section("Votre parcours")
         ui.table(columns=[{"name": k, "label": l, "field": k, "align": a} for k, l, a in
                           (("tour", "Tour", "right"), ("table", "Table", "right"), ("donnes", "Donnes", "left"),
                            ("adversaires", "Adversaires", "left"), ("pct", "Votre %", "right"))],
                  rows=tours, row_key="tour").props("flat dense").classes("text-base")
+    classement_paires(data)
+    if s.get("tables"):
+        with ui.row().classes("items-center gap-3 mt-4"):   # lue à l'import, devinée sinon ; corrigeable ici
+            ui.label("Marque").classes("text-base text-gray-700")
+            choix_m = ui.toggle({"MP": "Match-points", "IMP": "IMP"}, value=moi.marque(data)).props("dense no-caps")
+            devinee = ui.label("devinée d'après le nombre de tables").classes("text-base text-gray-600")
+            devinee.set_visibility(not s.get("marque"))
+            choix_m.on_value_change(lambda e: (changer_marque(c, e.value), devinee.set_visibility(False)))
+
+
+def classement_paires(data):
+    """Le classement de la séance : les paires par % (ou IMP), Nord-Sud et Est-Ouest à part en Mitchell ; la vôtre en
+    jaune."""
+    ps = data.get("paires") or {}
+    if not ps or not any(isinstance(v.get("pct"), (int, float)) for v in ps.values()): return
+    mes = {str(k) for k in moi.paires(data)}
+    j = data.get("joueurs") or {}
+    noms = lambda k: " – ".join(x.get("nom") or x.get("initiales", "") for x in j.get(k, [])) or (ps[k].get("nom") or k)
+    cotes = [("NS", "Nord-Sud"), ("EO", "Est-Ouest")] if any(k.endswith(("NS", "EO")) for k in ps) else [("", "")]
+    for cote, nom_c in cotes:
+        ks = sorted((k for k in ps if k.endswith(cote) and isinstance(ps[k].get("pct"), (int, float))), key=lambda k: -ps[k]["pct"])
+        if not ks: continue
+        titre_section("Classement" + (f" {nom_c}" if nom_c else ""))
+        h = ["<table style='border-collapse:collapse;font-size:var(--fs-texte)'><tr style='font-size:var(--fs-petit);color:var(--bc-tapis-700)'>"
+             "<th style='text-align:right;padding:4px 10px'>Rang</th><th style='text-align:left;padding:4px 10px'>Paire</th>"
+             "<th style='text-align:right;padding:4px 10px'>%</th></tr>"]
+        for k in ks:
+            rang = ps[k].get("rang") or (1 + sum(1 for x in ks if ps[x]["pct"] > ps[k]["pct"]))
+            fond = f"background:{moi.SURLIGNE};" if k in mes else ""
+            h.append(f"<tr style='{fond}border-top:1px solid var(--bc-tapis-100)'><td style='text-align:right;padding:4px 10px'>{rang}</td>"
+                     f"<td style='padding:4px 10px'>{html_.escape(noms(k))}</td>"
+                     f"<td style='text-align:right;padding:4px 10px'>{format(ps[k]['pct'], '.1f').replace('.', ',')} %</td></tr>")
+        h.append("</table>")
+        ui.html("".join(h), sanitize=False)
 
 
 def changer_marque(c, marque):
@@ -1193,7 +1230,7 @@ def titre_donne(d, centre=False, plus=""):
     en gras, puis « Donneur : Nord · Vulnérabilité : personne » ; plus : un complément (le thème). Centrée au-dessus de
     la table de Jouer, à gauche ailleurs."""
     with ui.row().classes("w-full gap-x-4 gap-y-1 items-baseline " + ("justify-center" if centre else "")).style("white-space:nowrap"):
-        ui.label(f"Donne {d['n']}").classes("text-xl font-bold")
+        ui.label(f"Donne {d['n']}").classes("font-bold titre-page")
         ui.html(f"<div style='font-size:var(--fs-titre)'>Donneur : <b>{SIEGE[d['donneur']]}</b> · "
                 f"Vulnérabilité : <b>{VUL_TXT.get(d.get('vul'), d.get('vul', ''))}</b>{plus}</div>", sanitize=False)
 
@@ -1320,9 +1357,14 @@ def page_classement(c, data, aller_donne):
 
 
 def encheres_tables(d):
+    """Les enchères des tables ; des tables aux mêmes enchères n'en font qu'une grille, « Tables 1, 2, 3, 4 », avec le
+    résultat de chacune dessous, comme le PDF (l'utilisateur, 2026-11-17)."""
+    groupes = {}
+    for x in d["tables"]:
+        if x.get("encheres"): groupes.setdefault(tuple(x["encheres"]), []).append(x)
     with ui.row().classes("gap-6 items-start"):
-        for x in d["tables"]:
-            if x.get("encheres"): ui.html(encheres_html(d, x), sanitize=False)
+        for xs in groupes.values():
+            ui.html(encheres_html(d, xs[0]) if len(xs) == 1 else encheres_groupe_html(d, xs), sanitize=False)
 
 
 # ---------------------------------------------------------------- l'analyse, dans l'onglet Analyse
@@ -1587,7 +1629,7 @@ def grille_html(enc, vul=None, qui=None, sens=None):
 VERT, ROUGE_VUL, ENCRE = "#1f5f3a", "#c0141c", "#3b424f"      # les couleurs du PDF (build_pdf)
 
 
-CASQUETTE_SVG = ("<svg viewBox='0 0 128 80' width='21' height='13' style='vertical-align:-1px'>"   # comme icones/casquette.png
+CASQUETTE_SVG = ("<svg viewBox='0 0 128 80' width='21' height='13' style='display:inline-block;vertical-align:-1px'>"   # comme icones/casquette.png
                  "<ellipse cx='90' cy='62' rx='34' ry='7' fill='#1f5f3a'/><path d='M8 60 A42 46 0 0 1 92 60 Z' fill='#1f5f3a'/>"
                  "<rect x='8' y='57' width='84' height='6' fill='#1f5f3a'/><circle cx='50' cy='14' r='5' fill='#1f5f3a'/>"
                  "<path d='M47 22 Q37 34 35 52' stroke='#e6efe9' stroke-width='3' fill='none'/>"
@@ -1608,7 +1650,7 @@ def bloc_avis_html(qui, texte):
 
 def titre_section(t):
     """Un titre de section, comme dans le PDF : gras, vert."""
-    ui.html(f"<div style='font-size:16px;font-weight:700;color:{VERT};margin-top:14px'>{t}</div>", sanitize=False)
+    ui.html(f"<div style='font-size:var(--fs-titre);font-weight:700;color:{VERT};margin-top:18px'>{t}</div>", sanitize=False)
 
 
 def diagramme_html(d, a):
@@ -1637,38 +1679,54 @@ def diagramme_html(d, a):
     rose = (f"<div style='display:grid;grid-template:repeat(3,30px)/repeat(3,30px);border:1px solid #1d2430;width:92px'>"
             f"<div></div>{case('N', c_ns)}<div></div>{case('O', c_eo)}<div></div>{case('E', c_eo)}<div></div>{case('S', c_ns)}<div></div></div>")
     rond = lambda style: f"<span style='display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:8px;{style}'></span>"
-    legende = "<div style='font-size:var(--fs-texte);color:#3f4651;line-height:1.9;white-space:nowrap'><div style='font-weight:700'>Entame</div>"
+    legende = "<div style='font-size:var(--fs-liste);color:#3f4651;line-height:1.9;white-space:nowrap'><div style='font-weight:700'>Entame</div>"
     if d.get("tables"):
         legende += (f"<div>{rond(f'border:1.3px solid {ENCRE}')}jouée à une table</div>"
                     f"<div>{rond(f'border:1.3px solid {ENCRE};box-shadow:0 0 0 2px #fff,0 0 0 3.3px {ENCRE}')}jouée à plusieurs tables</div>")
     legende += f"<div>{rond('background:rgba(59,66,79,.28)')}recommandée</div></div>"
-    grille = (f"<div style='display:grid;grid-template-columns:150px 100px 150px;align-items:center;gap:6px 10px'>"
-              f"<div></div><div style='grid-column:2/4'>{main('N')}</div>"
-              f"<div style='justify-self:end'>{main('O')}</div><div style='justify-self:center'>{rose}</div><div>{main('E')}</div>"
-              f"<div></div><div style='grid-column:2/4'>{main('S')}</div></div>")
-    return f"<div style='display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 24px'>{grille}{legende}</div>"   # la légende passe dessous si la place manque
+    grille = (f"<div style='display:grid;grid-template-columns:150px 100px minmax(150px,auto) auto;align-items:center;gap:6px 10px'>"
+              f"<div></div><div style='grid-column:2/4'>{main('N')}</div><div></div>"
+              f"<div style='justify-self:end'>{main('O')}</div><div style='justify-self:center'>{rose}</div><div>{main('E')}</div><div></div>"
+              f"<div></div><div style='grid-column:2/4'>{main('S')}</div>"
+              f"<div style='align-self:end;padding-left:14px'>{legende}</div></div>")
+    return grille                                          # la légende à droite de Sud, comme le PDF
+
+
+def colonne_avis_html(qui, texte):
+    """Un avis comme dans le PDF (build_pdf.colonne_avis) : son titre seul sur sa ligne (la casquette du coach, le ✦ de
+    l'expert), puis des paragraphes courts, première ligne en retrait ; l'expert dans son bloc vert."""
+    from build_pdf import AVIS, txt, paragraphes, majuscule
+    marque, trait, fond = AVIS[qui]
+    signe = CASQUETTE_SVG if qui == "coach" else f"<span style='color:{trait}'>✦</span>"
+    h = f"<div style='font-weight:700;margin-bottom:2px'>{signe} {marque[5:].replace(' :', '')}</div>"
+    h += "".join(f"<p style='text-indent:1.2em;margin:0 0 6px'>{txt(x)}</p>" for x in paragraphes(majuscule(texte.strip())))
+    if fond is None: return f"<div>{h}</div>"
+    return f"<div style='background:{fond};border-left:3px solid {trait};padding:6px 10px;border-radius:2px'>{h}</div>"
 
 
 def avec_avis_html(texte):
-    """Le texte du programme, puis le conseil du coach et l'avis de l'expert, chacun dans son bloc, comme le PDF."""
-    from build_pdf import txt, decouper_avis
+    """Le texte du programme, puis le conseil du coach et l'avis de l'expert, comme le PDF (build_pdf.avec_avis) : les
+    deux côte à côte, le coach à gauche, l'expert à droite ; seul, un avis prend toute la largeur."""
+    from build_pdf import txt, decouper_avis, paragraphes
     prog, coach, expert = decouper_avis(texte)
-    h = f"<div>{txt(prog)}</div>" if prog.strip() else ""
-    for qui, avis in (("coach", coach), ("expert", expert)):
-        if avis: h += bloc_avis_html(qui, avis)
-    return h
+    if not prog.strip(): h = ""
+    elif "<br" in prog: h = f"<div>{txt(prog)}</div>"      # des lignes déjà faites (les notes des enchères, une par appel)
+    else: h = "".join(f"<p style='text-indent:1.2em;margin:0 0 6px'>{txt(x)}</p>" for x in paragraphes(prog))
+    if coach and expert:
+        return h + ("<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start'>"
+                    f"{colonne_avis_html('coach', coach)}{colonne_avis_html('expert', expert)}</div>")
+    return h + "".join(colonne_avis_html(q, x) for q, x in (("coach", coach), ("expert", expert)) if x)
+
+
+BANDE_HTML = "background:var(--bc-tapis-50);border-radius:6px;padding:4px 16px 12px"   # la bande gris pâle du PDF (build_pdf.BANDE)
 
 
 def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=lambda: None):
     """L'analyse d'une donne, dans l'ordre et l'allure de sa page du PDF : titre, mains et repères d'entame, résultats
-    à la table (votre rang et le contrat recommandé ; le tableau complet replié), enchères recommandées et leur avis,
-    plan de jeu, entame et défense, commentaire, cartes vues. Le double mort et le par sont dans la barre de droite.
+    à la table (votre rang, le tableau avec le contrat recommandé), enchères aux tables, enchères recommandées et leur
+    avis, plan de jeu et entame sur la bande grise, commentaire, cartes vues. Le double mort et le par sont dans la barre de droite.
     replis : {"tables": ouvert ?, "encheres": ouvert ?}, gardé d'une donne à l'autre ; retenir() l'enregistre."""
     replis = replis if replis is not None else {}
-    def repli_(cle, titre, icone):
-        def change(e): replis[cle] = e.value; retenir()
-        return ui.expansion(titre, icon=icone, value=bool(replis.get(cle)), on_value_change=change) \
-            .classes("w-full text-base").props("dense")
     from build_pdf import txt
     data = data or {}
     html = lambda h, style="": ui.html(f"<div style='font-size:var(--fs-texte);line-height:1.5;{style}'>{h}</div>", sanitize=False).classes("w-full")
@@ -1680,26 +1738,16 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
     tour = moi.tour_de(data, d["n"]) if data else ""
     if tour: html(tour, "color:#555b66")
     ui.html(diagramme_html(d, a), sanitize=False).classes("mt-2")
-    if d.get("tables"):                                     # les résultats : l'essentiel en vue, le tableau replié
+    if d.get("tables"):                                     # les résultats, ouverts comme dans le PDF (l'utilisateur, 2026-11-17)
         titre_section("Résultats à la table")
         mes = moi.paires(data) if data else set()
         rang = moi.votre_rang(d["tables"], mes, lambda t: f"{t['contrat']} {SIEGE.get(t['declarant'], t['declarant'])} {t['resultat']}".strip())
         if rang: html(rouge(rang), f"background:{moi.SURLIGNE};padding:2px 6px;border-radius:4px")
         import comparer
-        reco = comparer.table_recommandee(d, a)
-        if reco and reco["contrat"] != "passe":
-            camp, _ = moi.mon_camp(d["tables"], mes); signe = -1 if camp == "EO" else 1
-            sc = lambda t: signe * t["score_ns"]
-            mieux = sum(1 for t in d["tables"] if sc(t) > sc(reco)); pareil = sum(1 for t in d["tables"] if sc(t) == sc(reco))
-            vu = "vu de votre camp" if camp else "vu de Nord-Sud"
-            html(f"Contrat recommandé, au double mort : <b>{rouge(reco['contrat'])} {SIEGE[reco['declarant']]} {reco['resultat']}</b>, "
-                 f"{reco['score_ns']:+d} pour Nord-Sud · {mieux} table{'s' if mieux > 1 else ''} ont fait mieux, {pareil} autant, "
-                 f"{len(d['tables']) - mieux - pareil} moins bien ({vu})", f"background:{FOND_RECO};padding:2px 6px;border-radius:4px;margin-top:4px")
-        with repli_("tables", f"Les {len(d['tables'])} tables", "table_rows"):
-            tableau_resultats(d, mes, reco)
+        tableau_resultats(d, mes, comparer.table_recommandee(d, a))
         if any(x.get("encheres") for x in d["tables"]):
-            with repli_("encheres", "Enchères aux tables", "view_list"):
-                encheres_tables(d)
+            titre_section("Enchères aux tables")
+            encheres_tables(d)
     titre_section("Enchères recommandées")
     notes = a.get("notes", "")
     expert = not (a.get("auto") or version == "Standard")
@@ -1714,19 +1762,34 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
         if notes:
             if a.get("auto") or version == "Standard": html(avec_avis_html(notes))   # avec le conseil du coach
             else: ui.html(bloc_avis_html("expert", notes), sanitize=False)
-    if a.get("plan"):
-        titre_section("Plan de jeu"); html(avec_avis_html(a["plan"]))
+    # le plan de jeu et l'entame, sur la bande gris pâle du PDF : côte à côte quand seul le coach parle, l'un sous
+    # l'autre (le coach à gauche, l'expert à droite) quand l'expert donne son avis (l'utilisateur, 2026-11-17)
+    from build_pdf import decouper_avis
     e = a.get("entame")
-    if (isinstance(e, dict) and e.get("carte")) or a.get("defense"):
-        titre_section("Entame et défense")
-        h = f"<b>Entame recommandée :</b> {txt(e['carte'])} ({SIEGE.get(e.get('joueur'), e.get('joueur', ''))})." if isinstance(e, dict) and e.get("carte") else ""
-        html(h + (avec_avis_html(a["defense"]) if a.get("defense") else ""))
+    entame = (f"<div style='font-weight:700;margin-bottom:4px'>Entame recommandée : {txt(e['carte'])} "
+              f"({SIEGE.get(e.get('joueur'), e.get('joueur', ''))}).</div>") if isinstance(e, dict) and e.get("carte") else ""
+    morceaux = []
+    if a.get("plan"): morceaux.append(("Plan de jeu", avec_avis_html(a["plan"])))
+    if entame or a.get("defense"): morceaux.append(("Entame et défense", entame + (avec_avis_html(a["defense"]) if a.get("defense") else "")))
+    avis_expert = any(decouper_avis(a.get(k) or "")[2] for k in ("plan", "defense"))
+    titre_h = lambda t: f"<div style='font-size:var(--fs-titre);font-weight:700;color:{VERT};margin:10px 0 6px'>{t}</div>"
+    if morceaux:
+        if avis_expert or len(morceaux) == 1:
+            for t, h in morceaux:
+                ui.html(f"<div style='{BANDE_HTML};font-size:var(--fs-texte);line-height:1.5'>{titre_h(t)}{h}</div>",
+                        sanitize=False).classes("w-full mt-4")
+        else:
+            ui.html(f"<div style='{BANDE_HTML};font-size:var(--fs-texte);line-height:1.5;display:grid;grid-template-columns:1fr 1fr;gap:0 24px'>"
+                    + "".join(f"<div style='{'border-left:1px solid var(--bc-tapis-200);padding-left:20px' if i else ''}'>{titre_h(t)}{h}</div>"
+                              for i, (t, h) in enumerate(morceaux)) + "</div>", sanitize=False).classes("w-full mt-4")
     comm = a.get("comm") or repli.get("comm")
     if comm:
         titre_section("Commentaire sur les contrats joués" if d.get("tables") else "Commentaire"); html(txt(comm))
     vues = a.get("vues") or repli.get("vues")
     if vues:
-        titre_section("Cartes vues (après coup)"); html(txt(vues))
+        from build_pdf import paragraphes
+        titre_section("Cartes vues (après coup)")
+        html("".join(f"<p style='text-indent:1.2em;margin:0 0 6px'>{txt(x)}</p>" for x in paragraphes(vues)))
 
 
 def pensee_html(t, ouvert=True):
@@ -1739,6 +1802,18 @@ def pensee_html(t, ouvert=True):
         h += ("<div style='font-size:var(--fs-texte);color:#3f4651;margin-top:4px'><b>Ce qu'il croit :</b>"
               + "".join(f"<div>{rouge(x)}</div>" for x in t["croyance"]) + "</div>")
     return f"<div style='background:#e6efe9;border-left:3px solid #1f5f3a;padding:6px 8px;border-radius:4px'>{h}</div>"
+
+
+def encheres_groupe_html(d, xs):
+    """Plusieurs tables aux mêmes enchères : une grille, puis une ligne par table (son contrat, son résultat, son entame)."""
+    h = encheres_html(d, xs[0])
+    tete = "Tables " + ", ".join(str(x.get("table", "")) for x in sorted(xs, key=lambda x: str(x.get("table", ""))))
+    h = re.sub(r"<div style='font-weight:600'>.*?</div>", f"<div style='font-weight:600'>{tete}</div>", h, count=1)
+    lignes = "".join(f"<div>Table {x.get('table', '')} · {x.get('nom_ns') or x.get('paire_ns', '')} : {rouge(x.get('contrat', ''))} "
+                     f"{SIEGE.get(x.get('declarant'), '')} {x.get('resultat', '')}"
+                     + (f", entame {rouge(x['entame'])}" if x.get("entame") else "") + "</div>"
+                     for x in sorted(xs, key=lambda x: str(x.get("table", ""))))
+    return re.sub(r"</table><div>.*?</div>", lambda m: "</table>" + lignes, h, count=1, flags=re.S)
 
 
 def encheres_html(d, x):
@@ -1767,6 +1842,8 @@ def page():
                ".entree-barre .block, .q-tab__label { font-size: var(--fs-liste); } .q-tooltip { font-size: var(--fs-liste); } "
                ".q-field__native, .q-field__input { font-size: var(--fs-texte); } .q-notification__message { font-size: var(--fs-texte); } "
                ".text-xs { font-size: var(--fs-petit) !important; line-height: 1.3 !important; } "
+               # les titres (2026-11-17) : la page 22, une section 18, le texte 16 — une hiérarchie qui se voit, comme le PDF
+               ".titre-page { font-size: var(--fs-grand); line-height: 1.25; } "
                # lisible de loin (des joueurs âgés, un écran de télévision en cours) : le contenu qui change en grand ; les
                # libellés fixes que chacun connaît (onglets, barres latérales, boutons) gardent leur taille (le choix de l'utilisateur)
                ".q-table td { font-size: var(--fs-texte) !important; padding: 4px 6px !important; } "
@@ -4157,7 +4234,7 @@ def page():
 
                     def choisir_moi(e):
                         if e.value == SEPARATEUR: e.sender.value = moi.nom() or ""; return   # la ligne de séparation
-                        ecrire_etat(moi=e.value or None); retenir_licence(e.value); vue_seance.refresh(); options_rapports.refresh()
+                        ecrire_etat(moi=e.value or moi.AUCUN); retenir_licence(e.value); vue_seance.refresh(); options_rapports.refresh()
                     choix_moi = ui.select(options_joueurs(actuel), value=actuel or "", with_input=True, on_change=choisir_moi) \
                         .classes("w-full").props("outlined dense") \
                         .props(":option-disable=\"o => typeof o.label === 'string' && o.label.startsWith('───')\"")   # la ligne ne se choisit pas
@@ -5073,10 +5150,9 @@ def page():
         def bloc_ordre(c, data):
             """Fichier, Infos : « Donneur et vulnérabilité selon le numéro », pour les séances faites dans Bridge Coach ; une
             séance importée garde ceux qui ont été joués (la dupliquer d'abord)."""
-            ui.label("Donneur et vulnérabilité").classes("text-base font-bold mt-3")
             ok_, pourquoi = edition.modifiable(c)
-            if not ok_:
-                ui.label(pourquoi).classes("text-base text-gray-700"); return
+            if not ok_: return                              # une séance importée : rien à régler ici (l'utilisateur, 2026-11-17)
+            titre_section("Donneur et vulnérabilité")
             on = bool((data.get("session") or {}).get("donneur_par_numero"))
             ui.checkbox("Selon le numéro de la donne, comme au club et pour une machine à donnes", value=on,
                         on_change=lambda e: demander_numero(c, e.value)).classes("text-base")
@@ -5143,23 +5219,35 @@ def page():
                             sanitize=False).classes("text-base")
                     ui.button("Utiliser ces propositions", icon="auto_fix_high", on_click=lambda: adopter_(c, *prop)).props("unelevated").classes("self-start mt-1")
 
-            def bloc(nom, lignes):
+            def bloc(nom, lignes, section=False):
                 lignes = [(k, v) for k, v in lignes if v not in (None, "", [])]
                 if not lignes: return
-                ui.label(nom).classes("text-base font-bold mt-2")
+                if section: titre_section(nom)
+                else: ui.label(nom).classes("text-base font-bold mt-2")
                 with ui.grid(columns="170px 1fr").classes("w-full gap-x-4 gap-y-1 text-base"):   # les mêmes colonnes partout
                     for k, v in lignes:
                         ui.label(k).classes("text-gray-700"); ui.label(str(v)).classes("break-all")
             d = fichiers.date_de(data)
             cree = f.get("cree_le") or src.get("importe") or datetime.datetime.fromtimestamp(creation(c)).isoformat(timespec="seconds")
-            bloc("Le fichier", [("Nom", os.path.basename(c)), ("Dossier", os.path.dirname(c)), ("Créé le", quand_iso(cree)),
-                                ("Avec Bridge Coach", f.get("cree_avec")),
-                                ("Modifié le", quand_iso(f.get("modifie_le") or datetime.datetime.fromtimestamp(os.path.getmtime(c)).isoformat(timespec="seconds")))])
-            bloc("D'où elle vient", [("Source", SOURCES.get(src.get("type"), src.get("type"))),
-                                     ("Fichier d'origine", src.get("fichier") if src.get("type") not in ("entrainement", "saisie", "brouillon") else ""),
-                                     ("Il était dans", os.path.dirname(src["chemin"]) if src.get("chemin") else ""),
-                                     ("Daté du", quand_iso(src.get("date_fichier"))),
-                                     ("Importée le", quand_iso(src.get("importe")) if src.get("type") not in ("entrainement", "saisie", "brouillon") else "")])
+
+            def details():                                 # le fichier lui-même, replié en bas (l'utilisateur, 2026-11-17 : la
+                with ui.expansion("Détails du fichier", icon="description").classes("w-full text-base mt-4") \
+                        .props("dense header-class='text-base text-gray-700'"):                       # séance avant le fichier)
+                    bloc("Le fichier", [("Nom", os.path.basename(c)), ("Dossier", os.path.dirname(c)), ("Créé le", quand_iso(cree)),
+                                        ("Avec Bridge Coach", f.get("cree_avec")),
+                                        ("Versions gardées", len([v for v in lies_["versions"] if v.endswith(rapport.BC)]) or ""),
+                                        ("Modifié le", quand_iso(f.get("modifie_le") or datetime.datetime.fromtimestamp(os.path.getmtime(c)).isoformat(timespec="seconds")))])
+                    bloc("D'où elle vient", [("Source", SOURCES.get(src.get("type"), src.get("type"))),
+                                             ("Fichier d'origine", src.get("fichier") if src.get("type") not in ("entrainement", "saisie", "brouillon") else ""),
+                                             ("Il était dans", os.path.dirname(src["chemin"]) if src.get("chemin") else ""),
+                                             ("Daté du", quand_iso(src.get("date_fichier"))),
+                                             ("Importée le", quand_iso(src.get("importe")) if src.get("type") not in ("entrainement", "saisie", "brouillon") else "")])
+                    j = list(reversed(f.get("journal") or []))
+                    if j:
+                        ui.label("Son histoire").classes("text-base font-bold mt-2")
+                        with ui.grid(columns="170px 1fr").classes("w-full gap-x-4 gap-y-1 text-base"):
+                            for x in j[:20]:
+                                ui.label(quand_iso(x.get("le"))).classes("text-gray-700"); ui.label(x.get("quoi", "")).classes("break-all")
             a_finir = sum(1 for x in data.get("donnes", []) if x.get("a_completer"))
             mes = moi.paires(data)
             bloc("La séance", [("Date", fichiers.date_longue(d) if d else s.get("date")), ("Heure", s.get("heure")),
@@ -5170,18 +5258,17 @@ def page():
                                ("Paires", len(data.get("paires") or {}) or ""),
                                ("Thèmes", ", ".join(s.get("themes") or [])),
                                ("Vous êtes", ("dans la paire " + ", ".join(sorted((data.get("paires") or {}).get(k, {}).get("nom") or k for k in mes)))
-                                if mes else "")])
+                                if mes else "")], section=True)
             ans = data.get("analyses") or {}
             joues = sum(1 for v in (jouer.lire_essais(base_seance(c)).get("donnes") or {}).values() if v)
             bloc("Le travail fait", [("Analyse du coach", quand_iso((ans.get("standard") or {}).get("fait_le"))),
                                      ("Analyse de l'expert", quand_iso((ans.get("expert") or {}).get("fait_le"))),
                                      ("Rapports PDF", len(lies_["pdf"]) or ""),
-                                     ("Donnes rejouées", joues or ""),
-                                     ("Versions gardées", len([v for v in lies_["versions"] if v.endswith(rapport.BC)]) or "")])
+                                     ("Donnes rejouées", joues or "")], section=True)
 
             bloc_ordre(c, data)
             if brouillon.est_brouillon(c):                  # le Brouillon : ni renommé ni jeté ; on l'enregistre sous un nom
-                ui.label("Le Brouillon").classes("text-base font-bold mt-3")
+                titre_section("Le Brouillon")
                 ui.label("Il est toujours là. Pour garder le cours que vous y avez préparé : « Enregistrer sous… » en fait une "
                          "séance datée d'aujourd'hui ; vous pouvez ensuite vider le Brouillon pour le prochain.").classes("text-base text-gray-700")
                 with ui.row().classes("gap-3"):
@@ -5199,8 +5286,8 @@ def page():
                             ui.button("Enregistrer", icon="save", on_click=lambda: enregistrer_brouillon(n_in.value, t_in.value)).props("unelevated")
                             ui.button("Annuler", on_click=lambda: (infos_ui.update(copie=False), page_infos.refresh())).props("flat")
                 if infos_ui["faute"]: ui.label(infos_ui["faute"]).classes("text-base text-red-800")
-                return
-            ui.label("Le fichier").classes("text-base font-bold mt-3")
+                details(); return
+            titre_section("Le fichier")
             with ui.row().classes("items-start gap-3 w-full no-wrap"):
                 nom_in = ui.input("Nom du fichier", value=fichiers.base(c)).props("outlined suffix=.bc.json").classes("grow text-base")
                 ui.button("Renommer", icon="drive_file_rename_outline", on_click=lambda: renommer_(c, nom_in.value)).props("outline").classes("mt-2")
@@ -5220,12 +5307,7 @@ def page():
                         ui.button("Annuler", on_click=lambda: (infos_ui.update(copie=False), page_infos.refresh())).props("flat")
             if infos_ui["faute"]: ui.label(infos_ui["faute"]).classes("text-base text-red-800")
             if infos_ui["fait"]: ui.label(infos_ui["fait"]).classes("text-base text-primary")
-            j = list(reversed(f.get("journal") or []))
-            if j:
-                ui.label("Son histoire").classes("text-base font-bold mt-3")
-                with ui.grid(columns="auto 1fr").classes("gap-x-6 gap-y-1 text-base"):
-                    for x in j[:20]:
-                        ui.label(quand_iso(x.get("le"))).classes("text-gray-700"); ui.label(x.get("quoi", "")).classes("break-all")
+            details()
         page_infos()
 
     with panneau_fichier, ui.column().classes("w-full gap-2") as pages_ui["dossier"]:   # Fichier, Ouvrir le dossier de travail
@@ -5547,7 +5629,7 @@ def page():
             try: fichiers.ajouter_licences(c_)
             except Exception: pass
         ecrire_etat(licences_ajoutees=True)
-    retenir_licence(e0.get("mon_nom"), e0.get("moi"), e0.get("joueur_jouer"))
+    retenir_licence(e0.get("mon_nom"), moi.nom(), e0.get("joueur_jouer"))
     vue_v, version_ = lire_etat().get("version_vue"), maj.version_locale()
     if vue_v != version_:                                  # après une mise à jour, une fois : quoi de neuf (help/nouveautes.html)
         ecrire_etat(version_vue=version_)

@@ -18,12 +18,18 @@ ETAT = os.path.join(dossier_des_reglages(), "etat.json")
 SURLIGNE = "#fff2a8"                                       # le fond de vos lignes, dans les PDF et l'application
 
 
+AUCUN = "*aucun*"          # « Vous êtes : Aucun (tous les joueurs) », choisi exprès dans Rapports
+
+
 def nom():
-    """Le nom choisi (« MARTIN Anne »), ou None."""
+    """Le joueur de « Vous êtes » (« MARTIN Anne ») ; tant qu'il n'a pas été choisi, « Votre nom » (Réglages : c'est
+    vous, l'utilisateur, 2026-11-17) ; None après « Aucun (tous les joueurs) » choisi exprès, ou sans nom du tout."""
     try:
-        return (json.load(open(ETAT, encoding="utf-8")) or {}).get("moi") or None
+        e = json.load(open(ETAT, encoding="utf-8")) or {}
     except (OSError, ValueError, AttributeError):
         return None
+    if e.get("moi") == AUCUN: return None
+    return e.get("moi") or e.get("mon_nom") or None
 
 
 def licence_de(qui):

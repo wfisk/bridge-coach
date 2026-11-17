@@ -46,7 +46,7 @@ class Chrome:
 
 
 CLIQUER = """(function (texte, n) {
-  var tous = Array.from(document.querySelectorAll('button, .q-btn, .q-item, .q-expansion-item__container > .q-item, .cursor-pointer, .q-tab, a'))
+  var tous = Array.from(document.querySelectorAll('button, .q-btn, .q-item, .q-expansion-item__container > .q-item, .cursor-pointer, .ligne-seance, .q-tab, a'))
     .filter(function (e) { return e.offsetParent !== null && (e.innerText || '').trim().indexOf(texte) >= 0; });
   tous.sort(function (a, b) { return (a.innerText || '').length - (b.innerText || '').length; });
   var e = tous[n || 0];
@@ -112,7 +112,7 @@ async def c_fenetre(c, demo):
 
 async def c_importer(c, demo):
     await ouvrir(c, demo, {"onglet": "Fichier", "fichier": "nouveau", "nouveau": "bws"})
-    await cliquer(c, ".bws", attente=2.5)
+    await cliquer(c, "Tournoi du", attente=2.5)          # la liste montre le titre lisible du tournoi (2026-11-17)
     await masquer_chemins(c, demo)
     await capture(c, "importer", clip=(0, 0, LARGEUR, 640))
 

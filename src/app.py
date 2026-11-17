@@ -154,7 +154,7 @@ def date_lisible(chemin):
     return d.strftime("%d/%m/%Y")
 
 
-GRIS_BARRE = "#f3f3f1"
+GRIS_BARRE = "var(--bc-tapis-100)"
 LARGEUR_PANNEAU = 300                                     # la barre de droite de l'onglet Jouer
 # le côté de la table de l'onglet Jouer, dans les unités du dessin : la table, les mains autour et les cartons forment un
 # seul bloc de taille fixe, que le CSS (.cadre-table) agrandit ou rétrécit pour remplir la place (de 0,45 à 2,4 fois) ; sur un grand écran ou une
@@ -318,13 +318,13 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
 .zone-table.ouverte .emplacement.gauche, .zone-table.ouverte .emplacement.droite {
   min-height: calc(4 * var(--carte-h) + 3 * var(--sp-1)); min-width: calc(4 * var(--carte-l)); }
 ::-webkit-scrollbar { width: 14px; height: 14px; background: transparent; }
-::-webkit-scrollbar-thumb { background: #cfcfcb; border-radius: 7px; border: 2px solid transparent; background-clip: padding-box; }
-::-webkit-scrollbar-thumb:hover { background-color: #b5b5b0; }
+::-webkit-scrollbar-thumb { background: var(--bc-tapis-300); border-radius: 7px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--bc-tapis-400); }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
-* { scrollbar-color: #cfcfcb transparent; }
+* { scrollbar-color: var(--bc-tapis-300) transparent; }
 .entree-barre { width: 100%; justify-content: flex-start; border-radius: 8px; padding: 4px 12px; font-weight: 400;
-  color: #2b2b2b; min-height: 32px; }
-.entree-barre.choisie { background: #e4e3df; font-weight: 600; }
+  color: var(--bc-tapis-900); min-height: 32px; }
+.entree-barre.choisie { background: var(--bc-tapis-200); font-weight: 600; }
 .entree-barre .q-btn__content { text-align: left; justify-content: flex-start; line-height: 1.3; padding: 2px 0; }
 .entree-barre.aide-sujet { height: auto; min-height: 32px; padding-top: 6px; padding-bottom: 6px; flex-shrink: 0; }   /* un sujet sur deux lignes ne déborde pas */
 .carte { width: var(--carte-l); height: var(--carte-h); margin-right: -22px; padding: 3px 5px; background: var(--bc-blanc); border: 1px solid var(--bc-tapis-300);
@@ -348,6 +348,11 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
 .entete-seances > .actif { font-weight: 700; color: var(--bc-tapis-900); }
 .entete-seances > :nth-child(5), .entete-seances > :nth-child(7) { text-align: right; }
 .ligne-seance { cursor: pointer; }
+.liste-seances { container-type: inline-size; }
+@container (max-width: 820px) {   /* texte grand ou fenêtre étroite : la colonne Type s'efface, le nom garde sa place */
+  .liste-seances .tableau-seances { grid-template-columns: 20px minmax(0, 1fr) 84px 0 44px minmax(0, .6fr) 92px 28px; }
+  .liste-seances .tableau-seances > :nth-child(4) { visibility: hidden; overflow: hidden; } }
+.encheres-reco > :last-child { flex: 1 1 280px; min-width: 260px; }
 .ligne-seance:hover { background: var(--bc-pique-50); border-color: var(--bc-pique-100); }   /* la ligne sous la souris */
 .ligne-seance.ouverte { background: var(--bc-pique-100); border-color: var(--bc-pique-300); }   /* la séance ouverte : sélectionnée */
 .ligne-seance .icone-seance { color: var(--bc-tapis-600); }
@@ -377,13 +382,13 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
 .nom-joueur.a-jouer { background: var(--bc-jaune-200); color: var(--bc-tapis-900); }
 .nom-joueur.a-jouer .siege-lbl { color: var(--bc-tapis-900); }
 .nom-joueur.deux { display: block; line-height: 1.2; }   /* à l'ouest, aligné contre la table (à droite) */
-.enc-sens { position: relative; cursor: pointer; text-decoration: underline dotted #9aa3ad; text-underline-offset: 4px; }
+.enc-sens { position: relative; cursor: pointer; text-decoration: underline dotted var(--bc-tapis-400); text-underline-offset: 4px; }
 .enc-sens .bulle { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; width: 230px; padding: 8px 10px;
-  background: #fff; border: 1px solid #cfd5db; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18); text-align: left;
-  font-size: 16px; line-height: 1.35; font-weight: 400; color: #2b2b2b; white-space: normal; }
+  background: var(--bc-blanc); border: 1px solid var(--bc-tapis-200); border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18); text-align: left;
+  font-size: 16px; line-height: 1.35; font-weight: 400; color: var(--bc-tapis-900); white-space: normal; }
 .enc-sens.c1 .bulle { left: -60px; } .enc-sens.c2 .bulle { left: auto; right: -60px; } .enc-sens.c3 .bulle { left: auto; right: 0; }
 .enc-sens:hover .bulle, .enc-sens.ouverte .bulle { display: block; }
-.marque-alerte { display: inline-block; margin-left: 3px; padding: 0 4px; border-radius: 4px; background: #1565c0; color: #fff;
+.marque-alerte { display: inline-block; margin-left: 3px; padding: 0 4px; border-radius: 4px; background: var(--bc-pique-700); color: var(--bc-blanc);
   font-size: 11px; font-weight: 700; line-height: 15px; vertical-align: 2px; }
 .carte.gagnante { box-shadow: 0 0 0 2px var(--bc-jaune-400), 0 0 14px color-mix(in srgb, var(--bc-jaune-400) 55%, transparent); transform: translateY(-3px);
   transition: box-shadow .3s, transform .3s; }   /* la carte qui gagne le pli : une lueur dorée, discrète */
@@ -448,11 +453,11 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
   border-right: 10px solid var(--q-primary); }
 .fleche-tour.droite { right: -10px; top: 50%; transform: translateY(-50%); border: 9px solid transparent; border-right: 0;
   border-left: 10px solid var(--q-primary); }
-.onglet.eteint { background: #d9d9d6 !important; color: #9a9a96 !important; }
-.onglet.indice { background: #fff; color: #1f6b45; display: flex; align-items: center; gap: 2px; }
-.sa { color: #2b2b2b; background: #eceff1; } .pique { color: #1f3fa0; background: #e3eaf8; }
-.coeur { color: #c0141c; background: #fbe4e4; } .carreau { color: #c86a00; background: #fff0d6; }
-.trefle { color: #1d7a35; background: #e1f2e5; }
+.onglet.eteint { background: var(--bc-tapis-200) !important; color: var(--bc-tapis-400) !important; }
+.onglet.indice { background: var(--bc-blanc); color: var(--bc-trefle-700); display: flex; align-items: center; gap: 2px; }
+.sa { color: var(--bc-tapis-900); background: var(--bc-tapis-100); } .pique { color: var(--bc-pique-800); background: var(--bc-pique-100); }
+.coeur { color: var(--bc-coeur-600); background: var(--bc-coeur-100); } .carreau { color: var(--bc-carreau-500); background: var(--bc-jaune-50); }
+.trefle { color: var(--bc-trefle-600); background: var(--bc-trefle-100); }
 /* les cartons d'enchères posés sur la table, comme de vrais cartons de boîte à enchères : dessinés à l'endroit pour qui les
    lit en face (.face), retournés pour celui qui les pose ; chaque joueur les pose de gauche à droite devant lui (.cadre,
    tourné selon sa place), le dernier sur le précédent : on voit encore la bande de droite (pour le lecteur) des autres */
@@ -496,64 +501,64 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
 @keyframes arrive-haut { from { transform: translateY(-110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
 @keyframes arrive-gauche { from { transform: translateX(-110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
 @keyframes arrive-droite { from { transform: translateX(110px); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
-.boite-encheres { background: #c0392b; border-radius: 12px; padding: 8px; }
+.boite-encheres { background: var(--bc-coeur-600); border-radius: 12px; padding: 8px; }
 .boite-encheres.en-attente { opacity: .45; pointer-events: none; filter: saturate(.5); }   /* pas votre tour : grisée */
-.ratelier { background: #f4f5f6; border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.ratelier { background: var(--bc-pique-50); border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
 .tirette { width: 46px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px;
   font-size: 16px; font-weight: 700; border: 1px solid rgba(0,0,0,.18); cursor: pointer; }
 .tirette:hover { filter: brightness(.93); transform: translateY(-2px); }
 .tirette.vide { visibility: hidden; }
-.tirette.depassee { background: #eeede9; color: #c2c0ba; border-color: #e2e0da; cursor: default; }   /* dépassée : en gris pâle */
+.tirette.depassee { background: var(--bc-tapis-100); color: var(--bc-tapis-300); border-color: var(--bc-tapis-200); cursor: default; }   /* dépassée : en gris pâle */
 .tirette.depassee:hover { filter: none; transform: none; }
-.tirette.autres { width: auto; color: #555; background: #fff; font-weight: 600; font-size: 15px; color: #333; }
-.compartiment { margin-top: 8px; background: #a93226; border-radius: 6px; padding: 6px 6px 6px; align-items: center; }
+.tirette.autres { width: auto; color: var(--bc-tapis-700); background: var(--bc-blanc); font-weight: 600; font-size: 15px; color: var(--bc-tapis-900); }
+.compartiment { margin-top: 8px; background: var(--bc-coeur-700); border-radius: 6px; padding: 6px 6px 6px; align-items: center; }
 .onglet { position: relative; min-width: 58px; height: 38px; margin-top: 11px; padding: 0 6px; border-radius: 4px;
-  font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  font-size: 16px; font-weight: 700; color: var(--bc-blanc); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .onglet[data-tab]::before { content: ""; position: absolute; top: -9px; right: 3px; height: 10px; min-width: 20px;
   padding: 0 3px; border-radius: 3px 3px 0 0; font-size: 8px; line-height: 12px; background: inherit; color: inherit; }
 .compartiment > :last-child .onglet { min-width: 72px; }   /* le second rang : Stop et Alerte, sous Passe, X, XX */
-.onglet.passe { background: #2e7d32; } .onglet.contre { background: #e53935; } .onglet.surcontre { background: #1565c0; }
+.onglet.passe { background: var(--bc-trefle-600); } .onglet.contre { background: var(--bc-coeur-500); } .onglet.surcontre { background: var(--bc-pique-700); }
 .onglet.eteint { cursor: default; }
 .onglet:not(.eteint):hover { filter: brightness(.93); transform: translateY(-2px); }   /* comme les cartons d'enchères au survol */
-.onglet.stop { background: #c62828; border: 2px solid #fff; }   /* bordé de blanc : il se voit sur le rouge de la boîte */ .onglet.stop.pose { outline: 3px solid #f2b705; }
-.onglet.alerte { background: #1565c0; } .onglet.alerte.pose { outline: 3px solid #f2b705; }
+.onglet.stop { background: var(--bc-coeur-600); border: 2px solid var(--bc-blanc); }   /* bordé de blanc : il se voit sur le rouge de la boîte */ .onglet.stop.pose { outline: 3px solid var(--bc-jaune-300); }
+.onglet.alerte { background: var(--bc-pique-700); } .onglet.alerte.pose { outline: 3px solid var(--bc-jaune-300); }
 @keyframes pense { 50% { opacity: .35; } }
 .pense { animation: pense 1s ease-in-out infinite; }
 """
 
 
 CSS_AIDE = """
-.aide { font-size: 16px; line-height: 1.55; color: #222; }
-.aide h1, .aide h2, .aide h3 { font-size: 16px; font-weight: 700; color: #1f6b45; margin: 1.4em 0 .4em; line-height: 1.3; letter-spacing: normal; }
+.aide { font-size: 16px; line-height: 1.55; color: var(--bc-tapis-900); }
+.aide h1, .aide h2, .aide h3 { font-size: 16px; font-weight: 700; color: var(--bc-trefle-700); margin: 1.4em 0 .4em; line-height: 1.3; letter-spacing: normal; }
 .aide > :first-child { margin-top: 0; }
 .aide > h1:first-child, .aide > h2:first-child, .aide > h3:first-child { font-size: 18px; color: inherit; margin-top: 0; }   /* le titre de la section, comme celui des autres pages */
 .aide p, .aide ul, .aide ol, .aide dl { margin: .6em 0; }
 .aide ul { list-style: disc; padding-left: 1.4em; } .aide ol { list-style: decimal; padding-left: 1.4em; }
 .aide li { margin-bottom: .4em; } .aide dt { font-weight: 600; margin-top: .7em; } .aide dd { margin: 0; }
-.aide code { background: #e6efe9; padding: .1em .35em; border-radius: 4px; font-size: var(--fs-liste); word-break: break-all; }
-.aide .note { background: #e6efe9; border-left: 4px solid #1f6b45; padding: .7em 1em; margin: 1em 0; }
-.aide h2 { font-size: 22px; color: #222; margin: 0 0 .6em; }                  /* le titre de la page */
+.aide code { background: var(--bc-trefle-100); padding: .1em .35em; border-radius: 4px; font-size: var(--fs-liste); word-break: break-all; }
+.aide .note { background: var(--bc-trefle-100); border-left: 4px solid var(--bc-trefle-700); padding: .7em 1em; margin: 1em 0; }
+.aide h2 { font-size: 22px; color: var(--bc-tapis-900); margin: 0 0 .6em; }                  /* le titre de la page */
 .aide h3 { font-size: 18px; margin-top: 1.8em; scroll-margin-top: 60px; }     /* une section : sous la barre du haut */
-.aide p.intro { font-size: var(--fs-titre); color: #333; }
+.aide p.intro { font-size: var(--fs-titre); color: var(--bc-tapis-900); }
 .aide figure { margin: 1em 0 1.4em; }
-.aide figure img { display: block; max-width: 100%; border: 1px solid #dfe3e6; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-.aide figcaption { font-size: var(--fs-liste); color: #555; margin-top: .4em; }
+.aide figure img { display: block; max-width: 100%; border: 1px solid var(--bc-tapis-200); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.aide figcaption { font-size: var(--fs-liste); color: var(--bc-tapis-700); margin-top: .4em; }
 .aide .etapes { counter-reset: e; list-style: none; padding-left: 0; }
 .aide .etapes > li { counter-increment: e; position: relative; padding-left: 2.4em; margin-bottom: .8em; }
 .aide .etapes > li::before { content: counter(e); position: absolute; left: 0; top: 0; width: 1.7em; height: 1.7em; border-radius: 50%;
-  background: #1f6b45; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
-.aide .astuce { background: #fff8e1; border-left: 4px solid #e0a800; padding: .7em 1em; margin: 1em 0; }
+  background: var(--bc-trefle-700); color: var(--bc-blanc); font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.aide .astuce { background: var(--bc-jaune-50); border-left: 4px solid var(--bc-jaune-400); padding: .7em 1em; margin: 1em 0; }
 @media (max-width: 1000px) { .sur-page-place { display: none; } }   /* une fenêtre étroite : le texte d'abord */
 .sur-page-place { width: 220px; align-self: stretch; }       /* la place de la colonne ; la liste, elle, reste fixe à l'écran */
 .sur-page { position: fixed; top: 64px; width: 220px; max-height: calc(100vh / var(--zoom, 1) - 90px); overflow-y: auto; background: transparent; }
 .aide figure img { cursor: zoom-in; }
 .image-aide-grande { position: fixed; inset: 0; z-index: 9999; background: rgba(20,20,20,.82); display: flex; align-items: center;
   justify-content: center; cursor: zoom-out; padding: 24px; }
-.image-aide-grande img { max-width: 100%; max-height: 100%; border-radius: 8px; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
-.sur-page a { display: block; font-size: var(--fs-liste); line-height: 1.35; color: #444; text-decoration: none; padding: 5px 0 5px 12px;
-  border-left: 2px solid #e3e7ea; }
-.sur-page a:hover { color: #1f6b45; }
-.sur-page a.lue { color: #1f6b45; font-weight: 600; border-left-color: #1f6b45; }
+.image-aide-grande img { max-width: 100%; max-height: 100%; border-radius: 8px; background: var(--bc-blanc); box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+.sur-page a { display: block; font-size: var(--fs-liste); line-height: 1.35; color: var(--bc-tapis-800); text-decoration: none; padding: 5px 0 5px 12px;
+  border-left: 2px solid var(--bc-pique-100); }
+.sur-page a:hover { color: var(--bc-trefle-700); }
+.sur-page a.lue { color: var(--bc-trefle-700); font-weight: 600; border-left-color: var(--bc-trefle-700); }
 """
 
 
@@ -671,7 +676,7 @@ def titre_page(texte, ancre, classes="font-bold titre-page"):
     with ui.row().classes("items-center gap-1 no-wrap"):
         ui.label(texte).classes(classes)
         ui.button(icon="help_outline", on_click=lambda: ui.run_javascript(f"emitEvent('aide', {json.dumps(ancre)})")) \
-            .props("flat round dense size=sm").style("color:#1976d2").tooltip("L'aide de cette page")
+            .props("flat round dense size=sm").style("color:var(--bc-pique-600)").tooltip("L'aide de cette page")
 
 
 def ouvrir(chemin):
@@ -935,15 +940,18 @@ def ecrire_etat(**valeurs):
         pass
 
 
-TAILLES = [(1.0, "Normale"), (1.25, "Grande"), (1.5, "Très grande")]   # Réglages, Taille du texte : le zoom de la page
+TAILLES = [(0.875, "Compacte"), (1.0, "Normale"), (1.25, "Grande")]   # Réglages, Taille du texte : le zoom de la page
+# (l'utilisateur, 2026-11-17 : la taille normale est déjà grande ; une plus petite pour un petit écran, une plus grande ;
+# « Très grande », 1,5, ne tenait pas sur un portable : lue comme « Grande »)
 
 
 SEPARATEUR = "\u2014sep\u2014"                              # la ligne entre votre nom et les autres (options_joueurs)
 
 
 def taille_texte():
-    """La taille du texte choisie (etat.json « zoom ») : 1, 1.25 ou 1.5."""
+    """La taille du texte choisie (etat.json « zoom ») : 0.875, 1 ou 1.25 ; l'ancienne « Très grande » (1.5) devient « Grande »."""
     z = lire_etat().get("zoom")
+    if isinstance(z, (int, float)) and z > 1.25: return 1.25
     return z if z in [t for t, _ in TAILLES] else 1.0
 
 
@@ -1079,7 +1087,7 @@ AUTRE_FICHE = "Autre…"                      # Réglages › Votre système : �
 
 def rouge(t):
     """Cœurs et carreaux en rouge, pour le HTML."""
-    return str(t).replace("♥", '<span style="color:#c0141c">♥</span>').replace("♦", '<span style="color:#c0141c">♦</span>')
+    return str(t).replace("♥", '<span style="color:var(--bc-coeur-600)">♥</span>').replace("♦", '<span style="color:var(--bc-coeur-600)">♦</span>')
 
 
 def page_seance(data, c):
@@ -1183,7 +1191,7 @@ def main_html(d, s):
     cartes = d["mains"][s].split()
     lignes = "".join(f"<div>{rouge(c)}&nbsp;{'—' if x == '-' else x}</div>" for c, x in zip("♠♥♦♣", cartes))
     don = " · donneur" if d["donneur"] == s else ""
-    return f'<div style="font-size:var(--fs-texte);line-height:1.35"><div style="color:#555;font-weight:600;white-space:nowrap">{SIEGE[s]} · {d["hcp"][s]} H{don}</div>{lignes}</div>'
+    return f'<div style="font-size:var(--fs-texte);line-height:1.35"><div style="color:var(--bc-tapis-700);font-weight:600;white-space:nowrap">{SIEGE[s]} · {d["hcp"][s]} H{don}</div>{lignes}</div>'
 
 
 def mains_grille(d):
@@ -1201,7 +1209,7 @@ def par_html(d):
 
 
 MANCHE = {"SA": 9, "♠": 10, "♥": 10, "♦": 11, "♣": 11}       # les levées d'une manche, par dénomination
-FOND_MANCHE, FOND_CHELEM = "#d7ecd9", "#9fd1a8"
+FOND_MANCHE, FOND_CHELEM = "var(--bc-trefle-100)", "var(--bc-trefle-300)"
 
 
 def dm_html(d):
@@ -1210,22 +1218,22 @@ def dm_html(d):
     if not d.get("dm"): return ""
     p = d.get("par") or {}
     par = (p["contrat"][1:].rstrip("X"), p.get("declarant")) if p.get("contrat") and p["contrat"] != "passe" else None
-    cell = "padding:5px 0;text-align:center;border-top:1px solid #e3e7ea"
+    cell = "padding:5px 0;text-align:center;border-top:1px solid var(--bc-pique-100)"
     def case(x, s):
         n = d["dm"][x][s]
-        fond = FOND_CHELEM if n >= 12 else FOND_MANCHE if n >= MANCHE[x] else "#f6f8fb" if s in "NS" else ""
-        cadre = ";box-shadow:inset 0 0 0 2px #1f5f3a;font-weight:700" if par == (x, s) else ""
+        fond = FOND_CHELEM if n >= 12 else FOND_MANCHE if n >= MANCHE[x] else "var(--bc-pique-50)" if s in "NS" else ""
+        cadre = ";box-shadow:inset 0 0 0 2px var(--bc-trefle-800);font-weight:700" if par == (x, s) else ""
         return f"<td style='{cell}{';background:' + fond if fond else ''}{cadre}'>{n}</td>"
     tete = "".join(f"<th style='padding:5px 0;text-align:center;font-weight:700'>{s}</th>" for s in ("Nord", "Sud", "Est", "Ouest"))
     corps = "".join(f"<tr><td style='{cell};font-weight:700'>{rouge(x)}</td>" + "".join(case(x, s) for s in "NSEO") + "</tr>"
                     for x in ("SA", "♠", "♥", "♦", "♣"))
     carre = lambda style: f"<span style='display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin:0 4px 0 0;{style}'></span>"
-    legende = (f"<div style='font-size:var(--fs-texte);color:#3f4651;margin-top:4px;line-height:1.6'>{carre(f'background:{FOND_MANCHE}')}manche "
-               f"&nbsp;{carre(f'background:{FOND_CHELEM}')}chelem &nbsp;{carre('box-shadow:inset 0 0 0 2px #1f5f3a')}par</div>")
+    legende = (f"<div style='font-size:var(--fs-texte);color:var(--bc-tapis-800);margin-top:4px;line-height:1.6'>{carre(f'background:{FOND_MANCHE}')}manche "
+               f"&nbsp;{carre(f'background:{FOND_CHELEM}')}chelem &nbsp;{carre('box-shadow:inset 0 0 0 2px var(--bc-trefle-800)')}par</div>")
     return (f"<div style='font-size:var(--fs-texte);width:100%'><div style='font-weight:700;margin-bottom:4px'>Double mort</div>"
-            f"<table style='width:100%;table-layout:fixed;border-collapse:collapse;background:#fff;border:1px solid #9fb5a8;"
+            f"<table style='width:100%;table-layout:fixed;border-collapse:collapse;background:var(--bc-blanc);border:1px solid var(--bc-tapis-400);"
             f"border-radius:6px;overflow:hidden'><colgroup><col style='width:16%'/></colgroup>"
-            f"<tr style='background:#e6efe9'><th></th>{tete}</tr>{corps}</table>{legende}</div>")
+            f"<tr style='background:var(--bc-trefle-100)'><th></th>{tete}</tr>{corps}</table>{legende}</div>")
 
 
 def page_dm_par(d, par=True):
@@ -1246,10 +1254,10 @@ def titre_donne(d, centre=True, plus=""):
     en gras, puis « Donneur : Nord · Vulnérabilité : personne » ; plus : un complément (le thème). Centrée au-dessus de
     la table de Jouer et, à la même place, au-dessus de la donne dans Donnes et Analyse (l'utilisateur, 2026-11-17 :
     « au même endroit sur chaque page ») ; centre=False la met à gauche."""
-    with ui.row().classes("w-full gap-x-4 gap-y-1 items-baseline " + ("justify-center" if centre else "")).style("white-space:nowrap"):
-        ui.label(f"Donne {d['n']}").classes("font-bold titre-page")
-        ui.html(f"<div style='font-size:var(--fs-titre)'>Donneur : <b>{SIEGE[d['donneur']]}</b> · "
-                f"Vulnérabilité : <b>{VUL_TXT.get(d.get('vul'), d.get('vul', ''))}</b>{plus}</div>", sanitize=False)
+    with ui.row().classes("w-full gap-x-4 gap-y-1 items-baseline " + ("justify-center" if centre else "")):   # se replie, texte grand
+        ui.label(f"Donne {d['n']}").classes("font-bold titre-page whitespace-nowrap")
+        ui.html(f"<div style='font-size:var(--fs-titre);text-align:center'><span style='white-space:nowrap'>Donneur : <b>{SIEGE[d['donneur']]}</b></span> · "
+                f"<span style='white-space:nowrap'>Vulnérabilité : <b>{VUL_TXT.get(d.get('vul'), d.get('vul', ''))}</b></span>{plus}</div>", sanitize=False)
 
 
 def page_donne(d, mes=frozenset(), tour="", reco=None):
@@ -1261,7 +1269,7 @@ def page_donne(d, mes=frozenset(), tour="", reco=None):
     mains_grille(d)
     if d.get("origine"):                                   # une donne du Brouillon (ou d'une séance faite avec lui) : d'où elle vient
         o = d["origine"]
-        ui.html(f"<div style='font-size:var(--fs-texte);color:#555b66'>Venue de la donne {o.get('n')} de <b>{html_.escape(str(o.get('titre', '')))}</b>"
+        ui.html(f"<div style='font-size:var(--fs-texte);color:var(--bc-tapis-700)'>Venue de la donne {o.get('n')} de <b>{html_.escape(str(o.get('titre', '')))}</b>"
                 + (f" ({o['date']})" if o.get("date") else "") + "</div>", sanitize=False).classes("mt-2")
     if tour: ui.label(tour).classes("text-base text-gray-700 mt-2")
     if d.get("tables"):
@@ -1309,13 +1317,13 @@ def page_classement(c, data, aller_donne):
     # la même allure que Jouer (l'utilisateur, 2026-11-11) : des cartes blanches arrondies, le vert pour votre réussite,
     # le rouge pour ce qui est sous la moyenne (comme les levées de votre camp et de l'autre sur la table)
     bon = lambda v: v is not None and (v > 0 if imp_ else v >= 50)
-    teinte = lambda v: "#1f6b45" if bon(v) else "#c62828"
+    teinte = lambda v: "var(--bc-trefle-700)" if bon(v) else "var(--bc-coeur-600)"
     with ui.column().classes("gap-1 rounded-xl border border-gray-200 bg-white px-4 py-3 my-2 max-w-4xl"):
         if cl["rejouees"]:
             tot = cl.get("total")
-            ui.label(classement.ligne_seance(cl)).style(f"font-size:var(--fs-ecran);font-weight:700;color:{teinte(tot) if tot is not None else '#222'}")
+            ui.label(classement.ligne_seance(cl)).style(f"font-size:var(--fs-ecran);font-weight:700;color:{teinte(tot) if tot is not None else 'var(--bc-tapis-900)'}")
         else:
-            ui.label("Aucune donne rejouée jusqu'au bout pour l'instant.").style("font-size:var(--fs-grand);font-weight:700;color:#222")
+            ui.label("Aucune donne rejouée jusqu'au bout pour l'instant.").style("font-size:var(--fs-grand);font-weight:700;color:var(--bc-tapis-900)")
             premiere_ = next((x["n"] for x in cl["lignes"] if x["etat"] == "a_rejouer"), None)
             if premiere_ is not None:                      # une invitation à commencer (l'utilisateur, 2026-11-11)
                 ui.button(f"Commencer par la donne {premiere_}", icon="arrow_forward",
@@ -1351,7 +1359,7 @@ def page_classement(c, data, aller_donne):
             ("val", "IMP" if imp_ else "%"), ("meilleur", "Meilleur de la salle")]
     with ui.element("div").classes("w-full max-w-4xl rounded-xl border border-gray-200 bg-white p-2"):
       tb = ui.table(columns=[{"name": k, "label": l, "field": k, "align": "left"} for k, l in cols], rows=rows, row_key="k") \
-        .props("flat dense :table-row-style-fn=\"r => r.fait ? 'cursor:pointer' : 'cursor:pointer;color:#777;font-style:italic'\"") \
+        .props("flat dense :table-row-style-fn=\"r => r.fait ? 'cursor:pointer' : 'cursor:pointer;color:var(--bc-tapis-600);font-style:italic'\"") \
         .classes("w-full max-w-4xl classement")
     for k in ("contrat", "meilleur", "val"):
         tb.add_slot(f"body-cell-{k}", '<q-td :props="props"><span v-html="props.value"></span></q-td>')
@@ -1386,7 +1394,7 @@ def encheres_tables(d):
 
 # ---------------------------------------------------------------- l'analyse, dans l'onglet Analyse
 _ANALYSES = {}
-FOND_RECO = "#e6efe9"                                      # la ligne du contrat recommandé (comme dans les PDF)
+FOND_RECO = "var(--bc-trefle-100)"                                      # la ligne du contrat recommandé (comme dans les PDF)
 
 
 def recommandee(c, d):
@@ -1612,7 +1620,7 @@ def grille_html(enc, vul=None, qui=None, sens=None):
     reste ouverte d'un clic (JS_SENS) ; une enchère alertée porte un petit « A » bleu (l'utilisateur, 2026-11-11 : le sens
     sur l'enchère elle-même, plutôt qu'une liste à part)."""
     trait = lambda s: "" if vul is None else \
-        f";width:25%;border-bottom:6px solid {'#c0141c' if vul == 'Tous' or vul == ('N-S' if s in 'NS' else 'E-O') else '#2e7d32'}"
+        f";width:25%;border-bottom:6px solid {'var(--bc-coeur-600)' if vul == 'Tous' or vul == ('N-S' if s in 'NS' else 'E-O') else 'var(--bc-trefle-600)'}"
     fond = ""
     if qui:                                       # "reco" : vert pâle, les enchères recommandées ; "autre" : gris, celles du coach
         from build_pdf import GRILLE
@@ -1635,7 +1643,7 @@ def grille_html(enc, vul=None, qui=None, sens=None):
     return f"<table style='border-collapse:collapse;font-size:16px{large}'><tr>{tete}</tr>{corps}</table>"
 
 
-VERT, ROUGE_VUL, ENCRE = "#1f5f3a", "#c0141c", "#3b424f"      # les couleurs du PDF (build_pdf)
+VERT, ROUGE_VUL, ENCRE = "var(--bc-trefle-800)", "var(--bc-coeur-600)", "var(--bc-tapis-800)"      # les couleurs du PDF (build_pdf)
 
 
 CASQUETTE_SVG = ("<svg viewBox='0 0 128 80' width='21' height='13' style='display:inline-block;vertical-align:-1px'>"   # comme icones/casquette.png
@@ -1673,7 +1681,7 @@ def diagramme_html(d, a):
         m = mk[siege].get((s, x)); txt = "10" if x == "X" else x
         if not m: return f"<span style='display:inline-block;min-width:13px;text-align:center'>{txt}</span>"
         bord = f"border:1.3px solid {ENCRE};" if m["tables"] else ""
-        double = f"box-shadow:0 0 0 2px #fff,0 0 0 3.3px {ENCRE};" if m["tables"] > 1 else ""
+        double = f"box-shadow:0 0 0 2px var(--bc-blanc),0 0 0 3.3px {ENCRE};" if m["tables"] > 1 else ""
         fond = "background:rgba(59,66,79,.28);" if m["reco"] else ""
         return (f"<span style='display:inline-block;min-width:21px;height:21px;line-height:19px;text-align:center;border-radius:50%;"
                 f"margin:0 2px;{bord}{double}{fond}'>{txt}</span>")
@@ -1681,24 +1689,25 @@ def diagramme_html(d, a):
         lignes = "".join(f"<div>{rouge(c)}&nbsp;" + ("—" if x == "-" else "".join(carte(siege, c, y) for y in x)) + "</div>"
                          for c, x in zip(SUITS, d["mains"][siege].split()))
         don = " · donneur" if d["donneur"] == siege else ""
-        return f"<div style='font-size:var(--fs-texte);line-height:1.5'><div style='color:#555;font-weight:600;white-space:nowrap'>{SIEGE[siege]} · {d['hcp'][siege]} H{don}</div>{lignes}</div>"
+        return f"<div style='font-size:var(--fs-texte);line-height:1.5'><div style='color:var(--bc-tapis-700);font-weight:600;white-space:nowrap'>{SIEGE[siege]} · {d['hcp'][siege]} H{don}</div>{lignes}</div>"
     v = d.get("vul", "Personne")
     c_ns = ROUGE_VUL if v in ("N-S", "Tous") else VERT; c_eo = ROUGE_VUL if v in ("E-O", "Tous") else VERT
-    case = lambda t, c: f"<div style='background:{c};color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center'>{t}</div>"
-    rose = (f"<div style='display:grid;grid-template:repeat(3,30px)/repeat(3,30px);border:1px solid #1d2430;width:92px'>"
+    case = lambda t, c: f"<div style='background:{c};color:var(--bc-blanc);font-weight:700;display:flex;align-items:center;justify-content:center'>{t}</div>"
+    rose = (f"<div style='display:grid;grid-template:repeat(3,30px)/repeat(3,30px);border:1px solid var(--bc-tapis-900);width:92px'>"
             f"<div></div>{case('N', c_ns)}<div></div>{case('O', c_eo)}<div></div>{case('E', c_eo)}<div></div>{case('S', c_ns)}<div></div></div>")
     rond = lambda style: f"<span style='display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:8px;{style}'></span>"
-    legende = "<div style='font-size:var(--fs-liste);color:#3f4651;line-height:1.9;white-space:nowrap'><div style='font-weight:700'>Entame</div>"
+    legende = "<div style='font-size:var(--fs-liste);color:var(--bc-tapis-800);line-height:1.9;white-space:nowrap'><div style='font-weight:700'>Entame</div>"
     if d.get("tables"):
         legende += (f"<div>{rond(f'border:1.3px solid {ENCRE}')}jouée à une table</div>"
-                    f"<div>{rond(f'border:1.3px solid {ENCRE};box-shadow:0 0 0 2px #fff,0 0 0 3.3px {ENCRE}')}jouée à plusieurs tables</div>")
+                    f"<div>{rond(f'border:1.3px solid {ENCRE};box-shadow:0 0 0 2px var(--bc-blanc),0 0 0 3.3px {ENCRE}')}jouée à plusieurs tables</div>")
     legende += f"<div>{rond('background:rgba(59,66,79,.28)')}recommandée</div></div>"
-    grille = (f"<div style='display:grid;grid-template-columns:150px 100px minmax(150px,auto) auto;align-items:center;gap:6px 10px'>"
+    grille = (f"<div style='display:grid;grid-template-columns:minmax(min-content,150px) 96px minmax(min-content,150px) 0;"
+              f"align-items:center;gap:6px 8px'>"
               f"<div></div><div style='grid-column:2/4'>{main('N')}</div><div></div>"
               f"<div style='justify-self:end'>{main('O')}</div><div style='justify-self:center'>{rose}</div><div>{main('E')}</div><div></div>"
-              f"<div></div><div style='grid-column:2/4'>{main('S')}</div>"
-              f"<div style='align-self:end;padding-left:14px'>{legende}</div></div>")
-    return grille                                          # la légende à droite de Sud, comme le PDF
+              f"<div></div><div style='grid-column:2/4'>{main('S')}</div><div></div></div>")
+    return (f"<div style='display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 20px;max-width:100%;overflow-x:auto'>{grille}{legende}</div>")   # la légende en
+                                                           # bas à droite, comme le PDF ; dessous quand la place manque (texte grand)
 
 
 def colonne_avis_html(qui, texte):
@@ -1745,7 +1754,7 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
                 "padding:6px 10px'>Le donneur ou la vulnérabilité de cette donne ont changé depuis l'analyse de l'expert : "
                 "<b>à revoir</b>. Ses enchères et ses conseils peuvent ne plus convenir.</div>", sanitize=False).classes("w-full")
     tour = moi.tour_de(data, d["n"]) if data else ""
-    if tour: html(tour, "color:#555b66")
+    if tour: html(tour, "color:var(--bc-tapis-700)")
     ui.html(diagramme_html(d, a), sanitize=False).classes("mt-2")
     if d.get("tables"):                                     # les résultats, ouverts comme dans le PDF (l'utilisateur, 2026-11-17)
         titre_section("Résultats à la table")
@@ -1760,7 +1769,7 @@ def page_analyse(d, a, repli, version, data=None, c=None, replis=None, retenir=l
     titre_section("Enchères recommandées")
     notes = a.get("notes", "")
     expert = not (a.get("auto") or version == "Standard")
-    with ui.row().classes("w-full no-wrap items-start gap-6"):
+    with ui.row().classes("w-full items-start gap-6 encheres-reco"):   # les notes sous la grille quand la place manque
         if expert and a.get("enc_coach") and a["enc_coach"] != a["enc"]:   # le coach enchérit autrement : ses enchères aussi
             from build_pdf import AVIS
             ui.html(f"<div><div style='color:{ENCRE};font-weight:700;white-space:nowrap'>{CASQUETTE_SVG} Le coach</div>"   # le coach
@@ -1808,9 +1817,9 @@ def pensee_html(t, ouvert=True):
     if t.get("plan"):
         h += f"<div style='font-size:var(--fs-texte);margin-top:4px'><b>Son plan :</b> {rouge(t['plan'])}</div>"
     if t["croyance"]:
-        h += ("<div style='font-size:var(--fs-texte);color:#3f4651;margin-top:4px'><b>Ce qu'il croit :</b>"
+        h += ("<div style='font-size:var(--fs-texte);color:var(--bc-tapis-800);margin-top:4px'><b>Ce qu'il croit :</b>"
               + "".join(f"<div>{rouge(x)}</div>" for x in t["croyance"]) + "</div>")
-    return f"<div style='background:#e6efe9;border-left:3px solid #1f5f3a;padding:6px 8px;border-radius:4px'>{h}</div>"
+    return f"<div style='background:var(--bc-trefle-100);border-left:3px solid var(--bc-trefle-800);padding:6px 8px;border-radius:4px'>{h}</div>"
 
 
 def encheres_groupe_html(d, xs):
@@ -1836,7 +1845,7 @@ def encheres_html(d, x):
     titre = f"Table {x.get('table', '')} · {x.get('nom_ns') or x.get('paire_ns', '')} – {x.get('nom_eo') or x.get('paire_eo', '')}"
     fin = f"{rouge(x.get('contrat', ''))} {SIEGE.get(x.get('declarant'), '')} {x.get('resultat', '')}" + \
           (f", entame {rouge(x['entame'])}" if x.get("entame") else "")
-    avis = "" if x.get("encheres_ok", True) else f"<div style='color:#c0141c'>{x.get('encheres_msg', '')}</div>"
+    avis = "" if x.get("encheres_ok", True) else f"<div style='color:var(--bc-coeur-600)'>{x.get('encheres_msg', '')}</div>"
     return (f"<div style='font-size:var(--fs-texte)'><div style='font-weight:600'>{titre}</div>"
             f"<table style='border-collapse:collapse;margin:2px 0'><tr>{tete}</tr>{corps}</table><div>{fin}</div>{avis}</div>")
 
@@ -1844,7 +1853,7 @@ def encheres_html(d, x):
 @ui.page("/")
 def page():
     ui.colors(primary="#1f6b45")
-    ui.add_css("body, .q-layout, .q-page, .q-page-container, .q-tab-panels, .q-tab-panel { background: #fff; } "   # une page toute blanche
+    ui.add_css("body, .q-layout, .q-page, .q-page-container, .q-tab-panels, .q-tab-panel { background: var(--bc-blanc); } "   # une page toute blanche
                # l'échelle du texte (palette.TEXTE, l'utilisateur, 2026-11-17) : 16 le texte et les boutons, 14 les listes, la
                # navigation et les bulles, 13 les en-têtes de colonnes et les petites étiquettes ; jamais moins de 13
                "body { font-size: var(--fs-texte); } .q-btn { text-transform: none; } .q-btn .block { font-size: var(--fs-texte); } "
@@ -1873,15 +1882,28 @@ def page():
     if PAGE.get("version"): vue["version"] = PAGE["version"]   # Standard | Expert, dans l'onglet Analyse
     replis = dict(PAGE.get("replis") or {})                # Analyse : « Les … tables » et « Enchères aux tables » ouverts ou non
 
+    def page_vide(icone, titre, texte, actions):
+        """Une page encore vide dit ce qui manque et mène à l'étape suivante d'un clic (l'utilisateur, 2026-11-17) :
+        une icône, un titre, une phrase, un ou deux boutons (le premier plein)."""
+        with ui.column().classes("w-full items-center text-center gap-3 mt-10").style("max-width:560px;margin-left:auto;margin-right:auto"):
+            ui.icon(icone, size="48px").style("color:var(--bc-tapis-400)")
+            ui.label(titre).classes("font-bold").style("font-size:var(--fs-titre)")
+            ui.label(texte).classes("text-base text-gray-700")
+            with ui.row().classes("gap-3 justify-center"):
+                for i, (nom, ic, fn) in enumerate(actions):
+                    ui.button(nom, icon=ic, on_click=fn).props(("unelevated" if i == 0 else "outline") + " no-caps")
+
+    def sans_seance():
+        page_vide("style", "Aucune séance ouverte",
+                  "Importez un tournoi de Bridgemate, créez des donnes d'entraînement, ou rouvrez une séance déjà faite.",
+                  [("Créer une séance", "add", lambda: (onglets.set_value(o_fichier), voir_page("Fichier", "nouveau"))),
+                   ("Ouvrir une séance", "folder_open", lambda: (onglets.set_value(o_fichier), voir_page("Fichier", "ouvrir")))])
+
     @ui.refreshable
     def vue_seance():
         c = choix["chemin"]; data = lire_seance(c)
         if not data:
-            with ui.column().classes("w-full max-w-xl mx-auto"):
-                ui.label("Aucune séance ouverte.").classes("text-base")
-                ui.label("Fichier, Ouvrir une séance pour en ouvrir une ; Fichier, Nouveau pour en créer une : depuis un tournoi "
-                         "Bridgemate, un fichier PBN, ou des donnes d'entraînement.").classes("text-base text-gray-700")
-            return
+            sans_seance(); return
         if vue["entree"] not in dict(entrees_de(data)): vue["entree"] = "seance"
         with ui.column().classes("w-full gap-3 min-w-0"):
             e = vue["entree"]
@@ -1924,7 +1946,9 @@ def page():
         versions = [v for v, a in (("Standard", std), ("Expert", exp)) if a and (a.get("donnes") or {}).get(n, {}).get("enc")]
         if not versions:
             titre_donne(d)
-            ui.label("Pas encore d'analyse : « Analyse du coach », puis « Lancer l'analyse ».").classes("text-base text-gray-700"); return
+            page_vide("insights", "Pas encore d'analyse",
+                      "Le coach analyse toute la séance en quelques minutes : les enchères qu'il recommande, l'entame, le plan de jeu.",
+                      [("Lancer l'analyse", "play_arrow", lambda: (aller("standard"), demarrer()))]); return
         if vue.get("version") not in versions: vue["version"] = "Expert" if "Expert" in versions else versions[0]
         a = (exp if vue["version"] == "Expert" else std)["donnes"][n]
         if vue["version"] == "Expert":                    # le conseil du coach avant l'avis de l'expert (même contrat)
@@ -1960,7 +1984,7 @@ def page():
         dans la bulle."""
         with ui.button(on_click=lambda: demander_expert(c, d, fin_, analyse=analyse)) \
                 .props("outline no-caps" + ("" if pleine else " dense")).classes("w-full text-base" if pleine else "px-2") as b:
-            ui.html(f"<span style='color:#1f5f3a;font-size:{18 if pleine else 20}px"   # le vert de l'expert (build_pdf.AVIS)
+            ui.html(f"<span style='color:var(--bc-trefle-800);font-size:{18 if pleine else 20}px"   # le vert de l'expert (build_pdf.AVIS)
                     f"{';margin-right:6px' if pleine else ''}'>✦</span>" + ("Demander à l'expert" if pleine else ""), sanitize=False)
         b.tooltip(("" if pleine else "Demander à l'expert : ") + "une question sur cette donne, ce que vous voyez"
                   + ("" if fin_ else ", sans les mains cachées"))
@@ -2036,7 +2060,7 @@ def page():
         et le par (le nom de la donne, son donneur et sa vulnérabilité sont dans le titre de la page, titre_donne). Renvoie la colonne, à remplir."""
         col = ui.column().classes("gap-3 p-4 overflow-y-auto").style(
             f"position:fixed;top:var(--haut-panneau, {HAUTEUR_BARRE}px);right:0;bottom:0;width:{LARGEUR_PANNEAU}px;background:{GRIS_BARRE};"
-            "border-left:1px solid #dcdcd8;z-index:1;overflow-x:hidden")
+            "border-left:1px solid var(--bc-tapis-200);z-index:1;overflow-x:hidden")
         if d is not None:
             with col:                                      # « Donne N », le donneur, la vulnérabilité et le thème sont dans le
                 with ui.row().classes("w-full justify-center"):   # titre de la page (titre_donne), comme dans Jouer
@@ -2054,11 +2078,14 @@ def page():
             ui.button("Retirer du Brouillon", icon="remove_shopping_cart", on_click=lambda: brouillon_retirer(c, d["n"])) \
                 .props("outline no-caps color=grey-8").classes("w-full")
         elif brouillon.numero_de(c, d["n"]):
-            ui.button("Dans le Brouillon", icon="check", on_click=lambda: brouillon_retirer(c, d["n"])) \
-                .props("unelevated no-caps color=positive").classes("w-full").tooltip("Un clic l'en retire")
+            # discret : une case cochée, pas le bouton le plus voyant de la page (l'utilisateur, 2026-11-17)
+            ui.button("Dans le Brouillon", icon="check_circle", on_click=lambda: brouillon_retirer(c, d["n"])) \
+                .props("flat dense no-caps").classes("w-full").style("color:var(--bc-trefle-700);background:var(--bc-trefle-50)") \
+                .tooltip("Un clic l'en retire")
         else:
             ui.button("Ajouter au Brouillon", icon="add_shopping_cart", on_click=lambda: brouillon_ajouter(c, d["n"])) \
-                .props("outline no-caps").classes("w-full").tooltip("Le Brouillon prépare un cours : Fichier, Ouvrir une séance")
+                .props("flat dense no-caps").classes("w-full").style("color:var(--bc-tapis-700)") \
+                .tooltip("Le Brouillon prépare un cours : Fichier, Ouvrir une séance")
 
     def brouillon_change():
         """Après un ajout ou un retrait : le compteur de la barre du haut, et les pages de la donne."""
@@ -3012,15 +3039,15 @@ def page():
         """Dans la barre de droite, à la fin des enchères : la question, les choix en grandes cartes ; puis la réponse."""
         vu = jeu.get("quiz_revele"); pris = jeu.get("quiz_choix")
         with ui.element("div").classes("w-full rounded-xl p-3").style(
-                "background:var(--bc-highlight-bg-subtle,#fff8dc);border:1px solid var(--bc-highlight-border-subtle,#f2d675)"):
+                "background:var(--bc-highlight-bg-subtle,var(--bc-jaune-50));border:1px solid var(--bc-highlight-border-subtle,var(--bc-jaune-200))"):
             ui.html(f"<div style='font-size:18px;font-weight:700;line-height:1.35'>{rouge(qz['question'])}</div>", sanitize=False)
             with ui.row().classes("gap-2 mt-3 no-wrap"):
                 for x in qz["choix"]:
-                    c_ = x["carte"]; bord = "#2563eb" if c_ == pris else "#d1d5db"
-                    fond = ("#dcfce7" if x["bonne"] else "#fff") if vu else ("#eff6ff" if c_ == pris else "#fff")
-                    if vu and x["bonne"]: bord = "#1d7a35"
+                    c_ = x["carte"]; bord = "var(--bc-pique-600)" if c_ == pris else "var(--bc-tapis-200)"
+                    fond = ("var(--bc-trefle-100)" if x["bonne"] else "var(--bc-blanc)") if vu else ("var(--bc-pique-50)" if c_ == pris else "var(--bc-blanc)")
+                    if vu and x["bonne"]: bord = "var(--bc-trefle-600)"
                     ui.button(on_click=lambda c_=c_: quiz_choisir(c_)).props("flat no-caps").style(
-                        f"background:{fond};border:2px solid {bord};border-radius:10px;min-width:58px;padding:6px 4px")                         .add_slot("default", f"<div style='font-size:24px;line-height:1.1;color:{'#c0141c' if c_[0] in '♥♦' else '#2a2620'}'>"
+                        f"background:{fond};border:2px solid {bord};border-radius:10px;min-width:58px;padding:6px 4px")                         .add_slot("default", f"<div style='font-size:24px;line-height:1.1;color:{'var(--bc-coeur-600)' if c_[0] in '♥♦' else 'var(--bc-tapis-900)'}'>"
                                              f"{c_[0]}<br/>{c_[1:].replace('X', '10')}</div>")
             if not vu:
                 ui.label("La classe répond ; un clic marque sa réponse.").classes("text-base text-gray-700 mt-2")
@@ -3033,7 +3060,7 @@ def page():
                     + (f"<br/>{rouge(qz['lecture'])}" if qz.get("lecture") else "") + "</div>", sanitize=False)
             lignes = [f"{rouge(x['carte'])} : {quiz.texte_levees(qz, x)}" for x in qz["choix"] if quiz.texte_levees(qz, x)]
             if lignes or qz.get("apres_coup"):
-                ui.html("<div style='font-size:16px;margin-top:8px;color:#374151'><b>Après coup</b> (les quatre mains vues), "
+                ui.html("<div style='font-size:16px;margin-top:8px;color:var(--bc-tapis-800)'><b>Après coup</b> (les quatre mains vues), "
                         "levées de la défense :<br/>" + " · ".join(lignes)
                         + (f"<br/>{rouge(qz['apres_coup'])}" if qz.get("apres_coup") else "") + "</div>", sanitize=False)
             ui.label("▶ : l'entame est jouée, la démonstration continue.").classes("text-base text-gray-700 mt-2")
@@ -3282,7 +3309,7 @@ def page():
                 h = (f"<div data-c='' class='carte{' r' if cc in '♥♦' else ''}{' gagnante' if s_ == g else ''}"
                      f"{f' premiere p-{ou}' if s_ == premier else ''}' style='margin:0'>{face(r)}<br/>{cc}</div>") if cc else ""
                 return (f"<div style='display:flex;flex-direction:column;align-items:center;gap:4px'>"
-                        f"<div style='font-size:var(--fs-texte);color:#4a4f57'>{nom(s_)}</div>{h}</div>")
+                        f"<div style='font-size:var(--fs-texte);color:var(--bc-tapis-800)'>{nom(s_)}</div>{h}</div>")
             ui.label("Le dernier pli").classes("text-lg font-bold")
             ui.html("<div style='display:grid;grid-template-columns:repeat(3,auto);gap:10px 18px;align-items:center;justify-items:center'>"
                     f"<div></div>{case(places[0], 'haut')}<div></div>"
@@ -3327,7 +3354,7 @@ def page():
                 if pj:                                     # les noms sont près des mains
                     if pj.get("tour"): ui.html(f"<div style='font-size:var(--fs-titre)'>Tour <b>{pj['tour']}</b></div>", sanitize=False)
                 else:
-                    ui.html(f"<div style='font-size:var(--fs-titre);color:#6b6b6b'>{joueur_jouer()} n'a pas joué cette donne</div>", sanitize=False)
+                    ui.html(f"<div style='font-size:var(--fs-titre);color:var(--bc-tapis-600)'>{joueur_jouer()} n'a pas joué cette donne</div>", sanitize=False)
             if extra:
                 with ui.row().classes("items-center gap-3 no-wrap"):   # Démo : le double mort, sur la même ligne
                     extra()                          # Démo : le double mort, au-dessus de la table
@@ -3336,7 +3363,7 @@ def page():
     def vue_jouer():
         c = choix["chemin"]; data = lire_seance(c)
         if not data:
-            ui.label("Aucune séance ouverte : Fichier, Ouvrir une séance").classes("text-base"); return
+            sans_seance(); return
         es = entrees_de(data) if sur_jouer() else []
         if not es: return
         e = entree_effective(data)
@@ -3386,8 +3413,18 @@ def page():
                         if premiere is not None:
                             ui.button(f"Aller à la première donne (donne {premiere})", icon="arrow_forward",
                                       on_click=lambda n=premiere: aller(f"d{n}")).props("unelevated no-caps").classes("text-base mt-1")
-            ui.radio({k: v for k, v in places_.items() if k != cle1}, value=place_jouer() if place_jouer() != cle1 else None,
-                     on_change=changer).classes("text-base")
+            # « Toujours Nord / Sud / Est / Ouest » : un seul choix, puis la place (l'utilisateur, 2026-11-17 : dix choix, c'était trop)
+            autres = {k: v for k, v in places_.items() if k != cle1 and k not in jouer.ROT}
+            autres = dict(list(autres.items())[:-1] + [("fixe", "Toujours la même place")] + list(autres.items())[-1:])
+            p_ = place_jouer()
+            def changer_autre(ev):
+                if ev.value == "fixe": ev = type("E", (), {"value": lire_etat().get("siege_fixe") or "S"})()
+                changer(ev)
+            ui.radio(autres, value="fixe" if p_ in jouer.ROT else (p_ if p_ != cle1 else None), on_change=changer_autre).classes("text-base")
+            if p_ in jouer.ROT:
+                with ui.row().classes("items-center gap-3 ml-8"):
+                    ui.toggle({x: SIEGE[x] for x in "NESO"}, value=p_,
+                              on_change=lambda ev: (ecrire_etat(siege_fixe=ev.value), changer(ev))).props("no-caps")
             ui.label("Quand l'autre camp gagne le contrat, vous jouez la carte en défense : les robots tiennent le déclarant, "
                      "son mort et votre partenaire.").classes("text-base text-gray-700")
             return
@@ -3481,7 +3518,7 @@ def page():
                                 f"Le coach dirait <b>{rouge(jeu['indice']['enchere'])}</b>"
                                 f"<span class='bulle'>{rouge(jeu['indice']['texte'])}</span></div>", sanitize=False)
                     if jeu.get("note"):
-                        ui.html(f"<div style='font-size:var(--fs-texte);color:#8a5a00'>{rouge(jeu['note'])}</div>", sanitize=False)
+                        ui.html(f"<div style='font-size:var(--fs-texte);color:var(--bc-jaune-700)'>{rouge(jeu['note'])}</div>", sanitize=False)
                     if jeu.get("clavier"):                      # un chiffre tapé au clavier : la couleur est attendue
                         ui.label(f"Au clavier : {jeu['clavier']}… puis T, K, C, P ou S (Échap pour effacer)").classes("text-base text-primary")
                     else:
@@ -3580,13 +3617,13 @@ def page():
                 ui.label(f"{p.contrat} par {SIEGE[p.decl]} · carte {k + 1} sur {len(cartes)} · pli {k // 4 + 1}").classes("text-base font-bold")
                 if k == len(cartes) - 1 and resume_de(d, p):  # la fin du film : le résumé de la donne
                     with ui.element("div").classes("w-full").style(
-                            "background:#f6f8fb;border:1px solid #dfe5ea;border-radius:6px;padding:8px 10px"):
+                            "background:var(--bc-pique-50);border:1px solid var(--bc-pique-100);border-radius:6px;padding:8px 10px"):
                         ui.label("Résumé de la donne").classes("text-base font-bold")
                         for ligne in resume_de(d, p):
                             ui.html(f"<div style='font-size:var(--fs-texte);margin-top:4px'>{rouge(ligne)}</div>", sanitize=False)
                 f_ = jeu.get("faute")                           # la carte qui a coûté la levée : le dire, et ce qui la gardait
                 if f_ and f_[0] is p and f_[1] == k:
-                    ui.html(f"<div style='font-size:16px;background:#fdecea;border-left:3px solid #c62828;padding:6px 8px;"
+                    ui.html(f"<div style='font-size:16px;background:var(--bc-coeur-100);border-left:3px solid var(--bc-coeur-600);padding:6px 8px;"
                             f"border-radius:4px'>Ici, <b>{rouge(carte.carte_fr(*cartes[k]))}</b> a coûté une levée"
                             + (f" : <b>{rouge(f_[2])}</b> la gardait." if f_[2] else ".") + "</div>", sanitize=False).classes("w-full")
                 z = next((z for z in p.pensees if z["n"] == k), None)
@@ -3615,7 +3652,7 @@ def page():
         lignes = []
         nom_contrat = lambda texte: re.sub(r" ([NESO])$", lambda m: " " + SIEGE[m[1]], texte)
         for x in r["lignes"]:
-            m = x["marge"]; res = "" if x["levees"] is None else ("=" if m == 0 else f"+{m}" if m > 0 else f"<span style='color:#c0141c'>−{-m}</span>")
+            m = x["marge"]; res = "" if x["levees"] is None else ("=" if m == 0 else f"+{m}" if m > 0 else f"<span style='color:var(--bc-coeur-600)'>−{-m}</span>")
             i = "" if x["imp"] is None else ("0" if x["imp"] == 0 else f"{x['imp']:+d}".replace("-", "−"))
             lignes.append(f"<tr><td style='padding:2px 12px;font-weight:600'>{x['nom']}</td><td style='padding:2px 12px'>{rouge(nom_contrat(x['texte']))}</td>"
                           f"<td style='padding:2px 12px;text-align:center'>{res}</td><td style='padding:2px 12px;text-align:right'>{i}</td></tr>")
@@ -3817,9 +3854,16 @@ def page():
     sauve = {"fait": "", "faute": ""}                     # Réglages, Sauvegarder mes séances
     a_importer = {"chemin": None, "prop": None, "titre": "", "nom": "", "nom_touche": False, "lecture": False, "faute": ""}
 
+    vue_haut = {"cle": None}
+
     def retenir_page():
-        """La page ouverte (onglet, entrée de la barre, version de l'analyse, page de l'aide) : rouverte au prochain lancement."""
+        """La page ouverte (onglet, entrée de la barre, version de l'analyse, page de l'aide) : rouverte au prochain lancement.
+        Une autre page s'ouvre en haut (l'utilisateur, 2026-11-17 : Jouer s'ouvrait défilé, le haut de la table caché)."""
         o = onglets.value; nom = o if isinstance(o, str) else o.props.get("name", "Donnes")
+        cle_ = (nom, vue.get("entree"), vue_aide["k"], vue_page["Fichier"], vue_page["Rapports"], vue_page["Réglages"], vue_page["Système"])
+        if vue_haut["cle"] is not None and cle_ != vue_haut["cle"]:
+            ui.run_javascript("window.scrollTo(0, 0)")
+        vue_haut["cle"] = cle_
         ecrire_etat(page={"onglet": nom, "entree": vue.get("entree"), "version": vue.get("version"), "aide": vue_aide["k"],
                           "fichier": vue_page["Fichier"], "rapports": vue_page["Rapports"], "reglages": vue_page["Réglages"], "systeme": vue_page["Système"],
                           "nouveau": facon["k"], "replis": replis})
@@ -4119,7 +4163,7 @@ def page():
             badge_brouillon()
             with ui.button(on_click=lambda: ouvrir_aide()).props("flat no-caps dense").classes("px-3") as aide:   # l'aide de la page ouverte
                 with ui.row().classes("items-center gap-1 no-wrap"):   # une icône de couleur : l'aide se voit (l'utilisateur, 2026-11-12)
-                    ui.icon("help", size="22px").style("color:#1976d2")
+                    ui.icon("help", size="22px").style("color:var(--bc-pique-600)")
                     ui.label("Aide")
             onglets.on_value_change(lambda e: (aide.classes(add="bg-green-50 font-bold") if e.value in (o_aide, "Aide")
                                                else aide.classes(remove="bg-green-50 font-bold"), montrer_barre(), barre_seance.refresh(),
@@ -4260,11 +4304,13 @@ def page():
                 @ui.refreshable
                 def resultats():
                     c = choix["chemin"]
-                    if not c: ui.label("Aucune séance ouverte.").classes("text-base"); return
+                    if not c: sans_seance(); return
                     prets = rapports_de(c)
                     ui.label(f"Rapports de la séance du {infos_seance(c)[0]}").classes("font-bold titre-page")
                     if not prets:
-                        ui.label("Pas encore de rapport : « Créer les rapports », dans la barre de gauche.").classes("text-base text-gray-700"); return
+                        page_vide("picture_as_pdf", "Pas encore de rapport",
+                                  "Les rapports PDF de la séance : chaque donne analysée, à lire, imprimer ou envoyer.",
+                                  [("Créer les rapports", "add", lambda: voir_page("Rapports", "creer"))]); return
                     # une liste comme celle d'Ouvrir une séance (l'Explorateur, vue Détails) : un clic ouvre le PDF (2026-11-17)
                     colonnes = "20px minmax(0, 1fr) minmax(0, 1.2fr) 150px"
                     with ui.column().classes("w-full gap-0").style("max-width:980px"):
@@ -4355,8 +4401,8 @@ def page():
             with ui.tab_panel(o_reglages).classes("px-0 pt-0 gap-5 max-w-xl"):
               with ui.column().classes("w-full gap-3") as pages_ui["affichage"]:
                 titre_page("Taille du texte", "taille")
-                ui.label("Agrandit toute la fenêtre : le texte, les cartes et les tableaux. « Grande » ou « Très grande » "
-                         "pour un grand écran, une télévision en cours, ou si vous voyez moins bien. Le choix est gardé.") \
+                ui.label("Toute la fenêtre change de taille : le texte, les cartes et les tableaux. « Compacte » pour un petit "
+                         "écran ; « Grande » pour une télévision en cours, ou si vous voyez moins bien. Le choix est gardé.") \
                     .classes("text-base text-gray-700")
 
                 def changer_taille(z):
@@ -4465,7 +4511,7 @@ def page():
                 ui.button("Préremplir avec les choix standard (SEF 2024)", icon="restart_alt",
                           on_click=lambda: remettre_fiche_d.open()).props("outline no-caps").classes("text-base")
                 with ui.row().classes("items-center gap-2"):
-                    ui.label("à vérifier").classes("text-base").style("color:#8a5a00")
+                    ui.label("à vérifier").classes("text-base").style("color:var(--bc-jaune-700)")
                     ui.label(": Bridge Coach n'en est pas sûr, ou la carte FFB SEF le joue autrement ;").classes("text-base text-gray-700")
                     ui.label("changé").classes("text-base text-primary font-bold")
                     ui.label(": votre paire joue autrement que Bridge Coach.").classes("text-base text-gray-700")
@@ -4475,7 +4521,7 @@ def page():
                     « Revenir à Bridge Coach »."""
                     cle_ = it["cle"]
                     val_, _ = fiche_conventions.valeur(cle_, fiche_)
-                    with ui.row().classes("w-full items-start no-wrap gap-3 py-1").style("border-bottom:1px solid #eceff1"):
+                    with ui.row().classes("w-full items-start no-wrap gap-3 py-1").style("border-bottom:1px solid var(--bc-tapis-100)"):
                         with ui.column().classes("gap-0 shrink-0").style("width:240px"):
                             ui.html(rouge(html_.escape(titre or it["titre"])), sanitize=False).classes("text-base font-bold pt-2")
                             if it["desc"]:
@@ -4513,7 +4559,7 @@ def page():
                                 zone = ui.textarea(value=val_).props(f"outlined dense rows={max(1, -(-len(val_) // 38))}") \
                                     .classes("w-full text-base")
                             with ui.row().classes("items-center gap-2"):
-                                av = ui.label("à vérifier").classes("text-base").style("color:#8a5a00") \
+                                av = ui.label("à vérifier").classes("text-base").style("color:var(--bc-jaune-700)") \
                                     .tooltip(fiche_conventions.POURQUOI.get(it["incertain"], ""))
                                 ch = ui.label("changé").classes("text-base text-primary font-bold") \
                                     .tooltip("Bridge Coach : " + (fiche_conventions.texte(cle_, defaut=True) or
@@ -4574,14 +4620,14 @@ def page():
                 ligne_fiche(fiche_conventions.ITEMS["systeme"], lambda: None, "Méthode de base")
                 # d'abord la feuille de prévisions de la FFB, dépliée : ses lignes, rangées comme elle (l'utilisateur, 2026-11-14)
                 for partie_, groupes_ in fiche_conventions.FEUILLE:
-                    ui.label(partie_.upper()).classes("text-xl font-bold mt-6").style("color:#c0141c")
+                    ui.label(partie_.upper()).classes("text-xl font-bold mt-6").style("color:var(--bc-coeur-600)")
                     for sous_t, cles_ in groupes_:
                         if sous_t:
                             ui.html(rouge(html_.escape(sous_t)), sanitize=False).classes("text-lg font-bold mt-3")
                         for c_ in cles_:
                             ligne_fiche(fiche_conventions.ITEMS[c_], lambda: None, fiche_conventions.titre_feuille(c_))
                 # puis le reste de la carte FFB SEF, replié : ce qu'il faut de plus pour la carte officielle
-                ui.label("LE DÉTAIL DE LA CARTE FFB SEF").classes("text-xl font-bold mt-8").style("color:#c0141c")
+                ui.label("LE DÉTAIL DE LA CARTE FFB SEF").classes("text-xl font-bold mt-8").style("color:var(--bc-coeur-600)")
                 ui.label("Ce que la carte officielle imprime en plus, déjà rempli comme le joue Bridge Coach ; ce que vous "
                          "avez choisi plus haut y est repris.").classes("text-base text-gray-700")
                 for partie_, nom_partie in fiche_conventions.PARTIES:      # rangé comme sur la carte FFB
@@ -4644,7 +4690,7 @@ def page():
                          "vous faisiez, ce que vous attendiez et ce qui s'est passé.", GITHUB + "/issues/new", "bug_report"),
                         ("Proposer une idée, poser une question, discuter", "Une amélioration, une façon de faire, une question "
                          "sur le bridge ou sur le programme : les discussions sont ouvertes à tous.", GITHUB + "/discussions", "forum")):
-                    with ui.row().classes("w-full items-start gap-3 no-wrap p-3").style("border:2px solid #e3e7ea;border-radius:10px"):
+                    with ui.row().classes("w-full items-start gap-3 no-wrap p-3").style("border:2px solid var(--bc-pique-100);border-radius:10px"):
                         ui.icon(icone_, size="26px").classes("text-primary")
                         with ui.column().classes("gap-1 grow"):
                             ui.label(titre_).classes("text-base font-bold")
@@ -4724,8 +4770,8 @@ def page():
                         for k, titre, sous, icone in FACONS:
                             choisi = facon["k"] == k
                             with ui.column().classes("gap-1 p-3 cursor-pointer").style(
-                                    "flex:1 1 0;min-width:0;border-radius:10px;" + ("background:#eef4fb;border:2px solid #1976d2" if choisi else
-                                                             "background:#fff;border:2px solid #e3e7ea")) \
+                                    "flex:1 1 0;min-width:0;border-radius:10px;" + ("background:var(--bc-pique-50);border:2px solid var(--bc-pique-600)" if choisi else
+                                                             "background:var(--bc-blanc);border:2px solid var(--bc-pique-100)")) \
                                     .on("click", lambda k=k: choisir_facon(k)):
                                 with ui.row().classes("items-start no-wrap gap-2"):
                                     ui.icon(icone, size="22px").classes("text-primary" if choisi else "text-gray-600")
@@ -4738,7 +4784,7 @@ def page():
                     """Avant d'importer : le titre et le nom du fichier proposés, à changer si on veut (fichiers.proposer)."""
                     x = a_importer
                     if not x["chemin"]: return
-                    with ui.column().classes("w-full gap-2 p-4 mb-4").style("border:2px solid #1976d2;border-radius:10px;background:#f7fafd"):
+                    with ui.column().classes("w-full gap-2 p-4 mb-4").style("border:2px solid var(--bc-pique-600);border-radius:10px;background:var(--bc-pique-50)"):
                         ui.label(f"Importer {os.path.basename(x['chemin'])}").classes("text-lg font-bold break-all")
                         if x["lecture"]:
                             ui.label("Lecture du fichier…").classes("text-base text-gray-700"); return
@@ -4821,7 +4867,7 @@ def page():
                       with ui.row().classes("w-full no-wrap items-start gap-4 mt-2"):
                           for f, titre in donnes.FAMILLES.items():
                               with ui.column().classes("gap-0 grow basis-0 p-3").style(
-                                      "background:#fff;border:1px solid #e3e7ea;border-radius:10px"):
+                                      "background:var(--bc-blanc);border:1px solid var(--bc-pique-100);border-radius:10px"):
                                   ui.label(titre).classes("text-base font-bold mb-1")
                                   caches = []
                                   for n, nom in donnes.NIVEAUX.items():
@@ -4846,7 +4892,7 @@ def page():
                       n = total()
                       resume = " ; ".join(f"{t} {k}" for t, k in choisis)
                       ui.label(f"{n} donne{'s' if n > 1 else ''} : {resume}" if n else "Aucun thème choisi : la séance sera vide.") \
-                          .classes("text-base mt-3 pt-2 w-full").style("border-top:1px solid #e3e7ea")
+                          .classes("text-base mt-3 pt-2 w-full").style("border-top:1px solid var(--bc-pique-100)")
                   liste_themes()
 
                   def bouton_creer():
@@ -4956,11 +5002,14 @@ def page():
             b_ = brouillon.assurer()
             tout = [x for x in seances_bc() if not brouillon.est_brouillon(x)]
             n_b = brouillon.nombre(); ouv_b = brouillon.est_brouillon(choix["chemin"])
-            if not tout: ui.label("Aucune séance pour l'instant : Fichier, Nouveau").classes("text-base text-gray-700")
+            if not tout:
+                with ui.row().classes("items-center gap-3"):
+                    ui.label("Pas encore de séance.").classes("text-base text-gray-700")
+                    ui.button("Créer une séance", icon="add", on_click=lambda: voir_page("Fichier", "nouveau")).props("unelevated no-caps")
             rappel = rappel_sauvegarde(len(tout))
             if rappel:                                     # une sauvegarde vieille d'un mois, ou jamais faite
                 with ui.row().classes("w-full items-center justify-between no-wrap gap-3 px-3 py-2 mb-2") \
-                        .style("background:#fff8e1;border-left:4px solid #e0a800;border-radius:6px"):
+                        .style("background:var(--bc-jaune-50);border-left:4px solid var(--bc-jaune-400);border-radius:6px"):
                     ui.label(rappel).classes("text-base")
                     ui.button("Sauvegarder", icon="save", on_click=lambda: (onglets.set_value(o_reglages), voir_page("Réglages", "sauvegarde"))) \
                         .props("outline").classes("shrink-0")
@@ -5102,7 +5151,7 @@ def page():
             ui.button("Montrer le fichier", icon="folder_open", on_click=lambda: montrer_fichier(question["f"])).props("outline")
             etape_(3, "Collez le message (⌘V sur Mac, Ctrl+V sous Windows ; il est déjà copié), puis envoyez. L'expert vous "
                       "salue et vous demande ce que vous voulez savoir.")
-            ui.html(f"<div style='font-size:var(--fs-texte);color:#555;background:#f3f3f1;padding:6px 10px;border-radius:6px'>"
+            ui.html(f"<div style='font-size:var(--fs-texte);color:var(--bc-tapis-700);background:var(--bc-tapis-100);padding:6px 10px;border-radius:6px'>"
                     f"{html_.escape(question['message'])}</div>", sanitize=False)
             with ui.row().classes("w-full justify-end"):
                 ui.button("Fermer", on_click=lambda: question_d.close()).props("flat")
@@ -5148,14 +5197,14 @@ def page():
         def a_exporter():
             c = choix["chemin"]
             if not c or not c.endswith(rapport.BC):
-                ui.label("Aucune séance ouverte : Fichier, Ouvrir une séance.").classes("text-base"); return
+                sans_seance(); return
             ui.label(f"Séance : {fichiers.titre_de(c)}").classes("text-base font-bold")
             with ui.column().classes("gap-2"):
                 for k, nom, sous in exporter.FORMATS:          # le format : trois cartes, comme Nouveau
                     choisi = exporte["format"] == k
                     with ui.row().classes("items-center gap-3 p-3 cursor-pointer no-wrap w-full").style(
-                            "border-radius:10px;" + ("background:#eef4fb;border:2px solid #1976d2" if choisi else
-                                                     "background:#fff;border:2px solid #e3e7ea")) \
+                            "border-radius:10px;" + ("background:var(--bc-pique-50);border:2px solid var(--bc-pique-600)" if choisi else
+                                                     "background:var(--bc-blanc);border:2px solid var(--bc-pique-100)")) \
                             .on("click", lambda k=k: (exporte.update(format=k, f=None, faute=""), ecrire_etat(export_format=k), a_exporter.refresh())):
                         ui.icon("radio_button_checked" if choisi else "radio_button_unchecked", size="22px") \
                             .classes("text-primary" if choisi else "text-gray-600")
@@ -5233,7 +5282,7 @@ def page():
         def page_infos():
             c = choix["chemin"]
             if not c or not c.endswith(rapport.BC) or not os.path.isfile(c):
-                ui.label("Aucune séance ouverte : Fichier, Ouvrir une séance.").classes("text-base"); return
+                sans_seance(); return
             try:
                 data = rapport.lire_bc(c)
             except (OSError, ValueError):
@@ -5247,7 +5296,7 @@ def page():
             titre_in.on_value_change(lambda e: b_titre.set_enabled(bool(e.value.strip()) and e.value.strip() != (s.get("titre") or "")))
             prop = None if est_b else fichiers.proposer_pour(c)   # une séance d'avant les titres : titre et nom proposés
             if prop:
-                with ui.column().classes("w-full gap-1 p-3").style("border-radius:10px;background:#eef4fb"):
+                with ui.column().classes("w-full gap-1 p-3").style("border-radius:10px;background:var(--bc-pique-50)"):
                     ui.label("Ce fichier date d'avant les titres. Bridge Coach propose :").classes("text-base")
                     ui.html(f"le titre <b>{html_.escape(prop[0])}</b><br/>et le nom <b>{html_.escape(prop[1])}.bc.json</b>",
                             sanitize=False).classes("text-base")
@@ -5312,7 +5361,7 @@ def page():
                         .props("outline color=red").set_enabled(bool(data.get("donnes")))
                 if infos_ui["copie"]:
                     n0, t0 = brouillon.proposer()
-                    with ui.column().classes("w-full gap-2 p-3").style("border:2px solid #1976d2;border-radius:10px;background:#f7fafd"):
+                    with ui.column().classes("w-full gap-2 p-3").style("border:2px solid var(--bc-pique-600);border-radius:10px;background:var(--bc-pique-50)"):
                         ui.label("Une séance avec les donnes du Brouillon et leurs analyses :").classes("text-base")
                         t_in = ui.input("Titre", value=t0).props("outlined").classes("w-full text-base")
                         n_in = ui.input("Nom du fichier", value=n0).props("outlined suffix=.bc.json").classes("w-full text-base")
@@ -5332,7 +5381,7 @@ def page():
                 ui.button("Mettre à la corbeille…", icon="delete", on_click=lambda: demander_corbeille(c)).props("outline color=red")
             if infos_ui["copie"]:
                 n0, t0 = fichiers.proposer_copie(c)
-                with ui.column().classes("w-full gap-2 p-3").style("border:2px solid #1976d2;border-radius:10px;background:#f7fafd"):
+                with ui.column().classes("w-full gap-2 p-3").style("border:2px solid var(--bc-pique-600);border-radius:10px;background:var(--bc-pique-50)"):
                     ui.label("Une copie de la séance, ses analyses comprises (pas ses parties jouées ni ses rapports) :").classes("text-base")
                     t_in = ui.input("Titre de la copie", value=t0).props("outlined").classes("w-full text-base")
                     n_in = ui.input("Nom du fichier", value=n0).props("outlined suffix=.bc.json").classes("w-full text-base")

@@ -359,6 +359,28 @@ ouverture:
       - { main: "R7 AV83 D92 7652", apres: 1T - 1C - 1SA, attendu: passe }
       - { main: "R7 AV83 D92 V652", apres: 1T - 1C - 1SA, attendu: 2SA }
       - { main: "R7 AD83 D92 R652", apres: 1T - 1C - 1SA, attendu: 3SA }
+"1N - 1P - 1SA":
+  # cinq piques et quatre cœurs, manche : 3♥ forcing cherche le fit 5-3 à ♠ ou 4-4 à ♥ avant 3SA (donne 7 du 17/11/2026,
+  # l'expert : 3SA direct avec ♣64 jouait moins bien que 4♠) ; le reste comme « 1N - 1M - 1SA »
+  - 3C:  { si: "P 5+, C 4+, H 13-18", montre: "5+ piques, 4 cœurs, forcing de manche", nature: forcing }
+  - 4W:  { si: "W 6+, H 13-18", montre: "6+ cartes, manche", nature: conclusion }
+  - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
+  - 3W:  { si: "W 6+, H 11-12", montre: "6+ cartes, 11–12 H, invitation", nature: invite }
+  - 2SA: { si: "H 11-12", montre: "11–12 H, invitation", nature: invite }
+  - 2W:  { si: "W 6+, H 6-10", montre: "6+ cartes, 6–10 H, pour jouer", nature: conclusion }
+  - passe: { si: "H 6-10", montre: "6–10 H, pas de manche" }
+  - exemples:
+      - { main: "RV972 ARD2 A9 64", apres: 1K - 1P - 1SA, attendu: 3C }
+      - { main: "RV972 AR2 A9 643", apres: 1K - 1P - 1SA, attendu: 3SA }
+"1N - 1P - 1SA - 3C":
+  - 4C:  { si: "C 4+", montre: "4 cœurs : fit", nature: conclusion }
+  - 3P:  { si: "P 3", montre: "3 piques : l'atout est fixé, forcing", nature: forcing }
+  - 3SA: { si: "", montre: "ni 3 piques ni 4 cœurs", nature: conclusion }
+  - exemples:
+      - { main: "A65 V98 RX86 RD7", apres: 1K - 1P - 1SA - 3C, attendu: 3P }
+      - { main: "A6 V98 RX86 RD75", apres: 1K - 1P - 1SA - 3C, attendu: 3SA }
+"1N - 1P - 1SA - 3C - 3P":
+  - 4P:  { si: "", montre: "la manche à ♠ (les contrôles d'abord si le chelem est possible)", nature: conclusion }
 "1C - 1P - 1SA":
   - 4C:  { si: "C 3+, HLD(C) 13-18", montre: "fit cœur, manche", nature: conclusion }
   - 4P:  { si: "P 6+, H 13-18", montre: "6+ piques, manche", nature: conclusion }

@@ -37,6 +37,10 @@ dans `ffb/` avant de s'y fier.
 ## Redemande de l'ouvreur
 - Deuxième couleur moins chère avec 18+ HL : saut dans cette couleur, forcing **(à confirmer)**.
 
+## Après la redemande à 1SA de l'ouvreur (12–14)
+- 1♣/1♦ – 1♠ – 1SA – 3♥ : cinq piques, quatre cœurs, manche, forcing. L'ouvreur dit 4♥ avec quatre cœurs, 3♠ avec
+  trois piques (l'atout fixé, les contrôles peuvent suivre), sinon 3SA **(à confirmer)**.
+
 ## Redemande en concurrence
 - Après 1x – 1y – (intervention) : 6+ cartes et 16–18 HL, saut dans sa couleur, comme sans intervention **(à confirmer)**.
 
@@ -138,7 +142,9 @@ source FFB dans ce dossier **(à confirmer dans `ffb/`)**.
 - Quand : le fit est établi (les deux partenaires ont nommé la couleur, ou les longueurs montrées font huit cartes,
   comme après un Spoutnik), le camp a 28+ points, et une enchère reste disponible sous la manche.
 - Fit pas encore établi : celui qui a déjà montré 11+ soutient en majeure au palier de 3, forcing, plutôt que de
-  sauter à la manche (1♥ – 2♦ – 2♥ – 3♥). L'autre nomme un contrôle ou conclut.
+  sauter à la manche (1♥ – 2♦ – 2♥ – 3♥). L'autre nomme un contrôle ou conclut. Après un fit différé (1♠ – 2♣ : 13+
+  et quatre piques), le répondant fixe d'abord l'atout (1♠ – 2♣ – 2♦ – 3♠) : un contrôle à ce moment (2♥) se lirait
+  comme la quatrième couleur.
 - Un contrôle : l'as ou la chicane (premier tour), le roi ou le singleton (deuxième tour). Confirmé par le club : on
   nomme les contrôles dès le deuxième tour, sans attendre d'avoir montré les as. La nouvelle couleur montre le
   contrôle, pas une longueur ; elle est forcing.

@@ -187,6 +187,7 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
     certaines) ; le moteur reprend après elles. arret : le siège d'un joueur ; on s'arrête quand c'est à lui de parler,
     et « conseil » dit ce que le système lui ferait dire (le bouton Indice)."""
     imposees = list(imposees or [])
+    _HUMAIN["siege"] = arret                # son partenaire robot enchérit lisiblement pour lui (DIFFERE_PAS_ETABLI)
     mains = {s: Main(donne["mains"][s]) for s in ROT}
     for s, dv in (bruit or {}).items(): mains[s].hcp += dv
     i0 = ROT.index(donne["donneur"])
@@ -269,7 +270,11 @@ SOUTIEN_LENT = True            # fit et chelem possible : soutien forcing au pal
 # partenaire, qui a entendu des carreaux : avant de nommer un contrôle, on fixe l'atout au palier de 3, forcing (soutien
 # lent). Sinon le moteur nommait un contrôle (1♥ – 2♦ – 2SA – 3♦ « fit à ♥, contrôle à ♦ ») qu'aucun partenaire ne
 # lirait ainsi (donne 17 du 12/11/2026, l'utilisateur).
-DIFFERE_PAS_ETABLI = False      # essayé le 2026-11-12 : +15 et -54 IMP sur 2 × 20 000 donnes : éteint
+DIFFERE_PAS_ETABLI = True       # le 2026-11-12 : +15 et -54 IMP, éteint ; remesuré le 2026-11-17 avec src/banc_encheres.py
+# (l'avis de l'expert, donne 5 du 17/11 : 1♠ – 2♣ – 2♦ – 3♠, l'atout avant les contrôles) : +8 et +37 IMP sur 2 × 20 000
+# donnes (124 et 97 séquences changées) : allumé. Un joueur de club lit 2♥ après 1♠ – 2♣ – 2♦ comme la 4e couleur.
+# Le camp du joueur humain de Jouer (arret) le suit de toute façon (son robot partenaire, et son Indice).
+_HUMAIN = {"siege": None}       # le siège du joueur humain pendant un appel d'encherir (arret), sinon None
 # Après son propre soutien lent (fit fixé au palier de 3, forcing), si le partenaire conclut à la manche, on peut encore
 # demander les clés quand le camp a le compte du chelem (SEUIL_CHELEM_FIT) : le soutien lent n'éteint plus la recherche.
 LENT_PUIS_CLES = True
@@ -321,7 +326,8 @@ def chelem(m, s, a, hist, infos, etat):
         t = valeur_fit(m, d, part.L[d]) + part.pts[0] + int(PART_MARGE * (min(part.pts[1], 40) - part.pts[0]))
         mine = [b.enchere[1:] for x, b in hist if x == s]; lui = [b.enchere[1:] for x, b in hist if x == PART[s]]
         moi_i = infos[s]
-        differe = DIFFERE_PAS_ETABLI and d not in mine and any("fit différé" in (b.texte or "") for x, b in hist if x == s)
+        differe = (DIFFERE_PAS_ETABLI or _HUMAIN["siege"] in (s, PART[s])) and d not in mine \
+            and any("fit différé" in (b.texte or "") for x, b in hist if x == s)
         etabli = (d in mine and d in lui) or (FIT_MONTRE and moi_i.L[d] + part.L[d] >= 8 and not differe)
         if SEUIL_CONTROLES and t >= SEUIL_CONTROLES and a.enchere != "passe" and etabli and not lent:
             c = prochain_controle(m, d, dernier, cible)

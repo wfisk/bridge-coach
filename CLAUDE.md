@@ -340,8 +340,8 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         trumps (nature "rois"): partner answers by steps, 6♣ 0, 6♦ 1, 6♥ 2, 6♠ 3 (sef2024.reponse_rois), and the
                         asker bids 7 with every king, else 6 (apres_rois; the Indice says so). LENT_PUIS_CLES: after its own slow raise the engine may
                         still ask for key cards (kept, +13 IMP on 40 000 deals); DIFFERE_PAS_ETABLI (fix the trump suit with 3M
-                        before control bids after a fit différé, as a club partner would read it) is off: neutral to negative
-                        on 2 × 20 000 deals (systems/sef-2024/a-faire.md). The expert's CONSIGNE rule 1 now asks for auctions a
+                        before control bids after a fit différé, as a club partner would read it) is ON since 2026-11-17: +8 / +37 IMP
+                        re-measured with banc_encheres.py (systems/sef-2024/a-faire.md); the human's side in Jouer always follows it (_HUMAIN). The expert's CONSIGNE rule 1 now asks for auctions a
                         club partner reads the same way (agree trumps before controls; a suit bid twice shows length)
                         Benchmark: 6-table random session (seed 2026) vs Claude's analysis —
                         stage 2: 18/24 make, 10/24 par, 4.4 IMP avg (Claude 22, 19, 0.6)
@@ -534,6 +534,10 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         condition syntax (partenaire, adverse, sequence, honneur, tete AR,
                         longueur 4+, atouts 2+); jeu.entame_regle uses it, its old Python code
                         (entame_code) only if the file cannot be read; examples checked as tests
+      banc_encheres.py  bidding bench (2026-11-17): the same random deals bid before / after a change (a flag NOM=valeur, or a
+                        rules-file edit between two runs), each changed auction scored double dummy in IMP for the side that changed:
+                        .venv/bin/python -I -X utf8 src/banc_encheres.py avant.json 20000 11 ; … apres.json 20000 11 FLAG=True ;
+                        … --comparer avant.json apres.json (about 15 s per 20 000 deals)
       essai_encheres.py test bench: python3 -I src/essai_encheres.py <name>.bc.json [deal…]
                         (contract reached, double-dummy, gap to par); rerun after any rule change
       fonts/            DejaVu fonts (macOS has none); build_pdf.py looks here first

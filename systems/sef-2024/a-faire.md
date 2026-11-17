@@ -233,7 +233,7 @@ faible : +17 puis −15 IMP sur deux lots de 20 000 (neutre), bien que le 6♠ d
 ## Fit différé, contrôles et Blackwood (2026-11-12)
 Donne 17 du 12/11 : après 1♥ – 2♦ (fit différé, trois cœurs) – 2SA, le moteur nommait un contrôle (3♦ « fit à ♥,
 contrôle à ♦ ») qu'aucun partenaire de club ne lirait ainsi ; il devrait fixer l'atout (3♥, forcing) d'abord.
-Essayé et éteint (`DIFFERE_PAS_ETABLI`) : un fit montré seulement par un fit différé n'est pas établi, d'où 3♥ forcing
+Remesuré et allumé le 2026-11-17 (`DIFFERE_PAS_ETABLI`, src/banc_encheres.py, après l'avis de l'expert sur la donne 5 du 17/11) : +8 et +37 IMP sur deux lots de 20 000 donnes (124 et 97 séquences changées). Avant cela, essayé et éteint : un fit montré seulement par un fit différé n'est pas établi, d'où 3♥ forcing
 avant les contrôles : +15 puis −54 IMP sur deux lots de 20 000 donnes (environ 110 séquences changées par lot) : neutre
 à négatif, les suites (signature à la manche du partenaire minimum) perdent des chelems. Les enchères recommandées de
 l'expert, elles, doivent rester lisibles : la consigne le demande maintenant (règle 1).
@@ -334,3 +334,10 @@ Quatre corrections essayées, chacune sur deux lots de 20 000 donnes contre la v
 - Donne 20, rejetée : deux faible à 6–7 H seulement non vulnérable (tous vulnérables compris) : −245 / −39 IMP.
   Sans le 2♥, la donne finit à 5♦ par Sud (1♦ – 2♦ – 5♦) : à voir, l'ouvreur fort qui saute à 5♦ sans chercher 3SA.
 Les donnes 15 et 17 (6SA plutôt que 6♥, 3SA plutôt que 5♣) attendent toujours que le moteur connaisse la marque.
+
+## Réponse 5-4 majeur après 1m – 1♠ – 1SA (2026-11-17)
+Donne 7 du 17/11 : E (17 H, 5 piques, 4 cœurs) disait 3SA ; l'expert dit 3♥, forcing, puis 3♠ (O, trois piques), 4♦
+(contrôle) et 4♠. Règles « 1N - 1P - 1SA » (3♥ : 5+ piques, 4 cœurs, 13+ H), « … - 3C » (l'ouvreur : 4♥ avec quatre cœurs,
+3♠ avec trois piques, sinon 3SA) et « … - 3C - 3P » (4♠, les contrôles d'abord quand le chelem est possible).
+Rare : −1 et +16 IMP seule (11 et 5 séquences) ; avec l'atout fixé avant les contrôles, +14 et +53 IMP sur deux lots de
+20 000 donnes (135 et 102 séquences). Gardé.

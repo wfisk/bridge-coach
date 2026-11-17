@@ -3041,14 +3041,14 @@ def page():
         with ui.element("div").classes("w-full rounded-xl p-3").style(
                 "background:var(--bc-highlight-bg-subtle,var(--bc-jaune-50));border:1px solid var(--bc-highlight-border-subtle,var(--bc-jaune-200))"):
             ui.html(f"<div style='font-size:18px;font-weight:700;line-height:1.35'>{rouge(qz['question'])}</div>", sanitize=False)
-            with ui.row().classes("gap-2 mt-3 no-wrap"):
+            with ui.element("div").classes("w-full mt-3").style("display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2)"):   # 4 cartes tiennent
                 for x in qz["choix"]:
                     c_ = x["carte"]; bord = "var(--bc-pique-600)" if c_ == pris else "var(--bc-tapis-200)"
                     fond = ("var(--bc-trefle-100)" if x["bonne"] else "var(--bc-blanc)") if vu else ("var(--bc-pique-50)" if c_ == pris else "var(--bc-blanc)")
                     if vu and x["bonne"]: bord = "var(--bc-trefle-600)"
                     ui.button(on_click=lambda c_=c_: quiz_choisir(c_)).props("flat no-caps").style(
-                        f"background:{fond};border:2px solid {bord};border-radius:10px;min-width:58px;padding:6px 4px")                         .add_slot("default", f"<div style='font-size:24px;line-height:1.1;color:{'var(--bc-coeur-600)' if c_[0] in '♥♦' else 'var(--bc-tapis-900)'}'>"
-                                             f"{c_[0]}<br/>{c_[1:].replace('X', '10')}</div>")
+                        f"background:{fond};border:2px solid {bord};border-radius:10px;min-width:0;padding:6px 2px")                         .add_slot("default", f"<div style='font-size:24px;line-height:1.1;color:{'var(--bc-coeur-600)' if c_[0] in '♥♦' else 'var(--bc-tapis-900)'}'>"
+                                             f"{c_[1:].replace('X', '10')}<br/>{c_[0]}</div>")   # le rang au-dessus, comme sur une carte
             if not vu:
                 ui.label("La classe répond ; un clic marque sa réponse.").classes("text-base text-gray-700 mt-2")
                 ui.button("Montrer la réponse", icon="visibility", on_click=lambda: quiz_reveler(jeu.get("demo")))                     .props("unelevated no-caps").classes("text-base mt-2").set_enabled(not jeu.get("demo_occupe"))
@@ -3214,7 +3214,9 @@ def page():
                         else:
                             eventail(mains_fr(d, x), colonnes=ou in ("gauche", "droite"), cote=ou, grande=x == bas, depart=mains_fr(d, x))
                     table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places, m.seq[:k]), sanitize=False),
-                          tour=None if k >= m.n_encheres else jouer.ROT[(jouer.ROT.index(d["donneur"]) + k) % 4])
+                          tour=None if k >= m.n_encheres else jouer.ROT[(jouer.ROT.index(d["donneur"]) + k) % 4],
+                          ouvert=not attente)              # le quiz : les autres mains de dos, à la place de Jouer (leur nom
+                                                           # juste au-dessus, pas en haut d'une place de main ouverte, 2026-11-17)
                 else:
                     pli = q.pos.pli or (q.plis[-1][0] if q.plis else [])   # un pli fini reste sur la table jusqu'au pas suivant
                     posees = {x: (cc, r_.translate(carte.FR)) for x, cc, r_ in pli}

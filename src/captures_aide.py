@@ -141,13 +141,14 @@ async def c_jouer(c, demo):
     await ouvrir(c, demo, {"onglet": "Jouer", "entree": "d2"}, seance=seance_demo(demo), mode_jouer="jouer",
                  place_jouer="declarant", liste_cachee=False, attente=4)
     await capture(c, "jouer-depart")
-    await cliquer(c, "play_arrow", attente=9)              # ▶ : les robots enchérissent jusqu'à vous
+    await cliquer(c, "Commencer les enchères", attente=9)  # les robots enchérissent jusqu'à vous (plus de ▶ seul, 2026-11-18)
     await capture(c, "jouer-encheres")
 
 
 async def c_demo(c, demo):
     await ouvrir(c, demo, {"onglet": "Jouer", "entree": "d4"}, seance=seance_demo(demo), mode_jouer="demo", attente=4)
-    for _ in range(9):                                     # les enchères, l'entame et quelques cartes
+    await asyncio.sleep(40)                                # les robots calculent la donne d'avance (app.demo_fond)
+    for _ in range(18):                                    # → : un pas (une enchère, une carte) : les enchères et un pli et demi
         await c.js("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true}))")
         await asyncio.sleep(1.2)
     await capture(c, "demo")

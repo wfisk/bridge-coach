@@ -60,6 +60,7 @@
   <dt>Jouer</dt><dd>Rejouer une donne contre les robots, la revoir, ou la montrer en classe.</dd>
   <dt>Analyse</dt><dd>Les conseils du coach, donne par donne, et l'avis de l'expert.</dd>
   <dt>Rapports</dt><dd>Les rapports PDF de la séance.</dd>
+  <dt>Système</dt><dd>Le système que jouent les robots (SEF 2024), et votre fiche de conventions.</dd>
   <dt>Réglages</dt><dd>Votre nom, la taille du texte, la sauvegarde, la mise à jour.</dd>
   <dt>Aide</dt><dd>Ces pages.</dd>
 </dl>
@@ -93,7 +94,13 @@
 </ul>
 
 <h3 id="retrouver">Retrouver une séance</h3>
-<p>Onglet <b>Fichier</b>, <b>Ouvrir une séance</b>. Les séances sont rangées par mois, la plus récente en haut. Le mois de la séance ouverte est déplié ; cliquez un autre mois pour voir ses séances, puis cliquez la séance voulue.</p>
+<p>Onglet <b>Fichier</b>, <b>Ouvrir une séance</b> : toutes vos séances dans un tableau, une ligne par séance, avec son <b>Nom</b>, sa <b>Date</b>, son <b>Type</b> (tournoi, entraînement…), le nombre de <b>Donnes</b>, votre <b>Partenaire</b> et votre <b>Résultat</b>. Cliquez une ligne pour ouvrir la séance.</p>
+<ul>
+  <li>Triées par date, les séances sont groupées par mois (« Novembre 2026 (8) ») ; cliquez un mois pour le replier ou le déplier.</li>
+  <li>Cliquez le titre d'une colonne pour trier par celle-ci ; un second clic inverse l'ordre.</li>
+  <li>La case <b>Chercher une séance</b>, au-dessus, la trouve par un mot du titre, une date (12/11) ou son nom de fichier.</li>
+  <li>Le <b>Brouillon</b> est toujours en première ligne ; la <b>Corbeille</b> est repliée tout en bas.</li>
+</ul>
 <figure><img src="images/ouvrir.png" alt="Fichier, Ouvrir une séance"></figure>
 <p>Le titre de la séance ouverte s'affiche en haut de la fenêtre.</p>
 
@@ -134,7 +141,7 @@
 <p class="intro">L'onglet <b>Donnes</b> montre le tournoi tel qu'il a été joué : les mains, les enchères et le résultat de chaque table, et votre place.</p>
 
 <h3 id="donne">Voir une donne et ses résultats</h3>
-<p>Cliquez une donne dans la liste de gauche. Vous voyez les quatre mains, le donneur et la vulnérabilité, puis le résultat de chaque table, avec ses enchères quand les Bridgemate les ont enregistrées. À droite, le double mort et le par.</p>
+<p>Cliquez une donne dans la liste de gauche. Vous voyez les quatre mains, le donneur et la vulnérabilité, puis le résultat de chaque table, avec ses enchères quand les Bridgemate les ont enregistrées. À droite, l'étui de la donne et le par ; le double mort complet est dans l'onglet <b>Analyse</b>.</p>
 <figure><img src="images/donne.png" alt="Onglet Donnes : une donne et les résultats des tables"></figure>
 <p>Les tables sont rangées du meilleur résultat au moins bon, vu de votre camp. Une ligne verte pâle montre le <b>contrat recommandé</b>, à la place qu'il aurait prise parmi les tables.</p>
 
@@ -144,7 +151,8 @@
 <p>Pour regarder la séance avec les yeux d'un autre joueur, changez <b>Vous êtes</b> dans l'onglet <b>Rapports</b>.</p>
 
 <h3 id="parcours">Votre parcours dans la soirée</h3>
-<p>Quand Bridgemate a enregistré le mouvement (un Mitchell, par exemple, avec une table relais), la page <b>Séance</b>, en haut de la liste de gauche, montre votre parcours : pour chaque tour, la table, les donnes, vos adversaires et votre pourcentage.</p>
+<p>La page <b>Séance</b>, en haut de la liste de gauche de l'onglet <b>Donnes</b>, résume votre soirée : votre résultat (« Vous avec … : 45,8 %, 3e sur 4 paires Nord-Sud »), le classement des paires dans chaque sens, la vôtre en jaune, et la marque.</p>
+<p>Quand Bridgemate a enregistré le mouvement (un Mitchell, par exemple, avec une table relais), elle montre aussi votre parcours : pour chaque tour, la table, les donnes, vos adversaires et votre pourcentage.</p>
 
 <h3 id="marque">Match-points ou IMP</h3>
 <p>La <b>marque</b> vient du fichier importé. Si elle est fausse, changez-la sur la page <b>Séance</b> : les rapports et les analyses la suivent.</p>
@@ -163,7 +171,8 @@
 <p>Cliquez une donne à gauche. Elle se lit de haut en bas, comme sa page du rapport :</p>
 <figure><img src="images/analyse.png" alt="Onglet Analyse : une donne"></figure>
 <ul>
-  <li><b>Résultats à la table</b> : votre rang et le contrat recommandé (cliquez pour déplier toutes les tables) ;</li>
+  <li><b>Résultats à la table</b> : toutes les tables, votre rang en tête et le contrat recommandé à sa place ;</li>
+  <li><b>Enchères aux tables</b> : les enchères de chaque table, quand les Bridgemate les ont enregistrées ; les tables qui ont enchéri de la même façon sont réunies (« Tables 1, 2, 3 ») ;</li>
   <li><b>Enchères recommandées</b>, avec le sens de chaque enchère ;</li>
   <li><b>Plan de jeu</b>, puis <b>Entame et défense</b> : le conseil du coach, sous sa casquette, et l'avis de l'expert sur fond vert quand il y en a un ;</li>
   <li><b>Commentaire</b> sur les contrats joués, puis <b>Cartes vues</b> : ce que donnait la donne, une fois toutes les mains connues.</li>
@@ -243,7 +252,13 @@
 <p>À la fin, la barre de droite compare votre contrat à celui que recommande l'analyse, et votre jeu de la carte au meilleur jeu possible. <b>Voir pourquoi</b> vous montre la carte qui a coûté une levée ; <b>Donne suivante</b> continue.</p>
 
 <h3 id="defendre">Défendre</h3>
-<p>Quand l'autre camp gagne les enchères, vous défendez avec un robot pour partenaire. Si c'est à vous d'entamer, choisissez votre carte. Le mort s'étale sur le côté. Votre partenaire signale comme le prévoit le système : sur votre entame, parité en continuation, préférence en défausse.</p>
+<p>Quand l'autre camp gagne les enchères, vous défendez avec un robot pour partenaire. Si c'est à vous d'entamer, choisissez votre carte. Le mort s'étale sur le côté. Votre partenaire signale comme le prévoit le système (<b>Système</b>, <b>Entames et signaux</b>) :</p>
+<ul>
+  <li><b>Sur votre entame</b>, sa première carte : <b>impaire</b>, il demande de continuer ; <b>paire</b>, il demande de changer, haute (7 ou plus) pour la plus chère des deux autres couleurs, basse pour la moins chère.</li>
+  <li><b>En défausse</b> : la préférence. Il défausse dans une couleur qu'il ne veut pas ; haute pour la plus chère des deux autres, basse pour la moins chère.</li>
+  <li><b>Quand le déclarant joue une couleur</b> : la parité, grosse puis petite avec un nombre pair de cartes.</li>
+  <li>Jamais à l'atout. Il signale seulement entre des cartes qui se valent : un signal ne coûte jamais de levée.</li>
+</ul>
 
 <h3 id="revoir">Revoir une donne jouée</h3>
 <p>Une fois la donne finie, <b>Revoir</b> (en haut à droite, à côté de <b>Jouer</b>) rejoue votre partie carte par carte, les quatre mains visibles, avec ce que pensait chaque robot : pourquoi il a choisi sa carte, et ce qu'il croyait des mains cachées. À la dernière carte, le résumé de la donne. <b>›</b> avance d'une carte (ou la flèche <b>→</b>, ou un clic sur le tapis), <b>‹</b> recule, <b>⏮</b> revient au début ; Maj + <b>→</b> joue tout le pli.</p>

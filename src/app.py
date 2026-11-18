@@ -99,7 +99,7 @@ def lire_ligne(t, ligne):
     m = re.match(r"Donne (\d+) sur (\d+)", ligne)
     if m:
         k, n = int(m[1]), int(m[2])
-        t.fraction = t.part * (k - 1) / n; t.texte = f"{t.mot} {k} sur {n}"
+        t.fraction = t.part * (k - 1) / n; t.texte = f"{t.mot} {k} sur {n}"; t.n_donnes = n
         return
     m = re.match(r"Rapport prêt : (.+)", ligne)
     if m:
@@ -701,9 +701,34 @@ def creation(f):
     return getattr(st, "st_birthtime", st.st_ctime)
 
 
+TEMPS = "temps-de-calcul.txt"                              # dans le dossier des rapports, comme derniere-erreur.txt
+
+
+def noter_temps(quoi, secondes):
+    """Une ligne dans temps-de-calcul.txt : ce qui a pris combien de temps sur cet ordinateur (l'utilisateur, 2026-11-18 :
+    les ordinateurs Windows du club sont bien plus lents ; un membre peut joindre ce fichier). Seulement des durées,
+    jamais une main ni un nom ; les 300 dernières lignes."""
+    try:
+        import platform
+        f_ = os.path.join(rapport.RAPPORTS, TEMPS)
+        os.makedirs(rapport.RAPPORTS, exist_ok=True)
+        lignes = open(f_, encoding="utf-8").read().splitlines() if os.path.exists(f_) else []
+        machine = f"{platform.system()} {platform.release()}, {os.cpu_count() or '?'} cœurs"
+        if not lignes or not lignes[0].startswith("Bridge Coach"):
+            lignes = [f"Bridge Coach {maj.version_locale()} · {machine}"] + lignes
+        else:
+            lignes[0] = f"Bridge Coach {maj.version_locale()} · {machine}"
+        lignes.append(f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} · {quoi} · " + f"{secondes:.1f} s".replace(".", ","))
+        lignes = lignes[:1] + lignes[1:][-300:]
+        with open(f_, "w", encoding="utf-8") as f: f.write("\n".join(lignes) + "\n")
+    except Exception:
+        pass                                               # jamais d'arrêt pour un journal
+
+
 def demarrer_travail(t, args):
     env = dict(os.environ)                                 # -X utf8 : Windows n'écrit pas en UTF-8 par défaut
     opts = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if sys.platform == "win32" else {"start_new_session": True}
+    t.debut = time.monotonic(); t.n_donnes = 0
     t.proc = subprocess.Popen([sys.executable, "-I", "-X", "utf8", "-u"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8",
                               errors="replace", env=env, cwd=rapport.RACINE, **opts)
     threading.Thread(target=suivre, args=(t.proc, t), daemon=True).start()
@@ -1051,6 +1076,9 @@ def suivre(proc, t):
     for ligne in proc.stdout: lire_ligne(t, ligne)
     proc.wait(); fil.join(5)
     texte = "".join(erreurs)
+    if t is D and not proc.returncode and getattr(t, "debut", None):   # créer des donnes d'entraînement : le temps, par donne
+        n = getattr(t, "n_donnes", 0) or 1
+        noter_temps(f"Création de {n} donne{'s' if n > 1 else ''} d'entraînement (par donne)", (time.monotonic() - t.debut) / n)
     if proc.returncode and not t.annule:
         t.erreur = message_erreur(texte)
         os.makedirs(rapport.RAPPORTS, exist_ok=True)
@@ -2419,7 +2447,11 @@ def page():
         while p and not p.fini() and not p.au_joueur() and jeu["partie"] is p:
             jeu["pense"] = p.au_trait(); vue_jouer.refresh()
             pause = 0.4 if len(p.legales()) == 1 else 1.3 if not p.pos.pli else 0.8   # forcée : vite ; une entame : on réfléchit
-            x, _ = await asyncio.gather(run.io_bound(p.carte_robot), asyncio.sleep(pause))
+            def robot(p=p):
+                t0 = time.monotonic(); x_ = p.carte_robot()
+                noter_temps("La carte d'un robot (" + ("déclarant" if p.camp(p.pos.au_trait()) else "défense") + ")", time.monotonic() - t0)
+                return x_
+            x, _ = await asyncio.gather(run.io_bound(robot), asyncio.sleep(pause))
             if getattr(p, "difficile", False): await asyncio.sleep(1.4)   # la bonne carte ne s'imposait pas : il hésite
             jeu["pense"] = None
             await carte_poser(x)
@@ -2432,7 +2464,9 @@ def page():
         if (jeu.get("coach_carte") or {}).get("cle") == cle_: return
         s_ = p.au_trait()
         def calcul():
+            t0 = time.monotonic()
             x_ = p.indice()
+            noter_temps("La carte du coach (" + ("en défense" if p.en_defense() else "déclarant") + ")", time.monotonic() - t0)
             z = p.pensee(s_, x_)
             return dict(x=x_, scores=z.get("scores") or {}, mondes=z.get("mondes") or 0, role=z.get("role"),
                         pourquoi=carte.justification(z, p.decl), plan=z.get("plan") or "", pensee=z)
@@ -3140,11 +3174,14 @@ def page():
         """Les robots jouent toute la donne d'avance, en tâche de fond, pendant que l'enseignant parle : ▶ n'attend plus
         (l'utilisateur, 2026-11-18 : Démo et Revoir étaient lents ; aucune pause ajoutée). Une carte à la fois ; « et si… »
         (essayer) repart de la carte jouée, et le calcul d'avance le suit."""
+        t0 = time.monotonic(); n0 = len(m.cartes)
         while jeu.get("demo") is m and not m.fini():
             try:
                 if not await run.io_bound(m.calculer, len(m.cartes)): break
             except Exception:
                 break
+        n = len(m.cartes) - n0
+        if n > 4 and m.fini(): noter_temps(f"Démo : les {n} cartes calculées d'avance (en tout)", time.monotonic() - t0)
 
     async def demo_aller(k):
         """Va au pas k (0 : rien d'annoncé) ; une carte pas encore jouée est calculée (les robots réfléchissent)."""
@@ -5013,6 +5050,15 @@ def page():
                         ui.button("Montrer le fichier", icon="folder_open", on_click=lambda: montrer_fichier(f_)).props("outline")
                         ui.button("L'ouvrir", icon="description", on_click=lambda: ouvrir(f_)).props("flat")
                 fichier_erreur()
+                f_t = os.path.join(rapport.RAPPORTS, TEMPS)       # le temps des calculs sur cet ordinateur (2026-11-18)
+                if os.path.exists(f_t):
+                    ui.html("<b>Bridge Coach vous semble lent ?</b> Il note le temps de ses calculs dans le fichier "
+                            "<b>temps-de-calcul.txt</b> : seulement des durées et le type d'ordinateur, aucune main ni aucun "
+                            "nom. Joignez-le à votre message, il nous aide à le rendre plus rapide.", sanitize=False) \
+                        .classes("text-base text-gray-700")
+                    with ui.row().classes("gap-3"):
+                        ui.button("Montrer le fichier", icon="folder_open", on_click=lambda: montrer_fichier(f_t)).props("outline")
+                        ui.button("L'ouvrir", icon="description", on_click=lambda: ouvrir(f_t)).props("flat")
                 ui.label("N'envoyez pas vos fichiers de séance (.bc.json) sur GitHub : ils contiennent les noms complets des "
                          "joueurs, et tout ce qu'on y dépose est public.").classes("text-base text-gray-700")
 

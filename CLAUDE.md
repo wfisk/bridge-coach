@@ -221,6 +221,10 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         requirements.txt changed, checks the new code imports, restores the old one on any failure, writes
                         rapports/derniere-mise-a-jour.txt and reopens the app. The zip is checked against the Release's SHA256SUMS
                         (archive_verifiee, empreinte_de); a tag with no Release assets falls back to the tag archive, unchecked.
+                        Timings (2026-11-18, the user: club members' Windows PCs are slower): app.noter_temps writes
+                        rapports/temps-de-calcul.txt (a header with version, system and cores, then the last 300 lines: the
+                        coach's card, a robot's card, Démo's whole deal ahead, creating training deals per deal; durations only,
+                        never a hand or a name), offered in Réglages › « Un problème, une idée ? » with Montrer / Ouvrir.
                         Cancel (2026-11-18, the user): after a successful update the old program stays in .ancien-programme/
                         (one version, with .annulable.json; not when requirements.txt changed); Réglages › Mise à jour shows
                         « Annuler la mise à jour » (app.annuler_maj, a confirm dialog) which runs maj.py --appliquer annuler:

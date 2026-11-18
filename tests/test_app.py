@@ -216,3 +216,7 @@ assert all(d and h for _, d, h in toutes) and app.date_en_mots("2026-11-12") == 
 import subprocess
 etiquettes = subprocess.run(["git", "tag"], capture_output=True, text=True, cwd=rapport.RACINE).stdout.split()
 assert {e[1:] for e in etiquettes if e.startswith("v")} <= {v for v, _, _ in toutes}, "une version publiée sans nouveautés"
+# le journal des temps de calcul : des durées seulement, une ligne d'en-tête (version, ordinateur), 300 lignes au plus
+for i in range(305): app.noter_temps("Essai", 1.5)
+lignes = open(os.path.join(rapport.RAPPORTS, app.TEMPS), encoding="utf-8").read().splitlines()
+assert lignes[0].startswith("Bridge Coach") and len(lignes) == 301 and lignes[-1].endswith("Essai · 1,5 s"), lignes[-1]

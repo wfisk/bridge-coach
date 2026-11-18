@@ -248,6 +248,22 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         5♣/5♦ game; Blackwood also accepts a stop at 5 after 3041. The deal keeps "chances" (contract, rate,
                         auction, real tricks), and commentaires.chances writes it into the comment (« il chute … c'était le bon
                         pari »). 20 deals each: 0.3–3 s a slam, 3–7 s a game. tests/test_donnes.py
+                        The same at-the-table idea for the other themes (2026-11-18; mondes_vus: the deciding side's or player's
+                        hands kept, the rest imagined from the auction; levees_dm): Sacrifice = the robots' doubled sacrifice over
+                        their game, or the robots let them play it while our side named a 9+ card suit; their contract makes in
+                        60 %+ and our sacrifice (cheapest level, doubled) costs less on average (the old par test: none of 20
+                        deals had a sacrifice in the auction; quick filter ≤ 17 H and a 9-card fit); Partielle disputée = both
+                        sides' last decision right on average in IMP (play c rather than defend their last contract; they defend
+                        rather than bid one more; old: 8 of 20 kept); Entame décisive = the rules' lead (entame_et_defense) is the
+                        one that beats it on the deal, and at the table (leader's hand known) beats it 30 %+ and within 10 points
+                        of the best lead (old: 7 of 20 lucky leads); L'impasse = one trick short with normal splits, « Il faut
+                        réussir une impasse », that finesse works here and the honour is onside in 50 %+ of declarer's imagined
+                        deals (impasse_juste; the old test kept plans that said « ne dépend pas d'une impasse »: 0 of 20 kept);
+                        Hold-up = at SA, an ace the only stopper of the lead suit, ducking makes and winning fails on the deal
+                        (laisser_passer_reel) and coups.premier_pli says « Ne pas prendre » (old: 1 of 8); Squeeze = on a defender
+                        who spoke in the auction (squeeze_lisible), the plain test after half the delay (SOUPLE). Mise en main
+                        unchanged (no cheap readable test). Each keeps "chances" with a genre for commentaires.chances.
+                        About 3 s a deal (Entame, Partielle), 10–25 s (L'impasse, Hold-up, Sacrifice), squeeze rare
                         Each theme has a family and a level (META: encheres / carte, 1 = 1re année, 2 = intermédiaire,
                         3 = avancé; new first-year themes Évaluer sa main, Soutien de la majeure, Compter ses levées, L'impasse);
                         a bidding theme and a card-play theme chosen together are combined in the same deals ("A + B",

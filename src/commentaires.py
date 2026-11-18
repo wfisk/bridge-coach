@@ -53,8 +53,34 @@ def chances(d):
     puis ce que donne la répartition réelle. "" sans ce relevé."""
     c = d.get("chances")
     if not c: return ""
+    g = c.get("genre"); qui = NOMS.get(c["declarant"], c["declarant"])
+    souvent = lambda x: "presque toujours" if x >= .95 else f"dans environ {10 * round(x * 10)} % des cas"
+    if g == "partielle":
+        return (f"<b>À la table</b>, sur {c['mondes']} donnes imaginées depuis chaque camp (ses deux mains connues, les "
+                f"autres fidèles aux enchères) : {c['contrat']} par {qui} rapporte en moyenne plus que de défendre "
+                f"{c['contre']}, et l'autre camp a eu raison de ne pas monter à {c['plus_haut']}.")
+    if g == "sacrifice":
+        return (f"<b>À la table</b>, sur {c['mondes']} donnes imaginées depuis le camp de {qui} : {c['contre']} adverse "
+                f"gagne {souvent(c['taux'])} et leur rapporterait en moyenne {c['perte']} points ; le sacrifice {c['contrat']} "
+                f"en coûte en moyenne {c['cout']}. "
+                + ("Un bon sacrifice." if c.get("robots", True) else
+                   f"Les robots les ont laissé jouer : le sacrifice était le bon pari."))
+    if g == "entame":
+        t = (f"<b>À la table</b>, l'entame des règles, {c['entame']}, bat {c['contrat']} {souvent(c['taux'])} sur "
+             f"{c['mondes']} donnes imaginées depuis la main du meneur")
+        if c["meilleure"] != c["entame"] and c["taux_meilleure"] > c["taux"]:
+            t += f", presque aussi souvent que {c['meilleure']} ({10 * round(c['taux_meilleure'] * 10)} %)"
+        return t + " ; sur cette donne, elle est la seule à le battre."
+    if g == "hold-up":
+        return f"<b>À la table</b>, sans voir les mains adverses, sur l'entame {c['entame']} : {c['texte']}"
+    if g == "squeeze":
+        return (f"<b>À la table</b>, le squeeze porte sur {NOMS.get(c['joueur'], c['joueur'])}, qui a parlé pendant les "
+                f"enchères : le déclarant peut lire la fin de coup.")
+    if g == "impasse":
+        return (f"<b>À la table</b>, l'impasse est la bonne ligne ({c['impasse']}) : l'honneur est bien placé "
+                f"{souvent(c['taux'])} sur {c['mondes']} donnes imaginées par le déclarant ; ici, elle réussit.")
     need = int(c["contrat"][0]) + 6; pct = 10 * round(c["taux"] * 10)
-    t = (f"<b>À la table</b>, {c['contrat']} par {NOMS.get(c['declarant'], c['declarant'])}, le contrat des enchères du coach, "
+    t = (f"<b>À la table</b>, {c['contrat']} par {qui}, le contrat des enchères du coach, "
          + (f"gagne dans presque toutes les {c['mondes']}" if c["taux"] >= .95 else f"gagne dans environ {pct} % des {c['mondes']}")
          + " donnes imaginées fidèles aux enchères, face à la meilleure défense : un contrat à demander.")
     if c["dm"] >= need: return t + f" Sur cette donne, il gagne ({pl(c['dm'], 'levée')} au double mort)."

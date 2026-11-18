@@ -13,10 +13,11 @@ import datetime, json, multiprocessing, os, random, re, sys, time, unicodedata
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
-from bws_extract import SEAT, SN, VUL16, par
+from bws_extract import SEAT, SN, VUL16, imp, par, score, vul_of
 from encheres import encherir
 from encheres.main import Main
-from jeu import COULEURS, ORDRE, compter_plan, levees_par_entame, entame_et_defense, donnes_du_declarant, _pbn
+from jeu import (COULEURS, LHO, ORDRE, PTS, RHO, compter_plan, couleurs_nommees, donnes_du_declarant, entame_et_defense,
+                 impasses, levees_par_entame, lire_encheres, suites, _pbn)
 import coups, lignes
 
 ALEATOIRE = "Aléatoire"
@@ -25,7 +26,7 @@ LETTRES = {"P": "♠", "C": "♥", "K": "♦", "T": "♣"}
 VUL_TEXTE = {"NN": "Personne", "VN": "N-S", "NV": "E-O", "VV": "Tous"}
 DELAI = 150                                                # secondes pour trouver une donne d'un thème
 MONDES = 60                                                # donnes imaginées pour juger un contrat à la table
-TAUX = {"petit": .6, "grand": .7, "manche": .55}           # sa réussite minimale dans ces donnes imaginées
+TAUX = {"petit": .6, "grand": .7, "manche": .55, "sacrifice": .6}   # sa réussite minimale dans ces donnes imaginées
 SIEGES = "NESO"
 EN = {"N": "N", "E": "E", "S": "S", "O": "W"}
 COUL = {"SA": "NT", "♠": "S", "♥": "H", "♦": "D", "♣": "C"}
@@ -258,16 +259,156 @@ def reveil(e):
     return len(e.seq) >= 4 and e.seq[0][0] == "1" and e.seq[1:3] == ["passe", "passe"] and e.seq[3] != "passe"
 
 
+# ---------------------------------------------------------------- à la table : des donnes imaginées, jamais la donne réelle
+DENS = ("♠", "♥", "♦", "♣", "SA")
+EN_COUL = dict(zip(DENS, "SHDCN"))
+MONDES_VUS = 40                                            # donnes imaginées pour les décisions de compétition et l'entame
+
+
+def mondes_vus(d, gardes, seq, n=MONDES_VUS, graine=None):
+    """n donnes : les mains des sièges gardes telles quelles, les autres au hasard, fidèles aux enchères (jeu.lire_encheres,
+    lecture large ; une marge de 1 H, puis de 3 H et une carte de moins si les donnes sont rares). Ce que voit le camp ou
+    le joueur qui décide, jamais les autres mains réelles."""
+    rnd = random.Random(d.get("n") if graine is None else graine)
+    cx = lire_encheres(seq, d["donneur"])
+    autres = [x for x in SIEGES if x not in gardes]
+    vues = {(c, r) for x in gardes for c, p in suites(d["mains"][x]).items() for r in p}
+    reste = [(c, r) for c in COULEURS for r in ORDRE if (c, r) not in vues]
+    for marge, moins in ((1, 0), (3, 1)):
+        out = []
+        for _ in range(20000):
+            rnd.shuffle(reste)
+            lots = {x: reste[13 * k:13 * k + 13] for k, x in enumerate(autres)}
+            ok = True
+            for x, cartes in lots.items():
+                h = sum(PTS.get(r, 0) for _, r in cartes); L = {c: 0 for c in COULEURS}
+                for c, _ in cartes: L[c] += 1
+                lo, hi = cx[x]["pts"]
+                if not lo - marge <= h <= hi + marge or any(L[c] < v - moins for c, v in cx[x]["L"].items()) \
+                        or cx[x]["reg"] and (min(L.values()) < 2 or list(L.values()).count(2) > 1):
+                    ok = False; break
+            if not ok: continue
+            m = {x: d["mains"][x] for x in gardes}
+            for x, cartes in lots.items():
+                m[x] = " ".join("".join(sorted((r for k, r in cartes if k == c), key=ORDRE.index)) or "-" for c in COULEURS)
+            out.append(m)
+            if len(out) >= n: return out
+        if len(out) >= n // 4: return out
+    return out
+
+
+def levees_dm(mondes, dens):
+    """[{dénomination: {siège: levées}}] au double mort, seulement pour les dénominations dens."""
+    if not mondes: return []
+    from endplay.types import Deal, Denom
+    from endplay.dds import calc_all_tables
+    D_ = dict(zip(DENS, (Denom.spades, Denom.hearts, Denom.diamonds, Denom.clubs, Denom.nt)))
+    tables = calc_all_tables([Deal(_pbn(m)) for m in mondes], exclude=[D_[x] for x in DENS if x not in dens])
+    return [{x: dict(zip(SIEGES, t.to_list()[DENS.index(x)])) for x in dens} for t in tables]
+
+
+def marque(contrat, decl, vul, levees):
+    """La marque du camp du déclarant ("4♠X")."""
+    c = contrat.rstrip("X"); x = len(contrat) - len(c)
+    return score(int(c[0]), EN_COUL[c[1:]], x, vul_of(vul, "NS" if decl in "NS" else "EO"), levees)
+
+
+def camp_de(s): return "NS" if s in "NS" else "EO"
+
+
+def declarant_de(e, siege, den):
+    """Le premier du camp de siege à avoir nommé den (le déclarant si ce contrat avait été joué)."""
+    return next((x for _, x, b in e.actives() if camp_de(x) == camp_de(siege) and b[1:] == den), siege)
+
+
+def dernier_contrat(e, camp, avant=None):
+    """(contrat, déclarant) : la dernière enchère naturelle de ce camp (avant l'indice avant), ou (None, None)."""
+    for i, x, b in reversed(e.actives()):
+        if (avant is None or i < avant) and camp_de(x) == camp and b[0].isdigit():
+            return b, declarant_de(e, x, b[1:])
+    return None, None
+
+
 def partielle(e):
+    """Une partielle disputée : les deux camps nomment une couleur, le moteur s'arrête sous la manche, et la dernière
+    décision de chaque camp est juste en moyenne à la table (IMP sur MONDES_VUS donnes imaginées depuis ce camp, ses deux
+    mains connues) : le camp qui joue a eu raison de surenchérir plutôt que de défendre le dernier contrat adverse,
+    l'autre a raison de défendre plutôt que de monter d'un palier dans sa couleur."""
     a = e.actives()
     c = e.contrat
     if c == "passe" or c[0] not in "123" or c.rstrip("X").endswith("SA") and c[0] == "3": return False
-    return len({"NS" if s in "NS" else "EO" for _, s, b in a if b not in ("contre", "surcontre")}) == 2
+    if len({camp_de(s) for _, s, b in a if b not in ("contre", "surcontre")}) != 2: return False
+    if e.enc.get("statut") != "complète" or c.endswith("X"): return False
+    nous, eux = camp_de(e.decl), "EO" if camp_de(e.decl) == "NS" else "NS"
+    i_c = max(i for i, x, b in a if b == c)
+    leur, leur_decl = dernier_contrat(e, eux, i_c)          # ce qu'ils auraient joué si nous avions passé
+    if leur is None: return False
+    vul = e.d["vul"]; seq = e.seq
+    # 1. notre camp : jouer c plutôt que défendre leur contrat
+    w = levees_dm(mondes_vus(e.d, tuple(x for x in SIEGES if camp_de(x) == nous), seq), {c[1:], leur[1:]})
+    if len(w) < MONDES_VUS // 2: return False
+    gain = [imp(marque(c, e.decl, vul, t[c[1:]][e.decl]) + marque(leur, leur_decl, vul, t[leur[1:]][leur_decl])) for t in w]
+    if sum(gain) / len(gain) < 0: return False
+    # 2. leur camp : défendre c plutôt que monter d'un palier dans leur dernière couleur
+    den = leur[1:]
+    rang = ("♣", "♦", "♥", "♠", "SA").index
+    haut = next((f"{k}{den}" for k in range(1, 8) if (k, rang(den)) > (int(c[0]), rang(c[1:]))), None)
+    if haut is None: return False
+    w = levees_dm(mondes_vus(e.d, tuple(x for x in SIEGES if camp_de(x) == eux), seq), {c[1:], den})
+    if len(w) < MONDES_VUS // 2: return False
+    gain = [imp(-marque(c, e.decl, vul, t[c[1:]][e.decl]) - marque(haut, leur_decl, vul, t[den][leur_decl])) for t in w]
+    if sum(gain) / len(gain) < 0: return False
+    e.chances = dict(genre="partielle", contrat=c.rstrip("X"), declarant=e.decl, contre=leur, plus_haut=haut,
+                     mondes=len(w), encheres=list(seq), dm=e.dm[c[1:]][e.decl])
+    return True
+
+
+def fit(e, s):
+    """La plus longue couleur commune du camp de s (cartes à deux)."""
+    a, b = e.mains[s].split(), e.mains[PART[s]].split()
+    return max(len(x.replace("-", "")) + len(y.replace("-", "")) for x, y in zip(a, b))
 
 
 def sacrifice(e):
-    p = par(he_de(e.dm, {s: e.h(s) for s in SIEGES}), e.d["vul"], EN[e.d["donneur"]])
-    return bool(p and p.get("contre"))
+    """Un sacrifice, jugé à la table (les deux mains du camp qui se sacrifie connues, les autres imaginées d'après les
+    enchères) : leur contrat, une manche ou un chelem, gagne au moins TAUX["sacrifice"] du temps, et le sacrifice contré
+    coûte en moyenne moins que ce qu'ils auraient marqué. Deux cas : le moteur le fait lui-même (son contrat est contré
+    au-dessus du leur), ou il les laisse jouer alors que le camp a nommé une couleur où il a 9 cartes ou plus : le
+    sacrifice au palier le moins cher dans cette couleur était le bon pari (le commentaire le dit)."""
+    if not any(e.camp_h(x) <= 17 and fit(e, x) >= 9 for x in "NE"): return False   # filtre rapide, avant les enchères
+    c = e.contrat
+    if c == "passe" or c.endswith("XX") or e.enc.get("statut") != "complète": return False
+    vul = e.d["vul"]
+    if c.endswith("X") and dernier_contrat(e, "EO" if camp_de(e.decl) == "NS" else "NS")[0]:   # 1. le moteur se sacrifie
+        sac, sac_decl, robots = c, e.decl, True
+        nous = camp_de(e.decl); eux = "EO" if nous == "NS" else "NS"
+        i_c = max(i for i, x, b in e.actives() if b == c.rstrip("X"))
+        leur, leur_decl = dernier_contrat(e, eux, i_c)
+    else:                                                  # 2. il les laisse jouer leur manche
+        leur, leur_decl = c.rstrip("X"), e.decl
+        eux = camp_de(e.decl); nous = "EO" if eux == "NS" else "NS"
+        robots = False
+        rang = ("♣", "♦", "♥", "♠", "SA").index
+        nommees = [(x, b[1:]) for _, x, b in e.actives() if camp_de(x) == nous and b[0].isdigit() and b[1:] != "SA"]
+        bonnes = [(x, den) for x, den in nommees if sum(len(suites(e.mains[y])[den]) for y in SIEGES if camp_de(y) == nous) >= 9]
+        if not bonnes: return False
+        x, den = bonnes[0]
+        if c.endswith("X"): return False
+        niveau = next((k for k in range(1, 8) if (k, rang(den)) > (int(leur[0]), rang(leur[1:]))), 8)
+        if niveau > 7: return False
+        sac, sac_decl = f"{niveau}{den}X", declarant_de(e, x, den)
+    if leur is None or marque(leur, leur_decl, vul, int(leur[0]) + 6) < 300: return False   # pas une manche
+    w = levees_dm(mondes_vus(e.d, tuple(x for x in SIEGES if camp_de(x) == nous), e.seq), {sac[1:-1], leur[1:]})
+    if len(w) < MONDES_VUS // 2: return False
+    eux_marquent = [marque(leur, leur_decl, vul, t[leur[1:]][leur_decl]) for t in w]
+    nous_marquons = [marque(sac, sac_decl, vul, t[sac[1:-1]][sac_decl]) for t in w]
+    taux = sum(t[leur[1:]][leur_decl] >= int(leur[0]) + 6 for t in w) / len(w)
+    cout = -sum(nous_marquons) / len(w); perte = sum(eux_marquent) / len(w)
+    if taux < TAUX["sacrifice"] or cout <= 0 or cout >= perte: return False
+    e.chances = dict(genre="sacrifice", contrat=sac, declarant=sac_decl, contre=leur, contre_decl=leur_decl, robots=robots,
+                     taux=round(taux, 2), cout=round(cout), perte=round(perte), mondes=len(w), encheres=list(e.seq),
+                     dm=e.dm[sac[1:-1]][sac_decl])
+    return True
 
 
 def stayman(e): return e.seq[:3] == ["1SA", "passe", "2♣"]
@@ -276,12 +417,81 @@ def stayman(e): return e.seq[:3] == ["1SA", "passe", "2♣"]
 def texas(e): return e.seq[:3] in (["1SA", "passe", "2♦"], ["1SA", "passe", "2♥"])
 
 
+ENTAME_PRES = .1                                          # l'entame de la règle : au plus 10 points sous la meilleure
+ENTAME_MIN = .3                                           # et une vraie chance de battre le contrat, pas un coup de chance
+
+
 def jeu_entame(e):
-    """Le contrat dépend de l'entame : il chute sur une, gagne sur les autres."""
+    """Le contrat dépend de l'entame : celle des règles (entames.yaml) le bat, une autre le laisse gagner, au double mort
+    de la donne réelle ; et à la table (la main du meneur connue, les trois autres imaginées d'après les enchères), cette
+    entame bat le contrat au moins ENTAME_MIN du temps, à ENTAME_PRES près aussi souvent que la meilleure entame : la
+    donne n'enseigne pas une entame chanceuse."""
     if e.contrat == "passe" or int(e.contrat[0]) < 3: return False
     den = e.contrat[1:].rstrip("X"); need = int(e.contrat[0]) + 6
     v = levees_par_entame(e.mains, den, e.decl)            # les levées de la défense, selon l'entame
-    return 13 - max(v.values()) < need <= 13 - min(v.values())
+    if not v or not 13 - max(v.values()) < need <= 13 - min(v.values()): return False
+    regle = entame_et_defense(e.d, e.contrat, e.decl, e.seq)["entame"]["carte"]
+    if 13 - v.get(regle, 0) >= need: return False          # l'entame de la règle laisse gagner : celle qui bat est chanceuse
+    meneur = LHO[e.decl]
+    w = [levees_par_entame(m, den, e.decl) for m in mondes_vus(e.d, (meneur,), e.seq)]
+    w = [x for x in w if x]
+    if len(w) < MONDES_VUS // 2: return False
+    bat = {c: sum(x.get(c, 0) >= 14 - need for x in w) / len(w) for c in v}
+    if bat[regle] < ENTAME_MIN or bat[regle] < max(bat.values()) - ENTAME_PRES: return False
+    meilleure = max(bat, key=bat.get)
+    e.chances = dict(genre="entame", contrat=e.contrat.rstrip("X"), declarant=e.decl, entame=regle, taux=round(bat[regle], 2),
+                     meilleure=meilleure, taux_meilleure=round(bat[meilleure], 2), mondes=len(w), encheres=list(e.seq))
+    return True
+
+
+def laisser_passer_reel(e, entame):
+    """Sur la donne réelle, au double mort : sur l'entame (le mort fournit petit, le troisième joue au mieux), laisser
+    passer gagne le contrat et prendre le fait chuter. Le laisser-passer est nécessaire, pas seulement possible."""
+    den = e.contrat[1:].rstrip("X"); need = int(e.contrat[0]) + 6
+    pos = coups._apres(e.mains, den, e.decl, [(entame[0], entame[1:].translate(coups.EN))])
+    pos.jouer(*coups._naturelle(coups._options_mort(pos), den))
+    v = pos.valeurs(); fin = min(v.values())
+    pos.jouer(*max((x for x, y in v.items() if y == fin), key=lambda x: coups.RANGS.index(x[1])))
+    top = pos.meilleur()
+    if pos.camp(top[0]): return False                      # le troisième n'a pas pris : rien à laisser passer
+    v = pos.valeurs()
+    prend = lambda c, r: (c == top[1] and coups.RANGS.index(r) < coups.RANGS.index(top[2])) or (c == den and top[1] != den)
+    oui = [x for k, x in v.items() if prend(*k)]; non = [x for k, x in v.items() if not prend(*k)]
+    return bool(oui and non) and max(non) >= need > max(oui)
+
+
+def hold_up(e):
+    """À SA, l'entame (des règles) dans une couleur où le déclarant n'a qu'un arrêt, l'as (filtre rapide) ; sur la
+    donne réelle, laisser passer le premier tour gagne et prendre chute (laisser_passer_reel) ; et c'est aussi la bonne
+    ligne à la table : sur les donnes imaginées par le déclarant (sa main et le mort, l'entame, le reste d'après les
+    enchères), ne pas prendre gagne nettement plus souvent que prendre (coups.premier_pli). Une donne où le
+    laisser-passer ne marche que par chance n'apprend pas une mauvaise habitude."""
+    c = e.contrat
+    if c == "passe" or c.endswith("X") or not c.endswith("SA") or int(c[0]) < 2: return False
+    entame = entame_et_defense(e.d, c, e.decl, e.seq)["entame"]["carte"]
+    nous = suites(e.mains[e.decl])[entame[0]] + suites(e.mains[PART[e.decl]])[entame[0]]
+    if "A" not in nous or "R" in nous or len(nous) > 7: return False   # filtre rapide : un seul arrêt, l'as
+    if not laisser_passer_reel(e, entame): return False
+    txt = coups.premier_pli(e.d, c, e.decl, entame, e.seq)
+    if "Ne pas prendre" not in txt: return False
+    e.chances = dict(genre="hold-up", contrat=c, declarant=e.decl, entame=entame, texte=txt, encheres=list(e.seq))
+    return True
+
+
+def squeeze_lisible(e):
+    """Un squeeze (coup) sur un défenseur qui a parlé : une enchère, des points ou une longueur montrés (jeu.lire_encheres).
+    Le déclarant peut alors lire la fin de coup ; un squeeze sur un joueur muet ne s'enseigne qu'au double mort."""
+    if not coup(e, "squeeze"): return False
+    cx = lire_encheres(e.seq, e.d["donneur"])
+    k = SIEGES.index(e.d["donneur"])
+    a_parle = {SIEGES[(k + i) % 4] for i, b in enumerate(e.seq) if b != "passe"}
+    for x in e._coups:
+        if x["type"] == "squeeze" and (x["joueur"] in a_parle or cx[x["joueur"]]["pts"][0] >= 8
+                                       or any(v >= 4 for v in cx[x["joueur"]]["L"].values())):
+            e.chances = dict(genre="squeeze", contrat=e.contrat.rstrip("X"), declarant=e.decl, joueur=x["joueur"],
+                             encheres=list(e.seq))
+            return True
+    return False
 
 
 def coup(e, *genres):
@@ -290,7 +500,8 @@ def coup(e, *genres):
     den = e.contrat[1:].rstrip("X")
     if e.dm[den][e.decl] != int(e.contrat[0]) + 6: return False
     entame = entame_et_defense(e.d, e.contrat, e.decl, e.seq)["entame"]["carte"]
-    return any(x["type"] in genres for x in coups.analyser(e.mains, den, e.decl, entame))
+    e._coups = coups.analyser(e.mains, den, e.decl, entame)
+    return any(x["type"] in genres for x in e._coups)
 
 
 def plan_court(e):
@@ -320,16 +531,56 @@ def soutien_majeure(e):
     return b in (f"2{o[1]}", f"3{o[1]}", f"4{o[1]}")
 
 
+def a_une_impasse(e):
+    """Filtre rapide : une impasse classique (jeu.impasses) existe dans le camp du déclarant du moteur."""
+    if e.contrat == "passe": return False
+    d_, m_ = suites(e.mains[e.decl]), suites(e.mains[PART[e.decl]])
+    return any(impasses((e.decl, d_), (PART[e.decl], m_), c) for c in COULEURS)
+
+
 def plan_compte(e, mot=None):
     """Le contrat (manche ou partielle) gagne juste au double mort et le plan à la table compte assez de levées
-    (avec les partages normaux) ; mot : un mot que le plan doit contenir (« impasse »)."""
+    (avec les partages normaux) ; mot : un mot que le plan doit contenir. « impasse » : il manque une levée avec les
+    partages normaux, le plan dit qu'il faut réussir une impasse, et impasse_juste."""
+    if mot == "impasse" and not a_une_impasse(e): return False
     if not (e.fait() and int(e.contrat[0]) >= 2): return False
     den = e.contrat[1:].rstrip("X")
     if e.dm[den][e.decl] != int(e.contrat[0]) + 6: return False
     entame = entame_et_defense(e.d, e.contrat, e.decl, e.seq)["entame"]
     compte, etapes, fin, reste = compter_plan(e.d, e.contrat, e.decl, entame, e.seq)
+    if mot == "impasse":                                   # une levée manque sans impasse, et une impasse la donne (reste <= 0
+        plan = " ".join(t for _, t in etapes if "Levée manquante" in t)    # veut dire : le contrat n'en dépend pas)
+        return reste == 1 and "Il faut réussir" in str(fin) and impasse_juste(e, entame, plan)
     if mot: return reste <= 0 and mot in (str(etapes) + str(fin)).lower()
     return reste <= 0
+
+
+IMPASSE_MIN = .5                                          # l'honneur bien placé dans au moins la moitié des donnes imaginées
+
+
+def impasse_juste(e, entame, plan):
+    """Une impasse du plan (jeu.impasses, nommée dans le plan) réussit sur la donne réelle, et le déclarant a raison de la
+    faire : dans au moins IMPASSE_MIN des donnes qu'il imagine (sa main et le mort, l'entame, le reste fidèle aux
+    enchères), l'honneur est du bon côté. Une impasse que les enchères condamnent n'est pas un bon exemple."""
+    decl = e.decl; mort = PART[decl]
+    s_dec, s_mort = suites(e.mains[decl]), suites(e.mains[mort])
+    imps = [(c, t, h, w) for c in COULEURS for t, h, w in impasses((decl, s_dec), (mort, s_mort), c) if t.split(" : ")[1] in plan
+            or t in plan]
+    if not imps: return False
+    def reussit(m, c, t, h, w):
+        x = suites(m[w])[c]
+        return any(y in x for y in h) if " ou " in t else all(y in x for y in h)
+    imps = [x for x in imps if reussit(e.mains, *x)]          # elle réussit sur la donne
+    if not imps: return False
+    mondes = donnes_du_declarant(e.d, decl, e.seq, entame["carte"], 60)
+    if len(mondes) < 20: return False
+    for c, t, h, w in imps:
+        p = sum(reussit(m, c, t, h, w) for m in mondes) / len(mondes)
+        if p >= IMPASSE_MIN:
+            e.chances = dict(genre="impasse", contrat=e.contrat.rstrip("X"), declarant=decl, impasse=t, taux=round(p, 2),
+                             mondes=len(mondes), encheres=list(e.seq))
+            return True
+    return False
 
 
 THEMES = {
@@ -344,7 +595,7 @@ THEMES = {
     "Enchères à SA": lambda e: ouverture(e) in ("1SA", "2SA"),
     "Entame décisive": jeu_entame,
     "Grand chelem": lambda e: chelem(e, (7,)),
-    "Hold-up": lambda e: coup(e, "laisser-passer"),
+    "Hold-up": hold_up,
     "Intervention": intervention,
     "Jeu de la carte": lambda e: bool(plan_court(e)),
     "Jeu de la carte avancé": lambda e: coup(e, "squeeze", "mise en main", "laisser-passer", "coup à blanc"),
@@ -358,7 +609,7 @@ THEMES = {
     "Réveil": reveil,
     "Roudi": roudi,
     "Sacrifice": sacrifice,
-    "Squeeze": lambda e: coup(e, "squeeze"),
+    "Squeeze": squeeze_lisible,
     "Stayman": stayman,
     "Texas": texas,
     "Évaluer sa main": evaluer,
@@ -366,6 +617,9 @@ THEMES = {
     "Compter ses levées": lambda e: plan_compte(e),
     "L'impasse": lambda e: plan_compte(e, "impasse"),
 }
+
+# un thème rare : à mi-temps, le test d'avant suffit (le commentaire ne dit alors rien de la table)
+SOUPLE = {"Squeeze": lambda e: coup(e, "squeeze")}
 
 # la famille (enchères ou jeu de la carte) et le niveau (1 : 1re année, 2 : intermédiaire, 3 : avancé) de chaque thème
 FAMILLES = {"encheres": "Enchères", "carte": "Jeu de la carte"}
@@ -442,6 +696,7 @@ def chercher(arg):
         e = Essai(d)
         if test(e): return n, theme, d["mains"], True, e.chances
         if seul and time.time() > debut + delai / 2 and THEMES[seul](e): return n, seul, d["mains"], True, e.chances
+        if theme in SOUPLE and time.time() > debut + delai / 2 and SOUPLE[theme](e): return n, theme, d["mains"], True, None
         if time.time() > fin: return n, theme, tirer(rnd), False, None
 
 

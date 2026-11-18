@@ -255,3 +255,9 @@ sur `main` qui touche `installer/` ou `requirements.txt`.
 - **Jamais dans le dépôt, qui est public :** les `.bws`, les séances, les rapports, `bridge-coach.ini`, ni aucun nom
   de joueur ou de club.
 - **Le compte GitHub du responsable** doit avoir la double authentification : il protège tous ceux qui téléchargent.
+
+## Licence
+
+Bridge Coach n'est pas un logiciel libre : tous droits réservés (voir `LICENSE`). Les membres le téléchargent,
+l'installent et l'utilisent gratuitement, pour eux, leur club ou leurs cours ; le copier, le diffuser ailleurs, le
+vendre ou en faire un service en ligne demande l'accord écrit de l'auteur.

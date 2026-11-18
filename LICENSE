@@ -1,0 +1,53 @@
+Bridge Coach
+Copyright (c) 2026 l'auteur de Bridge Coach (https://github.com/wfisk). Tous droits réservés.
+
+FRANÇAIS
+
+Ce programme, son code source, son aide, ses documents et ses images sont protégés par le droit d'auteur.
+Le code est visible sur GitHub, mais cela ne donne aucun droit de le reprendre.
+
+Ce qui est permis, gratuitement :
+  - télécharger Bridge Coach depuis la page officielle des versions
+    (https://github.com/wfisk/bridge-coach/releases), l'installer et l'utiliser, pour soi-même, pour son
+    club ou pour donner des cours, sans en tirer de revenu de la vente ou de la location du programme ;
+  - lire le code source, et le modifier sur son propre ordinateur pour son propre usage ;
+  - proposer des corrections ou des idées sur GitHub (Issues, Discussions, Pull requests) : en le faisant, vous
+    acceptez que l'auteur les reprenne dans Bridge Coach, y compris dans une version commerciale.
+
+Ce qui n'est pas permis sans l'accord écrit de l'auteur :
+  - copier, diffuser ou publier tout ou partie du code, modifié ou non, ailleurs que sur la page officielle ;
+  - vendre, louer ou faire payer Bridge Coach ou un programme qui en est tiré, ou l'offrir comme service en
+    ligne (site web, application web, application mobile) ;
+  - retirer ou modifier cet avis.
+
+L'auteur se réserve tous les autres droits, dont celui d'exploiter Bridge Coach commercialement.
+
+Bridge Coach est fourni tel quel, sans aucune garantie. L'auteur ne peut être tenu responsable d'aucun dommage
+lié à son utilisation.
+
+Les bibliothèques et polices utilisées par Bridge Coach (NiceGUI, endplay et DDS, ReportLab, pypdfium2,
+ruamel.yaml, polices DejaVu…) restent sous leurs propres licences, qui en permettent l'usage.
+
+ENGLISH
+
+This program, its source code, help, documents and images are protected by copyright. The code being visible on
+GitHub grants no right to reuse it.
+
+Permitted, free of charge: downloading Bridge Coach from the official releases page
+(https://github.com/wfisk/bridge-coach/releases), installing and using it for yourself, your club or your
+teaching, without earning money from selling or renting the program; reading the source code and modifying it on
+your own computer for your own use; suggesting fixes or ideas on GitHub (Issues, Discussions, Pull requests),
+which you agree the author may include in Bridge Coach, commercial versions included.
+
+Not permitted without the author's written permission: copying, distributing or publishing all or part of the
+code, modified or not, anywhere other than the official page; selling, renting or charging for Bridge Coach or a
+program derived from it, or offering it as an online service (website, web app, mobile app); removing or
+changing this notice.
+
+The author reserves all other rights, including the right to use Bridge Coach commercially.
+
+Bridge Coach is provided as is, without any warranty. The author cannot be held liable for any damage arising
+from its use.
+
+The libraries and fonts Bridge Coach uses (NiceGUI, endplay and DDS, ReportLab, pypdfium2, ruamel.yaml, DejaVu
+fonts…) remain under their own licences, which allow this use.

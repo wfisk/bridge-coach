@@ -5030,6 +5030,24 @@ def page():
                     bouton_maj = ui.button("", on_click=lambda: lancer_maj()).props("unelevated")
                     bouton_maj.set_visibility(False)
                 etat_maj = ui.label("Bridge Coach ne contacte GitHub que si vous cliquez ; il n'envoie rien.").classes("text-base text-gray-700")
+                a_maj = maj.annulable()
+                if a_maj:                                         # juste après une mise à jour : on peut revenir en arrière, une fois
+                    with ui.column().classes("w-full gap-2 p-3 mt-1").style(
+                            "border:1px solid var(--bc-tapis-300);border-radius:10px;background:var(--bc-tapis-50)"):
+                        ui.label(f"Bridge Coach est passé de la version {a_maj['avant']} à la {a_maj['apres']}. Si quelque chose ne va "
+                                 f"pas, vous pouvez revenir à la {a_maj['avant']}, telle que vous l'aviez.").classes("text-base")
+                        def confirmer_annulation(a_maj=a_maj):
+                            with ui.dialog() as dlg, ui.card().classes("max-w-md"):
+                                ui.label(f"Revenir à la version {a_maj['avant']} ?").classes("text-lg font-bold")
+                                ui.label("Bridge Coach se ferme, remet la version d'avant et se rouvre. Vos séances, vos "
+                                         "rapports et vos réglages restent ; ce que la nouvelle version a ajouté peut ne "
+                                         "pas s'afficher dans l'ancienne.").classes("text-base")
+                                with ui.row().classes("justify-end w-full gap-2"):
+                                    ui.button("Rester en " + a_maj["apres"], on_click=dlg.close).props("flat no-caps")
+                                    ui.button(f"Revenir à la {a_maj['avant']}", on_click=lambda: (dlg.close(), annuler_maj())) \
+                                        .props("unelevated no-caps")
+                            dlg.open()
+                        ui.button("Annuler la mise à jour", icon="undo", on_click=confirmer_annulation).props("outline no-caps")
                 journal = os.path.join(rapport.RAPPORTS, maj.JOURNAL)
                 if os.path.exists(journal):
                     lignes_j = [x for x in open(journal, encoding="utf-8").read().splitlines() if x.strip()]
@@ -5720,7 +5738,9 @@ def page():
         if not v or maj.cle(v) <= maj.cle(maj.version_locale()):
             etat_maj.text = f"Bridge Coach est à jour (version {maj.version_locale()})."; return
         maj_vue["version"] = v
-        etat_maj.text = (f"La version {v} est disponible. Bridge Coach va se fermer, se mettre à jour en une minute environ, "
+        refusee = lire_etat().get("maj_annulee") == v      # annulée une fois : proposée encore, mais on le rappelle
+        etat_maj.text = ((f"Vous aviez annulé la version {v}. " if refusee else f"La version {v} est disponible. ") +
+                         "Bridge Coach va se fermer, se mettre à jour en une minute environ, "
                          "puis se rouvrir. Vos séances, vos rapports et vos réglages ne changent pas.")
         bouton_maj.text = f"Mettre à jour vers {v}"; bouton_maj.set_visibility(True)
 
@@ -5734,6 +5754,20 @@ def page():
                           "--attendre", str(os.getpid()), "--journal", rapport.RAPPORTS], cwd=rapport.RACINE,
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **opts)
         etat_maj.text = "Bridge Coach se ferme pour la mise à jour, puis se rouvre tout seul."
+        ui.timer(1.5, app.shutdown, once=True)
+
+    def annuler_maj():
+        """« Annuler la mise à jour » : la version d'avant revient telle qu'elle était (maj.annuler), sans rien télécharger."""
+        a = maj.annulable()
+        if not a: return
+        if any(x.actif for x in (T, D, I)):
+            etat_maj.text = "Un calcul est en cours : attendez qu'il se termine, puis recommencez."; return
+        ecrire_etat(maj_annulee=a["apres"])
+        opts = {"creationflags": 0x00000008 | 0x00000200} if sys.platform == "win32" else {"start_new_session": True}
+        subprocess.Popen([sys.executable, "-I", "-X", "utf8", os.path.join(ICI, "maj.py"), "--appliquer", "annuler",
+                          "--attendre", str(os.getpid()), "--journal", rapport.RAPPORTS], cwd=rapport.RACINE,
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **opts)
+        etat_maj.text = f"Bridge Coach se ferme, revient à la version {a['avant']}, puis se rouvre tout seul."
         ui.timer(1.5, app.shutdown, once=True)
 
     def choisir(c):

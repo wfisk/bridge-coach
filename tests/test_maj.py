@@ -44,7 +44,14 @@ def copie():
 r = copie()
 assert maj.poser(archive("1.1"), r, python=python, journal=lambda t: None)
 assert maj.version_locale(r) == "1.1" and os.path.exists(os.path.join(r, ".venv", "temoin"))
-assert not os.path.exists(os.path.join(r, ".ancien-programme"))
+# l'ancien programme est gardé : la mise à jour peut être annulée, une fois, sans rien télécharger
+a = maj.annulable(r)
+assert a and a["avant"] == "1.0" and a["apres"] == "1.1"
+assert maj.annuler(r, python=python, journal=lambda t: None)
+assert maj.version_locale(r) == "1.0" and os.path.exists(os.path.join(r, ".venv", "temoin"))
+assert not os.path.exists(os.path.join(r, ".ancien-programme")) and maj.annulable(r) is None
+try: maj.annuler(r, python=python, journal=lambda t: None); raise AssertionError("annulée deux fois")
+except ValueError: pass
 
 r = copie()
 assert not maj.poser(archive("1.2", abimer=True), r, python=python, journal=lambda t: None)

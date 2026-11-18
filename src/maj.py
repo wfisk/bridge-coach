@@ -5,6 +5,7 @@ Les versions publiées sont les étiquettes vX.Y du dépôt public (publier.sh).
 (derniere_version : un seul appel à GitHub, quand on clique, rien n'est envoyé), puis lance ce module à part :
 
     .venv/bin/python -I -X utf8 src/maj.py --appliquer 1.4 --attendre <pid de l'application>
+    .venv/bin/python -I -X utf8 src/maj.py --appliquer annuler --attendre <pid>     (revenir à la version d'avant)
 
 Il attend que l'application soit fermée (sous Windows, un programme ouvert garde ses fichiers), télécharge
 l'archive de la version et vérifie son empreinte SHA-256 contre le SHA256SUMS publié avec elle (archive_verifiee ;
@@ -12,6 +13,11 @@ les versions d'avant les installateurs n'en ont pas : l'archive de l'étiquette,
 bibliothèques seulement si requirements.txt a changé (pip vérifie leurs empreintes, écrites dans ce fichier), vérifie que le nouveau programme se charge, sinon remet
 l'ancien, puis rouvre Bridge Coach. Les dossiers .venv/, .python/ (le Python des installateurs), .installeur/ et les fichiers de l'utilisateur (ailleurs) ne sont jamais
 touchés. Un dossier qui est un dépôt Git ne se met pas à jour ici : c'est git pull.
+
+Annuler (l'utilisateur, 2026-11-18) : après une mise à jour réussie, l'ancien programme reste dans .ancien-programme/ (une
+seule version), sauf si les bibliothèques ont changé. « Annuler la mise à jour » le remet tel quel, sans rien télécharger,
+une seule fois ; une mise à jour suivante remplace la copie gardée. Les séances (du JSON, qui ne fait que s'enrichir d'une
+version à l'autre) se lisent dans la version d'avant.
 
 Seulement la bibliothèque standard : ce module doit marcher même si le reste a changé.
 """
@@ -21,6 +27,7 @@ RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEPOT = "wfisk/bridge-coach"
 GARDER = {".venv", ".python", ".installeur", ".git", ".claude", ".ancien-programme"}   # jamais remplacés
 JOURNAL = "derniere-mise-a-jour.txt"
+ANNULABLE = ".annulable.json"                             # dans .ancien-programme/ : la mise à jour peut être annulée
 
 
 def version_locale(racine=RACINE):
@@ -118,6 +125,7 @@ def poser(archive, racine=RACINE, python=None, journal=print):
     if not os.path.isdir(os.path.join(source, "src")): raise ValueError("l'archive ne contient pas le programme")
     ancien = os.path.join(racine, ".ancien-programme")
     shutil.rmtree(ancien, ignore_errors=True); os.makedirs(ancien)
+    avant = version_locale(racine)
     exig = lambda d: open(os.path.join(d, "requirements.txt"), encoding="utf-8").read() if os.path.exists(os.path.join(d, "requirements.txt")) else ""
     libs_avant = exig(racine); libs_changees = False
     for x in os.listdir(racine):                         # l'ancien programme de côté
@@ -142,7 +150,50 @@ def poser(archive, racine=RACINE, python=None, journal=print):
         return False
     finally:
         shutil.rmtree(neuf, ignore_errors=True)
-    shutil.rmtree(ancien, ignore_errors=True)
+    if libs_changees:                                     # les bibliothèques ont changé : l'ancien programme ne revient pas
+        shutil.rmtree(ancien, ignore_errors=True)
+    else:                                                 # l'ancien programme reste, une version : on peut annuler (annuler)
+        with open(os.path.join(ancien, ANNULABLE), "w", encoding="utf-8") as f:
+            json.dump(dict(avant=avant, apres=version_locale(racine), le=time.strftime("%Y-%m-%d")), f)
+    return True
+
+
+def annulable(racine=RACINE):
+    """{"avant", "apres", "le"} si la dernière mise à jour peut être annulée (l'ancien programme est gardé, les
+    bibliothèques n'ont pas changé), sinon None."""
+    try:
+        x = json.load(open(os.path.join(racine, ".ancien-programme", ANNULABLE), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return x if x.get("apres") == version_locale(racine) else None
+
+
+def annuler(racine=RACINE, python=None, journal=print):
+    """Remet le programme d'avant la dernière mise à jour, tel qu'il était (rien n'est téléchargé), une seule fois.
+    Les séances, rapports et réglages ne sont pas touchés. Renvoie True si tout va bien ; sinon rien ne change."""
+    python = python or (os.path.join(racine, ".venv", "Scripts", "python.exe") if os.name == "nt"
+                        else os.path.join(racine, ".venv", "bin", "python"))
+    a = annulable(racine)
+    if not a: raise ValueError("aucune mise à jour à annuler")
+    ancien = os.path.join(racine, ".ancien-programme")
+    os.remove(os.path.join(ancien, ANNULABLE))
+    actuel = tempfile.mkdtemp(prefix="bridge-coach-annule-")
+    for x in os.listdir(racine):                          # le programme d'aujourd'hui de côté
+        if x not in GARDER: shutil.move(os.path.join(racine, x), os.path.join(actuel, x))
+    try:
+        for x in os.listdir(ancien): shutil.move(os.path.join(ancien, x), os.path.join(racine, x))
+        subprocess.run([python, "-I", "-X", "utf8", "-c", "import sys; sys.path.insert(0, 'src'); import rapport, donnes, edition"],
+                       cwd=racine, check=True, capture_output=True)
+    except Exception as ex:
+        journal(f"Échec ({type(ex).__name__} : {ex}) : la version {a['apres']} est gardée.")
+        for x in os.listdir(racine):
+            if x in GARDER: continue
+            c = os.path.join(racine, x)
+            shutil.rmtree(c, ignore_errors=True) if os.path.isdir(c) else os.remove(c)
+        for x in os.listdir(actuel): shutil.move(os.path.join(actuel, x), os.path.join(racine, x))
+        shutil.rmtree(actuel, ignore_errors=True)
+        return False
+    shutil.rmtree(actuel, ignore_errors=True); shutil.rmtree(ancien, ignore_errors=True)
     return True
 
 
@@ -170,8 +221,13 @@ def main():
     try:
         if pid: attendre(pid)
         time.sleep(1)                                     # les derniers fichiers se ferment
-        journal(f"Mise à jour de {version_locale()} vers {version}")
-        ok = poser(archive_verifiee(version, journal), journal=journal)
+        if version == "annuler":                          # --appliquer annuler : revenir à la version d'avant, sans rien télécharger
+            a = annulable() or {}
+            journal(f"Mise à jour annulée : retour de {version_locale()} à {a.get('avant', '?')}")
+            ok = annuler(journal=journal)
+        else:
+            journal(f"Mise à jour de {version_locale()} vers {version}")
+            ok = poser(archive_verifiee(version, journal), journal=journal)
         journal("Terminé." if ok else "Rien n'a changé.")
     except Exception as ex:
         journal(f"Échec : {type(ex).__name__} : {ex}. Le programme n'a pas changé.")

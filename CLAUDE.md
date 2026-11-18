@@ -221,6 +221,13 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         requirements.txt changed, checks the new code imports, restores the old one on any failure, writes
                         rapports/derniere-mise-a-jour.txt and reopens the app. The zip is checked against the Release's SHA256SUMS
                         (archive_verifiee, empreinte_de); a tag with no Release assets falls back to the tag archive, unchecked.
+                        Cancel (2026-11-18, the user): after a successful update the old program stays in .ancien-programme/
+                        (one version, with .annulable.json; not when requirements.txt changed); Réglages › Mise à jour shows
+                        « Annuler la mise à jour » (app.annuler_maj, a confirm dialog) which runs maj.py --appliquer annuler:
+                        maj.annuler puts it back as it was, no download, once (etat maj_annulee: the refused version is still
+                        offered, with a reminder). No automatic backup (the user, 2026-11-18: Réglages › Sauvegarder mes séances
+                        exists; cancelling never touches the sessions). Session files are JSON that only gain fields, so the
+                        version before reads them.
                         Never touches .venv/.python/.installeur/.git; a Git clone is told
                         to use git pull. tests/test_maj.py applies a good and a broken version to throwaway copies
       donnes.py         creates training deals: a count per theme ("Squeeze=4" "Aléatoire=8", lire_quotas; the app's − / + list), each theme a test on a random

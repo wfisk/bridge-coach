@@ -3101,7 +3101,18 @@ def page():
         if jeu.get("demo_cle") != (c, d["n"]):
             import demo
             jeu.update(demo=demo.Demo(d, lire_analyses(c)), demo_cle=(c, d["n"]), pas=0, demo_msg="")
+            background_tasks.create(demo_fond(jeu["demo"]))
         return jeu["demo"]
+
+    async def demo_fond(m):
+        """Les robots jouent toute la donne d'avance, en tâche de fond, pendant que l'enseignant parle : ▶ n'attend plus
+        (l'utilisateur, 2026-11-18 : Démo et Revoir étaient lents ; aucune pause ajoutée). Une carte à la fois ; « et si… »
+        (essayer) repart de la carte jouée, et le calcul d'avance le suit."""
+        while jeu.get("demo") is m and not m.fini():
+            try:
+                if not await run.io_bound(m.calculer, len(m.cartes)): break
+            except Exception:
+                break
 
     async def demo_aller(k):
         """Va au pas k (0 : rien d'annoncé) ; une carte pas encore jouée est calculée (les robots réfléchissent)."""
@@ -3285,9 +3296,10 @@ def page():
 
     async def demo_essayer(m, j, x):
         """Double mort : l'enseignant joue une autre carte à la place de la carte j + 1 ; la suite repart de là."""
-        try: m.essayer(j, x)
+        try: await run.io_bound(m.essayer, j, x)
         except ValueError: return
         jeu["pas"] = m.n_encheres + j + 2; vue_jouer.refresh()
+        background_tasks.create(demo_fond(m))           # la nouvelle suite se calcule d'avance, elle aussi
 
     COULEUR_TOUCHE = {"T": "♣", "K": "♦", "C": "♥", "P": "♠", "S": "SA"}   # trèfle, carreau, cœur, pique, sans-atout
 

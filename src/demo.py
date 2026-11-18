@@ -15,6 +15,7 @@ servir les mêmes pas et les mêmes questions.
     m.dm(j)                      # {(couleur, rang): levées du déclarant} pour qui joue la carte j + 1
     m.essayer(j, carte)          # la carte j + 1 remplacée ; les cartes suivantes sont oubliées
 """
+import threading
 import carte, jouer
 from encheres import encherir
 
@@ -43,6 +44,7 @@ class Demo:
         self.contrat, self.decl = jouer.contrat(self.seq, d["donneur"])
         self.n_encheres = len(self.seq)
         self.cartes, self.pensees = [], []                # le jeu calculé jusqu'ici, et ce que pensait chaque joueur
+        self._verrou = threading.Lock()                   # les robots calculent en tâche de fond (app.demo_fond) et à la demande
         self._partie = None
         if self.decl:
             self._partie = self._neuve()
@@ -72,15 +74,17 @@ class Demo:
         return not self.decl or (self._partie is not None and self._partie.fini() and len(self.cartes) == len(self._partie.pos.jouees))
 
     def calculer(self, j):
-        """Joue les robots jusqu'à la carte j comprise (0 : l'entame) ; renvoie False si la donne finit avant."""
-        p = self._partie
-        while len(self.cartes) <= j:
-            if p is None or p.fini(): return False
-            x = p.carte_robot()                            # garde sa pensée dans p.pensees
-            p.poser(x)
-            self.cartes.append(x)
-            self.pensees.append(p.pensees[-1])
-        return True
+        """Joue les robots jusqu'à la carte j comprise (0 : l'entame) ; renvoie False si la donne finit avant. Une carte
+        à la fois sous le verrou : la tâche de fond qui calcule d'avance et « et si… » (essayer) ne se marchent pas dessus."""
+        while True:
+            with self._verrou:
+                if len(self.cartes) > j: return True
+                p = self._partie
+                if p is None or p.fini(): return False
+                x = p.carte_robot()                        # garde sa pensée dans p.pensees
+                p.poser(x)
+                self.cartes.append(x)
+                self.pensees.append(p.pensees[-1])
 
     def etape(self, k):
         """Le pas k : une enchère (k < n_encheres), puis une carte (calculée si besoin), puis la fin."""
@@ -121,6 +125,10 @@ class Demo:
 
     def essayer(self, j, x):
         """La carte j + 1 devient x (jouable à ce moment) ; les robots reprendront de là quand on avancera."""
+        with self._verrou:
+            self._essayer(j, x)
+
+    def _essayer(self, j, x):
         q = self.position(j)
         if x not in q.legales(): raise ValueError(f"{carte.carte_fr(*x)} ne peut pas être jouée")
         s = q.au_trait()

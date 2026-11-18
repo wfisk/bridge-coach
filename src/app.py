@@ -1674,6 +1674,26 @@ def importer_expert(c, chemin):
             f"l'expert couvre maintenant {len(fusion['donnes'])} donnes sur {len(nums)}.")
 
 
+PART_ = {"N": "S", "S": "N", "E": "O", "O": "E"}
+
+
+def sens_public(texte):
+    """Le sens d'une enchère sans la main de celui qui l'a faite, pour un joueur dont on ne voit pas les cartes :
+    « 11 H, quatre piques, singleton cœur : 13+ points, fit différé ; HLD 14 = … » -> « 13+ points, fit différé ».
+    Ôte la description de la main avant le premier « : », le calcul « ; HLD … » et la phrase « … convenait aussi ».
+    « 3 clés (3041 : 3 ou 0) » -> « 3 ou 0 clés (3041) »."""
+    t = (texte or "").strip()
+    t = re.sub(r"\.\s+[^.]*convenait aussi.*$", "", t)
+    t = re.sub(r"\s*;\s*HLD.*$", "", t)
+    m = re.match(r"^\d clés? \(3041 : ([^)]+)\)(.*)$", t)
+    if m: return f"{m[1]} clés (3041){m[2]}"
+    tete, sep, reste = t.partition(" : ")
+    if sep and re.search(r"\d+ H\b|\b(deux|trois|quatre|cinq|six|sept|huit|singleton|chicane|cartes à|fit à|points ensemble|"
+                         r"couleurs contrôlées)\b", tete):
+        t = reste
+    return t[:1].upper() + t[1:] if t else t
+
+
 def grille_html(enc, vul=None, qui=None, sens=None):
     """Une grille d'enchères Ouest Nord Est Sud (lignes d'une analyse, standard ou expert). vul : la vulnérabilité de
     la donne ; chaque place est alors soulignée d'un trait épais, rouge si vulnérable, vert sinon. qui : "coach" ou
@@ -2317,9 +2337,20 @@ def page():
             jeu["revele"] = False
 
     def sens_jouer(jusqu_a=None):
-        """{rang: (siège, sens, alertée)} des enchères de la donne en cours, pour grille_html."""
+        """{rang: (siège, sens, alertée)} des enchères de la donne en cours, pour grille_html. Pour un joueur dont vous ne
+        voyez pas les cartes, seulement ce que l'enchère montre, pas sa main (sens_public ; l'utilisateur, 2026-11-18)."""
         al = set(jeu.get("alertes") or [])
-        return {k: (x, t_ or "", k in al) for k, (x, b, t_) in enumerate(jeu["ex"][:jusqu_a])}
+        vus = sieges_vus()
+        return {k: (x, (t_ or "") if x in vus else sens_public(t_ or ""), k in al) for k, (x, b, t_) in enumerate(jeu["ex"][:jusqu_a])}
+
+    def sieges_vus():
+        """Les mains que le joueur voit dans Jouer : la sienne ; le mort une fois l'entame faite ; toutes à la fin."""
+        vus = {jeu.get("siege") or "S"}
+        p = jeu.get("partie")
+        if p:
+            if p.fini(): return set("NESO")
+            if p.pos.jouees: vus.update((p.decl, PART_[p.decl]) if jeu.get("siege") in (p.decl, PART_[p.decl]) else (PART_[p.decl],))
+        return vus
 
     def saut(d, b):
         """L'enchère b saute-t-elle un palier ? (plus haut que le plus bas possible dans sa dénomination)"""

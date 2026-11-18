@@ -220,3 +220,10 @@ assert {e[1:] for e in etiquettes if e.startswith("v")} <= {v for v, _, _ in tou
 for i in range(305): app.noter_temps("Essai", 1.5)
 lignes = open(os.path.join(rapport.RAPPORTS, app.TEMPS), encoding="utf-8").read().splitlines()
 assert lignes[0].startswith("Bridge Coach") and len(lignes) == 301 and lignes[-1].endswith("Essai · 1,5 s"), lignes[-1]
+
+# Jouer : le sens d'une enchère d'un joueur dont on ne voit pas les cartes, sans sa main (l'utilisateur, 2026-11-18)
+assert app.sens_public("11 H, quatre piques, singleton cœur, quatre trèfles : 13+ points, fit différé ; HLD 14 = 11 H + 2 (courtes)") == "13+ points, fit différé"
+assert app.sens_public("3 clés (3041 : 3 ou 0)") == "3 ou 0 clés (3041)"
+assert app.sens_public("12 H, quatre cœurs : 6+ H, 4+ cœurs. 1♠ (6+ H, 4+ piques) convenait aussi, mais vient après dans le système") == "6+ H, 4+ cœurs"
+assert app.sens_public("petit chelem") == "Petit chelem"
+print("sens_public ok")

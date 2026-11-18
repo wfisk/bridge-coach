@@ -1718,7 +1718,7 @@ def grille_html(enc, vul=None, qui=None, sens=None):
         if not x or not (x[1] or x[2]):
             return f"<td style='padding:1px 10px;text-align:center'>{rouge(c)}</td>"
         siege, texte, alerte = x
-        a = "<span class='marque-alerte' title='Alerte'>A</span>" if alerte else ""
+        a = ""                                    # pas de « A » : le carton Alerte ne reste pas sur la table (l'utilisateur, 2026-11-18)
         bulle = (f"<b>{'Alerte — ' if alerte else ''}{SIEGE[siege]} {rouge(c)}</b>" + (f" : {rouge(h_.escape(texte))}" if texte else ""))
         cote = f" c{i % 4}"                                     # la colonne : la bulle reste dans la grille
         return (f"<td class='enc-sens{cote}' style='padding:1px 10px;text-align:center'>{rouge(c)}{a}"
@@ -2385,18 +2385,27 @@ def page():
         notes = []                                          # l'entraînement à l'alerte et au Stop
         k = len(jeu["seq"])
         seq, ex, ind, al = await run.io_bound(jouer.avancer_alertes, d, jeu["seq"] + [b], jeu["siege"])
-        if du_coach and k in al: jeu["alerte"] = True      # l'enchère du coach : son Alerte est posée pour vous,
+        # l'Alerte, comme à la FFB : c'est le partenaire de celui qui fait l'enchère conventionnelle qui alerte. Votre
+        # partenaire vient d'en faire une : le carton Alerte d'abord, avant toute enchère, même Passe (l'utilisateur,
+        # 2026-11-18 : « le coach doit insister pour que le premier carton posé soit l'Alerte »). Vos propres enchères
+        # conventionnelles, c'est le robot votre partenaire qui les alerte.
+        kp = k - 2
+        a_alerter = kp >= 0 and kp in set(jeu.get("alertes") or [])
+        if du_coach and a_alerter: jeu["alerte"] = True    # « Prendre » l'enchère du coach : il pose l'Alerte pour vous,
         if du_coach and saut(d, b): jeu["stop"] = True     # et son Stop avant un saut
+        if a_alerter and not jeu.get("alerte"):
+            sens = sens_public(next((t_ for x, bb, t_ in jeu["ex"][kp:kp + 1] if t_), ""))
+            jeu["note"] = (f"Votre partenaire a dit {jeu['seq'][kp]}" + (f" ({sens})" if sens else "") +
+                           " : une enchère conventionnelle. C'est à vous de l'alerter : posez d'abord le carton Alerte, "
+                           "puis votre enchère.")
+            vue_jouer.refresh(); return
         if not force and coach_arrete():                    # pas l'enchère du coach : il vous arrête et dit pourquoi
             avis = avis_enchere(b, k, ex)
             if avis:
                 jeu["avis_coach"] = avis; vue_jouer.refresh(); return
-        if k in al and not jeu.get("alerte"):              # une enchère artificielle sans le carton Alerte : reprise
-            sens = next((t_ for x, bb, t_ in ex[k:k + 1] if t_), "")
-            jeu["note"] = (f"{b} est une enchère artificielle" + (f" ({sens})" if sens else "") +
-                           " : posez d'abord le carton Alerte, puis votre enchère.")
-            vue_jouer.refresh(); return
-        if jeu.get("alerte") and k not in al: notes.append(f"{b} n'est pas une enchère artificielle : pas besoin d'alerter.")
+        if jeu.get("alerte") and not a_alerter:
+            notes.append("L'Alerte est pour une enchère conventionnelle de votre partenaire, et la sienne ne l'était pas : "
+                         "pas besoin d'alerter.")
         if saut(d, b) and not jeu.get("stop"): notes.append(f"{b} est un saut : on pose d'abord le Stop.")
         elif jeu.get("stop") and not saut(d, b): notes.append("Le Stop annonce un saut ; cette enchère n'en est pas un.")
         jeu.update(note=" ".join(notes), stop=False, alerte=False)
@@ -2461,9 +2470,10 @@ def page():
               with ui.row().classes("gap-1 no-wrap justify-center w-full"):
                 ui.html(f"<div class='onglet stop{' pose' if jeu.get('stop') else ''}' data-tab='S' title='Avant un saut'>STOP</div>", sanitize=False) \
                     .on("click", lambda: (jeu.update(stop=not jeu.get("stop")), vue_jouer.refresh()))
-                # Alerte : posée avant votre enchère artificielle (l'utilisateur, 2026-11-11) ; sans elle, l'enchère est reprise
+                # Alerte : posée quand votre partenaire vient de faire une enchère conventionnelle, avant votre enchère
+                # (la règle FFB : le partenaire alerte ; l'utilisateur, 2026-11-18)
                 ui.html(f"<div class='onglet alerte{' pose' if jeu.get('alerte') else ''}' data-tab='A' "
-                        "title='Avant une enchère artificielle'>ALERT</div>", sanitize=False) \
+                        "title='Votre partenaire a fait une enchère conventionnelle : alertez avant votre enchère'>ALERT</div>", sanitize=False) \
                     .on("click", lambda: (jeu.update(alerte=not jeu.get("alerte")), vue_jouer.refresh()))
 
     # ---------------------------------------------------------------- le jeu de la carte
@@ -2865,7 +2875,10 @@ def page():
             if demo_: return out
             if x == jeu["siege"] and jeu.get("stop"):
                 out += "<div class='carton carre stop a-part derniere'><div class='face'><span class='tab gauche'></span><span class='base mot'>"+lettres('STOP')+"</span></div></div>"
-            if x == jeu["siege"] and jeu.get("alerte"):
+            vu = jeu.get("affiche", len(jeu.get("seq") or [])) - 1
+            par_robot = (vu >= 0 and vu in set(jeu.get("alertes") or []) and vu < len(jeu.get("ex") or [])
+                         and PART_[jeu["ex"][vu][0]] == x and x != jeu["siege"])   # le robot partenaire de l'enchère conventionnelle
+            if (x == jeu["siege"] and jeu.get("alerte")) or par_robot:
                 out += "<div class='carton carre alerte a-part derniere'><div class='face'><span class='tab'></span><span class='base mot'>"+lettres('ALERT')+"</span></div></div>"
             return out
         def pile(x, ou):

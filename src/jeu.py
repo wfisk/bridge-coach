@@ -757,20 +757,20 @@ def phrase_elimination(d, contrat, decl, entame, encheres, reste):
 
 def donnes_du_declarant(d, decl, encheres, entame, n, essais=30000):
     """n donnes : le déclarant et le mort tels quels, le reste au hasard, fidèle aux enchères et
-    à l'entame. Ce que le déclarant peut imaginer : jamais les mains adverses réelles."""
+    à l'entame (None : avant l'entame). Ce que le déclarant peut imaginer : jamais les mains adverses réelles."""
     import random
     rnd = random.Random(d.get("n"))
     mort = PART[decl]; g, dr = LHO[decl], RHO[decl]
     cx = lire_encheres(encheres, d["donneur"])
     vues = {c: suites(d["mains"][decl])[c] + suites(d["mains"][mort])[c] for c in COULEURS}
-    e = (COULEURS.index(entame[0]), entame[1:])
+    e = (COULEURS.index(entame[0]), entame[1:]) if entame else None
     reste = [(COULEURS.index(k), x) for k in COULEURS for x in ORDRE if x not in vues[k] and (COULEURS.index(k), x) != e]
     out = []
     for marge, moins_L in ((1, 0), (3, 1)):
         out = []
         for _ in range(essais):
             rnd.shuffle(reste)
-            lots = {g: reste[:12] + [e], dr: reste[12:]}
+            lots = {g: reste[:12] + [e], dr: reste[12:]} if e else {g: reste[:13], dr: reste[13:]}
             ok = True
             for x, cartes in lots.items():
                 L = [0, 0, 0, 0]; h = 0

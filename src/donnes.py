@@ -16,7 +16,7 @@ sys.path.insert(0, ICI)
 from bws_extract import SEAT, SN, VUL16, par
 from encheres import encherir
 from encheres.main import Main
-from jeu import COULEURS, ORDRE, compter_plan, levees_par_entame, entame_et_defense, _pbn
+from jeu import COULEURS, ORDRE, compter_plan, levees_par_entame, entame_et_defense, donnes_du_declarant, _pbn
 import coups, lignes
 
 ALEATOIRE = "Aléatoire"
@@ -24,6 +24,8 @@ SAISIE = "Donne saisie"
 LETTRES = {"P": "♠", "C": "♥", "K": "♦", "T": "♣"}
 VUL_TEXTE = {"NN": "Personne", "VN": "N-S", "NV": "E-O", "VV": "Tous"}
 DELAI = 150                                                # secondes pour trouver une donne d'un thème
+MONDES = 60                                                # donnes imaginées pour juger un contrat à la table
+TAUX = {"petit": .6, "grand": .7, "manche": .55}           # sa réussite minimale dans ces donnes imaginées
 SIEGES = "NESO"
 EN = {"N": "N", "E": "E", "S": "S", "O": "W"}
 COUL = {"SA": "NT", "♠": "S", "♥": "H", "♦": "D", "♣": "C"}
@@ -36,7 +38,7 @@ class Essai:
     """Une donne tirée, et ce qu'en disent le moteur et le solveur, calculés seulement si un thème le demande."""
 
     def __init__(self, d):
-        self.d = d; self.mains = d["mains"]; self._enc = self._dm = None
+        self.d = d; self.mains = d["mains"]; self._enc = self._dm = None; self._taux = {}; self.chances = None
 
     @property
     def enc(self):
@@ -70,6 +72,15 @@ class Essai:
         """Le contrat du moteur gagne au double mort."""
         c = self.contrat.rstrip("X")
         return c != "passe" and self.dm[c[1:]][self.decl] >= int(c[0]) + 6
+
+    def taux(self, contrat=None, decl=None):
+        """La part des MONDES donnes imaginées où le contrat (celui du moteur par défaut) gagne au double mort :
+        le déclarant et le mort tels quels, les mains adverses au hasard, fidèles aux enchères (jeu.donnes_du_declarant,
+        sans l'entame : la défense trouve la meilleure). Ce qu'un joueur peut juger à la table, jamais la donne réelle."""
+        contrat = (contrat or self.contrat).rstrip("X"); decl = decl or self.decl
+        if (contrat, decl) not in self._taux:
+            self._taux[contrat, decl] = taux_contrat(self.d, contrat, decl, self.seq)
+        return self._taux[contrat, decl]
 
     def h(self, s): return Main(self.mains[s]).hcp
 
@@ -106,12 +117,68 @@ def pbn(data):
     return "\n".join(out)
 
 
-def chelem(e, tricks):
-    """Un camp fait exactement ce nombre de levées (12 ou 13 ou plus) à son meilleur contrat, avec les points pour y aller."""
-    for s in "NE":
-        t = max(x[y] for x in e.dm.values() for y in (s, PART[s]))
-        if t in tricks and e.camp_h(s) >= 27: return True
-    return False
+def taux_contrat(d, contrat, decl, seq, n=MONDES):
+    """La part des n donnes imaginées (fidèles aux enchères) où contrat gagne au double mort ; None sans donnes."""
+    from endplay.types import Deal, Denom
+    from endplay.dds import calc_all_tables
+    mondes = donnes_du_declarant(d, decl, seq, None, n)
+    if len(mondes) < n // 2: return None
+    den = contrat[1:]; need = int(contrat[0]) + 6
+    garde = {"♠": Denom.spades, "♥": Denom.hearts, "♦": Denom.diamonds, "♣": Denom.clubs, "SA": Denom.nt}[den]
+    tables = calc_all_tables([Deal(_pbn(m)) for m in mondes], exclude=[x for x in (Denom.spades, Denom.hearts, Denom.diamonds, Denom.clubs, Denom.nt) if x != garde])
+    i = ("♠", "♥", "♦", "♣", "SA").index(den); j = SIEGES.index(decl)
+    return sum(t.to_list()[i][j] >= need for t in tables) / len(mondes)
+
+
+def cles(e, decl, den):
+    """(clés, dame d'atout) du camp du déclarant : les quatre as et le roi d'atout (les as seuls à SA)."""
+    m = [e.mains[decl].split(), e.mains[PART[decl]].split()]
+    n = sum("A" in x[k] for x in m for k in range(4))
+    if den == "SA": return n, True
+    k = COULEURS.index(den)
+    return n + sum("R" in x[k] for x in m), any("D" in x[k] for x in m) or sum(len(x[k].replace("-", "")) for x in m) >= 10
+
+
+def enchere_saine(e, niveau):
+    """Le moteur arrive lui-même au contrat de ce niveau (6 ou 7), sans contre, par une séquence que le système
+    décrit jusqu'au bout et sans enchère folle : au petit chelem il manque au plus une clé, au grand aucune, ni la
+    dame d'atout."""
+    c = e.contrat
+    if e.enc.get("statut") != "complète" or c == "passe" or c.endswith("X") or int(c[0]) != niveau: return False
+    k, dame = cles(e, e.decl, c[1:])
+    return k >= (4 if c[1:] == "SA" else 5) and dame if niveau == 7 else k >= (3 if c[1:] == "SA" else 4)
+
+
+def a_la_table(e, cle):
+    """Le contrat du moteur gagne dans assez de donnes imaginées (TAUX[cle]) et, sous le grand chelem, le palier du
+    dessus dans la même dénomination n'est pas aussi un bon pari (petit chelem au lieu de la manche, grand au lieu du
+    petit : la donne enseignerait un contrat trop bas) ; retient ce qu'en dira le commentaire."""
+    t = e.taux()
+    if t is None or t < TAUX[cle]: return False
+    c = e.contrat.rstrip("X")
+    if c[0] != "7":
+        haut = ("6" if c[0] in "345" else "7") + c[1:]
+        u = e.taux(haut, e.decl)
+        if u is not None and u >= TAUX["grand" if haut[0] == "7" else "petit"]: return False
+    e.chances = dict(contrat=c, declarant=e.decl, taux=round(t, 2), mondes=MONDES, encheres=list(e.seq),
+                     dm=e.dm[c[1:]][e.decl])
+    return True
+
+
+def chelem(e, niveaux):
+    """Un chelem que le moteur demande (niveaux : (6,), (7,) ou les deux), sain, et qui gagne assez souvent à la table.
+    Le double mort de la donne réelle ne décide pas : un bon chelem peut chuter sur une mauvaise répartition."""
+    if max(e.camp_h(s) for s in "NE") < 25: return False   # filtre rapide, avant les enchères
+    return any(enchere_saine(e, x) for x in niveaux) and a_la_table(e, "petit" if int(e.contrat[0]) == 6 else "grand")
+
+
+def manche(e, contrats):
+    """Une manche que le moteur demande et qui gagne assez souvent à la table (pas seulement au double mort)."""
+    c = e.contrat
+    if not (c.rstrip("X") in contrats and e.enc.get("statut") == "complète" and not c.endswith("X")): return False
+    if not a_la_table(e, "manche"): return False
+    return not (c[0] == "5" and any((e.taux("3SA", x) or 0) >= TAUX["manche"] for x in (e.decl, PART[e.decl])))
+    # en mineure, 3SA (une levée de moins à faire) ne doit pas être aussi un bon pari
 
 
 def premier_actif(e, i=0):
@@ -138,7 +205,14 @@ def bicolore(e):
     return any(any(m in x for m in BICOLORES) for _s, _b, x in e.enc.get("explications", []))
 
 
-def blackwood(e): return "4SA" in e.seq and bool(re.match(r"^[67]", e.contrat)) and e.fait()
+def blackwood(e):
+    """Le moteur demande les clés (Blackwood 3041) puis s'arrête à 5 (deux clés manquent : son contrat doit gagner
+    à la table) ou demande un chelem sain et de bonnes chances."""
+    if max(e.camp_h(s) for s in "NE") < 25: return False
+    i = next((k for k, (_s, b, x) in enumerate(e.enc["explications"]) if b == "4SA" and "Blackwood" in str(x)), None)
+    if i is None or e.contrat == "passe" or e.contrat.endswith("X"): return False
+    if e.contrat[0] == "5": return e.enc.get("statut") == "complète" and a_la_table(e, "petit")
+    return chelem(e, (6, 7))
 
 
 def intervention(e):
@@ -263,23 +337,23 @@ THEMES = {
     "Barrage": barrage,
     "Michaels et bicolores": bicolore,
     "Blackwood": blackwood,
-    "Chelem": lambda e: chelem(e, (12, 13)),
+    "Chelem": lambda e: chelem(e, (6, 7)),
     "Contre d'appel": contre_appel,
     "Contre Spoutnik": spoutnik,
     "Drury": drury,
     "Enchères à SA": lambda e: ouverture(e) in ("1SA", "2SA"),
     "Entame décisive": jeu_entame,
-    "Grand chelem": lambda e: chelem(e, (13,)),
+    "Grand chelem": lambda e: chelem(e, (7,)),
     "Hold-up": lambda e: coup(e, "laisser-passer"),
     "Intervention": intervention,
     "Jeu de la carte": lambda e: bool(plan_court(e)),
     "Jeu de la carte avancé": lambda e: coup(e, "squeeze", "mise en main", "laisser-passer", "coup à blanc"),
-    "Manche à SA": lambda e: e.contrat.rstrip("X") == "3SA" and e.fait(),
-    "Manche en majeure": lambda e: e.contrat.rstrip("X") in ("4♥", "4♠") and e.fait(),
-    "Manche en mineure": lambda e: e.contrat.rstrip("X") in ("5♣", "5♦") and e.fait(),
+    "Manche à SA": lambda e: manche(e, ("3SA",)),
+    "Manche en majeure": lambda e: manche(e, ("4♥", "4♠")),
+    "Manche en mineure": lambda e: manche(e, ("5♣", "5♦")),
     "Mise en main": lambda e: coup(e, "mise en main"),
     "Partielle disputée": partielle,
-    "Petit chelem": lambda e: chelem(e, (12,)),
+    "Petit chelem": lambda e: chelem(e, (6,)),
     "Quatrième couleur forcing": quatrieme,
     "Réveil": reveil,
     "Roudi": roudi,
@@ -356,7 +430,8 @@ def tirer(rnd):
 
 
 def chercher(arg):
-    """(n, thème, mains, trouvé) : une donne du thème pour le n° de donne, dans le délai."""
+    """(n, thème, mains, trouvé, chances) : une donne du thème pour le n° de donne, dans le délai ; chances : ce que
+    a_la_table a retenu du contrat (enchères, réussite à la table, double mort réel), ou None."""
     n, theme, graine, delai = arg
     rnd = random.Random(graine); test = test_theme(theme)
     d = dict(n=n, donneur=SIEGES[(n - 1) % 4], vul=VUL16[(n - 1) % 16], mains=None)
@@ -365,9 +440,9 @@ def chercher(arg):
     while True:
         d["mains"] = tirer(rnd); essais += 1
         e = Essai(d)
-        if test(e): return n, theme, d["mains"], True, essais
-        if seul and time.time() > debut + delai / 2 and THEMES[seul](e): return n, seul, d["mains"], True, essais
-        if time.time() > fin: return n, theme, tirer(rnd), False, essais
+        if test(e): return n, theme, d["mains"], True, e.chances
+        if seul and time.time() > debut + delai / 2 and THEMES[seul](e): return n, seul, d["mains"], True, e.chances
+        if time.time() > fin: return n, theme, tirer(rnd), False, None
 
 
 def lire_texte(ligne):
@@ -417,10 +492,11 @@ def creer_saisies(lignes, dossier=None):
     return ecrire(donnes, [SAISIE], dossier)
 
 
-def donne_complete(n, theme, mains, trouve, donneur=None, vul=None):
+def donne_complete(n, theme, mains, trouve, donneur=None, vul=None, chances=None):
     dm = double_mort(mains)
     d = dict(n=n, donneur=donneur or SIEGES[(n - 1) % 4], vul=vul or VUL16[(n - 1) % 16], mains=mains, tables=[], dm=dm,
              theme=theme if trouve else ALEATOIRE)
+    if chances and trouve: d["chances"] = chances           # le contrat du thème jugé à la table (commentaires.chances)
     d["hcp"] = {s: Main(mains[s]).hcp for s in SIEGES}
     d["par"] = par(he_de(dm, d["hcp"]), d["vul"], EN[d["donneur"]])
     return d
@@ -443,7 +519,7 @@ def creer(quotas, graine=None, delai=DELAI, dossier=None):
     voulus = {i: t for i, t, _, _ in args}
     for n, t, m, ok, _ in res:                             # deux thèmes voulus, un seul trouvé : on le dit
         if ok and voulus.get(n) != t: print(f"Thème non trouvé : {voulus[n]}, la donne {n} ne garde que {t}", flush=True)
-    donnes = [donne_complete(n, t, m, ok) for n, t, m, ok, _ in res]
+    donnes = [donne_complete(n, t, m, ok, chances=c) for n, t, m, ok, c in res]
     chemin = ecrire(donnes, themes, dossier)
     for t in dict.fromkeys(manquees):
         print(f"Thème non trouvé : {t}, {manquees.count(t)} donne(s) tirée(s) au hasard à la place", flush=True)

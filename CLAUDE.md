@@ -227,6 +227,16 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         deal (THEMES: engine auction, double-dummy, coups.py or the plan's count), DELAI seconds per deal, then
                         random and says so. Writes AAAA-MM-JJ-entrainement-<themes>.bc.json (source "entrainement" or "saisie") and a .pbn for Bridgemate
                         (Control Software 3.1.2+: File, Import). Deals have no tables: their report has no results tables
+                        Contract themes are judged at the table, not on the real layout (2026-11-18, the user: « they have to be
+                        biddable and have a good chance of making »): Petit chelem / Grand chelem / Chelem / Blackwood / the three
+                        Manche themes keep a deal only when the engine bids the contract itself (statut complète, undoubled; a slam
+                        missing at most one key card, a grand none nor the trump queen: enchere_saine, cles) and it makes double
+                        dummy in TAUX of MONDES (60) imagined layouts true to the auction (taux_contrat: jeu.donnes_du_declarant
+                        with entame=None, best defence): small slam 60 %, grand 70 %, game 55 %; the level above in the same
+                        denomination must not also pass (a game that is a slam, a small slam that is a grand), nor 3SA for a
+                        5♣/5♦ game; Blackwood also accepts a stop at 5 after 3041. The deal keeps "chances" (contract, rate,
+                        auction, real tricks), and commentaires.chances writes it into the comment (« il chute … c'était le bon
+                        pari »). 20 deals each: 0.3–3 s a slam, 3–7 s a game. tests/test_donnes.py
                         Each theme has a family and a level (META: encheres / carte, 1 = 1re année, 2 = intermédiaire,
                         3 = avancé; new first-year themes Évaluer sa main, Soutien de la majeure, Compter ses levées, L'impasse);
                         a bidding theme and a card-play theme chosen together are combined in the same deals ("A + B",

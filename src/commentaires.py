@@ -45,6 +45,23 @@ def contrat(c):
     return (int(m[1]), m[2], len(m[3])) if m else None
 
 
+NOMS = {"N": "Nord", "E": "Est", "S": "Sud", "O": "Ouest"}
+
+
+def chances(d):
+    """La phrase d'une donne d'entraînement dont le thème est un contrat (donnes.a_la_table) : ses chances à la table,
+    puis ce que donne la répartition réelle. "" sans ce relevé."""
+    c = d.get("chances")
+    if not c: return ""
+    need = int(c["contrat"][0]) + 6; pct = 10 * round(c["taux"] * 10)
+    t = (f"<b>À la table</b>, {c['contrat']} par {NOMS.get(c['declarant'], c['declarant'])}, le contrat des enchères du coach, "
+         + (f"gagne dans presque toutes les {c['mondes']}" if c["taux"] >= .95 else f"gagne dans environ {pct} % des {c['mondes']}")
+         + " donnes imaginées fidèles aux enchères, face à la meilleure défense : un contrat à demander.")
+    if c["dm"] >= need: return t + f" Sur cette donne, il gagne ({pl(c['dm'], 'levée')} au double mort)."
+    return t + (f" Sur cette donne, il chute ({pl(c['dm'], 'levée')} au double mort) : la répartition est mauvaise, "
+                f"mais c'était le bon pari.")
+
+
 def commentaire(d):
     if not d.get("dm"): return ""
     out = []
@@ -58,6 +75,7 @@ def commentaire(d):
             v, niveau, st, s, t = b
             phr.append(f"{CAMP[c]} peuvent gagner {niveau}{st} par {s} ({pl(t, 'levée')}, {palier(niveau, st)})")
     out.append("<b>Au double mort</b>, " + " ; ".join(phr) + ".")
+    if chances(d): out.append(chances(d))
     if any((b := meilleur(d, c)) and b[1] == 7 for c in ("NS", "EO")):
         out.append("Le grand chelem est rarement demandé : le petit chelem fait déjà un bon score dans la plupart des salles.")
     if not d["tables"]:                                    # donnes créées : personne ne les a jouées

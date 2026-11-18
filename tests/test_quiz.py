@@ -29,4 +29,12 @@ print("ok après coup")
 
 passee = demo.Demo(dict(d, n=2, mains=dict(N="5432 432 432 432", E="AR5 D83 A92 D86", S="V8 AV97 V75 AX4", O="X976 X4 X63 RV92")))
 assert passee.decl or quiz.question_entame(passee) is None
+# les décisions serrées des enchères : l'appel recommandé et l'autre, rien des autres mains, avant l'entame
+qs = quiz.questions(m)
+assert qs and qs[-1]["type"] == "entame" and [q["pas"] for q in qs] == sorted(q["pas"] for q in qs)
+for q in qs[:-1]:
+    assert q["type"] == "enchere" and q["reponse"] == m.seq[q["pas"]] and q["voit"]["encheres"] == m.seq[:q["pas"]]
+    assert sum(x["bonne"] for x in q["choix"]) == 1 and len(q["choix"]) >= 2
+    assert not any(v in json.dumps(q["voit"], ensure_ascii=False) for s_, v in d["mains"].items() if s_ != q["siege"])
+    json.dumps(q)
 print("ok")

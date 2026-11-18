@@ -413,8 +413,12 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         served the same later; apres_coup adds each choice's defence tricks double dummy, only after the answer.
                         app: quiz_de, quiz_en_attente (the leader at the bottom, other hands face down, no Double mort until the
                         answer), quiz_panneau in the right sidebar (a click marks the class's answer), ▶ / → at the question
-                        shows the answer first (quiz_reveler), ⏮ asks it again. Leads only so far; next: close bids, hard
-                        cards, the teacher's choice of questions in Donnes. tests/test_quiz.py
+                        shows the answer first (quiz_reveler), ⏮ asks it again. Since 2026-11-18 several questions per deal
+                        (quiz.questions: questions_encheres, at most two close bidding decisions, a call of the recommended auction for
+                        which the engine says another « convenait aussi », the recommended call and the other as choices; then the lead):
+                        app quiz_liste / quiz_de(m, k) (the first question not yet passed) / quiz_reveles (ids) / quiz_choix (id → choice),
+                        quiz_bas (the leader stays at the bottom), the table open when the deciding player sits on a side. Help « Un quiz
+                        pour la classe ». Next: hard cards, the teacher's choice of questions in Donnes. tests/test_quiz.py
       classement.py     the tournament replay scoreboard (Jouer tab, sidebar entry « Classement » under Options, 2026-11-11;
                         app.page_classement): for each deal the latest finished attempt in <name>-jeu.json (card play to the
                         last trick, "levees", or a passed-out deal; bidding alone does not count: fini, dernier_fini), the score

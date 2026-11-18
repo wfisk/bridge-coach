@@ -11,6 +11,8 @@ son explication ; le double mort ne vient qu'après coup (apres_coup), comme dan
     q["choix"]                   # [{"carte": "♥4", "raison": …, "bonne": bool}], une carte par couleur
     apres_coup(m, q)             # ajoute à chaque choix les levées de la défense au double mort, et une phrase
 """
+import re
+
 import carte, jeu, jouer
 
 QUI = {"N": "Nord", "E": "Est", "S": "Sud", "O": "Ouest"}
@@ -53,10 +55,53 @@ def question_entame(m):
                 lecture=jeu.lecture_entame(d, m.contrat, decl, m.seq, nommees, bonne[0]) if m.seq else "")
 
 
+ALTERNATIVE = re.compile(r"\.?\s*(\d(?:SA|[♣♦♥♠])|passe|contre|surcontre) \(([^)]*)\) convenait aussi, mais vient après dans le système")
+
+
+def questions_encheres(m, nb=2):
+    """Les décisions d'enchères serrées de la démonstration m (2026-11-18, l'utilisateur : le quiz après l'entame) : un
+    appel de la séquence recommandée pour lequel le moteur dit qu'un autre « convenait aussi ». Au plus nb questions, les
+    plus hautes d'abord gardées, puis dans l'ordre des enchères. Chacune : pas = le nombre d'appels déjà faits, siege =
+    celui qui parle, voit = sa main et les enchères jusque-là, choix = l'appel recommandé et l'autre (« bonne » marque
+    le premier), explication = la raison du coach."""
+    out = []
+    i0 = jeu.ROT.index(m.d["donneur"]) if hasattr(jeu, "ROT") else "NESO".index(m.d["donneur"])
+    for i, (appel, texte) in enumerate(zip(m.seq, m.explications)):
+        if appel == "passe" or not texte: continue
+        alts = [(a, sens) for a, sens in ALTERNATIVE.findall(texte) if a != appel]
+        if not alts: continue
+        siege = "NESO"[(i0 + i) % 4]
+        raison = ALTERNATIVE.sub("", texte).strip().rstrip(".")
+        choix = sorted([dict(carte=appel, raison=raison, bonne=True)] + [dict(carte=a, raison=sens, bonne=False) for a, sens in alts[:2]],
+                       key=lambda x: _rang(x["carte"]))
+        out.append(dict(id=f"enchere-{i}", type="enchere", pas=i, siege=siege,
+                        voit=dict(main=m.d["mains"][siege], encheres=list(m.seq[:i]), donneur=m.d["donneur"], vul=m.d.get("vul")),
+                        question=f"Vous êtes {QUI[siege]}. Que dites-vous ?", choix=choix, reponse=appel,
+                        explication=raison, alternatives=[f"{a} ({sens})" for a, sens in alts[:2]]))
+    out = sorted(sorted(out, key=lambda q: -_rang(q["reponse"]))[:nb], key=lambda q: q["pas"])
+    return out
+
+
+def _rang(appel):
+    """L'ordre des appels : passe, puis 1♣ … 7SA, puis contre et surcontre."""
+    if appel == "passe": return 0
+    if appel in ("contre", "surcontre", "X", "XX"): return 99
+    return int(appel[0]) * 5 + "♣♦♥♠S".index(appel[1]) if appel[0].isdigit() else 50
+
+
+def questions(m):
+    """Toutes les questions de la démonstration m, dans l'ordre où elles se posent : les décisions d'enchères serrées,
+    puis l'entame."""
+    q = questions_encheres(m)
+    e = question_entame(m)
+    return q + ([e] if e else [])
+
+
 def apres_coup(m, q):
     """Ajoute le double mort de chaque choix (levées de la défense, « levees ») et une phrase (q["apres_coup"]) :
     ce que l'entame donne si l'on voit les quatre mains. Une phrase vide si le solveur manque."""
     if not q or q.get("apres_coup") is not None: return q
+    if q.get("type") != "entame": q["apres_coup"] = ""; return q   # une enchère : pas de double mort à montrer
     v = jeu.levees_par_entame(m.d["mains"], m.contrat[1:].rstrip("X"), m.decl)
     q["apres_coup"] = ""
     if not v: return q

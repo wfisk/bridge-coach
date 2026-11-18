@@ -1272,35 +1272,35 @@ ouverture:
 "1T - 1C - 1P - 2K":
   - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
   - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
-  - 3SA: { si: "arret K, H 15+", montre: "arrêt carreau, 15+ H", nature: conclusion }
+  - 3SA: { si: "arret K, H 15+", montre: "arrêt carreau, 15–17 H", nature: conclusion }
   - 2SA: { si: "arret K", montre: "arrêt carreau, 12–14 H", nature: limite }
   - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt carreau", nature: forcing }
   - "*U": { montre: "pas d'arrêt carreau ni de soutien : répète sa couleur", nature: forcing }
 "1K - 1C - 1P - 2T":
   - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
   - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
-  - 3SA: { si: "arret T, H 15+", montre: "arrêt trèfle, 15+ H", nature: conclusion }
+  - 3SA: { si: "arret T, H 15+", montre: "arrêt trèfle, 15–17 H", nature: conclusion }
   - 2SA: { si: "arret T", montre: "arrêt trèfle, 12–14 H", nature: limite }
   - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt trèfle", nature: forcing }
   - "*U": { montre: "pas d'arrêt trèfle ni de soutien : répète sa couleur", nature: forcing }
 "1T - 1K - 1P - 2C":
   - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
   - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
-  - 3SA: { si: "arret C, H 15+", montre: "arrêt cœur, 15+ H", nature: conclusion }
+  - 3SA: { si: "arret C, H 15+", montre: "arrêt cœur, 15–17 H", nature: conclusion }
   - 2SA: { si: "arret C", montre: "arrêt cœur, 12–14 H", nature: limite }
   - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt cœur", nature: forcing }
   - "*U": { montre: "pas d'arrêt cœur ni de soutien : répète sa couleur", nature: forcing }
 "1K - 1C - 2T - 2P":
   - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
   - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
-  - 3SA: { si: "arret P, H 15+", montre: "arrêt pique, 15+ H", nature: conclusion }
+  - 3SA: { si: "arret P, H 15+", montre: "arrêt pique, 15–17 H", nature: conclusion }
   - 2SA: { si: "arret P", montre: "arrêt pique, 12–14 H", nature: limite }
   - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt pique", nature: forcing }
   - "*U": { montre: "pas d'arrêt pique ni de soutien : répète sa couleur", nature: forcing }
 "1K - 1P - 2T - 2C":
   - "*W+1": { si: "W 3, H 15+", montre: "3 cartes à W, 15+ H", nature: forcing }
   - "*W":  { si: "W 3", montre: "3 cartes à W", nature: forcing }
-  - 3SA: { si: "arret C, H 15+", montre: "arrêt cœur, 15+ H", nature: conclusion }
+  - 3SA: { si: "arret C, H 15+", montre: "arrêt cœur, 15–17 H", nature: conclusion }
   - 2SA: { si: "arret C", montre: "arrêt cœur, 12–14 H", nature: limite }
   - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt cœur", nature: forcing }
   - "*U": { montre: "pas d'arrêt cœur ni de soutien : répète sa couleur", nature: forcing }
@@ -1308,7 +1308,7 @@ ouverture:
 "1C - 1P - 2T - 2K":
   - "*P+1": { si: "P 3, H 15+", montre: "3 cartes à pique, 15+ H", nature: forcing }
   - "*P":  { si: "P 3", montre: "3 cartes à pique", nature: forcing }
-  - 3SA: { si: "arret K, H 15+", montre: "arrêt carreau, 15+ H", nature: conclusion }
+  - 3SA: { si: "arret K, H 15+", montre: "arrêt carreau, 15–17 H", nature: conclusion }
   - "*SA": { si: "arret K", montre: "arrêt carreau, 12–14 H", nature: limite }
   - "*C": { si: "C 6+", montre: "6+ cœurs, pas d'arrêt carreau", nature: forcing }
   - "*T": { si: "T 5+", montre: "5+ trèfles, pas d'arrêt carreau", nature: forcing }
@@ -1316,7 +1316,7 @@ ouverture:
 "1C - 1P - 2K - 3T":
   - "*P+1": { si: "P 3, H 15+", montre: "3 cartes à pique, 15+ H", nature: forcing }
   - "*P":  { si: "P 3", montre: "3 cartes à pique", nature: forcing }
-  - 3SA: { si: "arret T, H 15+", montre: "arrêt trèfle, 15+ H", nature: conclusion }
+  - 3SA: { si: "arret T, H 15+", montre: "arrêt trèfle, 15–17 H", nature: conclusion }
   - "*SA": { si: "arret T", montre: "arrêt trèfle, 12–14 H", nature: limite }
   - "*C": { si: "C 6+", montre: "6+ cœurs, pas d'arrêt trèfle", nature: forcing }
   - "*K": { si: "K 5+", montre: "5+ carreaus, pas d'arrêt trèfle", nature: forcing }

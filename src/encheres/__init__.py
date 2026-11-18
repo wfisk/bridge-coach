@@ -270,6 +270,7 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
             a = avant_3sa(mains[s], s, a, hist, infos, etat)
             a = chelem(mains[s], s, a, hist, infos, etat)
             a = punir(mains[s], s, a, hist, infos, etat)
+            a = sacrifier(mains[s], s, a, hist, infos, etat)
         if not legal(a.enchere, s, etat):
             a = Appel("passe", f"({a.enchere} n'est plus possible)")
         if k >= len(imposees) and s == arret:               # au joueur de parler : on s'arrête, avec l'avis du système
@@ -496,6 +497,101 @@ def punir(m, s, a, hist, infos, etat):
     if not any(camp(x) == camp(s) and b.enchere != "passe" for x, b in hist): return a     # nous n'avons rien dit
     if m.L[d] < 4 or levees_atout(m, d) < PUNIR_LEVEES or m.hcp + infos[PART[s]].pts[0] < PUNIR_POINTS: return a
     return Appel("contre", f"{m.hcp} H, {m.L[d]} cartes à {d} : contre punitif", nature="punitif")
+
+
+# ---------------------------------------------------------------- la défense à la couleur (sacrifice)
+# Ils ont déclaré une manche ou un chelem, notre camp a un fit connu de 9+ cartes : jouer plus haut, contré, coûte-t-il
+# moins que leur manche ? Jugé à la table, sur sa main et les enchères seulement : la loi des levées totales (nos atouts
+# + les leurs, montrés, 8 au moins) donne nos levées s'ils gagnent juste leur contrat ; nos levées de défense (les miennes,
+# et celles que promettent les points montrés par le partenaire) disent s'ils le gagnent vraiment. Jamais vulnérable contre
+# non vulnérable. Les adversaires contrent un contrat qui passe au-dessus de leur manche (CONTRE_SACRIFICE).
+SACRIFICE = True               # (à confirmer) 2026-11-18, src/banc_encheres.py, 4 × 20 000 donnes : +494 / +356 / +521 / +383 IMP
+                               # (les sacrifices seuls +13 / +81 / +85 / +24 sur 83 donnes, 13 fantômes ; le contre +1 551)
+SACRIFICE_FIT = 9              # nos atouts connus (les miens + ceux montrés par le partenaire)
+SACRIFICE_EGAL = "nv"          # aussi à vulnérabilité égale : True ; seulement tous non vulnérables : "nv" (tous vulnérables : −86 IMP)
+SACRIFICE_SA = False           # aussi contre leur 3SA (la loi des levées ne s'y applique pas)
+SACRIFICE_PRUDENCE = 0         # levées de chute ajoutées à l'estimation de la loi (elle se trompe souvent d'une levée)
+SACRIFICE_PRUDENCE_5 = 1       # …et celles-ci en plus au palier de 5 ou plus (la loi y promettait une levée de trop)
+SACRIFICE_MARGE = 0            # le sacrifice contré doit coûter au moins cela de moins que leur contrat
+SACRIFICE_DEF = 1.5            # levées de défense du camp, en dessous de ce qu'il faut pour les faire chuter, moins cela
+PART_DEF = 0.15                # levées de défense par point montré par le partenaire
+CONTRE_SACRIFICE = True        # ils passent au-dessus de notre manche : on contre (avec SACRIFICE)
+ARTIFICIELLES = ("relais", "cue", "controle", "demande_arret", "blackwood", "rois", "spoutnik", "drury")
+
+
+def valeur_contrat(c, vul):
+    """Ce que marque un contrat gagné juste, non contré : « 4♥ » non vulnérable -> 420."""
+    n, d = int(c[0]), c[1:]
+    lev = n * (20 if d in "♦♣" else 30) + (10 if d == "SA" else 0)
+    v = lev + (50 if lev < 100 else 500 if vul else 300)
+    if n == 6: v += 750 if vul else 500
+    if n == 7: v += 1500 if vul else 1000
+    return v
+
+
+def chute_contree(k, vul):
+    """Ce que coûte une chute de k levées, contrée."""
+    if k <= 0: return 0
+    if vul: return 200 + 300 * (k - 1)
+    return [100, 300, 500][k - 1] if k <= 3 else 500 + 300 * (k - 3)
+
+
+def defense_main(m, eux, c):
+    """Les levées de défense rapides de ma main contre leur contrat : AR 2, AD 1,5, A 1, RD 1, Rx 0,5 ; dans notre
+    couleur (la leur sera courte), l'as seul."""
+    t = 0
+    for x in COULEURS:
+        p = m.cartes[x]
+        if x == c: t += ("A" in p); continue
+        if "A" in p: t += 2 if "R" in p else 1.5 if "D" in p else 1
+        elif "R" in p: t += 1 if "D" in p else 0.5 if len(p) >= 2 else 0
+    return t
+
+
+def sacrifier(m, s, a, hist, infos, etat):
+    """Je passerais sur leur manche (ou leur chelem) : la défense à la couleur, si la loi des levées la dit bon marché
+    et que notre camp n'a pas de quoi les faire chuter. Ou je laisse le sacrifice du partenaire, contré ou non ;
+    ou, en face, je contre leur sacrifice au-dessus de notre manche."""
+    if not SACRIFICE: return a
+    dernier = etat["dernier"]
+    dx = next((b for x, b in reversed(hist) if b.enchere == "contre"), None)
+    if etat["dbl"] == 1 and etat["par"] and camp(etat["par"]) == camp(s) and getattr(dx, "sur_manche", False) \
+            and a.enchere[0].isdigit() and a.enchere[1:] == dernier[1:]:   # contrés : pas plus haut dans la même couleur
+        return Appel("passe", f"contré à {dernier} : on ne rejoue pas plus haut dans la même couleur")
+    nos = [(x, b) for x, b in hist if camp(x) == camp(s) and b.enchere not in DOUBLES]
+    dp = next((b for x, b in reversed(nos) if x == PART[s]), None)
+    if dp and dp.nature == "sacrifice" and etat["par"] == PART[s]:
+        return Appel("passe", "laisse la défense à la couleur du partenaire") if a.enchere != "passe" else a
+    if (a.enchere != "passe" and legal(a.enchere, s, etat)) or not etat["par"] or camp(etat["par"]) == camp(s) or etat["dbl"]:
+        return a                                          # (une enchère qui n'est plus possible vaut une passe)
+    d = dernier[1:]; L = int(dernier[0])
+    if CONTRE_SACRIFICE and any(b.nature != "sacrifice" and rang(e(MANCHE[b.enchere[1:]], b.enchere[1:])) <= rang(b.enchere) < rang(dernier)
+                                for _, b in nos):     # ils sont passés au-dessus de notre manche
+        x = Appel("contre", "ils passent au-dessus de notre manche : contre", nature="punitif"); x.sur_manche = True
+        return x
+    if rang(dernier) < rang(e(MANCHE[d], d)) or (d == "SA" and not SACRIFICE_SA): return a
+    if any(b.nature == "sacrifice" or int(b.enchere[0]) >= 4 for _, b in nos): return a   # le camp a déjà décidé
+    nous_v, eux_v = "nous" in _VUL, "eux" in _VUL
+    if nous_v and not eux_v: return a
+    if nous_v == eux_v and not (SACRIFICE_EGAL is True or (SACRIFICE_EGAL == "nv" and not nous_v)): return a
+    part = infos[PART[s]]
+    eux_c = {b.enchere[1:] for x, b in hist if camp(x) != camp(s) and b.enchere[0].isdigit() and b.nature not in ARTIFICIELLES}
+    cand = {b.enchere[1:] for _, b in nos if b.enchere[0].isdigit() and b.enchere[1:] != "SA" and b.nature not in ARTIFICIELLES} - eux_c
+    cand = [c for c in cand if m.L[c] + part.L[c] >= SACRIFICE_FIT]
+    if not cand: return a
+    c = max(cand, key=lambda x: (m.L[x] + part.L[x], x in MAJEURES))
+    nous_t = m.L[c] + part.L[c]
+    eux_t = 0 if d == "SA" else max(8, sum(infos[x].L[d] for x in ROT if camp(x) != camp(s)))
+    n = S.plus_bas(c, dernier)
+    if n > 7: return a
+    k = 6 + n - (nous_t + eux_t - (6 + L)) + SACRIFICE_PRUDENCE + (SACRIFICE_PRUDENCE_5 if n >= 5 else 0)   # notre chute s'ils gagnent juste leur contrat (+ prudence)
+    defense = defense_main(m, eux_c, c) + PART_DEF * min(part.pts[0], 20)
+    if defense > (13 - 6 - L) - SACRIFICE_DEF: return a    # de quoi les faire chuter : on défend
+    cout, perte = chute_contree(k, nous_v), valeur_contrat(dernier, eux_v)
+    if cout + SACRIFICE_MARGE > perte: return a
+    prix = f"{k} de chute, contré −{cout}" if k > 0 else "contrat gagnable"
+    return Appel(e(n, c), f"défense à la couleur : {nous_t} atouts à {c}, loi des levées : {prix}, contre leur "
+                 f"{dernier} à {perte} ; peu de défense", L={c: m.L[c]}, nature="sacrifice")
 
 
 def couleur_adverse(hist, s):

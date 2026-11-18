@@ -68,7 +68,8 @@ assert "le ♠V, le ♥R" in p
 # cue-bid du répondant : 4 atouts et 13+ points, forcing de manche
 import encheres
 d = dict(n=1, donneur="N", vul="Personne", mains=dict(N="73 AR975 R42 D82", E="ARDV5 3 D85 VX93", S="82 DV64 AV7 AR64", O="X964 X82 X963 75"))
-assert encheres.encherir(d)["encheres"][:4] == ["1♥", "1♠", "2♠", "passe"] and encheres.encherir(d)["contrat"] == "4♥"
+r = encheres.encherir(d)                                       # (puis Ouest, 0 H et quatre piques, se sacrifie à 4♠ : contré)
+assert r["encheres"][:4] == ["1♥", "1♠", "2♠", "passe"] and "4♥" in r["encheres"] and r["contrat"] in ("4♥", "4♠X")
 # contrôles après un fit : le contrôle à trèfle, puis les clés quand tout est contrôlé
 d = dict(n=1, donneur="N", vul="Personne", mains=dict(N="AR986 5 RD4 AR32", E="53 RDV94 VX85 95", S="DV74 A632 A93 64", O="X2 X87 762 DVX87"))
 r = encheres.encherir(d)

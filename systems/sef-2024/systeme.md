@@ -143,6 +143,21 @@ Ce ne sont pas les contrôles après un fit, qui cherchent le chelem : voir la s
 - Loi des levées totales : avec un fit, on dispute jusqu'au palier (nombre d'atouts − 6), sans dépasser 3
   ; un palier de plus en vulnérabilité favorable, un de moins en défavorable
 
+### La défense à la couleur (sacrifice) (à confirmer)
+SEF n'en donne pas de règle chiffrée ; ce que jouent les robots (src/encheres, `sacrifier`) :
+- Quand : les adversaires ont déclaré une manche ou un chelem à la couleur (pas 3SA), notre camp a nommé une couleur
+  où il a un fit connu de 9 cartes ou plus (les miennes + celles montrées par le partenaire), nous n'avons pas encore
+  parlé au palier de 4. Non vulnérables contre vulnérables, ou tous non vulnérables ; jamais vulnérables (tous
+  vulnérables, le prix est trop lourd).
+- Le prix, par la loi des levées totales : nos atouts + les leurs (montrés, 8 au moins) = les levées des deux camps ;
+  s'ils gagnent juste leur contrat, le reste est à nous. On compte une levée de chute de plus par prudence au palier
+  de 5. La chute contrée doit coûter moins que leur contrat (−500 contre 620 : oui ; −800 : non).
+- La défense : mes levées rapides (AR 2, AD 1,5, A 1, RD 1, Rx 0,5 ; dans notre couleur, l'as seul) + 0,15 par point
+  montré par le partenaire. S'il y en a assez pour les faire chuter (moins 1,5 levée de marge), on défend : la forme
+  et la longueur se sacrifient, les as et les rois défendent.
+- En face : quand ils passent au-dessus de notre manche, on contre ; contrés, ils ne remontent pas dans la même
+  couleur. Le partenaire du sacrifice le laisse.
+
 ## Chelem : les contrôles
 Confirmé par le club : après un fit, on nomme ses contrôles pour chercher le chelem. Le détail ci-dessous n'a pas de
 source FFB dans ce dossier **(à confirmer dans `ffb/`)**.

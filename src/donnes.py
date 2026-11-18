@@ -10,6 +10,7 @@ qui n'aboutit pas dans le délai laisse une donne au hasard, et le programme le 
 fichier .pbn, le format commun des donnes, pour les autres logiciels.
 """
 import datetime, json, multiprocessing, os, random, re, sys, time, unicodedata
+_T0 = time.time()                                          # pour « Temps : » : ce que coûte le chargement du programme
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
@@ -683,6 +684,13 @@ def tirer(rnd):
             for k, s in enumerate(SIEGES)}
 
 
+def chercher_chrono(arg):
+    """chercher, avec l'heure où le processus a commencé cette donne et sa durée (temps-de-calcul.txt : un PC lent
+    perd-il son temps à démarrer les processus ou à calculer ?)."""
+    t = time.time(); x = chercher(arg)
+    return t, time.time() - t, x
+
+
 def chercher(arg):
     """(n, thème, mains, trouvé, chances) : une donne du thème pour le n° de donne, dans le délai ; chances : ce que
     a_la_table a retenu du contrat (enchères, réussite à la table, double mort réel), ou None."""
@@ -765,10 +773,12 @@ def creer(quotas, graine=None, delai=DELAI, dossier=None):
     nombre = len(tirage)
     rnd.shuffle(tirage)
     args = [(i, t, rnd.randrange(2 ** 31), delai) for i, t in enumerate(tirage, 1)]
-    res = []
-    with multiprocessing.Pool(lignes.nb_processus()) as p:
-        for k, x in enumerate(p.imap_unordered(chercher, args), 1):
-            res.append(x); print(f"Donne {k} sur {nombre}", flush=True)
+    res = []; departs = []; durees = []; npro = lignes.nb_processus(); t_pool = time.time()
+    with multiprocessing.Pool(npro) as p:
+        for k, (dep, duree, x) in enumerate(p.imap_unordered(chercher_chrono, args), 1):
+            res.append(x); departs.append(dep); durees.append(duree); print(f"Donne {k} sur {nombre}", flush=True)
+    print(f"Temps : chargement {t_pool - _T0:.1f} s, démarrage des {npro} processus {min(departs) - t_pool:.1f} s, "
+          f"une donne {sum(durees) / len(durees):.1f} s de calcul en moyenne, en tout {time.time() - t_pool:.1f} s", flush=True)
     res.sort()
     manquees = [x[1] for x in res if not x[3]]
     voulus = {i: t for i, t, _, _ in args}

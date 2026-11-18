@@ -110,6 +110,8 @@ def lire_ligne(t, ligne):
     if m: t.fichier = m[1].strip()
     m = re.match(r"Thème non trouvé : (.+)", ligne)
     if m: t.notes.append(m[1].strip())
+    m = re.match(r"Temps : (.+)", ligne)                    # donnes.creer : où le temps est passé
+    if m: noter_temps("Création des donnes, le détail : " + m[1].strip().replace(".", ","), 0, detail=True)
 
 
 def message_erreur(sortie):
@@ -704,7 +706,7 @@ def creation(f):
 TEMPS = "temps-de-calcul.txt"                              # dans le dossier des rapports, comme derniere-erreur.txt
 
 
-def noter_temps(quoi, secondes):
+def noter_temps(quoi, secondes, detail=False):
     """Une ligne dans temps-de-calcul.txt : ce qui a pris combien de temps sur cet ordinateur (l'utilisateur, 2026-11-18 :
     les ordinateurs Windows du club sont bien plus lents ; un membre peut joindre ce fichier). Seulement des durées,
     jamais une main ni un nom ; les 300 dernières lignes."""
@@ -718,7 +720,7 @@ def noter_temps(quoi, secondes):
             lignes = [f"Bridge Coach {maj.version_locale()} · {machine}"] + lignes
         else:
             lignes[0] = f"Bridge Coach {maj.version_locale()} · {machine}"
-        lignes.append(f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} · {quoi} · " + f"{secondes:.1f} s".replace(".", ","))
+        lignes.append(f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} · {quoi}" + ("" if detail else " · " + f"{secondes:.1f} s".replace(".", ",")))
         lignes = lignes[:1] + lignes[1:][-300:]
         with open(f_, "w", encoding="utf-8") as f: f.write("\n".join(lignes) + "\n")
     except Exception:

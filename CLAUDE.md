@@ -336,7 +336,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         in partner's minor and 29+ together bids 4 of the minor, forcing, then controls: FIT_MINEUR); contracts may be
                         doubled ("3♦X"); raises NonCouverte rather than guessing. A 4SA the player makes in Jouer, once a suit
                         has been named by both partners, is read as Blackwood 3041 for it (couleur_fixee; the robot used to pass it,
-                        2026-11-12); without one it stays quantitative. The player's 5SA after their own Blackwood asks for kings outside
+                        2026-11-12); without one, after a natural suit (relays, Stayman and texas answers, the 4th suit and cue-bids skipped) and a partner who has not limited their hand (no limite / invite / conclusion bid, no natural SA), it is Blackwood 3041 on that last suit, robots and player alike (couleur_sans_fit, BLACKWOOD_SANS_FIT, à confirmer, 2026-11-18: the robots then make no quantitative 4SA there but bid 6SA from 31 points together, SA_BLOQUE_6SA: +44 / +47 IMP on 2 × 20 000 deals, −151 / −116 when they stayed in 3SA); after a natural SA, a texas included, it stays quantitative. The player's 5SA after their own Blackwood asks for kings outside
                         trumps (nature "rois"): partner answers by steps, 6♣ 0, 6♦ 1, 6♥ 2, 6♠ 3 (sef2024.reponse_rois), and the
                         asker bids 7 with every king, else 6 (apres_rois; the Indice says so). LENT_PUIS_CLES: after its own slow raise the engine may
                         still ask for key cards (kept, +13 IMP on 40 000 deals); DIFFERE_PAS_ETABLI (fix the trump suit with 3M

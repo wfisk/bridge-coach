@@ -159,6 +159,37 @@ def couleur_fixee(s, hist):
     return next((c for c in reversed(lui + mine) if c != "SA" and c in mine and c in lui), None)
 
 
+BLACKWOOD_SANS_FIT = True      # sans fit, 4SA après une couleur naturelle (partenaire non limité) : Blackwood 3041
+                               # sur la dernière couleur nommée ; décision du joueur et de son partenaire (à confirmer)
+SA_BLOQUE_6SA = 31             # sans 4SA quantitatif possible : 6SA dès ce total (0 : on reste à la manche) ; 31 : +44 / +47 IMP sur 2 × 20 000 donnes, 2026-11-18
+LIMITE = ("limite", "invite", "conclusion")      # natures d'une enchère qui limite la main
+
+
+def naturelle(x, b, i, nos, hist):
+    """L'enchère b (rang i dans nos, les enchères du camp) est-elle une couleur ou des SA naturels ? Non : les relais
+    (Stayman, texas, 2♦ sur 2♣), la réponse au Stayman ou au texas, la 4e couleur forcing, les cue-bids, contrôles,
+    Blackwood, et une couleur nommée par les adversaires."""
+    if not b.enchere[0].isdigit(): return False
+    if b.nature in ("relais", "cue", "controle", "demande_arret", "blackwood", "rois", "spoutnik", "bicolore", "drury"): return False
+    if "4e couleur" in (b.texte or ""): return False
+    if i and nos[i - 1][0] != x and nos[i - 1][1].nature == "relais" \
+            and any(t in (nos[i - 1][1].texte or "") for t in ("Stayman", "texas")): return False
+    c = b.enchere[1:]
+    return c == "SA" or not any(camp(y) != camp(x) and a.enchere[1:] == c for y, a in hist)
+
+
+def couleur_sans_fit(s, hist):
+    """Sans fit annoncé : la dernière couleur nommée naturellement par le camp de s, quand le partenaire n'a pas limité
+    sa main ; 4SA la prend pour atout (Blackwood 3041). None si la dernière enchère naturelle est à SA (4SA reste
+    quantitatif, même après un texas) ou si le partenaire s'est limité (systems/conventions/blackwood-3041.md)."""
+    if not BLACKWOOD_SANS_FIT: return None
+    nos = [(x, b) for x, b in hist if camp(x) == camp(s) and b.enchere not in DOUBLES]
+    nat = [(x, b) for i, (x, b) in enumerate(nos) if naturelle(x, b, i, nos, hist)]
+    if not nat or nat[-1][1].enchere[1:] == "SA": return None
+    if any(b.nature in LIMITE or (b.enchere[1:] == "SA" and (x, b) in nat) for x, b in nos if x == PART[s]): return None
+    return nat[-1][1].enchere[1:]
+
+
 def interpreter(cle, enchere, a_dire=""):
     """Ce que montre une enchère choisie par un joueur et non par le moteur : la règle du fichier qui la propose pour
     cette séquence (la première), sinon une lecture naturelle. Le partenaire du joueur continue avec elle."""
@@ -231,6 +262,10 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
             if a.enchere == "4SA" and not a.nature:          # 4SA du joueur, une couleur fixée : Blackwood 3041
                 atout = couleur_fixee(s, hist)
                 if atout: a = Appel("4SA", f"votre enchère : Blackwood 3041, les clés à {atout}", nature="blackwood", atout=atout)
+                elif couleur_sans_fit(s, hist):              # sans fit : la dernière couleur nommée naturellement
+                    atout = couleur_sans_fit(s, hist)
+                    a = Appel("4SA", f"votre enchère : Blackwood 3041 (atout {atout}, dernière couleur nommée)",
+                              nature="blackwood", atout=atout)
             oc_ = couleur_adverse(hist, s)
             if oc_ and a.enchere[1:] == oc_ and rang(a.enchere) < rang("3SA") and not a.nature \
                     and any(x == s and b.enchere == "contre" and b.nature == "appel" for x, b in hist) \
@@ -355,7 +390,11 @@ def chelem(m, s, a, hist, infos, etat):
         t = m.hcp + part.pts[0]
         if t >= PETIT_CHELEM and rang("6SA") > rang(dernier):
             return Appel("6SA", f"{m.hcp} H : {t}+ points ensemble, petit chelem", nature="conclusion")
-        if t >= PETIT_CHELEM - 2 and part.pts[1] < 40 and rang("4SA") > rang(dernier):
+        bloque_4sa = couleur_sans_fit(s, hist)           # 4SA serait un Blackwood sur la dernière couleur nommée
+        if bloque_4sa and SA_BLOQUE_6SA and t >= SA_BLOQUE_6SA and rang("6SA") > rang(dernier):
+            return Appel("6SA", f"{m.hcp} H : {t}+ points ensemble ; 4SA serait un Blackwood à {bloque_4sa} : "
+                         "petit chelem", nature="conclusion")
+        if t >= PETIT_CHELEM - 2 and part.pts[1] < 40 and rang("4SA") > rang(dernier) and not bloque_4sa:
             return Appel("4SA", f"{m.hcp} H : {t}–{m.hcp + part.pts[1]} points ensemble, quantitatif : "
                          "invite au chelem", nature="invite")
     return a

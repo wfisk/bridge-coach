@@ -59,6 +59,33 @@ _r = _encherir(_d, imposees=["passe", "1♥", "passe", "2♦", "passe", "2SA", "
                              "passe", "5♠", "passe", "5SA"])
 assert _r["encheres"][16:19] == ["passe", "6♦", "passe"] and _r["contrat"] == "6♥", _r["encheres"]
 
+# Sans fit annoncé, 4SA après une couleur naturelle : Blackwood 3041, atout la dernière couleur nommée (à confirmer ;
+# donne 1 du 18/11/2026, E et O ; N et S complétés). Est a 3 clés à ♦ (♠A, ♣A, ♦R) : 5♣
+_d1 = {"n": 1, "donneur": "E", "vul": "Personne", "mains": {"N": "DVX9 VX8 986 RVX", "E": "AR2 9 RV75 AD962",
+                                                          "S": "85 5432 43 87543", "O": "7643 ARD76 ADX2 -"}}
+_seq = ["1♣", "passe", "1♥", "passe", "2♦", "passe", "4SA"]
+_r = _encherir(_d1, imposees=_seq)
+assert _r["encheres"][7:9] == ["passe", "5♣"], _r["encheres"]
+# la même séquence quand le moteur n'aurait pas dit 4SA (trois carreaux en Ouest) : le 4SA du joueur est lu ainsi
+_d1b = {"n": 1, "donneur": "E", "vul": "Personne", "mains": {"N": "VX9 VX8 9862 RVX", "E": "AR2 9 RV75 AD962",
+                                                           "S": "85 5432 43 87543", "O": "D7643 ARD76 ADX -"}}
+_r = _encherir(_d1b, imposees=_seq)
+assert _r["encheres"][7:9] == ["passe", "5♣"], _r["encheres"]
+assert _r["explications"][6][2] == "votre enchère : Blackwood 3041 (atout ♦, dernière couleur nommée)", _r["explications"][6]
+# 1♦ – 1♠ – 1SA – 4SA : la dernière enchère naturelle est à SA, quantitatif (Nord, 13 H, passe)
+_d2 = {"n": 2, "donneur": "N", "vul": "Personne", "mains": {"N": "R5 AD4 RV854 D32", "E": "D84 V9852 X6 V54",
+                                                          "S": "AV762 RX3 A2 AR6", "O": "X93 76 D973 X987"}}
+_r = _encherir(_d2, imposees=["1♦", "passe", "1♠", "passe", "1SA", "passe", "4SA"])
+assert _r["encheres"][7:] == ["passe", "passe", "passe"], _r["encheres"]
+# 2SA – 3♥ – 3♠ – 4SA : après un texas, quantitatif (Nord, maximum, 6SA)
+_d3 = {"n": 3, "donneur": "N", "vul": "Personne", "mains": {"N": "AD4 AR3 AD54 RV2", "E": "R8 V952 X96 D854",
+                                                          "S": "V9765 DX84 R2 A3", "O": "X32 76 V873 X976"}}
+_r = _encherir(_d3, imposees=["2SA", "passe", "3♥", "passe", "3♠", "passe", "4SA"])
+assert "quantitatif" in _r["explications"][6][2] and _r["encheres"][8] == "6SA", _r["encheres"]
+from encheres import couleur_sans_fit, Appel as _A
+assert couleur_sans_fit("O", [("E", _A("1♣", "")), ("O", _A("1♥", "")), ("E", _A("2♦", ""))]) == "♦"
+assert couleur_sans_fit("S", [("N", _A("1♦", "")), ("S", _A("1♠", "")), ("N", _A("1SA", ""))]) is None
+
 # Sur un deux faible (donnes 5, 20 et 29 du 12/11) : le réveil par contre dès 10 H, le contre fort qui cherche 3SA,
 # le contre plutôt qu'une mineure au palier de 3 avec quatre cartes dans la majeure libre ; et le cue-bid du joueur
 # après son contre demande l'arrêt (le partenaire dit 3SA avec ♥RV3)

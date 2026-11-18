@@ -155,7 +155,11 @@ source FFB dans ce dossier **(à confirmer dans `ffb/`)**.
 - Rien à nommer sous la manche : on conclut. Une couleur au-dessus de la manche n'est pas nommée.
 - Un joueur qui a nommé un contrôle n'est pas limité par sa première zone : le partenaire compte sa vraie force.
 
-- Quantitatif par défaut, même après un texas.
+- Quantitatif par défaut, même après un texas, quand la dernière enchère naturelle du camp est à SA.
+- Sans fit annoncé, quand la dernière enchère naturelle du camp est une couleur et que le
+  partenaire n'a pas limité sa main : 4SA est un Blackwood 3041, l'atout est la dernière
+  couleur nommée naturellement. Pour jouer sa propre couleur, on la nomme d'abord au palier
+  de 4. **(à confirmer)** (`../conventions/blackwood-3041.md`)
 - Pour accepter une invitation à SA, une bonne couleur longue (deux des trois gros honneurs A R D) compte en plus :
   1 point en 5e, 2 en 6e, 3 en 7e ou plus **(à confirmer : estimation du programme, pas du SEF)**.
 - Blackwood 3041 une fois le fit annoncé, ou quand 4SA suit une enchère au palier

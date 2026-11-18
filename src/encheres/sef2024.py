@@ -209,21 +209,21 @@ def couleur_suivante(m, mc, rep):
 # ---------------------------------------------------------------- conventions
 def reponse_stayman(m, palier):
     for M in ("♥", "♠"):
-        if m.L[M] >= 4: return Appel(e(palier + 1, M), f"4 cartes à {M}", L={M: 4})
-    return Appel(e(palier + 1, "♦"), "pas de majeure 4e")
+        if m.L[M] >= 4: return Appel(e(palier + 1, M), f"réponse au Stayman : 4 cartes à {M}", L={M: 4})
+    return Appel(e(palier + 1, "♦"), "réponse au Stayman : pas de majeure 4e")
 
 def reponse_blackwood(m, atout):
     k = m.cles(atout); dame = "D" in m.cartes[atout]
-    if k in (0, 3): return Appel("5♣", f"{k} clé{'s' if k > 1 else ''} (3041 : 3 ou 0)")
-    if k in (1, 4): return Appel("5♦", f"{k} clé{'s' if k > 1 else ''} (3041 : 4 ou 1)")
-    return Appel("5♠" if dame else "5♥", f"2 clés {'avec' if dame else 'sans'} la dame d'atout")
+    if k in (0, 3): return Appel("5♣", f"réponse au Blackwood 3041 : {k} clé{'s' if k > 1 else ''} (3 ou 0)")
+    if k in (1, 4): return Appel("5♦", f"réponse au Blackwood 3041 : {k} clé{'s' if k > 1 else ''} (4 ou 1)")
+    return Appel("5♠" if dame else "5♥", f"réponse au Blackwood 3041 : 2 clés {'avec' if dame else 'sans'} la dame d'atout")
 
 
 def reponse_rois(m, atout):
     """Sur 5SA (après le Blackwood du partenaire, toutes les clés réunies) : les rois hors le roi d'atout, par paliers :
     6♣ = 0, 6♦ = 1, 6♥ = 2, 6♠ = 3 (systems/conventions/blackwood-3041.md, à confirmer)."""
     k = sum("R" in m.cartes[c] for c in m.cartes if c != atout)
-    return Appel(("6♣", "6♦", "6♥", "6♠")[min(k, 3)], f"{k} roi{'s' if k > 1 else ''} hors le roi d'atout (réponse à 5SA)")
+    return Appel(("6♣", "6♦", "6♥", "6♠")[min(k, 3)], f"réponse à 5SA, la demande des rois : {k} roi{'s' if k > 1 else ''} hors le roi d'atout")
 
 
 # ---------------------------------------------------------------- concurrence (étape 2)

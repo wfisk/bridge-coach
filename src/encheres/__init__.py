@@ -387,7 +387,7 @@ def chelem(m, s, a, hist, infos, etat):
         etabli = (d in mine and d in lui) or (FIT_MONTRE and moi_i.L[d] + part.L[d] >= 8 and not differe)
         if SEUIL_CONTROLES and t >= SEUIL_CONTROLES and a.enchere != "passe" and etabli and not lent:
             c = prochain_controle(m, d, dernier, cible)
-            if c: return Appel(c, f"{m.hcp} H, fit à {d} : chelem possible, contrôle à {c[1:]}", (valeur_fit(m, d, part.L[d]), 40),
+            if c: return Appel(c, f"{m.hcp} H, fit à {d} : chelem possible, cue-bid de contrôle à {c[1:]}", (valeur_fit(m, d, part.L[d]), 40),
                                nature="controle", atout=d)
         elif SOUTIEN_LENT and not lent and SEUIL_CONTROLES and t >= SEUIL_CONTROLES and a.enchere != "passe" and d in lui and d in MAJEURES \
                 and moi_i.pts[0] >= 11 and rang(e(3, d)) > rang(dernier):
@@ -469,7 +469,7 @@ def suite_controles(m, s, hist, infos, etat):
         return Appel("4SA", f"toutes les couleurs contrôlées, {t} points ensemble : Blackwood 3041", nature="blackwood", atout=d)
     c = prochain_controle(m, d, dernier, cible)
     if c and c[1:] not in {a.enchere[1:] for _, x, a in ctl if x == s and a.nature == "controle"}:
-        return Appel(c, f"{m.hcp} H : contrôle à {c[1:]}", (valeur_fit(m, d, infos[PART[s]].L[d]), 40), nature="controle", atout=d)
+        return Appel(c, f"{m.hcp} H : cue-bid de contrôle à {c[1:]}", (valeur_fit(m, d, infos[PART[s]].L[d]), 40), nature="controle", atout=d)
     return fin("plus de contrôle à montrer : la manche")
 
 

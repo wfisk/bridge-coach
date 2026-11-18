@@ -1681,12 +1681,15 @@ def sens_public(texte):
     """Le sens d'une enchère sans la main de celui qui l'a faite, pour un joueur dont on ne voit pas les cartes :
     « 11 H, quatre piques, singleton cœur : 13+ points, fit différé ; HLD 14 = … » -> « 13+ points, fit différé ».
     Ôte la description de la main avant le premier « : », le calcul « ; HLD … » et la phrase « … convenait aussi ».
-    « 3 clés (3041 : 3 ou 0) » -> « 3 ou 0 clés (3041) »."""
+    « 3 clés (3041 : 3 ou 0) » -> « 3 ou 0 clés (3041) » ; « réponse au Blackwood 3041 : 3 clés (3 ou 0) » -> « Réponse au
+    Blackwood 3041 : 3 ou 0 clés »."""
     t = (texte or "").strip()
     t = re.sub(r"\.\s+[^.]*convenait aussi.*$", "", t)
     t = re.sub(r"\s*;\s*HLD.*$", "", t)
     m = re.match(r"^\d clés? \(3041 : ([^)]+)\)(.*)$", t)
     if m: return f"{m[1]} clés (3041){m[2]}"
+    m = re.match(r"^(réponse au Blackwood 3041 : )\d clés? \(([^)]+)\)(.*)$", t)    # le nombre exact ne se voit pas
+    if m: t = f"{m[1]}{m[2]} clés{m[3]}"
     tete, sep, reste = t.partition(" : ")
     if sep and re.search(r"\d+ H\b|\b(deux|trois|quatre|cinq|six|sept|huit|singleton|chicane|cartes à|fit à|points ensemble|"
                          r"couleurs contrôlées)\b", tete):

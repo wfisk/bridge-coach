@@ -105,18 +105,18 @@ ouverture:
 
 # Réponses de l'ouvreur au Stayman et aux texas
 "1SA - 2T":
-  - 2C:  { si: "C 4+", montre: "4 cœurs, peut avoir 4 piques" }
-  - 2P:  { si: "P 4+", montre: "4 piques, pas 4 cœurs" }
-  - 2K:  { montre: "pas de majeure 4e" }
+  - 2C:  { si: "C 4+", montre: "réponse au Stayman : 4 cœurs, peut avoir 4 piques" }
+  - 2P:  { si: "P 4+", montre: "réponse au Stayman : 4 piques, pas 4 cœurs" }
+  - 2K:  { montre: "réponse au Stayman : pas de majeure 4e" }
 "1SA - 2K":
   - 3C:  { si: "C 4+, H 16-17", montre: "rectification fittée : 4 cœurs et 16–17 H", nature: invite, source: à confirmer }
-  - 2C:  { montre: "complète le texas", nature: relais }
+  - 2C:  { montre: "réponse au texas : complète le texas", nature: relais }
   - exemples:
       - { main: "AD4 R853 AV7 R92", apres: 1SA - 2K, attendu: 3C }
       - { main: "AD4 R853 AV7 V92", apres: 1SA - 2K, attendu: 2C }
 "1SA - 2C":
   - 3P:  { si: "P 4+, H 16-17", montre: "rectification fittée : 4 piques et 16–17 H", nature: invite, source: à confirmer }
-  - 2P:  { montre: "complète le texas", nature: relais }
+  - 2P:  { montre: "réponse au texas : complète le texas", nature: relais }
 # le répondant après la rectification fittée (neuf atouts au moins, 16–17 H en face) : la manche dès 5 H ou 7 HLD ;
 # au-delà de 14 H, le moteur cherche le chelem
 "1SA - 2K - 3C":
@@ -129,13 +129,13 @@ ouverture:
   - exemples:
       - { main: "2 RV2 642 AV8754", apres: 2SA, attendu: 4T }     # donne 20 du 01/11 (214059)
 "2SA - 3T":
-  - 3C:  { si: "C 4+", montre: "4 cœurs, peut avoir 4 piques", source: à confirmer }
-  - 3P:  { si: "P 4+", montre: "4 piques, pas 4 cœurs", source: à confirmer }
-  - 3K:  { montre: "pas de majeure 4e", source: à confirmer }
+  - 3C:  { si: "C 4+", montre: "réponse au Stayman : 4 cœurs, peut avoir 4 piques", source: à confirmer }
+  - 3P:  { si: "P 4+", montre: "réponse au Stayman : 4 piques, pas 4 cœurs", source: à confirmer }
+  - 3K:  { montre: "réponse au Stayman : pas de majeure 4e", source: à confirmer }
 "2SA - 3K":
-  - 3C:  { montre: "complète le texas", nature: relais }
+  - 3C:  { montre: "réponse au texas : complète le texas", nature: relais }
 "2SA - 3C":
-  - 3P:  { montre: "complète le texas", nature: relais }
+  - 3P:  { montre: "réponse au texas : complète le texas", nature: relais }
 
 # ------------------------------------------------------------------ redemande de l'ouvreur après 1T - 1SA, 1K - 1SA
 # Le répondant a 6–10 H sans majeure 4e : l'ouvreur passe avec une main minimum régulière
@@ -1166,7 +1166,7 @@ ouverture:
 
 # ------------------------------------------------------------------ 1.5 ouvertures fortes : 2♣ et 2♦
 "2T":
-  - 2K:  { montre: "relais d'attente", nature: relais }
+  - 2K:  { montre: "relais d'attente sur le 2♣ fort", nature: relais }
 "2T - 2K":
   - 2SA: { si: "reg, H 22-23", montre: "22–23 H, régulier", nature: invite }
   - 2P:  { si: "P 5+, P >= C, P >= K, P >= T", montre: "5+ piques" }
@@ -1198,13 +1198,13 @@ ouverture:
   - 3SA: { si: "H 3-8", montre: "manche", nature: conclusion }
   - passe: { si: "H 2-", montre: "pas de manche possible" }
 "2T - 2K - 2SA - 3T":
-  - 3C:  { si: "C 4+", montre: "4 cœurs, peut avoir 4 piques", source: à confirmer }
-  - 3P:  { si: "P 4+", montre: "4 piques, pas 4 cœurs", source: à confirmer }
-  - 3K:  { montre: "pas de majeure 4e", source: à confirmer }
+  - 3C:  { si: "C 4+", montre: "réponse au Stayman : 4 cœurs, peut avoir 4 piques", source: à confirmer }
+  - 3P:  { si: "P 4+", montre: "réponse au Stayman : 4 piques, pas 4 cœurs", source: à confirmer }
+  - 3K:  { montre: "réponse au Stayman : pas de majeure 4e", source: à confirmer }
 "2T - 2K - 2SA - 3K":
-  - 3C:  { montre: "complète le texas", nature: relais }
+  - 3C:  { montre: "réponse au texas : complète le texas", nature: relais }
 "2T - 2K - 2SA - 3C":
-  - 3P:  { montre: "complète le texas", nature: relais }
+  - 3P:  { montre: "réponse au texas : complète le texas", nature: relais }
 "2T - 2K - 2SA - 3T - 3C | 2T - 2K - 2SA - 3T - 3P":
   - 4UM: { si: "UM 4+, HLD(UM) 3-10", montre: "fit : manche", nature: conclusion }
   - 6SA: { si: "non UM 4+, H 11+", montre: "pas de fit : petit chelem", nature: conclusion }

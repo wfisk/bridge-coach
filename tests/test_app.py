@@ -227,3 +227,4 @@ assert app.sens_public("3 clés (3041 : 3 ou 0)") == "3 ou 0 clés (3041)"
 assert app.sens_public("12 H, quatre cœurs : 6+ H, 4+ cœurs. 1♠ (6+ H, 4+ piques) convenait aussi, mais vient après dans le système") == "6+ H, 4+ cœurs"
 assert app.sens_public("petit chelem") == "Petit chelem"
 print("sens_public ok")
+assert app.sens_public("réponse au Blackwood 3041 : 3 clés (3 ou 0)") == "Réponse au Blackwood 3041 : 3 ou 0 clés"

@@ -137,6 +137,9 @@ def conseil_defense(d, contrat, decl, entame, encheres):
         phrases.append(f"Après {cartes}, ne pas jouer un {'troisième' if len(s_mort[c0]) == 2 else 'autre'} {c0} : le mort coupe.")
     elif atout and c0 != atout and s_mort.get(atout) and len(s_mort[c0]) == 0:
         phrases.append(f"Le mort n'a plus de {c0} : ne pas continuer la couleur, il couperait.")
+    elif atout and c0 != atout and s_mort.get(atout) and len(s_mort[c0]) == 1:   # donne 1 du 18/11 : ♥D, ♥2 sec au mort
+        coupe = True
+        phrases.append(f"Le mort n'avait qu'un {c0} : ne pas continuer la couleur, il couperait.")
     # le déclarant court dans la couleur d'entame (un contrôle nommé alors que nous avons l'as et le roi) : ne pas
     # continuer, le roi serait coupé et affranchirait les honneurs du mort (l'expert, donne 3 du 17/11/2026)
     court_decl = sum(v for k, v in p[decl]["L"][c0][1].items() if k <= 1) if atout and c0 != atout else 0
@@ -174,6 +177,8 @@ def conseil_defense(d, contrat, decl, entame, encheres):
                 phrases.append(f"Changer tout de suite pour {ART[h]}{c}{h}, pour affranchir {ART[h2] if h2 != 'X' else 'le '}{c}{h2} avant.")
         elif _sequence(s_moi[c0]) and not coupe:           # la seule séquence est celle d'entame : la continuer
             phrases.append(f"Continuer {c0} à chaque prise de main, pour faire ses levées avant.")
+        elif coupe and len(s_mort.get(atout, "")) >= 2:    # le mort coupe la couleur d'entame : l'atout réduit ses coupes
+            phrases.append("Rejouer atout à chaque prise de main, pour réduire les coupes du mort.")
         else:
             phrases.append("Encaisser ses levées dès que possible.")
     elif not atout: pass                                   # à SA, la longue d'entame a déjà dit le plan

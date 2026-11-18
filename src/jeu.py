@@ -755,7 +755,7 @@ def phrase_elimination(d, contrat, decl, entame, encheres, reste):
     return tx + f" Sur des donnes imaginées, face à la meilleure défense, le contrat gagne {5 * round(a[0] * 20)} % du temps, contre {5 * round(b[0] * 20)} % sans élimination."
 
 
-def donnes_du_declarant(d, decl, encheres, entame, n, essais=30000):
+def donnes_du_declarant(d, decl, encheres, entame, n, essais=30000, lire_entame=None):
     """n donnes : le déclarant et le mort tels quels, le reste au hasard, fidèle aux enchères et
     à l'entame (None : avant l'entame). Ce que le déclarant peut imaginer : jamais les mains adverses réelles."""
     import random
@@ -765,12 +765,18 @@ def donnes_du_declarant(d, decl, encheres, entame, n, essais=30000):
     vues = {c: suites(d["mains"][decl])[c] + suites(d["mains"][mort])[c] for c in COULEURS}
     e = (COULEURS.index(entame[0]), entame[1:]) if entame else None
     reste = [(COULEURS.index(k), x) for k in COULEURS for x in ORDRE if x not in vues[k] and (COULEURS.index(k), x) != e]
+    den = None
+    if e:                                                  # le contrat, pour lire l'entame : « à la couleur, jamais sous un as »
+        plat = [b for x in (encheres or []) for b in (x if isinstance(x, (list, tuple)) else [x])]
+        fin = [b for b in plat if isinstance(b, str) and b[:1].isdigit()]
+        den = fin[-1][1:] if fin else None
     out = []
-    for marge, moins_L in ((1, 0), (3, 1)):
+    for marge, moins_L, regle in ((1, 0, True), (3, 1, False)):
         out = []
         for _ in range(essais):
             rnd.shuffle(reste)
             lots = {g: reste[:12] + [e], dr: reste[12:]} if e else {g: reste[:13], dr: reste[13:]}
+            if regle and (LIRE_ENTAME if lire_entame is None else lire_entame) and e and not entame_lisible(e, [r for k, r in lots[g] if k == e[0]], den): continue
             ok = True
             for x, cartes in lots.items():
                 L = [0, 0, 0, 0]; h = 0
@@ -788,6 +794,23 @@ def donnes_du_declarant(d, decl, encheres, entame, n, essais=30000):
             if len(out) >= n: return out
         if len(out) >= n // 4: return out
     return out
+
+
+# les donnes imaginées respectent ce que dit l'entame (entame_lisible) : pour tout le déclarant simulé, essayé le
+# 2026-11-18 sur 150 donnes neuves (essai_jeu --aleatoire 150 77) : 8,68 levées contre 8,71, 83 contrats contre 84,3 ;
+# pas gardé. Seulement pour le conseil du premier pli (coups.premier_pli : lire_entame=True), où il tranche juste.
+LIRE_ENTAME = os.environ.get("BC_LIRE_ENTAME", "0") != "0"
+
+
+def entame_lisible(e, rangs, den):
+    """La carte d'entame e = (couleur, rang) peut-elle venir de ces rangs de l'entameur dans la couleur, selon les règles
+    d'entame (systems/sef-2024/entames.md) ? À la couleur, jamais sous un as ; un honneur entamé est la tête de sa
+    séquence : la D nie le R, le V la D, le X le V, le R l'as (de AR, l'as). Donne 6 du 18/11/2026 : sur l'entame ♦D,
+    le déclarant imaginait l'♦A avec l'entameur et mettait le ♦R du mort, que l'as prenait."""
+    r = e[1]
+    if den and den != "SA" and r != "A" and "A" in rangs: return False
+    dessus = {"K": "A", "Q": "K", "J": "Q", "T": "J", "R": "A", "D": "R", "V": "D", "X": "V"}.get(r)
+    return not (dessus and dessus in rangs)
 
 
 VERS_FR = str.maketrans({"K": "R", "Q": "D", "J": "V", "T": "X"})
@@ -981,7 +1004,10 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None, infos
         conseil = "faire tomber les atouts"
         if coupes:
             court = min(len(s_dec[den]), len(s_mort[den]))
-            conseil = PURGE_DABORD if court - (m + 1) // 2 >= sum(coupes.values()) else COUPES_DABORD
+            tours = int(partage_normal(m).split("-")[0]) if m > 1 else m   # purger : autant de tours que la plus longue
+            n_c = sum(coupes.values())                                     # main adverse dans le partage normal (3 sur 3-1)
+            conseil = (PURGE_DABORD if court - tours >= n_c                # donne 1 du 18/11 : 4 atouts au mort, deux coupes,
+                       else ATOUT_PUIS if court - (m + 1) // 2 >= n_c else COUPES_DABORD)   # ♠DV72 : A et R, puis couper
         if essai and essai["coupes_avant"] >= .6: conseil = COUPES_DABORD
         elif essai and essai["coupes_avant"] <= .4 and coupes and conseil == COUPES_DABORD and sum(coupes.values()) < len(courte[den]):
             conseil = ATOUT_PUIS

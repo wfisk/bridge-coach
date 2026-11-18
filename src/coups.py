@@ -421,7 +421,7 @@ def premier_pli(d, contrat, decl, entame, encheres, n=60):
         import endplay.dds                                 # noqa: F401
     except ImportError:
         return ""
-    donnes = donnes_du_declarant(d, decl, encheres or [], entame, n)
+    donnes = donnes_du_declarant(d, decl, encheres or [], entame, n, lire_entame=True)  # l'entame ♦D nie l'♦A et le ♦R (donne 6 du 18/11)
     if len(donnes) < 15: return ""
     den = contrat[1:].rstrip("X"); need = int(contrat[0]) + 6
     lead = (entame[0], entame[1:].translate(EN)); mort = PART[decl]; g = LHO[decl]; dr = RHO[decl]

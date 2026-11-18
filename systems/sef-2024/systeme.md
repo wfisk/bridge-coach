@@ -49,7 +49,14 @@ dans `ffb/` avant de s'y fier.
   (avec l'arrêt, il dirait SA). Écrit pour 1♣–1♥–1♠–2♦, 1♦–1♥–1♠–2♣, 1♣–1♦–1♠–2♥,
   1♦–1♥–2♣–2♠ et 1♦–1♠–2♣–2♥.
 - L'ouvreur répond : 3 cartes dans la couleur du répondant (saut avec 15+), sinon SA avec
-  l'arrêt (2SA 12–14, 3SA 15+), sinon il répète sa couleur.
+  l'arrêt (2SA 12–14, 3SA 15–17), sinon il répète sa couleur.
+- Aussi écrit (2026-11-18) **(à confirmer)** : après un bicolore cher, 1♣–1♥–2♦–2♠, 1♣–1♠–2♦–2♥,
+  1♣–1♠–2♥–3♦ et 1♦–1♠–2♥–3♣, forcing de manche ; l'ouvreur dit 3 cartes dans la couleur du répondant,
+  sinon SA sans saut avec l'arrêt (17–21 HL), sinon 6 cartes, sinon il répète. Après une réponse à 2, la
+  4e couleur au palier de 3 : 1♦–2♣–2♠–3♥, 1♥–2♣–2♠–3♦, 1♥–2♦–2♠–3♣, 1♠–2♣–2♥–3♦, 1♠–2♦–2♥–3♣,
+  1♠–2♥–3♣–3♦, 1♥–2♦–3♣–3♠, 1♠–2♦–3♣–3♥, 1♥–2♣–3♦–3♠, 1♠–2♣–3♦–3♥ ; l'ouvreur dit 3SA avec
+  l'arrêt, sinon 3 cartes dans la couleur du répondant (après 2♥ : le soutien d'abord), sinon 6 cartes,
+  sinon il répète. Après 1♦–2♣–2♥ et 1♥–2♣–2♦, 2♠ reste naturel (4 piques).
 
 ## Après 1SA
 - 2♣ : Stayman (`../conventions/stayman.md`)
@@ -160,6 +167,9 @@ source FFB dans ce dossier **(à confirmer dans `ffb/`)**.
   partenaire n'a pas limité sa main : 4SA est un Blackwood 3041, l'atout est la dernière
   couleur nommée naturellement. Pour jouer sa propre couleur, on la nomme d'abord au palier
   de 4. **(à confirmer)** (`../conventions/blackwood-3041.md`)
+- Pour inviter au chelem à SA sans fit quand 4SA serait ce Blackwood : la 4e couleur forcing d'abord (là où elle
+  est décrite, sous 3SA), puis 4SA sur la réponse à SA de l'ouvreur, quantitatif. Sans 4e couleur : 6SA dès 31
+  points ensemble, sinon la manche (choix du programme) **(à confirmer)**.
 - Pour accepter une invitation à SA, une bonne couleur longue (deux des trois gros honneurs A R D) compte en plus :
   1 point en 5e, 2 en 6e, 3 en 7e ou plus **(à confirmer : estimation du programme, pas du SEF)**.
 - Blackwood 3041 une fois le fit annoncé, ou quand 4SA suit une enchère au palier

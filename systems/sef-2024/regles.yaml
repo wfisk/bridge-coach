@@ -956,10 +956,13 @@ ouverture:
   - 4UM: { si: "UM 4+, HLD(UM) 13+", montre: "fit dans la majeure de l'ouvreur : manche", nature: conclusion }
   - 3UM: { si: "UM 4+, HLD(UM) 11-12", montre: "fit dans la majeure de l'ouvreur : invitation", nature: invite }
   - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing, apres: 1K - 2T - 2C }
+  - 3C:  { si: "H 11+, non arret C, P 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1K - 2T - 2P, alerte: oui, source: à confirmer }
   - 3SA: { si: "H 13+", montre: "13+ H : manche", nature: conclusion }
   - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
   - 3T:  { si: "T 6+", montre: "6+ trèfles", nature: limite }
   - 2SA: { montre: "sans enchère meilleure", nature: invite }
+  - exemples:
+      - { main: "A93 652 R4 ARV85", apres: 1K - 2T - 2P, attendu: 3C }
 "1C - 2T - 2K":
   - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing }
   - exemples:
@@ -1266,6 +1269,63 @@ ouverture:
   - 3U:  { montre: "minimum, 6+ cartes : refuse", nature: conclusion }
 
 
+# ------------------------------------------------------------------ 4e couleur forcing après un bicolore cher ou une réponse à 2
+# (2026-11-18) Après un bicolore cher (17–21 HL), la 4e couleur est forcing de manche ; après une réponse à 2 (11+),
+# la 4e couleur au palier de 3 aussi. Sans fit dans la deuxième couleur de l'ouvreur (ni dans sa majeure). À confirmer.
+# Après 1♦ – 2♣ – 2♥ et 1♥ – 2♣ – 2♦, 2♠ reste naturel (4 piques), comme écrit plus haut.
+"1T - 1C - 2K":
+  - 2P:  { si: "H 11+, non arret P, K 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "752 AR96 D3 R842", attendu: 2P }
+"1T - 1P - 2K":
+  - 2C:  { si: "H 11+, non arret C, K 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "AV852 643 R2 AD3", attendu: 2C }
+"1T - 1P - 2C":
+  - 3K:  { si: "H 11+, non arret K, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "AR852 X3 754 AD2", attendu: 3K }
+"1K - 1P - 2C":
+  - 3T:  { si: "H 11+, non arret T, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "ARV52 X3 AD4 852", attendu: 3T }
+"1C - 2T - 2P":
+  - 3K:  { si: "H 11+, non arret K, P 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "A93 V6 652 ARV85", attendu: 3K }
+"1C - 2K - 2P":
+  - 3T:  { si: "H 11+, non arret T, P 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "A93 V6 ARV85 652", attendu: 3T }
+"1P - 2T - 2C":
+  - 3K:  { si: "H 11+, non arret K, C 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "V6 A93 652 ARV85", attendu: 3K }
+"1P - 2K - 2C":
+  - 3T:  { si: "H 11+, non arret T, C 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "V6 A93 ARV85 652", attendu: 3T }
+"1P - 2C - 3T":
+  - 3K:  { si: "H 11+, non arret K, T 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "V6 ARV85 652 A93", attendu: 3K }
+"1C - 2K - 3T":
+  - 3P:  { si: "H 11+, non arret P, T 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "652 V6 ARV85 A93", attendu: 3P }
+"1P - 2K - 3T":
+  - 3C:  { si: "H 11+, non arret C, T 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "V6 652 ARV85 A93", attendu: 3C }
+"1C - 2T - 3K":
+  - 3P:  { si: "H 11+, non arret P, K 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "652 V6 A93 ARV85", attendu: 3P }
+"1P - 2T - 3K":
+  - 3C:  { si: "H 11+, non arret C, K 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, alerte: oui, source: à confirmer }
+  - exemples:
+      - { main: "V6 652 A93 ARV85", attendu: 3C }
+
 # ------------------------------------------------------------------ l'ouvreur répond à la 4e couleur forcing
 # 4e couleur : 11+ H, forcing, souvent sans arrêt dans cette couleur. L'ouvreur montre d'abord
 # 3 cartes dans la couleur du répondant, puis l'arrêt (SA), puis une couleur 6e ; sinon il répète.
@@ -1321,6 +1381,78 @@ ouverture:
   - "*C": { si: "C 6+", montre: "6+ cœurs, pas d'arrêt trèfle", nature: forcing }
   - "*K": { si: "K 5+", montre: "5+ carreaus, pas d'arrêt trèfle", nature: forcing }
   - "*C": { montre: "pas d'arrêt trèfle ni de soutien : répète ses cœurs", nature: forcing }
+
+
+# après un bicolore cher : l'arrêt à SA sans saut (la 4e couleur est forcing de manche) ; après une réponse à 2,
+# 3SA avec l'arrêt quand la 4e couleur est au palier de 3, puis le soutien (à confirmer)
+"1T - 1C - 2K - 2P":
+  - "*W": { si: "W 3", montre: "3 cartes à cœur", nature: forcing }
+  - 2SA: { si: "arret P", montre: "arrêt pique, 17–21 HL (bicolore cher)", nature: forcing }
+  - "*U": { si: "U 6+", montre: "6+ trèfles, pas d'arrêt pique", nature: forcing }
+  - "*U": { montre: "pas d'arrêt pique ni de soutien : répète ses trèfles", nature: forcing }
+  - exemples:
+      - { main: "R3 D8 ARX5 AD872", attendu: 2SA }
+      - { main: "3 D84 ARX5 AD872", attendu: 3C }
+"1T - 1P - 2K - 2C":
+  - "*W": { si: "W 3", montre: "3 cartes à pique", nature: forcing }
+  - 2SA: { si: "arret C", montre: "arrêt cœur, 17–21 HL (bicolore cher)", nature: forcing }
+  - "*U": { si: "U 6+", montre: "6+ trèfles, pas d'arrêt cœur", nature: forcing }
+  - "*U": { montre: "pas d'arrêt cœur ni de soutien : répète ses trèfles", nature: forcing }
+  - exemples:
+      - { main: "84 RD3 ARX5 AD72", attendu: 2SA }
+      - { main: "D84 R3 ARX5 AD72", attendu: 2P }
+"1T - 1P - 2C - 3K":
+  - "*W": { si: "W 3", montre: "3 cartes à pique", nature: forcing }
+  - 3SA: { si: "arret K", montre: "arrêt carreau, 17–21 HL (bicolore cher)", nature: conclusion }
+  - "*U": { si: "U 6+", montre: "6+ trèfles, pas d'arrêt carreau", nature: forcing }
+  - "*U": { montre: "pas d'arrêt carreau ni de soutien : répète ses trèfles", nature: forcing }
+  - exemples:
+      - { main: "84 AD95 RD3 AD72", attendu: 3SA }
+      - { main: "R84 AD95 R3 AD72", attendu: 3P }
+"1K - 1P - 2C - 3T":
+  - "*W": { si: "W 3", montre: "3 cartes à pique", nature: forcing }
+  - 3SA: { si: "arret T", montre: "arrêt trèfle, 17–21 HL (bicolore cher)", nature: conclusion }
+  - "*U": { si: "U 6+", montre: "6+ carreaux, pas d'arrêt trèfle", nature: forcing }
+  - "*U": { montre: "pas d'arrêt trèfle ni de soutien : répète ses carreaux", nature: forcing }
+  - exemples:
+      - { main: "84 AD95 AD72 RD3", attendu: 3SA }
+      - { main: "R84 AD95 AD72 R3", attendu: 3P }
+"1K - 2T - 2P - 3C | 1P - 2T - 3K - 3C | 1P - 2K - 3T - 3C":
+  - 3SA: { si: "arret C", montre: "arrêt cœur : manche", nature: conclusion }
+  - "*W": { si: "W 3+", montre: "3 cartes dans la couleur du répondant", nature: forcing }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt cœur", nature: forcing }
+  - "*U": { montre: "pas d'arrêt cœur ni de soutien : répète sa couleur", nature: forcing }
+  - exemples:
+      - { main: "AD84 RV3 AR952 3", apres: 1K - 2T - 2P - 3C, attendu: 3SA }
+      - { main: "AD84 V3 AR952 V3", apres: 1K - 2T - 2P - 3C, attendu: 4K }
+"1C - 2T - 2P - 3K | 1P - 2T - 2C - 3K":
+  - 3SA: { si: "arret K", montre: "arrêt carreau : manche", nature: conclusion }
+  - "*W": { si: "W 3+", montre: "3 cartes dans la couleur du répondant", nature: forcing }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt carreau", nature: forcing }
+  - "*U": { montre: "pas d'arrêt carreau ni de soutien : répète sa couleur", nature: forcing }
+  - exemples:
+      - { main: "AD84 RV953 3 AV3", apres: 1C - 2T - 2P - 3K, attendu: 4T }
+"1C - 2K - 2P - 3T | 1P - 2K - 2C - 3T":
+  - 3SA: { si: "arret T", montre: "arrêt trèfle : manche", nature: conclusion }
+  - "*W": { si: "W 3+", montre: "3 cartes dans la couleur du répondant", nature: forcing }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt trèfle", nature: forcing }
+  - "*U": { montre: "pas d'arrêt trèfle ni de soutien : répète sa couleur", nature: forcing }
+  - exemples:
+      - { main: "AD84 RV953 AV3 3", apres: 1C - 2K - 2P - 3T, attendu: 3K }
+"1C - 2K - 3T - 3P | 1C - 2T - 3K - 3P":
+  - 3SA: { si: "arret P", montre: "arrêt pique : manche", nature: conclusion }
+  - "*W": { si: "W 3+", montre: "3 cartes dans la couleur du répondant", nature: forcing }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt pique", nature: forcing }
+  - "*U": { montre: "pas d'arrêt pique ni de soutien : répète sa couleur", nature: forcing }
+  - exemples:
+      - { main: "3 AV953 RV3 AD84", apres: 1C - 2K - 3T - 3P, attendu: 4K }
+"1P - 2C - 3T - 3K":
+  - "*W": { si: "W 3+", montre: "3 cartes dans la couleur du répondant", nature: forcing }
+  - 3SA: { si: "arret K", montre: "arrêt carreau : manche", nature: conclusion }
+  - "*U": { si: "U 6+", montre: "6+ cartes, pas d'arrêt carreau", nature: forcing }
+  - "*U": { montre: "pas d'arrêt carreau ni de soutien : répète sa couleur", nature: forcing }
+  - exemples:
+      - { main: "AV953 RV3 3 AD84", apres: 1P - 2C - 3T - 3K, attendu: 3C }
 
 # ------------------------------------------------------------------ le répondant après le 2SA de l'ouvreur (12–14 H, arrêt)
 # 4e couleur (11+ H) puis 2SA : 23 points au moins. Le fit dans la couleur de l'ouvreur donne des

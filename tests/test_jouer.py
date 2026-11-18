@@ -82,6 +82,14 @@ _d3 = {"n": 3, "donneur": "N", "vul": "Personne", "mains": {"N": "AD4 AR3 AD54 R
                                                           "S": "V9765 DX84 R2 A3", "O": "X32 76 V873 X976"}}
 _r = _encherir(_d3, imposees=["2SA", "passe", "3♥", "passe", "3♠", "passe", "4SA"])
 assert "quantitatif" in _r["explications"][6][2] and _r["encheres"][8] == "6SA", _r["encheres"]
+# Sans fit, la main forte qui invite à SA passe par la 4e couleur (4SA serait un Blackwood à ♥), puis 4SA quantitatif
+# sur le 3SA de l'ouvreur, qui passe avec son minimum (banc_encheres, graine 12, donne 9120)
+_d9 = {"n": 9120, "donneur": "N", "vul": "Personne", "mains": {"N": "A5 AD32 A8743 R9", "E": "RX4 X6 DV96 VX75",
+                                                             "S": "D732 R7 R52 AD83", "O": "V986 V9854 X 642"}}
+_r = _encherir(_d9)
+assert _r["encheres"] == ["1♦", "passe", "1♠", "passe", "2♥", "passe", "3♣", "passe", "3SA", "passe", "4SA",
+                          "passe", "passe", "passe"], _r["encheres"]
+assert "quantitatif" in _r["explications"][10][2], _r["explications"][10]
 from encheres import couleur_sans_fit, Appel as _A
 assert couleur_sans_fit("O", [("E", _A("1♣", "")), ("O", _A("1♥", "")), ("E", _A("2♦", ""))]) == "♦"
 assert couleur_sans_fit("S", [("N", _A("1♦", "")), ("S", _A("1♠", "")), ("N", _A("1SA", ""))]) is None

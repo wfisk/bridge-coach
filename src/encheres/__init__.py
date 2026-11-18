@@ -190,6 +190,26 @@ def couleur_sans_fit(s, hist):
     return nat[-1][1].enchere[1:]
 
 
+QUATRIEME_QUANTITATIF = True   # sans fit, forte main : la 4e couleur sous 3SA, puis 4SA quantitatif sur le SA de l'ouvreur,
+                               # au lieu de 6SA directement (SA_BLOQUE_6SA)
+
+
+def quatrieme_couleur(m, hist, dernier):
+    """Le répondant, sans fit, veut inviter au chelem à SA mais 4SA serait un Blackwood : la 4e couleur forcing du
+    fichier de règles, sous 3SA, quand la séquence est décrite jusqu'aux réponses de l'ouvreur. Seulement sans
+    intervention, au troisième tour. None sinon."""
+    sy = systeme()
+    if not sy or len(hist) != 3 or len({camp(x) for x, _ in hist}) != 1: return None
+    cle = tuple(b.enchere for _, b in hist)
+    r = next((r for r in sy.sequences.get(cle, []) if "4e couleur" in (r.montre or "") and r.enchere[0].isdigit()
+              and rang(dernier) < rang(r.enchere) < rang("3SA")), None)
+    if not r or cle + (r.enchere,) not in sy.sequences: return None
+    a = Appel(r.enchere, f"{m.hcp} H, sans fit : 4e couleur forcing, pour chercher le chelem ; sur une réponse à SA, "
+              "4SA sera quantitatif", (11, 40), nature="forcing")
+    a.alerte = getattr(r, "alerte", False)
+    return a
+
+
 def interpreter(cle, enchere, a_dire=""):
     """Ce que montre une enchère choisie par un joueur et non par le moteur : la règle du fichier qui la propose pour
     cette séquence (la première), sinon une lecture naturelle. Le partenaire du joueur continue avec elle."""
@@ -391,6 +411,9 @@ def chelem(m, s, a, hist, infos, etat):
         if t >= PETIT_CHELEM and rang("6SA") > rang(dernier):
             return Appel("6SA", f"{m.hcp} H : {t}+ points ensemble, petit chelem", nature="conclusion")
         bloque_4sa = couleur_sans_fit(s, hist)           # 4SA serait un Blackwood sur la dernière couleur nommée
+        if bloque_4sa and QUATRIEME_QUANTITATIF and t >= PETIT_CHELEM - 2 and part.pts[1] < 40:
+            q = quatrieme_couleur(m, hist, dernier)       # la 4e couleur d'abord : sur la réponse à SA de l'ouvreur,
+            if q: return q                                # 4SA redevient quantitatif
         if bloque_4sa and SA_BLOQUE_6SA and t >= SA_BLOQUE_6SA and rang("6SA") > rang(dernier):
             return Appel("6SA", f"{m.hcp} H : {t}+ points ensemble ; 4SA serait un Blackwood à {bloque_4sa} : "
                          "petit chelem", nature="conclusion")

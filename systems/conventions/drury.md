@@ -4,7 +4,7 @@ Après une ouverture de 1♥ ou 1♠ en 3e ou 4e position, le partenaire a déj�
 proche de l'ouverture, le soutien limite à 3M serait risqué face à une ouverture parfois légère : il dit 2♣.
 
 ## Le répondant (main passée)
-- 2♣ : artificiel, **3+ atouts et 10–12 points** (HLD, comptés pour l'atout). Rien à voir avec les trèfles.
+- 2♣ : artificiel, **3+ atouts et 10+ points** (HLD, comptés pour l'atout ; une main passée n'a pas 13 H, mais ses courtes peuvent la porter à 13 ou 14 : toujours Drury, jamais le fit différé, forcing de manche). Rien à voir avec les trèfles.
 - Avec moins (6–9), le soutien simple à 2M ; avec 5 atouts et une courte, la fermeture à 4M reste possible.
 
 ## L'ouvreur

@@ -160,14 +160,16 @@ ouverture:
   - passe: { si: "U 3+, HLD(U) 5-", montre: "moins de 6 points" }
   - 4U:  { si: "U 5+, H 5-10, (T 1- || K 1- || C 1- || P 1-)", montre: "fermeture : 5+ atouts, moins de 11 H, un singleton ou une chicane" }
   # Drury : main passée (siège 1 ou 2), l'ouverture en 3e ou 4e ; 2♣ artificiel (conventions/drury.md)
-  - 2T:  { si: "S 1-2, U 3+, HLD(U) 10-12", montre: "Drury : main passée, 3+ atouts, 10–12 points", nature: drury, nom: Drury, source: à confirmer, apres: 1C | 1P, alerte: oui }
+  # une main passée n'a pas 13 H : avec 10+ points en comptant ses courtes, toujours Drury, jamais le fit différé
+  # (forcing de manche) ; donne 1 du 18/11, 11 H + singleton + 4 atouts = HLD 14 (2026-11-18)
+  - 2T:  { si: "S 1-2, U 3+, HLD(U) 10+", montre: "Drury : main passée, 3+ atouts, 10+ points", nature: drury, nom: Drury, source: à confirmer, apres: 1C | 1P, alerte: oui }
   - 2U:  { si: "U 3+, HLD 6-10", montre: "soutien simple, 6–10 points, 3+ cartes" }
   - 3U:  { si: "U 3+, HLD 11-12, (U 4+ || non P 5+)", montre: "soutien limite, 11–12 points ; avec trois atouts et cinq piques, 1♠ d'abord", source: à confirmer }
-  - 2C:  { si: "U 3+, HLD 13+, C 5+, C > K, C > T", montre: "13+ points, fit différé", apres: 1P }
-  - 2K:  { si: "U 3+, HLD 13+, K 4+, K > T", montre: "13+ points, fit différé" }
-  - 2T:  { si: "U 3+, HLD 13+, T 4+", montre: "13+ points, fit différé" }
-  - 2K:  { si: "U 3+, HLD 13+, K > T", montre: "13+ points, fit différé" }
-  - 2T:  { si: "U 3+, HLD 13+", montre: "13+ points, fit différé" }
+  - 2C:  { si: "S 3-4, U 3+, HLD 13+, C 5+, C > K, C > T", montre: "13+ points, fit différé", apres: 1P }
+  - 2K:  { si: "S 3-4, U 3+, HLD 13+, K 4+, K > T", montre: "13+ points, fit différé" }
+  - 2T:  { si: "S 3-4, U 3+, HLD 13+, T 4+", montre: "13+ points, fit différé" }
+  - 2K:  { si: "S 3-4, U 3+, HLD 13+, K > T", montre: "13+ points, fit différé" }
+  - 2T:  { si: "S 3-4, U 3+, HLD 13+", montre: "13+ points, fit différé" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
   - 1P:  { si: "H 6+, P 4+", montre: "6+ H, 4+ piques" }
   - 1SA: { si: "H 6-10", montre: "6–10 H, sans fit" }
@@ -971,6 +973,7 @@ ouverture:
   - 4U:  { si: "S 1-2, HLD(U) 11+", montre: "Drury : maximum, accepte", nature: conclusion, source: à confirmer }
   - passe: { si: "S 1-2", montre: "Drury : minimum, refuse" }
 "1M - 2N - 2U":
+  - passe: { si: "S 1-2", montre: "Drury : l'ouvreur s'arrête", apres: 1C - 2T - 2C | 1P - 2T - 2P, source: à confirmer }
   - 4U:  { si: "U 3+, HLD 13+", montre: "fit : manche", nature: conclusion }
   - 3U:  { si: "U 3+, HLD 11-12", montre: "fit : invitation", nature: invite }
   - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing, apres: 1C - 2T - 2C | 1C - 2K - 2C }

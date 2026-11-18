@@ -1913,6 +1913,12 @@ def page():
             if e == "seance":
                 nouveau()                                  # un tournoi Bridgemate pas encore importé : sur la page Séance seulement
                 page_seance(data, c)
+                if brouillon.est_brouillon(c) and data.get("donnes"):   # le Brouillon : garder le cours d'ici, pas seulement
+                    def vers_enregistrer():                             # depuis Fichier, Infos (2026-11-18, le cours d'essai)
+                        infos_ui.update(copie=True, faute=""); onglets.set_value(o_fichier); voir_page("Fichier", "infos"); page_infos.refresh()
+                    with ui.row().classes("items-center gap-3 mt-2"):
+                        ui.button("Enregistrer le cours…", icon="save_as", on_click=vers_enregistrer).props("unelevated no-caps")
+                        ui.label("en fait une séance datée d'aujourd'hui, avec ces donnes et leurs analyses.").classes("text-base text-gray-700")
                 if data.get("alertes"): page_alertes(data)
                 if ok: page_versions(c)
             elif e == "joueurs": page_joueurs(data)
@@ -5301,7 +5307,7 @@ def page():
                 c = brouillon.enregistrer_sous(nom, titre)
             except ValueError as ex:
                 infos_ui["faute"] = str(ex); page_infos.refresh(); return
-            infos_ui.update(copie=False, faute="")
+            infos_ui.update(copie=False, faute=""); page_infos.refresh()   # le formulaire se ferme, plus d'ancien message
             vider_apres["c"] = c; vider_apres_d.open()
 
         def vider_brouillon_(ouvrir_c=None):

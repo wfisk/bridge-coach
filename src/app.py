@@ -2417,7 +2417,7 @@ def page():
             x_ = p.indice()
             z = p.pensee(s_, x_)
             return dict(x=x_, scores=z.get("scores") or {}, mondes=z.get("mondes") or 0, role=z.get("role"),
-                        pourquoi=carte.justification(z, p.decl), plan=z.get("plan") or "")
+                        pourquoi=carte.justification(z, p.decl), plan=z.get("plan") or "", pensee=z)
         tache = asyncio.ensure_future(run.io_bound(calcul))
         jeu["coach_carte"] = dict(cle=cle_, tache=tache)
 
@@ -2433,6 +2433,12 @@ def page():
         but = "faire chuter le contrat" if r.get("role") == "defense" else "gagner le contrat"
         virgule = lambda v: f"{v:.1f}".replace(".", ",")
         lignes = [f"Le coach jouerait <b>{rouge(f(r['x']))}</b>."]
+        try:                                          # la technique, nommée : « le déblocage », « l'impasse »…
+            tech = carte.technique(p, r["x"], x, r.get("pensee"))
+        except Exception:
+            tech = None
+        if tech:
+            lignes.append(f"<b>{rouge(tech[0][0].upper() + tech[0][1:])}</b> : {rouge(tech[1])}")
         serree = False
         if mien is not None and sien is not None and n:
             ecart = sien[0] - mien[0]
@@ -2443,7 +2449,7 @@ def page():
             else:
                 lignes.append(f"Autant de chances de {but} ({sien[0]} donnes sur {n}), mais plus de levées en moyenne : "
                               f"{virgule(sien[1] / n)} avec sa carte, {virgule(mien[1] / n)} avec la vôtre.")
-        if r.get("pourquoi"): lignes.append(f"<b>Pourquoi :</b> {rouge(r['pourquoi'])}")
+        if r.get("pourquoi") and not tech: lignes.append(f"<b>Pourquoi :</b> {rouge(r['pourquoi'])}")
         lignes.append("<span style='color:var(--bc-tapis-700)'>Il ne voit pas les mains cachées : il imagine des donnes "
                       "fidèles aux enchères et aux cartes jouées.</span>")
         tete = "Décision serrée : les deux cartes se tiennent." if serree else "Le coach aurait joué une autre carte."

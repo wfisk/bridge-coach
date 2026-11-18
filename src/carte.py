@@ -704,6 +704,84 @@ def justification(pz, decl):
     return phrase.strip() or "Ses cartes se valent."
 
 
+def technique(p, coach, mien, pz=None):
+    """Le nom de la technique que montre la carte du coach face à la vôtre, à la table (l'utilisateur, 2026-11-18 :
+    « nommer les choses est si important ») : (nom, phrase) ou None quand aucune règle claire ne s'applique. Ne regarde
+    que la position vue de la place au trait : sa main, le mort (ou l'autre main du déclarant), les cartes jouées ;
+    jamais les mains cachées. pz : la pensée du coach pour cette carte (signal, habitude, coups à venir)."""
+    pos = p.pos; s = pos.au_trait(); pli = pos.pli
+    atout = pos.den if pos.den in COULEURS else None
+    R = RANGS.index                                          # plus petit = plus haut
+    F = lambda x: carte_fr(*x)
+    joue = lambda c, r: LETTRE[c] + r in pos.jouees
+    autre = PART[s] if p.camp(s) else None                   # l'autre main de votre camp, quand vous la voyez
+    nom_autre = ("le mort" if autre == p.mort() else "votre main") if autre else ""
+    vus = lambda c: pos.reste[s][c] + (pos.reste[autre][c] if autre else "")
+
+    def maitresse(c, r):
+        """Plus aucune carte plus haute hors de vos mains (jouée ou dans vos mains)."""
+        return all(joue(c, h) or h in vus(c) for h in RANGS[:R(r)])
+
+    for co in (pz or {}).get("coups") or []:                  # ce que le déclarant voit venir dans ses donnes imaginées
+        quoi = "le squeeze" if co["type"] == "squeeze" else "la mise en main"
+        return quoi, (f"Il prépare {quoi} {'sur' if co['type'] == 'squeeze' else 'de'} {NOMS[co['joueur']]} : "
+                      "garder ses menaces et ses communications jusqu'au bout.")
+    if pli:
+        c0 = pli[0][1]
+        if atout and c0 != atout and coach[0] == atout and mien[0] != atout:
+            return "la coupe", f"Vous n'avez plus de {c0} : couper prend le pli."
+        if atout and c0 != atout and mien[0] == atout and coach[0] != atout:
+            return "la défausse d'une perdante", (f"Ne pas couper : défausser une perdante à {coach[0]} garde vos atouts "
+                                                   "pour plus tard.")
+        lot = [x for x in pli if x[1] == atout] or [x for x in pli if x[1] == c0]
+        meilleur = min(lot, key=lambda x: R(x[2]))
+        def gagne(x):
+            if x[0] == atout and meilleur[1] != atout: return True
+            return x[0] == meilleur[1] and R(x[1]) < R(meilleur[2])
+        nous = p.camp(meilleur[0]) == p.camp(s)
+        cg, mg = gagne(coach) and not nous, gagne(mien) and not nous
+        if coach[0] == mien[0] == c0:
+            if mg and not cg and p.camp(pli[0][0]) != p.camp(s):
+                if p.camp(s) and pos.den == "SA":
+                    return "le laisser-passer (hold-up)", (f"Ne pas prendre tout de suite à {c0} : en laissant passer, on "
+                                                           "coupe les communications des adversaires dans leur couleur.")
+                return "le laisser-passer", f"Ne pas prendre ce pli à {c0} : la levée reste à faire plus tard."
+            if cg and not mg:
+                if len(pli) == 1 and pli[0][2] in "KQJT" and coach[1] in "AKQJ":
+                    return "couvrir un honneur par un honneur", (f"Sur {F((c0, pli[0][2]))}, mettre {F(coach)} : deux "
+                                                                  "honneurs adverses pour un, et vos petites cartes montent.")
+                if len(pli) == 2 and pli[0][0] == PART[s]:
+                    return "troisième en main fort", f"Mettre {F(coach)} : forcer l'honneur adverse, la plus petite carte qui suffit."
+                return "prendre la main", f"Prendre maintenant avec {F(coach)}."
+            if (autre and not cg and not mg and R(coach[1]) < R(mien[1]) and len(pos.reste[autre][c0]) >= 3
+                    and len(pos.reste[s][c0]) <= 2):
+                return "le déblocage", (f"Jouer {F(coach)} maintenant, la carte haute du côté court : les {c0} de "
+                                        f"{nom_autre} pourront être encaissés sans être bloqués.")
+            if len(pli) == 1 and not cg and not mg and R(mien[1]) < R(coach[1]) and p.camp(pli[0][0]) != p.camp(s):
+                return "second en main petit", f"Fournir petit : garder {F(mien)} pour prendre plus tard."
+    else:
+        c = coach[0]
+        if atout and c == atout and mien[0] != atout and p.camp(s):
+            dehors = [h for h in RANGS if not joue(atout, h) and h not in vus(atout)]
+            if dehors:
+                return "tirer les atouts", "Jouer atout d'abord : les adversaires ne pourront plus couper vos levées."
+        if autre and c != mien[0] and not maitresse(*coach):
+            t = pos.reste[autre][c]                           # une fourchette en face : A-D, R-V, A-V…
+            for i, h in enumerate(t):
+                manque = [x for x in RANGS[R(h) + 1:] if not joue(c, x) and x not in vus(c)]
+                plus_bas = [x for x in t[i + 1:] if R(x) <= R("T")]
+                if h in "AKQ" and plus_bas and manque and R(manque[0]) < R(plus_bas[0]) and R(coach[1]) > R(plus_bas[0]):
+                    return "l'impasse", (f"Mener {F(coach)} vers {F((c, h))}{F((c, plus_bas[0]))[1:]} de {nom_autre} : "
+                                         f"si {F((c, manque[0]))} est placé devant, la fourchette fait deux levées.")
+        if c != mien[0] and maitresse(*coach) and not maitresse(*mien):
+            return "encaisser ses levées", f"{F(coach)} est maîtresse : encaisser d'abord ce qui est sûr."
+    if pz and pz.get("signal"):
+        return "le signal", explication_signal(pz["signal"], pz["carte"], pz.get("voeu"), pz.get("den"), pz.get("regle"))
+    if pz and pz.get("habitude"):
+        return pz["habitude"].split(",")[0].rstrip(".").lower(), pz["habitude"]
+    return None
+
+
 def meilleure_carte(d, contrat, decl, cartes, k):
     """Au double mort, la meilleure carte du joueur au trait avant la carte k (cartes : toutes, rangs anglais), en
     français (« ♥9 »), ou None. Pour dire, dans Revoir, quelle carte gardait la levée."""

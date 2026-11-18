@@ -782,7 +782,10 @@ user's folder, never in git. Only `--avec-noms` shows full names in a report: an
   it is not played yet. In the right sidebar (the bidding box's place while bidding: avis_ici, bloc_avis_coach) the coach
   says his own and why: a call with its rule's text and what yours would show (avis_enchere; « Décision serrée » when his
   rule names your call); a card with how often each succeeds in his imagined worlds and carte.justification (avis_carte;
-  serrée within max(1, n/12) worlds). Buttons: Prendre <his> (his Alert and Stop placed for you), Garder <yours>, Choisir
+  serrée within max(1, n/12) worlds), the technique named first when carte.technique recognises it from the position at
+  the table (squeeze / mise en main from his coming coups, la coupe, la défausse d'une perdante, le laisser-passer (hold-up at
+  SA), couvrir un honneur, troisième en main fort, le déblocage, second en main petit, tirer les atouts, l'impasse toward a
+  fork, encaisser ses levées, else his signal or habit; never the hidden hands; tests/test_technique.py). Buttons: Prendre <his> (his Alert and Stop placed for you), Garder <yours>, Choisir
   une autre … (jeu_annonce / carte_jouer force=True). His card is computed in the background as soon as it is your turn
   (coach_prevoir, jeu["coach_carte"]). No stop when the two cards score alike in his worlds (same successes, < 0.1 trick
   apart) or make the same tricks on the real deal double dummy (meme_resultat: used only to stay quiet, never to advise:

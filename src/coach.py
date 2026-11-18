@@ -137,6 +137,13 @@ def conseil_defense(d, contrat, decl, entame, encheres):
         phrases.append(f"Après {cartes}, ne pas jouer un {'troisième' if len(s_mort[c0]) == 2 else 'autre'} {c0} : le mort coupe.")
     elif atout and c0 != atout and s_mort.get(atout) and len(s_mort[c0]) == 0:
         phrases.append(f"Le mort n'a plus de {c0} : ne pas continuer la couleur, il couperait.")
+    # le déclarant court dans la couleur d'entame (un contrôle nommé alors que nous avons l'as et le roi) : ne pas
+    # continuer, le roi serait coupé et affranchirait les honneurs du mort (l'expert, donne 3 du 17/11/2026)
+    court_decl = sum(v for k, v in p[decl]["L"][c0][1].items() if k <= 1) if atout and c0 != atout else 0
+    if court_decl >= .6 and not coupe and h0 == "A" and "R" in s_moi[c0]:
+        coupe = True                                       # pas de « continuer » plus bas
+        phrases.append(f"Les enchères montrent {c0} court chez le déclarant (singleton ou chicane) : après {c0}A, ne pas "
+                       f"jouer {c0}R, il serait coupé{' et affranchirait les honneurs du mort' if any(h in s_mort[c0] for h in 'DV') else ''}.")
     # à sans-atout : sa longue est l'arme ; la continuer à chaque prise de main, et garder ses reprises pour l'encaisser
     if not atout and len(s_moi[c0]) >= 5:
         reprises = [f"{c}{r}" for c in COULEURS if c != c0 for r in s_moi[c][:1] if r in "AR"]
@@ -294,7 +301,7 @@ def redaction_plan(d, contrat, decl, entame, encheres):
         mort = PART[decl]
         for c in a_affranchir:                             # la couleur à affranchir : le partage qu'il faut
             n = len(jeu.suites(d["mains"][decl])[c] + jeu.suites(d["mains"][mort])[c])
-            if 13 - n >= 4: besoins.append(f"trouver les {c} {jeu.partage_normal(13 - n)}")
+            if 13 - n >= 4: besoins.append(f"trouver les {c} {jeu.partage_favorable(13 - n)}")
         if besoins:
             ph = "Il faut " + (besoins[0] if len(besoins) == 1 else ", ".join(besoins[:-1]) + " et " + besoins[-1]) + "."
             if a and taux < .15: ph += " Même alors, une bonne défense trouve presque toujours la parade."

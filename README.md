@@ -1,27 +1,53 @@
 # Bridge Coach
 
-Un entraîneur de bridge pour le club, en français, système SEF, marque IMP :
+Un entraîneur de bridge pour le club, en français, système SEF 2024. Trois usages :
 
-- **Analyser un tournoi** joué avec Bridgemate (le fichier `.bws`, ou la feuille de route PDF de FFBClubNet) : pour
-  chaque donne, les enchères recommandées, l'entame, le plan de jeu, le double mort, et les résultats de toutes les
-  tables ; puis des rapports PDF.
-- **Jouer chaque donne contre le programme** : enchérir à sa place, puis jouer la carte comme déclarant ou en
-  défense. Les trois autres joueurs sont des robots qui expliquent ce qu'ils pensent : pourquoi telle carte, ce
-  qu'ils croient des mains cachées, leurs signaux ; à la fin, un résumé de la donne et ce que le programme aurait
-  joué à votre place.
-- **Créer des donnes d'entraînement** par thème (enchères ou jeu de la carte, trois niveaux), ou les taper à la
-  main, avec un `.pbn` à importer dans Bridgemate pour les jouer au club.
-- **L'analyse de l'expert** (facultatif) : la séance préparée pour Claude, qui rédige un avis sur chaque donne.
+- **Revoir un tournoi** joué avec Bridgemate : le fichier `.bws`, la feuille de route PDF de FFBClubNet, les pages
+  « Donne n° » du site de la FFB (enregistrées ou imprimées en PDF) ou un fichier `.pbn`. Pour chaque donne : les
+  mains, les enchères et les résultats de toutes les tables, votre classement, le double mort ; puis l'analyse du
+  coach (enchères recommandées, entame, plan de jeu, défense) et des rapports PDF.
+- **S'entraîner** : rejouer chaque donne contre trois robots, enchères puis jeu de la carte, comme déclarant ou en
+  défense. L'**Indice** donne l'enchère ou la carte du coach ; à la fin, **Revoir** rejoue la donne carte par carte
+  avec ce que pensaient les robots. Des donnes d'entraînement se créent par thème (enchères ou jeu de la carte, trois
+  niveaux), avec un `.pbn` à importer dans Bridgemate pour les jouer au club.
+- **Faire cours** : le **Brouillon** rassemble des donnes de n'importe quelle séance pour préparer une leçon ;
+  **Démo** les déroule sur grand écran, enchère par enchère et carte par carte, avec le double mort à la demande et un
+  **quiz** d'entame pour la classe.
 
-| Rapport | Contenu |
+En plus, facultatif : **l'avis de l'expert**, rédigé par Claude à partir d'un fichier préparé par Bridge Coach (voir
+plus bas).
+
+## L'application
+
+- **Fichier :** **Nouveau** (importer un tournoi ou un `.pbn`, créer des donnes d'entraînement), **Ouvrir une
+  séance** (la liste des séances, à trier et à chercher, avec votre partenaire et votre résultat ; la corbeille),
+  **Infos** (titre, nom, dupliquer, mettre à la corbeille), **Exporter…** (PBN, CSV ou Excel).
+- **Donnes :** la séance (votre résultat, votre parcours, le classement des paires), les joueurs, puis chaque donne :
+  mains, résultats et enchères des tables. Les donnes d'entraînement et le Brouillon se modifient et se réorganisent.
+- **Jouer :** enchérir et jouer à la place choisie dans **Options** (déclarant, défense, une place fixe, ou celle
+  d'un joueur de la séance), puis **Revoir** ; **Démo** pour la classe ; **Classement** : votre résultat sur les
+  donnes rejouées, rangé parmi les paires du tournoi.
+- **Analyse :** l'analyse du coach, présentée comme la page du rapport PDF ; celle de l'expert quand elle existe.
+  **Imprimer cette donne**, **Rejouer cette donne**, **Demander à l'expert**.
+- **Rapports :** qui vous êtes, quelles donnes (toutes, celles à revoir, ou un choix), la version courte ou complète,
+  les pages en plus ; **Créer les rapports**, puis la liste des PDF.
+- **Système :** le système que jouent les robots, séquence par séquence et en clair, avec des mains d'exemple ; votre
+  **fiche de conventions** (la feuille de prévisions de la FFB, déjà remplie au standard SEF) et ses écarts avec les
+  robots.
+- **Réglages :** votre nom, la taille du texte (compacte, normale, grande), l'expert, les dossiers, la sauvegarde des
+  séances, la mise à jour, un problème ou une idée.
+- **Aide :** le mode d'emploi, rangé selon ce que vous voulez faire ; le bouton ouvre la page de l'aide qui
+  correspond à l'écran.
+
+Bridge Coach se rouvre sur la séance et la page où vous étiez, et sur une donne en cours de jeu.
+
+| Rapport PDF | Contenu |
 |---|---|
-| `…-archive.pdf` | ce qui a été joué : mains, enchères et résultats des tables, double mort et par |
-| `…-standard.pdf` | l'analyse du programme : enchères recommandées, entame, plan de jeu |
-| `…-expert.pdf` | la même analyse, avec l'« Avis de l'expert » rédigé par Claude (seulement s'il existe) |
-| `…-diff.pdf` | le programme et l'expert comparés, donne par donne |
-
-Les rapports finissent par votre parcours dans la séance et une synthèse : une ligne par donne, le contrat
-recommandé face à ce qui a été joué aux tables.
+| `…-analyse.pdf` | chaque donne : mains, résultats des tables, enchères recommandées, entame, plan de jeu, conseil du coach et, s'il existe, avis de l'expert ; en tête, « Vous face au champ » et « Où vous pouviez faire mieux » ; à la fin, votre parcours et la synthèse des contrats |
+| `…-a-revoir.pdf` | seulement les donnes où vous pouviez faire mieux, la plus coûteuse d'abord |
+| `…-resume.pdf` | la version courte, sans commentaires : résultats, enchères, double mort et par |
+| `…-donne-N.pdf` | une seule donne (Analyse, **Imprimer cette donne**) |
+| `…-comparaison.pdf` | le coach face à l'expert, donne par donne (quand l'expert a analysé la séance) |
 
 ## Installer
 
@@ -55,7 +81,7 @@ d'autres. Si quelque chose se passe mal, l'ancienne version est remise en place 
 `bridge-coach-files/rapports/derniere-mise-a-jour.txt`.
 
 Vos séances, rapports, analyses de l'expert et réglages ne changent pas. Seules les versions publiées sont
-proposées (1.1.0, 1.2.0…), jamais le travail en cours. Inutile de retélécharger l'installateur.
+proposées, jamais le travail en cours. Après une mise à jour, **Quoi de neuf** dit ce qui a changé. Inutile de retélécharger l'installateur.
 
 ## Sécurité
 
@@ -125,35 +151,25 @@ l'expert ne se recréent pas.
 | Les réglages (`bridge-coach.ini`, `etat.json`) | `~/Library/Application Support/Bridge Coach` | `%APPDATA%\Bridge Coach` |
 | Le programme et son Python | `~/Library/Application Support/Bridge Coach/programme` | `%LOCALAPPDATA%\Programs\Bridge Coach` |
 
-Dans `bridge-coach-files` : `seances/AAAA-MM/` (chaque séance, `<séance>.bc.json`, avec une copie de l'original et
-ses analyses ; `versions/` garde les états précédents), `rapports/AAAA-MM/` (les PDF), `documents/`. Les séances
-(`.bc.json`) sont le plus précieux : elles contiennent l'analyse de l'expert, que le programme ne peut pas recréer.
-
-## L'application
-
-- **Fichier :** ouvrir une séance, importer un `.bws` ou une feuille de route, **Nouveau…** (une séance vide à
-  remplir, ou des donnes d'entraînement par thème), exporter en PBN.
-- **Donnes :** la séance, les joueurs, puis chaque donne : mains, enchères des tables, résultats ; modifier les
-  donnes d'une séance d'entraînement.
-- **Jouer :** enchérir à une place choisie (déclarant, défense, donneur…), le programme tenant les trois autres,
-  puis jouer la carte ; l'**Indice** donne l'enchère ou la carte du système. Les pensées des robots sont dans la
-  barre de droite, et **Revoir la donne avec les pensées** la rejoue carte par carte.
-- **Analyse :** l'analyse du programme, et les étapes pour obtenir celle de l'expert ; chaque donne présentée
-  comme dans le PDF.
-- **Rapports :** les options (qui vous êtes, ordre joué, page des noms), **Créer les rapports**, puis les PDF.
-- **Réglages :** les dossiers, la mise à jour.
-- **Aide :** le mode d'emploi, en cinq parties.
-
-Bridge Coach se rouvre sur la séance et la page où vous étiez, et sur une donne en cours de jeu.
+Dans `bridge-coach-files` : `seances/AAAA-MM/` (chaque séance est un seul fichier, `<séance>.bc.json`, avec ses
+analyses et vos parties rejouées à côté ; `versions/` garde les états précédents), `rapports/AAAA-MM/` (les PDF),
+`documents/` (votre fiche de conventions), `corbeille/` (les séances mises à la corbeille, rien n'est effacé). Le
+fichier de Bridgemate n'est pas copié : une fois importée, la séance n'en a plus besoin. Les séances (`.bc.json`)
+sont le plus précieux : elles contiennent l'analyse de l'expert, que le programme ne peut pas recréer. **Réglages**,
+**Sauvegarder mes séances** en fait une archive `.zip`.
 
 ## L'analyse de l'expert (facultatif)
 
 Onglet **Analyse**, **Analyse expert** : Bridge Coach prépare un seul fichier,
-`pour-claude/<séance>/…-pour-claude.json` dans votre dossier de travail (les consignes, la séance avec les
-initiales seulement, l'analyse du programme, un exemple et les documents du système). Donnez-le à Claude sur
-claude.ai ; il renvoie `…-expert.json`, que **Importer** vérifie avant de l'ajouter à la séance. Les enchères de
-l'expert sont choisies à la table, sans regarder les autres mains ni le double mort ; les décisions serrées sont
-signalées.
+`pour-claude/<séance>/seance-du-AAAA-MM-JJ.ai.json` dans votre dossier de travail (les consignes, la séance avec les
+initiales seulement, l'analyse du coach, un exemple et les documents du système). Donnez-le à Claude sur claude.ai ;
+il renvoie `…-expert.json`, que **Importer** vérifie avant de l'ajouter à la séance. Les enchères de l'expert sont
+choisies à la table, sans regarder les autres mains ni le double mort ; les décisions serrées sont signalées. Le
+conseil du coach reste en tête, l'expert le commente.
+
+**Demander à l'expert** (Jouer et Analyse) prépare un petit fichier pour une seule donne, pour poser une question à
+l'expert : pendant la donne, seulement ce que vous voyez ; après, toute la donne. Le seul nom qui part est le prénom
+choisi dans **Réglages**, **L'expert**.
 
 ---
 
@@ -184,6 +200,8 @@ l'application dans Applications si le dossier change de place (`--dock` l'ajoute
 ./rapport.sh séance.bws --avec-noms   avec une page du nom des joueurs
 ```
 
+Les rapports se font d'habitude depuis l'application, onglet **Rapports**.
+
 Une feuille de route PDF de FFBClubNet est acceptée aussi : elle donne les mains, les contrats, les entames et les
 résultats, pas les enchères ; le double mort est calculé. Les sauvegardes FFBClubNet nommées `.bws` sont des
 archives protégées par un mot de passe : il faut le vrai `.bws` de Bridgemate.
@@ -199,7 +217,21 @@ Les enchères, les entames et le jeu de la carte sont décrits dans `systems/` :
 
 Ces fichiers se modifient à la main ; leurs exemples sont vérifiés à chaque lecture, et une erreur est signalée
 avec son numéro de ligne. Une règle n'est gardée que si elle gagne sur des donnes tirées au hasard, pas seulement
-sur les séances du club.
+sur les séances du club : `src/banc_encheres.py` enchérit les mêmes donnes avant et après un changement et juge au
+double mort, en IMP, chaque séquence qui change (environ 15 secondes pour 20 000 donnes) :
+
+```
+.venv/bin/python -I -X utf8 src/banc_encheres.py avant.json 20000 11
+.venv/bin/python -I -X utf8 src/banc_encheres.py apres.json 20000 11      # après le changement
+.venv/bin/python -I -X utf8 src/banc_encheres.py --comparer avant.json apres.json
+```
+
+`systems/sef-2024/a-faire.md` garde le journal des essais : ce qui a été mesuré, gardé ou retiré.
+
+### Les tests
+
+Chaque fichier de `tests/` se lance seul (`.venv/bin/python -I -X utf8 tests/test_app.py`) ; `publier.sh` les
+lance tous avant de publier.
 
 ### Publier une version
 

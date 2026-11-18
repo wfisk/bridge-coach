@@ -435,6 +435,10 @@ def premier_pli(d, contrat, decl, entame, encheres, n=60):
     nat = _naturelle(options, den); choix = nat
     best = max(options, key=lambda o: (sim[o][0], sim[o][1], RANGS.index(o[1])))   # à égalité, la plus petite
     if len(options) > 1 and best != nat and nettement_meilleure(sim[best], sim[nat]): choix = best
+    elif len(options) > 1:                                 # jamais moins bien que le petit, parfois mieux : la mettre (une
+        dom = [o for o in options if o != nat and all(x >= y for x, y in zip(totaux[o], totaux[nat]))   # impasse gratuite :
+               and sum(totaux[o]) > sum(totaux[nat])]       # ♠V du mort sur l'entame sous la D, donne 8 du 17/11/2026)
+        if dom: choix = max(dom, key=lambda o: (sim[o][0], sim[o][1], -RANGS.index(o[1])))
     phr = []
     fr = lambda o: o[0] + o[1].translate(FR)
     # le plus petit ne vaut d'être dit que si le mort avait un honneur capable de battre l'entame

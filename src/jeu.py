@@ -515,9 +515,11 @@ def tours_adverses(a, b, r, partage=None):
     les cartes qui manquent, distribuées en alternance aux deux adversaires. Chaque tour, nous
     gagnons avec notre plus petite carte maîtresse (l'autre main fournit sa plus petite) ; sans
     carte maîtresse, c'est l'adversaire. Ne dépend que de nos cartes. partage : une autre distribution."""
-    nous = [list(a), list(b)]
     dehors = [x for x in ORDRE if x not in a + b]
-    adv = partage(dehors) if partage else [dehors[0::2], dehors[1::2]]
+    if partage is None and len(dehors) >= 4 and len(dehors) % 2 == 0:   # un nombre pair : 4-2, la carte de plus du côté
+        return max((tours_adverses(a, b, r, lambda x, k=k: _repartir(x, k)) for k in (0, 1)), key=len)   # qui nous coûte le plus
+    nous = [list(a), list(b)]
+    adv = partage(dehors) if partage else _repartir(dehors)
     out = []
     for _ in range(r):
         hauts = [p[0] for p in adv if p]
@@ -545,11 +547,15 @@ def tours_adverses(a, b, r, partage=None):
 
 
 def sures(a, b):
-    """Levées d'honneurs de tête : nos cartes qui se suivent depuis l'as, dans la limite des tours."""
+    """Levées d'honneurs de tête : nos cartes qui se suivent depuis l'as, dans la limite des tours. Quand ces tours
+    épuisent les adversaires sauf si l'un a toutes leurs cartes (cinq ou plus : 4 % au plus), toute la longueur est sûre :
+    ♦AD863 face à ♦RV9 font cinq levées, même sur un 4-1 (l'expert, donne 6 du 17/11/2026)."""
     k = 0
     for x in ORDRE:
         if x not in a + b: break
         k += 1
+    m = 13 - len(a) - len(b)
+    if m >= 5 and k >= m - 1 and a and b: return max(len(a), len(b))
     return min(k, max(len(a), len(b)))
 
 
@@ -571,9 +577,26 @@ def lister_levees(par_couleur):
 
 
 def partage_normal(m):
-    """Le partage qu'on espère pour m cartes adverses."""
-    if m == 4: return "2-2 ou 3-1"
+    """Le partage qu'on espère pour m cartes adverses : un nombre impair se partage au mieux (3-2, 4-3), un nombre pair
+    mal (4-2, 3-1 : le plus probable), comme on l'enseigne (l'expert, donne 3 du 17/11/2026 : ♥RX74 face à ♥A63 fait deux
+    perdantes, pas une)."""
+    if m >= 4 and m % 2 == 0: return f"{m // 2 + 1}-{m // 2 - 1}"
     return f"{(m + 1) // 2}-{m // 2}"
+
+
+def partage_favorable(m):
+    """Le partage qu'il faut trouver quand le normal ne suffit pas : pour un nombre pair, le partage égal (3-3, 2-2)."""
+    return f"{m // 2}-{m // 2}" if m % 2 == 0 else partage_normal(m)
+
+
+def _repartir(dehors, cote=0):
+    """Les cartes adverses réparties comme le partage normal : en alternance (les honneurs partagés), et pour un nombre
+    pair (4 ou plus) une petite carte de plus d'un côté (4-2 plutôt que 3-3) : cote 0 ou 1 dit lequel."""
+    g, d = dehors[0::2], dehors[1::2]
+    if len(dehors) >= 4 and len(dehors) % 2 == 0:
+        if cote == 0: g.append(d.pop())
+        else: d.append(g.pop())
+    return [g, d]
 
 
 def placer(h, c, avant, decl, cx, restant, entame):
@@ -872,7 +895,8 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None, infos
         ks = sum(sur.values())
         ordre = sorted(COULEURS, key=lambda c: (-(tops[c] - sur[c]), -len(s_dec[c] + s_mort[c])))
         principal = next((c for c in ordre if tops[c] > sur[c]), None)   # la couleur à affranchir
-        partage = {c: sur[c] if imps[c] and c != principal else tops[c] for c in COULEURS}   # l'impasse n'est pas comptée
+        partage = {c: sur[c] if imps[c] and c != principal else max(tops[c], sur[c]) for c in COULEURS}   # l'impasse n'est pas
+                                                           # comptée ; jamais moins que les levées sûres (donne 6 du 17/11)
         k = min(sum(partage.values()), 13)
         ph = f"Levées sûres : {lister_levees(sur)} : {ks} ; il en faut {need}."
         if infos is not None: infos.update(ks=ks, k=k)
@@ -883,7 +907,7 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None, infos
             cumul += partage[c] - sur[c]; n = len(s_dec[c]) + len(s_mort[c])
             vue.add(c); nom = NOM_C[c].capitalize()
             m = maniement(s_dec[c], s_mort[c], c, decl, mort)
-            espoir = f", il en manque {13 - n}, on espère {partage_normal(13 - n)}" if n >= 7 else ""
+            espoir = f", il en manque {13 - n}, le plus souvent {partage_normal(13 - n)}" if n >= 7 else ""
             if imps[c]: etapes.append((c, f"<b>{nom} :</b> " + " ".join(x.replace(f"{c} : ", "", 1) + placer(hh[0], c, av, decl, cx, restant, entame) + "."
                                                                     for x, hh, av in imps[c])))
             elif m: etapes.append((c, f"<b>{nom} :</b> {m[0]}"))
@@ -961,7 +985,7 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None, infos
         if essai and essai["coupes_avant"] >= .6: conseil = COUPES_DABORD
         elif essai and essai["coupes_avant"] <= .4 and coupes and conseil == COUPES_DABORD and sum(coupes.values()) < len(courte[den]):
             conseil = ATOUT_PUIS
-        at = f"<b>Atout :</b> {n_at} cartes, il en manque {m}, on espère {partage_normal(m)} : {conseil}."
+        at = f"<b>Atout :</b> {n_at} cartes, il en manque {m}, le plus souvent {partage_normal(m)} : {conseil}."
         vue.add(den)
         for txt, hh, avant in imps[den]: at += " " + txt + placer(hh[0], den, avant, decl, cx, restant, entame) + "."
         e = en_tete(s_dec[den], s_mort[den], den)

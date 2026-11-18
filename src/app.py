@@ -347,7 +347,7 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
 @keyframes secoue { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
 .carte.jouable:hover { transform: translateY(-6px); }
 .tableau-seances { display: grid; width: 100%; align-items: center; column-gap: 12px; padding: 0 6px; min-height: 30px;   /* Ouvrir une séance, */
-  grid-template-columns: 20px minmax(0, 1fr) 84px 112px 52px minmax(0, .6fr) 92px 28px; font-size: var(--fs-liste);   /* comme l'Explorateur */
+  grid-template-columns: 20px minmax(0, 1fr) 128px 112px 52px minmax(0, .6fr) 92px 28px; font-size: var(--fs-liste);   /* comme l'Explorateur */
   color: var(--bc-tapis-900); border: 1px solid transparent; }
 .entete-seances { min-height: 30px; font-size: var(--fs-petit); color: var(--bc-tapis-700); border-bottom: 1px solid var(--bc-tapis-200); }
 .entete-seances > * { padding: 0 2px; } .entete-seances > :hover { color: var(--bc-tapis-900); }
@@ -356,7 +356,7 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
 .ligne-seance { cursor: pointer; }
 .liste-seances { container-type: inline-size; }
 @container (max-width: 820px) {   /* texte grand ou fenêtre étroite : la colonne Type s'efface, le nom garde sa place */
-  .liste-seances .tableau-seances { grid-template-columns: 20px minmax(0, 1fr) 84px 0 44px minmax(0, .6fr) 92px 28px; }
+  .liste-seances .tableau-seances { grid-template-columns: 20px minmax(0, 1fr) 128px 0 44px minmax(0, .6fr) 92px 28px; }
   .liste-seances .tableau-seances > :nth-child(4) { visibility: hidden; overflow: hidden; } }
 .encheres-reco > :last-child { flex: 1 1 280px; min-width: 260px; }
 .ligne-seance:hover { background: var(--bc-pique-50); border-color: var(--bc-pique-100); }   /* la ligne sous la souris */
@@ -802,9 +802,31 @@ def infos_seance(c):
         if cle not in _INFOS:
             d = json.load(open(c, encoding="utf-8"))
             _INFOS[cle] = (d["session"]["date"], SOURCES.get(d.get("source", {}).get("type"), ""))
+            _HEURES[c] = heure_de(d)
         return _INFOS[cle]
     except Exception:
         return date_lisible(c), ""
+
+
+_HEURES = {}
+
+
+def heure_de(d):
+    """L'heure d'une séance, « 14:01 » : celle du tournoi (session.heure, d'un .bws) ; pour une séance faite dans Bridge
+    Coach (entraînement, saisie, Brouillon), l'heure où elle a été créée ; sinon "" (l'utilisateur, 2026-11-18 : deux
+    entraînements du même jour se distinguent)."""
+    h = d.get("session", {}).get("heure")
+    if h: return h
+    if d.get("source", {}).get("type") in ("entrainement", "saisie", "brouillon"):
+        c = (d.get("fichier") or {}).get("cree_le") or ""
+        if "T" in c: return c.split("T")[1][:5]
+    return ""
+
+
+def heure_seance(c):
+    """heure_de pour un fichier, lue avec infos_seance."""
+    infos_seance(c)
+    return _HEURES.get(c, "")
 
 
 _RESUMES = {}
@@ -5310,7 +5332,7 @@ def page():
         def cle_tri(c):
             r = resume_seance(c); date, source = infos_seance(c)
             j, m, a_ = (date.split("/") + ["", "", ""])[:3]
-            return {"nom": (r["court"] or r["titre"] or fichiers.titre_de(c)).lower(), "date": a_ + m + j,
+            return {"nom": (r["court"] or r["titre"] or fichiers.titre_de(c)).lower(), "date": a_ + m + j + heure_seance(c),
                     "type": source.lower(), "donnes": r["donnes"] or 0, "partenaire": (r["partenaire"] or "").lower(),
                     "resultat": -1 if r["pct"] is None else r["pct"]}[tri_o["col"]]
 
@@ -5340,7 +5362,7 @@ def page():
                     .on("click", lambda c=c: choisir(c)):
                 ui.icon(ICONE_SOURCE.get(genre, "insert_drive_file"), size="18px").classes("icone-seance")
                 ui.label("Brouillon" if brouillon_ else (r["court"] or r["titre"] or fichiers.titre_de(c))).classes("titre-seance truncate")
-                ui.label("" if brouillon_ else date)
+                ui.label("" if brouillon_ else f"{date} {heure_seance(c)}".strip()).classes("whitespace-nowrap")
                 ui.label("Cours" if brouillon_ else source).classes("truncate")
                 n = n_b if brouillon_ else r["donnes"]
                 ui.label("" if n is None else str(n)).classes("text-right")

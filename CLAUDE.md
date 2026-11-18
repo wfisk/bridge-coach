@@ -791,6 +791,18 @@ user's folder, never in git. Only `--avec-noms` shows full names in a report: an
   apart) or make the same tricks on the real deal double dummy (meme_resultat: used only to stay quiet, never to advise:
   the advice comes from what he sees at the table). Options › « Le coach m'arrête quand il aurait fait autrement »
   (etat coach_arrete, on by default; coach_arrete()).
+- Step buttons (2026-11-18, the user: ▶ means « play on by itself », and nothing does): Jouer, Revoir and Démo share
+  boutons_pas, ⏮ start, ‹ one step back, › one step forward (one card or one call); Jouer has no › but « Commencer les
+  enchères » while a deal waits. → one step, Maj + → the whole trick (revoir_pli, demo_pli). A click on the felt itself
+  (table clic=, click.self): Revoir and Démo one step, Jouer gathers a finished trick at once (attendre_ou_clic,
+  ramasser_vite); cards you can't play and hands face down show no pointer. Revoir (2026-11-18): revue_de computes once in
+  the background carte.analyse_jeu (each card's cost, cartes vues), the card that kept each lost trick (meilleure_carte) and
+  the coach's avis on your cards not yet reviewed (avis_programme, now with technique and pourquoi; in play the coach's
+  result is kept with your card, pensee « avis »); bande_plis (13 squares, green won, grey lost, red dot = a costly card of
+  your side, click = that trick), moments_cles (lead, costly cards, gifts, the coach's named techniques, squeeze / mise en
+  main; « Suivant »), the costly card outlined red on the table and the card that kept the trick green (a <style> on data-c).
+  The « Qu'aurait joué le coach ? » button is gone. src/dds_verrou.py wraps every endplay.dds function in one lock
+  (imported by app.py): two solver calls from two threads crashed the server (« Sum 8 is not four », segfault).
 - Jouer, keyboard bidding (2026-11-12, encheres_clavier): a digit 1–7 then T K C P S (♣ ♦ ♥ ♠ SA), Enter = passe, X = contre,
   R = surcontre, Escape clears; the digit typed shows under the box. Start-up: a tournament in the Bridgemate folder not yet
   imported opens its import form once per file (etat bws_propose); « Ouvrir une séance » reminds to back up after 30 days

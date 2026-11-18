@@ -13,6 +13,7 @@ import html as html_
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
+import dds_verrou                                         # noqa: F401 — un seul appel au solveur double mort à la fois
 import brouillon, carte, classement, quiz, donnes, edition, exporter, fichiers, fiche_conventions, jouer, maj, moi, palette, question_expert, rapport, systeme_vue
 from nicegui import app, background_tasks, run, ui
 
@@ -338,7 +339,8 @@ div:has(> .zone-table) { height: calc(100dvh / var(--zoom, 1) - 109px); }
   border-radius: 9px; font-size: 15px; font-weight: 800; color: var(--bc-blanc); text-align: center; line-height: 1.25; z-index: 2;
   box-shadow: 0 0 0 2px var(--bc-blanc); }   /* démonstration, double mort : les levées du déclarant avec cette carte */
 .carte .dm.mieux { background: var(--bc-trefle-700); } .carte .dm.moins { background: var(--bc-coeur-600); }
-.carte.jouable { cursor: pointer; }   /* sans couleur : rien ne dit quelles cartes sont permises (comme à la table) */
+.carte.jouable { cursor: pointer; }
+.tapis .carte:not(.jouable), .dos { cursor: default; }   /* une carte qu'on ne joue pas, une main de dos : rien ne s'y passe (2026-11-18) */   /* sans couleur : rien ne dit quelles cartes sont permises (comme à la table) */
 .carte.secoue { animation: secoue .45s ease-in-out; border-color: var(--bc-coeur-600); }   /* une carte qui ne peut pas être jouée */
 @keyframes secoue { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
 .carte.jouable:hover { transform: translateY(-6px); }
@@ -2188,21 +2190,27 @@ def page():
                        sans_jouer=False, attend=False, note="")
         jeu_garder(); vue_jouer.refresh()
 
+    def boutons_pas(debut, recul, avance=None, ok_debut=True, ok_recul=True, ok_avance=True, aide_recul="Un pas en arrière (←)",
+                    aide_avance="Un pas en avant (→)"):
+        """Les mêmes trois boutons dans Jouer, Revoir et Démo (l'utilisateur, 2026-11-18 : un ▶ veut dire « lire tout
+        seul », or rien ne joue tout seul ici) : ⏮ au début, ‹ un pas en arrière, › un pas en avant (une carte, une
+        enchère). avance None : pas de ›."""
+        with ui.row().classes("gap-2 items-center no-wrap"):
+            ui.button(icon="skip_previous", on_click=debut).props("outline").tooltip("Au début").set_enabled(ok_debut)
+            ui.button(icon="chevron_left", on_click=recul).props("outline").tooltip(aide_recul).set_enabled(ok_recul)
+            if avance is not None:
+                ui.button(icon="chevron_right", on_click=avance).props("unelevated").tooltip(aide_avance).set_enabled(ok_avance)
+
     def magneto(c, d):
-        """Les commandes d'un magnétoscope, en haut de la barre de droite : ⏮ au début de la donne, ◀◀ reprendre votre
-        dernière enchère ou carte, ▶ commencer (les enchères ne partent pas toutes seules : l'utilisateur, 2026-11-11)."""
+        """En haut de la barre de droite : ⏮ au début de la donne, ‹ reprendre votre dernière enchère ou carte ; une donne
+        qui attend a « Commencer les enchères » (elles ne partent pas toutes seules : l'utilisateur, 2026-11-11)."""
         p = jeu["partie"]
         occupe = bool(jeu.get("pense") or jeu.get("pli_vu") or jeu["affiche"] < len(jeu["seq"]))
         rien = jeu.get("attend") and not p
-        with ui.row().classes("gap-2 items-center no-wrap"):
-            ui.button(icon="skip_previous", on_click=lambda: jeu_au_debut(c, d)).props("outline") \
-                .tooltip("Au début du jeu de la carte, puis de la donne" if jeu.get("partie") else "Au début de la donne").set_enabled(not rien and not occupe)
-            ui.button(icon="fast_rewind", on_click=lambda: jeu_reculer(c, d)).props("outline") \
-                .tooltip("Reprendre votre dernière enchère ou votre dernière carte").set_enabled(not rien and not occupe)
-            if rien:
-                ui.button(icon="play_arrow", on_click=jeu_commencer).props("unelevated").tooltip("Commencer les enchères")
-            else:
-                ui.button(icon="play_arrow").props("outline").set_enabled(False)
+        boutons_pas(lambda: jeu_au_debut(c, d), lambda: jeu_reculer(c, d), ok_debut=not rien and not occupe,
+                    ok_recul=not rien and not occupe, aide_recul="Reprendre votre dernière enchère ou votre dernière carte")
+        if rien:                                       # la donne attend : un vrai bouton, pas un ▶ seul (l'utilisateur, 2026-11-18)
+            ui.button("Commencer les enchères", icon="gavel", on_click=jeu_commencer).props("unelevated no-caps").classes("w-full")
 
     def jeu_reprendre(c, d, x):
         """La donne telle qu'elle était : enchères refaites par le moteur, puis les cartes reposées une à une."""
@@ -2378,6 +2386,16 @@ def page():
         jeu.update(partie=carte.Partie(d, c_, decl, jeu["seq"], humain=jeu["siege"]), pli_vu=None, revoir=None, msg="", garde_jeu=False, sans_jouer=False)
         jeu_garder(); vue_jouer.refresh(); background_tasks.create(carte_defense())
 
+    async def attendre_ou_clic(t):
+        """Attend t secondes, ou moins si le joueur clique le tapis (ramasser_vite)."""
+        ev = jeu["presse"] = asyncio.Event()
+        try: await asyncio.wait_for(ev.wait(), t)
+        except asyncio.TimeoutError: pass
+
+    def ramasser_vite():
+        ev = jeu.get("presse")
+        if ev: ev.set()
+
     async def carte_poser(x):
         """Pose une carte ; si elle termine le pli, le pli reste un instant sous les yeux."""
         p = jeu["partie"]; avant = len(p.plis)
@@ -2386,7 +2404,7 @@ def page():
             pli, g = p.plis[-1]                      # vont vers les plis gardés du camp gagnant (l'utilisateur, 2026-11-11)
             jeu["gagnante"] = next(((cc, r.translate(carte.FR)) for x_, cc, r in pli if x_ == g), None)
             jeu["pli_vu"] = p.plis[-1]; vue_jouer.refresh()
-            await asyncio.sleep(1.1)
+            await attendre_ou_clic(1.1)                # un clic sur le tapis ramasse le pli tout de suite
             places = jeu.get("places") or ()               # vers le joueur qui a gagné le pli (le mort aussi) : c'est ainsi
             jeu["ramasse"] = dict(zip(places, ("haut", "gauche", "droite", "bas"))).get(g, "bas")   # qu'on voit qui l'a gagné
             vue_jouer.refresh()
@@ -2496,7 +2514,17 @@ def page():
                     avis = None                         # sur la vraie donne, les deux cartes font autant : pas d'arrêt
                 if avis:
                     jeu["avis_coach"] = avis; vue_jouer.refresh(); return
-        p.pensees.append(p.pensee(p.au_trait(), x, humain=True))   # votre carte, pour la relecture
+        z_ = p.pensee(p.au_trait(), x, humain=True)       # votre carte, pour la relecture
+        cc_ = jeu.get("coach_carte") or {}               # ce que le coach aurait joué là (déjà calculé) : gardé pour Revoir
+        t_ = cc_.get("tache")
+        if t_ is not None and t_.done() and cc_.get("cle") == (id(p), len(p.pos.jouees)) and not t_.exception():
+            r_ = t_.result()
+            try: tech_ = carte.technique(p, r_["x"], x, r_.get("pensee")) if r_["x"] != x else None
+            except Exception: tech_ = None
+            z_["avis"] = dict(carte=carte.carte_fr(*r_["x"]), mondes=r_["mondes"],
+                              scores={k_: list(v_) for k_, v_ in r_["scores"].items()}, croyance=[],
+                              technique=list(tech_) if tech_ else None, pourquoi=r_.get("pourquoi") or "")
+        p.pensees.append(z_)
         await carte_poser(x)
         await carte_defense()
 
@@ -2873,11 +2901,12 @@ def page():
         ui.html(f"<div style='position:relative;width:{l}px;height:{h}px'><div style='position:absolute;left:50%;top:50%;"
                 f"width:70px;height:60px;transform:translate(-50%,-50%) rotate({tour}deg)'>{cartes}</div></div>", sanitize=False)
 
-    def table(d, places, contenu, centre=None, sur_table=(), tour=None, ouvert=True):
+    def table(d, places, contenu, centre=None, sur_table=(), tour=None, ouvert=True, clic=None):
         """La table, une grande surface vert clair : l'étui, les cartons, le pli et le mort posé dessus ; les mains des
         joueurs autour. contenu(siège, position) dessine une place ; sur_table : les positions posées sur la table (le mort) ;
         tour : le siège qui doit enchérir ou jouer. ouvert : des mains visibles sur les côtés (Démo, Revoir, les mains
-        montrées) : les côtés ont la place de quatre cartes, sinon de deux (les mains cachées de Jouer).
+        montrées) : les côtés ont la place de quatre cartes, sinon de deux (les mains cachées de Jouer). clic : un clic sur le
+        tapis lui-même, hors des cartes qu'on joue (Revoir, Démo : un pas en avant ; Jouer : ramasser le pli fini).
         Le dessin est une boîte de taille fixe (CSS : .cadre-table, en largeurs de carte et en --sp-*) que le CSS met à
         l'échelle de la place disponible : sa taille ne dépend jamais des cartes qui restent (la table tremblait en fin de
         donne quand un script la mesurait ; l'utilisateur, 2026-11-16 : la mise en page au CSS seul)."""
@@ -2931,7 +2960,9 @@ def page():
                                            etat=" a-jouer" if tour == gauche else ""), sanitize=False)
                 with ui.column().classes("items-center gap-4 tapis").style(       # la table, carrée comme une vraie, à la taille de la fenêtre
                         f"{forme}background:var(--bc-tapis-100);border:1px solid var(--bc-tapis-200);border-radius:var(--table-r);padding:var(--sp-3);"
-                        "justify-content:space-between;position:relative;box-sizing:border-box"):
+                        "justify-content:space-between;position:relative;box-sizing:border-box"
+                        + (";cursor:pointer" if clic else "")) as tapis_:
+                    if clic: tapis_.on("click.self", lambda: clic())   # le tapis seul : jamais une carte qu'on joue
                     if "haut" in sur_table: place(haut, "haut")
                     for ou, x in (("gauche", gauche), ("droite", droite)):   # le mort d'un côté : sur la table, contre son bord
                         if ou in sur_table:
@@ -2983,7 +3014,8 @@ def page():
         # (l'utilisateur, 2026-11-16)
         table(d, places, contenu, lambda: ui.html(pli_html(p, places, p.mort()), sanitize=False),
               sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == p.mort()],
-              tour=None if p.fini() or jeu["pli_vu"] else tour, ouvert=False)
+              tour=None if p.fini() or jeu["pli_vu"] else tour, ouvert=False,
+              clic=ramasser_vite if jeu.get("pli_vu") else None)   # un pli fini : un clic le ramasse tout de suite
 
     def options_joueurs(*garder):
         """Le choix d'un joueur : « Aucun (tous les joueurs) », puis votre nom (Réglages, « Votre nom »), une ligne de
@@ -3264,14 +3296,10 @@ def page():
         enchères : l'enchère suivante, que l'enseignant commente une à une."""
         m = jeu.get("demo")
         if not m or jeu.get("demo_occupe") or jeu.get("demo_suite"): return
-        cible = k + 1
-        if k >= m.n_encheres:
-            j = k - m.n_encheres                              # la carte qu'on va montrer
-            nous = "NS" if (jeu.get("demo_bas") or "S") in "NS" else "EO"
-            siege = None
-            if j < len(m.pensees): siege = m.pensees[j]["siege"]
-            elif j < 52: siege = m.position(j - 1).au_trait() if j else None
-            if siege and (siege in "NS") == (nous == "NS") and (j + 1) % 4: cible = k + 2
+        cible = k + 1                                     # Maj + → : jusqu'à la fin du pli (l'utilisateur, 2026-11-18 :
+        if k >= m.n_encheres:                             # un seul pas sur → et le bouton ›, le pli entier au clavier)
+            j = k - m.n_encheres                          # cartes déjà montrées
+            cible = m.n_encheres + (j // 4 + 1) * 4
         jeu["demo_suite"] = True
         try:
             while jeu.get("pas", 0) < cible and jeu.get("demo") is m:
@@ -3282,6 +3310,80 @@ def page():
                 # pas de pause ajoutée : elle ne sert qu'à Jouer, cartes cachées (l'utilisateur, 2026-11-13)
         finally:
             jeu["demo_suite"] = False; vue_jouer.refresh()
+
+    def revue_de(p, d, cartes):
+        """La revue de la donne pour Revoir, calculée une fois en tâche de fond : chaque carte au double mort (ce qu'elle
+        coûte : carte.analyse_jeu), la carte qui gardait la levée pour chaque carte coûteuse de votre camp, puis l'avis du
+        coach sur chacune de vos cartes qui ne l'a pas encore (carte.avis_programme). Renvoie ce qui est déjà prêt."""
+        r = jeu.get("revue")
+        if r and r["p"] is p: return r
+        r = jeu["revue"] = dict(p=p, a=None, mieux={})
+        async def calcul():
+            try:
+                r["a"] = await run.io_bound(carte.analyse_jeu, d, p.contrat, p.decl, cartes)
+                if jeu.get("revue") is r: vue_jouer.refresh()
+                for x in r["a"]["cartes"]:
+                    if x["perte"] > 0 and p.camp(x["siege"]) == p.camp(p.humain):
+                        r["mieux"][x["k"]] = await run.io_bound(carte.meilleure_carte, d, p.contrat, p.decl, cartes, x["k"])
+                if jeu.get("revue") is r: vue_jouer.refresh()
+                for z in p.pensees:                       # vos cartes : l'avis du coach, s'il n'a pas été gardé en jouant
+                    if jeu.get("revue") is not r: return
+                    if z.get("humain") and not z.get("avis") and 0 < z["n"] < len(cartes):
+                        z["avis"] = await run.io_bound(carte.avis_programme, d, p.contrat, p.decl, p.encheres, p.humain, cartes, z["n"])
+                        if jeu.get("revoir") == z["n"]: vue_jouer.refresh()
+                jeu_garder()
+            except Exception:
+                pass
+        background_tasks.create(calcul())
+        return r
+
+    def moments_cles(p, cartes, r):
+        """Les cartes qui ont compté, dans l'ordre : l'entame, chaque carte de votre camp qui a coûté une levée (cartes
+        vues), chaque levée offerte par l'adversaire, les techniques que le coach nomme sur vos cartes, les coups.
+        [(k, genre, texte)] ; genre : entame | perte | cadeau | coach | coup."""
+        out = [(0, "entame", f"L'entame : {rouge(carte.carte_fr(*cartes[0]))} ({SIEGE[carte.LHO[p.decl]]})")]
+        a = (r or {}).get("a") or {}
+        for x in a.get("cartes") or []:
+            if x["perte"] <= 0 or x["k"] == 0: continue
+            if p.camp(x["siege"]) == p.camp(p.humain):
+                out.append((x["k"], "perte", f"{rouge(x['carte'])} coûte {'une levée' if x['perte'] == 1 else str(x['perte']) + ' levées'}"))
+            else:
+                out.append((x["k"], "cadeau", f"{SIEGE[x['siege']]} offre une levée ({rouge(x['carte'])})"))
+        for z in p.pensees:
+            av = z.get("avis") if z.get("humain") else None
+            if av and av.get("technique") and av["carte"] != z["carte"]:
+                out.append((z["n"], "coach", f"Le coach : {rouge(av['carte'])}, {rouge(av['technique'][0])}"))
+        for co in a.get("coups") or []:
+            if co["type"] in ("squeeze", "mise en main"):
+                out.append((co["k"], "coup", f"{co['type'].capitalize()} sur {SIEGE[co['joueur']]}"))
+        vus, propre = set(), []
+        for m in sorted(out, key=lambda m: m[0]):
+            if (m[0], m[1]) in vus: continue
+            vus.add((m[0], m[1])); propre.append(m)
+        return propre
+
+    def bande_plis(p, cartes, r, k):
+        """Les 13 plis en une bande : vert, gagné par votre camp ; gris, perdu ; un point rouge où une carte de votre camp a
+        coûté une levée. Un clic va au début de ce pli ; le pli montré est encadré."""
+        pertes = {x["pli"] for x in (((r or {}).get("a") or {}).get("cartes") or [])
+                  if x["perte"] > 0 and p.camp(x["siege"]) == p.camp(p.humain)}
+        with ui.element("div").classes("w-full").style("display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:3px"):
+            for i, (pli, g) in enumerate(p.plis):
+                gagne = p.camp(g) == p.camp(p.humain)
+                ici = k // 4 == i
+                fond = "var(--bc-trefle-500)" if gagne else "var(--bc-tapis-300)"
+                bord = "2px solid var(--bc-noir)" if ici else "2px solid transparent"
+                point = ("<span style='position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;"
+                         "background:var(--bc-coeur-600)'></span>") if i + 1 in pertes else ""
+                ui.html(f"<div style='position:relative;height:24px;border-radius:4px;background:{fond};border:{bord};"
+                        f"color:var(--bc-blanc);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;"
+                        f"cursor:pointer' title='Pli {i + 1}{' : gagné' if gagne else ' : perdu'}'>{i + 1}{point}</div>", sanitize=False) \
+                    .on("click", lambda i=i: revoir_aller(4 * i))
+
+    def revoir_aller(k):
+        """Revoir : à la carte k (bornée)."""
+        n = jeu.get("revoir_n") or 1
+        jeu["revoir"] = max(0, min(n - 1, k)); vue_jouer.refresh()
 
     async def revoir_pli(k, n):
         """Revoir, ▶ : les cartes jusqu'à la fin du pli en cours, une à une (k : la dernière carte montrée, n : le nombre de cartes)."""
@@ -3329,14 +3431,14 @@ def page():
         les enchères au clavier dans Jouer (encheres_clavier)."""
         if not e.action.keydown or not sur_jouer(): return
         cle = e.key.name if hasattr(e.key, "name") else str(e.key)
-        maj_ = bool(getattr(getattr(e, "modifiers", None), "shift", False))   # Maj + → : une carte ; → seul : le pli (Revoir), votre carte et la suivante (Démo)
+        maj_ = bool(getattr(getattr(e, "modifiers", None), "shift", False))   # → : un pas (une carte) ; Maj + → : tout le pli (2026-11-18)
         if jeu.get("mode") == "revoir" and cle in ("ArrowRight", "PageDown", "ArrowLeft", "PageUp") and jeu.get("revoir_n"):
             k, n = jeu.get("revoir", 0), jeu["revoir_n"]
-            if cle in ("ArrowRight", "PageDown") and not maj_: await revoir_pli(k, n); return
-            jeu["revoir"] = max(0, min(n - 1, k + (1 if cle in ("ArrowRight", "PageDown") else -1))); vue_jouer.refresh(); return
+            if cle in ("ArrowRight", "PageDown") and maj_: await revoir_pli(k, n); return
+            revoir_aller(k + (1 if cle in ("ArrowRight", "PageDown") else -1)); return
         if jeu.get("mode") != "demo": return await encheres_clavier(cle)
         if not jeu.get("demo"): return
-        if cle in ("ArrowRight", "PageDown") and not maj_: await demo_pli(jeu.get("pas", 0)); return
+        if cle in ("ArrowRight", "PageDown") and maj_: await demo_pli(jeu.get("pas", 0)); return
         if jeu.get("demo_suite"): return
         if cle in ("ArrowRight", "PageDown"): await demo_aller(jeu.get("pas", 0) + 1)
         elif cle in ("ArrowLeft", "PageUp"): await demo_aller(jeu.get("pas", 0) - 1)
@@ -3391,6 +3493,7 @@ def page():
                             eventail(mains_fr(d, x), colonnes=ou in ("gauche", "droite"), cote=ou, grande=x == bas, depart=mains_fr(d, x))
                     table(d, places, contenu, lambda: ui.html(tapis_encheres(d, places, m.seq[:k]), sanitize=False),
                           tour=None if k >= m.n_encheres else jouer.ROT[(jouer.ROT.index(d["donneur"]) + k) % 4],
+                          clic=None if attente else (lambda: demo_aller(jeu.get("pas", 0) + 1)),
                           ouvert=not attente or (qz is not None and qz["siege"] in places[1:3]))   # le quiz : les autres
                                                            # mains de dos, à la place de Jouer ; ouverte si celui qui décide est
                                                            # sur un côté, sa main visible (2026-11-18). (leur nom
@@ -3423,7 +3526,7 @@ def page():
                             eventail(reste, jx, clic, colonnes=ou in ("gauche", "droite"), cote=ou, grande=x == bas, depart=mains_fr(d, x))
                     table(d, places, contenu, centre,
                           sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == q.mort()],
-                          tour=tour)
+                          tour=tour, clic=lambda: demo_aller(jeu.get("pas", 0) + 1))   # un clic sur le tapis : un pas
             with panneau_droit():
                 appliquer_plein()
                 tete_donne(d)
@@ -3431,17 +3534,11 @@ def page():
                 fin = m.fini() and k >= m.n_pas()
                 # les mêmes boutons de magnétoscope que Jouer (magneto), au même endroit ; ici ⏮ le début, ◀◀ un pas en
                 # arrière, ▶ un pas en avant (l'utilisateur, 2026-11-11 : la même allure, pas forcément le même sens)
-                with ui.row().classes("gap-2 items-center no-wrap"):
-                    ui.button(icon="skip_previous", on_click=lambda: demo_aller(0)).props("outline") \
-                        .tooltip("Au début").set_enabled(k > 0 and not jeu.get("demo_occupe"))
-                    ui.button(icon="fast_rewind", on_click=lambda: demo_aller(k - 1)).props("outline") \
-                        .tooltip("Un pas en arrière (flèche ←)").set_enabled(k > 0 and not jeu.get("demo_occupe"))
-                    libre = not fin and not jeu.get("demo_occupe") and not jeu.get("demo_suite")
-                    ui.button(icon="play_arrow", on_click=lambda: demo_pli(k)).props("unelevated") \
-                        .tooltip("Votre carte et celle de l'adversaire (flèche →)" if k >= m.n_encheres else "L'enchère suivante (flèche →)").set_enabled(libre)
-                    if k >= m.n_encheres:                    # le jeu de la carte : › une seule carte
-                        ui.button(icon="chevron_right", on_click=lambda: demo_aller(k + 1)).props("flat round") \
-                            .tooltip("Une carte (Maj + →)").set_enabled(libre)
+                libre = not fin and not jeu.get("demo_occupe") and not jeu.get("demo_suite")
+                boutons_pas(lambda: demo_aller(0), lambda: demo_aller(k - 1), lambda: demo_aller(k + 1),
+                            ok_debut=k > 0 and not jeu.get("demo_occupe"), ok_recul=k > 0 and not jeu.get("demo_occupe"),
+                            ok_avance=libre, aide_avance=("Une carte (→ ; Maj + → : tout le pli)" if k >= m.n_encheres
+                                                          else "L'enchère suivante (→)"))
                 src = {"expert": "de l'Expert", "standard": "du Coach", "moteur": "du moteur"}[m.source]
                 n_ = min(k, m.n_encheres); i0 = jouer.ROT.index(d["donneur"])
                 grille_demo = lambda: ui.html(grille_html(jouer.grille(m.seq[:n_], d["donneur"]), d.get("vul"),
@@ -3684,8 +3781,8 @@ def page():
                     # pas de pensées des robots pendant le jeu : à la table, on n'entend pas les autres réfléchir (et elles
                     # disent ce qu'ils croient des mains cachées ; l'utilisateur, 2026-11-11). Elles restent pour « Revoir la
                     # donne avec les pensées », après la donne, et pour la Démo
-                elif jeu.get("attend"):
-                    ui.label("Appuyez sur ▶ pour commencer : les enchères partent du donneur.").classes("text-base text-gray-700")
+                elif jeu.get("attend"):                         # « Commencer les enchères » est en haut : rien à redire ici
+                    pass
                 elif not fini and attente:                      # les autres enchérissent : la boîte reste, grisée
                     boite_encheres(d, actif=False)
                 elif not fini and not attente and avis_ici():  # le coach vous arrête : son avis à la place de la boîte,
@@ -3778,20 +3875,37 @@ def page():
             with ui.column().classes("grow min-w-0 gap-2"):
                 outils_table(d)
                 table(d, places, contenu, centre,
-                      sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == q.mort()])
+                      sur_table=[ou for x, ou in zip(places, ("haut", "gauche", "droite", "bas")) if x == q.mort()],
+                      clic=lambda: revoir_aller(jeu.get("revoir", 0) + 1))   # un clic sur le tapis : une carte
             with panneau_droit():
                 appliquer_plein()
                 tete_donne(d)
-                with ui.row().classes("gap-2 items-center no-wrap"):   # les mêmes boutons que Jouer et Démo (magneto)
-                    ui.button(icon="skip_previous", on_click=lambda: (jeu.update(revoir=0), vue_jouer.refresh())).props("outline") \
-                        .tooltip("À la première carte").set_enabled(k > 0)
-                    ui.button(icon="fast_rewind", on_click=lambda: (jeu.update(revoir=k - 1), vue_jouer.refresh())).props("outline") \
-                        .tooltip("Une carte en arrière").set_enabled(k > 0)
-                    ui.button(icon="play_arrow", on_click=lambda: revoir_pli(k, len(cartes))).props("unelevated") \
-                        .tooltip("Tout le pli (flèche →)").set_enabled(k < len(cartes) - 1 and not jeu.get("revoir_suite"))
-                    ui.button(icon="chevron_right", on_click=lambda: (jeu.update(revoir=k + 1), vue_jouer.refresh())).props("flat round") \
-                        .tooltip("Une carte (Maj + →)").set_enabled(k < len(cartes) - 1 and not jeu.get("revoir_suite"))
+                boutons_pas(lambda: revoir_aller(0), lambda: revoir_aller(k - 1), lambda: revoir_aller(k + 1),   # comme Jouer et Démo
+                            ok_debut=k > 0, ok_recul=k > 0, ok_avance=k < len(cartes) - 1 and not jeu.get("revoir_suite"),
+                            aide_recul="Une carte en arrière (←)", aide_avance="Une carte (→ ; Maj + → : tout le pli)")
+                rv = revue_de(p, d, cartes)
+                bande_plis(p, cartes, rv, k)
                 ui.label(f"{p.contrat} par {SIEGE[p.decl]} · carte {k + 1} sur {len(cartes)} · pli {k // 4 + 1}").classes("text-base font-bold")
+                moments = moments_cles(p, cartes, rv)
+                if moments:                                     # les moments clés : un clic y va ; « Moment suivant »
+                    suivant = next((m for m in moments if m[0] > k), None)
+                    with ui.element("div").classes("w-full rounded-lg").style(
+                            "border:1px solid var(--bc-tapis-200);background:var(--bc-blanc);padding:6px 8px"):
+                        with ui.row().classes("w-full items-center justify-between no-wrap"):
+                            ui.label("Moments clés").classes("text-base font-bold whitespace-nowrap")
+                            ui.button("Suivant", on_click=lambda m=suivant: revoir_aller(m[0]) if m else None) \
+                                .props("flat dense no-caps icon-right=chevron_right").set_enabled(suivant is not None)
+                        if rv.get("a") is None:
+                            ui.label("Le coach revoit la donne…").classes("text-base text-gray-700")
+                        puce = {"entame": "var(--bc-tapis-500)", "perte": "var(--bc-coeur-600)", "cadeau": "var(--bc-pique-500)",
+                                "coach": "var(--bc-trefle-600)", "coup": "var(--bc-jaune-600)"}
+                        for kk, genre, texte in moments:
+                            ici = kk == k
+                            ui.html(f"<div style='display:flex;gap:6px;align-items:baseline;padding:2px 4px;border-radius:4px;cursor:pointer;"
+                                    f"font-size:var(--fs-liste);{'background:var(--bc-jaune-100);font-weight:700' if ici else ''}'>"
+                                    f"<span style='flex:none;width:8px;height:8px;border-radius:50%;background:{puce[genre]}'></span>"
+                                    f"<span style='flex:none;color:var(--bc-tapis-700)'>Pli {kk // 4 + 1}</span><span>{texte}</span></div>",
+                                    sanitize=False).on("click", lambda kk=kk: revoir_aller(kk))
                 if k == len(cartes) - 1 and resume_de(d, p):  # la fin du film : le résumé de la donne
                     with ui.element("div").classes("w-full").style(
                             "background:var(--bc-pique-50);border:1px solid var(--bc-pique-100);border-radius:6px;padding:8px 10px"):
@@ -3799,10 +3913,17 @@ def page():
                         for ligne in resume_de(d, p):
                             ui.html(f"<div style='font-size:var(--fs-texte);margin-top:4px'>{rouge(ligne)}</div>", sanitize=False)
                 f_ = jeu.get("faute")                           # la carte qui a coûté la levée : le dire, et ce qui la gardait
-                if f_ and f_[0] is p and f_[1] == k:
+                perte_k = next((x for x in ((rv.get("a") or {}).get("cartes") or [])
+                                if x["k"] == k and x["perte"] > 0 and p.camp(x["siege"]) == p.camp(p.humain)), None)
+                mieux = rv["mieux"].get(k) if perte_k else (f_[2] if f_ and f_[0] is p and f_[1] == k else None)
+                if perte_k or (f_ and f_[0] is p and f_[1] == k):
                     ui.html(f"<div style='font-size:16px;background:var(--bc-coeur-100);border-left:3px solid var(--bc-coeur-600);padding:6px 8px;"
-                            f"border-radius:4px'>Ici, <b>{rouge(carte.carte_fr(*cartes[k]))}</b> a coûté une levée"
-                            + (f" : <b>{rouge(f_[2])}</b> la gardait." if f_[2] else ".") + "</div>", sanitize=False).classes("w-full")
+                            f"border-radius:4px'>Cartes vues : ici, <b>{rouge(carte.carte_fr(*cartes[k]))}</b> a coûté une levée"
+                            + (f" ; <b>{rouge(mieux)}</b> la gardait." if mieux else ".") + "</div>", sanitize=False).classes("w-full")
+                    # sur la table : la carte jouée bordée de rouge, celle qui gardait la levée bordée de vert dans la main
+                    css = f".cadre-table [data-c='{carte.carte_fr(*cartes[k])}'] {{ outline: 3px solid var(--bc-coeur-600); outline-offset: 1px; }}"
+                    if mieux: css += f" .cadre-table [data-c='{mieux}'] {{ outline: 3px solid var(--bc-trefle-600); outline-offset: 1px; }}"
+                    ui.html(f"<style>{css}</style>", sanitize=False)
                 z = next((z for z in p.pensees if z["n"] == k), None)
                 if z:                                           # court, comme dans la Démo ; le détail derrière « Plus »
                     t_ = carte.texte_pensee(z, p.decl)
@@ -3811,13 +3932,14 @@ def page():
                     if t_.get("croyance") or t_.get("plan") or (not z["humain"] and t_["raison"] != court):
                         with ui.expansion("Plus").props("dense header-class='text-primary text-base px-1'").classes("w-full"):
                             ui.html(pensee_html(t_), sanitize=False).classes("w-full")
-                if z and z["humain"] and not z.get("avis"):     # votre carte : ce que le programme aurait fait
-                    async def avis(z=z):
-                        jeu["msg"] = "Le coach réfléchit…"; vue_jouer.refresh()
-                        z["avis"] = await run.io_bound(carte.avis_programme, d, p.contrat, p.decl, p.encheres, p.humain, cartes, k)
-                        jeu["msg"] = ""; jeu_garder(); vue_jouer.refresh()
-                    ui.button("Qu'aurait joué le coach ?", icon="psychology", on_click=avis).props("outline dense no-caps")
-                    if jeu.get("msg"): ui.label(jeu["msg"]).classes("text-base")
+                if z and z["humain"]:                           # votre carte : l'avis du coach, de lui-même (2026-11-18)
+                    av = z.get("avis")
+                    if not av:
+                        ui.label("Le coach regarde cette carte…").classes("text-base text-gray-700")
+                    elif av.get("technique") and av["carte"] != z["carte"]:
+                        ui.html(f"<div style='font-size:var(--fs-texte)'>{CASQUETTE_SVG} Le coach aurait joué <b>{rouge(av['carte'])}</b>. "
+                                f"<b>{rouge(av['technique'][0][0].upper() + av['technique'][0][1:])}</b> : {rouge(av['technique'][1])}</div>",
+                                sanitize=False).classes("w-full")
                 elif k == 0: ui.html(pensee_html(dict(titre=f"{SIEGE[carte.LHO[p.decl]]} entame {carte.carte_fr(*cartes[0])}",
                                                       raison="L'entame suit les règles du système (entames.yaml).", croyance=[])),
                                      sanitize=False).classes("w-full")

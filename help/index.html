@@ -219,7 +219,7 @@
 <h3 id="encherir">Enchérir une donne</h3>
 <ol class="etapes">
   <li>Onglet <b>Jouer</b>, cliquez une donne dans la liste de gauche. Vous êtes en bas de la table.</li>
-  <li>Cliquez <b>▶</b>, en haut à droite : les robots enchérissent jusqu'à votre tour.</li>
+  <li>Cliquez <b>Commencer les enchères</b>, en haut à droite : les robots enchérissent jusqu'à votre tour.</li>
   <li>Choisissez votre enchère dans la boîte à enchères, à droite : un niveau, puis une couleur ; <b>PASS</b>, <b>X</b> et <b>XX</b> sont devant.</li>
 </ol>
 <figure><img src="images/jouer-encheres.png" alt="Onglet Jouer : la table et la boîte à enchères"><figcaption>Chaque joueur pose ses cartons devant lui ; votre main est en bas, la boîte à enchères à droite.</figcaption></figure>
@@ -228,7 +228,7 @@
   <li><b>Le coach vous arrête</b> quand votre enchère n'est pas la sienne : à la place de la boîte, il dit la sienne et ce qu'elle montre, ce que la vôtre montrerait, et si la décision était serrée. Puis <b>Prendre</b> son enchère, <b>Garder</b> la vôtre, ou <b>Choisir une autre enchère</b>.</li>
   <li><b>Un saut</b> : cliquez <b>STOP</b> avant l'enchère, comme au club.</li>
   <li><b>Une enchère artificielle</b> (Stayman, texas, Spoutnik…) : posez <b>ALERT</b> avant l'enchère. Si vous l'oubliez, le coach reprend votre enchère et vous le rappelle.</li>
-  <li><b>Je me suis trompé</b> : <b>◀◀</b> reprend votre dernière enchère ; <b>⏮</b> revient au début de la donne.</li>
+  <li><b>Je me suis trompé</b> : <b>‹</b> reprend votre dernière enchère ; <b>⏮</b> revient au début de la donne. Un pli fini reste un instant sur la table : cliquez le tapis pour le ramasser tout de suite.</li>
   <li><b>Au clavier</b> : tapez le niveau puis la couleur, <b>T</b> trèfle, <b>K</b> carreau, <b>C</b> cœur, <b>P</b> pique, <b>S</b> sans-atout (<b>1</b> puis <b>C</b> = 1♥) ; <b>Entrée</b> passe, <b>X</b> contre, <b>R</b> surcontre.</li>
 </ul>
 <p>Pour jouer une autre place, ouvrez <b>Options</b>, en haut de la liste : le déclarant (au départ), la défense, une place fixe, ou <b>comme un joueur de la séance</b>, à la place où il était assis ce soir-là. Pour jouer sans que le coach vous arrête, décochez-y <b>Le coach m'arrête quand il aurait fait autrement</b>.</p>
@@ -246,7 +246,13 @@
 <p>Quand l'autre camp gagne les enchères, vous défendez avec un robot pour partenaire. Si c'est à vous d'entamer, choisissez votre carte. Le mort s'étale sur le côté. Votre partenaire signale comme le prévoit le système : sur votre entame, parité en continuation, préférence en défausse.</p>
 
 <h3 id="revoir">Revoir une donne jouée</h3>
-<p>Une fois la donne finie, <b>Revoir</b> (en haut à droite, à côté de <b>Jouer</b>) rejoue votre partie carte par carte, les quatre mains visibles, avec ce que pensait chaque robot : pourquoi il a choisi sa carte, et ce qu'il croyait des mains cachées. À la dernière carte, le résumé de la donne. <b>▶</b> avance, <b>◀◀</b> recule, <b>⏮</b> revient au début.</p>
+<p>Une fois la donne finie, <b>Revoir</b> (en haut à droite, à côté de <b>Jouer</b>) rejoue votre partie carte par carte, les quatre mains visibles, avec ce que pensait chaque robot : pourquoi il a choisi sa carte, et ce qu'il croyait des mains cachées. À la dernière carte, le résumé de la donne. <b>›</b> avance d'une carte (ou la flèche <b>→</b>, ou un clic sur le tapis), <b>‹</b> recule, <b>⏮</b> revient au début ; Maj + <b>→</b> joue tout le pli.</p>
+<ul>
+  <li><b>La bande des plis</b> : un carré par pli, vert si votre camp l'a gagné, gris sinon, un point rouge si une carte de votre camp y a coûté une levée. Cliquez un pli pour y aller.</li>
+  <li><b>Moments clés</b> : l'entame, les cartes qui ont coûté une levée (cartes vues), les levées offertes par l'adversaire, les techniques que le coach nomme sur vos cartes. Cliquez-en un, ou <b>Suivant</b>.</li>
+  <li><b>Sur la table</b>, la carte qui a coûté une levée est bordée de rouge, celle qui la gardait de vert.</li>
+  <li><b>Vos cartes</b> : ce que le coach aurait joué s'affiche de lui-même, avec le nom de la technique.</li>
+</ul>
 
 <h2>Créer des donnes</h2>
 <p class="intro">Bridge Coach fabrique des donnes sur les thèmes que vous voulez travailler, ou vous laisse taper les vôtres. Elles se jouent et s'analysent comme un tournoi.</p>
@@ -314,7 +320,7 @@
 <figure><img src="images/demo.png" alt="Le mode Démo"></figure>
 <ol class="etapes">
   <li>Ouvrez la donne, puis <b>Démo</b>.</li>
-  <li>Avancez avec <b>▶</b>, ou la flèche <b>→</b> du clavier (une télécommande de présentation marche aussi). Reculez avec <b>←</b>. Pendant le jeu, chaque <b>▶</b> joue la carte de votre camp et celle de l'adversaire qui suit ; une entame adverse se joue seule. <b>›</b> (ou Maj + <b>→</b>) joue une seule carte.</li>
+  <li>Avancez avec <b>›</b>, la flèche <b>→</b> du clavier (une télécommande de présentation marche aussi) ou un clic sur le tapis : une enchère, puis une carte à la fois. Reculez avec <b>‹</b> ou <b>←</b>. Maj + <b>→</b> joue tout le pli. Les robots calculent toute la donne d'avance : rien n'attend.</li>
   <li>Cochez <b>Double mort</b> : sous chaque carte possible, le nombre de levées qu'elle donne au déclarant. Cliquez une autre carte pour demander « et si… ? » : les robots reprennent de là.</li>
 </ol>
 
@@ -322,9 +328,9 @@
 <p>Dans <b>Démo</b>, le bouton orange <b>Faire un quiz</b> arrête la donne aux moments où la classe doit décider : les enchères serrées (celles où le coach hésitait entre deux appels), puis l'entame. Seule la main de celui qui décide est visible ; les autres sont de dos.</p>
 <ol class="etapes">
   <li>Ouvrez la donne, <b>Démo</b>, puis <b>Faire un quiz</b> (il devient <b>Quiz : activé</b>).</li>
-  <li>Avancez avec <b>▶</b> : la démonstration s'arrête à la première question, dans la barre de droite (« Vous êtes Sud. Que dites-vous ? »).</li>
-  <li>La classe répond ; cliquez sa réponse pour la marquer, puis <b>Montrer la réponse</b> (ou <b>▶</b>) : l'appel ou l'entame du coach, et pourquoi. Pour l'entame, ce que chaque carte aurait donné, les quatre mains vues.</li>
-  <li><b>▶</b> continue jusqu'à la question suivante. <b>⏮</b> revient au début et repose les questions.</li>
+  <li>Avancez avec <b>›</b> : la démonstration s'arrête à la première question, dans la barre de droite (« Vous êtes Sud. Que dites-vous ? »).</li>
+  <li>La classe répond ; cliquez sa réponse pour la marquer, puis <b>Montrer la réponse</b> (ou <b>›</b>) : l'appel ou l'entame du coach, et pourquoi. Pour l'entame, ce que chaque carte aurait donné, les quatre mains vues.</li>
+  <li><b>›</b> continue jusqu'à la question suivante. <b>⏮</b> revient au début et repose les questions.</li>
 </ol>
 
 <h3 id="grand-ecran">Le grand écran</h3>

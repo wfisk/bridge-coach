@@ -803,8 +803,14 @@ def avis_programme(d, contrat, decl, encheres, humain, cartes, k):
     for x in cartes[len(q.pos.jouees):k]: q.poser(x)
     s = q.au_trait(); x = q.indice()
     ch = q.dernier or {}
+    z = q.pensee(s, x)
+    try:                                                   # la technique nommée, quand sa carte n'est pas la vôtre
+        tech = technique(q, x, cartes[k], z) if k < len(cartes) and cartes[k] != x else None
+    except Exception:
+        tech = None
     return dict(carte=carte_fr(*x), mondes=ch.get("mondes", 0),
-                scores={carte_fr(*kk): list(v) for kk, v in (ch.get("scores") or {}).items()}, croyance=q.croyance(s))
+                scores={carte_fr(*kk): list(v) for kk, v in (ch.get("scores") or {}).items()}, croyance=q.croyance(s),
+                technique=list(tech) if tech else None, pourquoi=justification(z, decl))
 
 
 def analyse_jeu(d, contrat, decl, cartes):

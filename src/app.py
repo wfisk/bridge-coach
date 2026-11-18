@@ -1010,6 +1010,12 @@ def joueur_jouer(data=None):
     return e.get("joueur_jouer") or moi.nom() or e.get("mon_nom") or ""
 
 
+def coach_arrete():
+    """L'option de l'onglet Jouer : quand votre enchère ou votre carte n'est pas celle du coach, il vous arrête et vous
+    dit la sienne et pourquoi, avant qu'elle soit jouée (l'utilisateur, 2026-11-18). Allumée par défaut."""
+    return lire_etat().get("coach_arrete", True) is not False
+
+
 def place_jouer():
     """L'option de l'onglet Jouer : la place que prend le joueur (jouer.PLACES), le déclarant par défaut."""
     m = lire_etat().get("place_jouer")
@@ -2261,11 +2267,36 @@ def page():
         possibles = [int(x[0]) for x in jouer.legales(jeu["seq"], d["donneur"]) if x[1:] == b[1:]]
         return bool(possibles) and int(b[0]) > min(possibles)
 
-    async def jeu_annonce(d, b):
+    def avis_enchere(b, k, ex):
+        """L'avis du coach quand votre enchère b n'est pas la sienne, ou None : sa propre enchère et ce qu'elle montre, ce
+        que la vôtre montrerait, et si la décision était serrée (le texte de sa règle nomme votre enchère)."""
+        ind = jeu.get("indice") or {}
+        sienne = ind.get("enchere")
+        if not sienne or sienne == b: return None
+        texte = ind.get("texte") or ""
+        sens = next((t_ for x, bb, t_ in ex[k:k + 1] if t_), "")
+        sens = re.sub(r"^votre enchère\s*:\s*", "", sens)        # « votre enchère : pas d'ouverture » -> « pas d'ouverture »
+        nom = lambda e: {"passe": "Passe", "contre": "Contre", "surcontre": "Surcontre"}.get(e, e)
+        serree = (any(m in texte for m in ("convenait aussi", "était possible", "Décision serrée"))
+                  and (nom(b) in texte or b in texte))
+        pourquoi = f"Le coach dirait <b>{rouge(nom(sienne))}</b> : {rouge(texte)}"
+        votre = f"Votre <b>{rouge(nom(b))}</b>" + (f" montrerait : {rouge(sens)}." if sens else " n'est pas dans le système du coach ici.")
+        tete = "Décision serrée : le coach hésitait avec votre enchère." if serree else "Le coach aurait dit autre chose."
+        return dict(genre="enchere", mien=b, coach=sienne, serree=serree, tete=tete, lignes=[pourquoi, votre],
+                    ou=(jeu.get("cle"), len(jeu["seq"])), nom_mien=nom(b), nom_coach=nom(sienne))
+
+    async def jeu_annonce(d, b, force=False, du_coach=False):
         if jeu["affiche"] < len(jeu["seq"]) or b not in jouer.legales(jeu["seq"], d["donneur"]): return
+        jeu["avis_coach"] = None
         notes = []                                          # l'entraînement à l'alerte et au Stop
         k = len(jeu["seq"])
         seq, ex, ind, al = await run.io_bound(jouer.avancer_alertes, d, jeu["seq"] + [b], jeu["siege"])
+        if du_coach and k in al: jeu["alerte"] = True      # l'enchère du coach : son Alerte est posée pour vous,
+        if du_coach and saut(d, b): jeu["stop"] = True     # et son Stop avant un saut
+        if not force and coach_arrete():                    # pas l'enchère du coach : il vous arrête et dit pourquoi
+            avis = avis_enchere(b, k, ex)
+            if avis:
+                jeu["avis_coach"] = avis; vue_jouer.refresh(); return
         if k in al and not jeu.get("alerte"):              # une enchère artificielle sans le carton Alerte : reprise
             sens = next((t_ for x, bb, t_ in ex[k:k + 1] if t_), "")
             jeu["note"] = (f"{b} est une enchère artificielle" + (f" ({sens})" if sens else "") +
@@ -2374,8 +2405,65 @@ def page():
             if getattr(p, "difficile", False): await asyncio.sleep(1.4)   # la bonne carte ne s'imposait pas : il hésite
             jeu["pense"] = None
             await carte_poser(x)
+        coach_prevoir(p)
 
-    async def carte_jouer(x):
+    def coach_prevoir(p):
+        """À votre tour de jouer, le coach cherche déjà sa carte (en tâche de fond) : quand vous jouez, son avis est prêt."""
+        if not coach_arrete() or not p or p.fini() or not p.au_joueur() or jeu.get("partie") is not p: return
+        cle_ = (id(p), len(p.pos.jouees))
+        if (jeu.get("coach_carte") or {}).get("cle") == cle_: return
+        s_ = p.au_trait()
+        def calcul():
+            x_ = p.indice()
+            z = p.pensee(s_, x_)
+            return dict(x=x_, scores=z.get("scores") or {}, mondes=z.get("mondes") or 0, role=z.get("role"),
+                        pourquoi=carte.justification(z, p.decl), plan=z.get("plan") or "")
+        tache = asyncio.ensure_future(run.io_bound(calcul))
+        jeu["coach_carte"] = dict(cle=cle_, tache=tache)
+
+    def avis_carte(p, x, r):
+        """L'avis du coach quand votre carte x n'est pas la sienne (r : son calcul), ou None si elles se valent dans ses
+        donnes imaginées. Serrée : la sienne ne réussit que dans un monde ou deux de plus, ou seulement plus de levées."""
+        if not r or r["x"] == x: return None
+        sc, n = r["scores"], r["mondes"]
+        f = lambda c_: carte.carte_fr(*c_)
+        mien, sien = sc.get(f(x)), sc.get(f(r["x"]))
+        if mien is not None and sien is not None and mien[0] == sien[0] and (sien[1] - mien[1]) < 0.1 * max(1, n):
+            return None                               # autant de réussites et moins d'un dixième de levée : rien à dire
+        but = "faire chuter le contrat" if r.get("role") == "defense" else "gagner le contrat"
+        virgule = lambda v: f"{v:.1f}".replace(".", ",")
+        lignes = [f"Le coach jouerait <b>{rouge(f(r['x']))}</b>."]
+        serree = False
+        if mien is not None and sien is not None and n:
+            ecart = sien[0] - mien[0]
+            serree = ecart <= max(1, n // 12)
+            if ecart > 0:
+                lignes.append(f"Pour {but}, sa carte réussit dans {sien[0]} des {n} donnes qu'il imagine, "
+                              f"la vôtre dans {mien[0]}.")
+            else:
+                lignes.append(f"Autant de chances de {but} ({sien[0]} donnes sur {n}), mais plus de levées en moyenne : "
+                              f"{virgule(sien[1] / n)} avec sa carte, {virgule(mien[1] / n)} avec la vôtre.")
+        if r.get("pourquoi"): lignes.append(f"<b>Pourquoi :</b> {rouge(r['pourquoi'])}")
+        lignes.append("<span style='color:var(--bc-tapis-700)'>Il ne voit pas les mains cachées : il imagine des donnes "
+                      "fidèles aux enchères et aux cartes jouées.</span>")
+        tete = "Décision serrée : les deux cartes se tiennent." if serree else "Le coach aurait joué une autre carte."
+        return dict(genre="carte", mien=x, coach=r["x"], serree=serree, tete=tete, lignes=lignes,
+                    ou=(jeu.get("cle"), len(p.pos.jouees)), nom_mien=f(x), nom_coach=f(r["x"]))
+
+    def meme_resultat(p, x, y):
+        """Les cartes x et y font-elles autant de levées sur la vraie donne, au double mort ? Cela sert seulement à ne
+        pas vous arrêter pour rien (une défausse qui ne change rien, l'utilisateur, 2026-11-18) ; l'avis du coach, lui,
+        ne vient que de ce qu'il voit à la table : sa main, le mort, les enchères, les cartes jouées."""
+        try:
+            v = p.pos.valeurs()                       # une carte par groupe de cartes équivalentes
+        except Exception:
+            return False
+        val, prec = {}, {}
+        for c_, r_ in sorted(p.legales(), key=lambda k: (k[0], carte.RANGS.index(k[1]))):   # de la plus haute
+            t_ = v.get((c_, r_), prec.get(c_)); prec[c_] = t_; val[(c_, r_)] = t_
+        return val.get(x) is not None and val.get(x) == val.get(y)
+
+    async def carte_jouer(x, force=False):
         p = jeu["partie"]
         if not p or jeu["pense"] or jeu["pli_vu"] or p.fini() or not p.au_joueur(): return
         if x not in p.legales():                       # interdite : la carte tremble et reste dans la main
@@ -2387,24 +2475,59 @@ def page():
             vue_jouer.refresh()
             await asyncio.sleep(.7); jeu["secoue"] = None
             return
-        jeu["msg"] = ""
+        jeu["msg"] = ""; jeu["avis_coach"] = None
+        if not force and coach_arrete():                    # pas la carte du coach : il vous arrête et dit pourquoi
+            coach_prevoir(p)
+            t_ = (jeu.get("coach_carte") or {}).get("tache")
+            if t_ is not None:
+                if not t_.done(): jeu["msg"] = "Le coach regarde votre carte…"; vue_jouer.refresh()
+                try: r = await t_
+                except Exception: r = None
+                jeu["msg"] = ""
+                if jeu.get("partie") is not p or p.fini() or not p.au_joueur(): return
+                avis = avis_carte(p, x, r)
+                if avis and await run.io_bound(meme_resultat, p, x, avis["coach"]):
+                    avis = None                         # sur la vraie donne, les deux cartes font autant : pas d'arrêt
+                if avis:
+                    jeu["avis_coach"] = avis; vue_jouer.refresh(); return
         p.pensees.append(p.pensee(p.au_trait(), x, humain=True))   # votre carte, pour la relecture
         await carte_poser(x)
         await carte_defense()
 
-    async def carte_indice():
-        p = jeu["partie"]
-        if not p or p.fini(): return
-        jeu["msg"] = "Le coach cherche…"; vue_jouer.refresh()
-        s_ = p.au_trait()
-        def calcul():
-            x_ = p.indice()
-            z = p.pensee(s_, x_)                              # son calcul : pourquoi cette carte plutôt qu'une autre
-            return x_, carte.justification(z, p.decl), z.get("plan") or ""
-        x, pourquoi, plan = await run.io_bound(calcul)
-        jeu["msg"] = f"Le coach jouerait {carte.carte_fr(*x)} ({SIEGE[s_]})."
-        jeu["indice_pourquoi"] = (pourquoi, plan)              # le pourquoi : en cliquant sur l'indice (une fenêtre)
-        vue_jouer.refresh()
+    def avis_ici():
+        """L'avis du coach en attente vaut-il encore pour la position présente ? (sinon il est oublié)"""
+        a = jeu.get("avis_coach")
+        if not a: return False
+        p = jeu.get("partie")
+        ici = (jeu.get("cle"), len(p.pos.jouees) if a["genre"] == "carte" and p else len(jeu["seq"]))
+        if a["ou"] != ici: jeu["avis_coach"] = None; return False
+        return True
+
+    def bloc_avis_coach(d):
+        """L'arrêt du coach, dans la barre de droite : ce qu'il aurait fait, pourquoi (ou que c'était serré), puis deux
+        boutons : garder votre choix, ou prendre le sien."""
+        if not avis_ici(): return                      # la position a changé : l'avis ne vaut plus
+        a = jeu["avis_coach"]
+        fond = "var(--bc-jaune-50)" if a["serree"] else "var(--bc-tapis-100)"
+        with ui.element("div").classes("w-full rounded-xl p-3 avis-coach").style(
+                f"background:{fond};border:1px solid var(--bc-jaune-300);font-size:var(--fs-texte)"):
+            ui.html(f"<div style='font-weight:700;margin-bottom:4px'>{CASQUETTE_SVG} {a['tete']}</div>"
+                    + "".join(f"<div style='margin-top:4px'>{l}</div>" for l in a["lignes"]), sanitize=False)
+            with ui.column().classes("w-full gap-2 mt-2"):
+                if a["genre"] == "enchere":
+                    garder = lambda: jeu_annonce(d, a["mien"], force=True)
+                    prendre = lambda: jeu_annonce(d, a["coach"], force=True, du_coach=True)
+                else:
+                    garder = lambda: carte_jouer(a["mien"], force=True)
+                    prendre = lambda: carte_jouer(a["coach"], force=True)
+                ui.button(f"Prendre {a['nom_coach']}, comme le coach", on_click=prendre) \
+                    .props("unelevated no-caps").classes("w-full")   # en blanc sur le vert : pas de rouge ici
+                # le vôtre, sur fond clair : ♥ ♦ en rouge
+                with ui.button(on_click=garder).props("outline no-caps").classes("w-full"):
+                    ui.html(f"<span style='font-size:var(--fs-texte)'>Garder {rouge(a['nom_mien'])}</span>", sanitize=False)
+                autre = "une autre enchère" if a["genre"] == "enchere" else "une autre carte"
+                ui.button(f"Choisir {autre}", on_click=lambda: (jeu.update(avis_coach=None), vue_jouer.refresh())) \
+                    .props("flat dense no-caps").classes("self-center")
 
     async def carte_reclamer():
         p = jeu["partie"]
@@ -3466,6 +3589,12 @@ def page():
                               on_change=lambda ev: (ecrire_etat(siege_fixe=ev.value), changer(ev))).props("no-caps")
             ui.label("Quand l'autre camp gagne le contrat, vous jouez la carte en défense : les robots tiennent le déclarant, "
                      "son mort et votre partenaire.").classes("text-base text-gray-700")
+            ui.label("Le coach pendant le jeu").classes("text-base font-bold mt-4")
+            ui.checkbox("Le coach m'arrête quand il aurait fait autrement", value=coach_arrete(),
+                        on_change=lambda ev: (ecrire_etat(coach_arrete=bool(ev.value)), vue_jouer.refresh())).classes("text-base")
+            ui.label("Avant que votre enchère ou votre carte soit jouée, il dit la sienne et pourquoi, puis vous gardez votre "
+                     "choix ou prenez le sien. Décochée : vous jouez sans interruption.") \
+                .classes("text-base text-gray-700 max-w-2xl")
             return
         if e == "classement":
             page_classement(c, data, aller); return
@@ -3526,18 +3655,14 @@ def page():
                 if p:
                     if not p.fini():
                         with ui.row().classes("gap-2 items-center"):
-                            ui.button("Indice", icon="lightbulb", on_click=lambda: carte_indice()).props("outline dense no-caps")
-                            bouton_expert(c, d, False, pleine=False); expert_ici["fait"] = True   # sur la ligne de l'Indice
+                            # plus de bouton Indice (l'utilisateur, 2026-11-18) : le coach vous arrête quand il aurait joué autrement
+                            bouton_expert(c, d, False, pleine=False); expert_ici["fait"] = True
                             if not p.en_defense():
                                 ui.button("Réclamer", icon="done_all", on_click=lambda: carte_reclamer()).props("outline dense no-caps") \
                                     .tooltip("Réclamer : vous annoncez que vous ferez toutes les levées qui restent, sans les jouer. "
                                              "Le coach vérifie, cartes vues : si la défense peut en faire une, la donne continue.")
-                        if jeu["msg"] and jeu["msg"].startswith("Le coach jouerait") and jeu.get("indice_pourquoi"):
-                            pq, plan_ = jeu["indice_pourquoi"]       # comme les enchères de la grille : survol ou clic
-                            bulle = rouge(pq) + (f"<div style='margin-top:6px'><b>Son plan :</b> {rouge(plan_)}</div>" if plan_ else "")
-                            ui.html(f"<div class='enc-sens c0' style='display:inline-block;font-size:16px;text-align:left'>"
-                                    f"{rouge(jeu['msg'])}<span class='bulle'>{bulle}</span></div>", sanitize=False)
-                        elif jeu["msg"]: ui.label(jeu["msg"]).classes("text-base")
+                        if jeu["msg"]: ui.label(jeu["msg"]).classes("text-base")
+                        bloc_avis_coach(d)
                     # pas de pensées des robots pendant le jeu : à la table, on n'entend pas les autres réfléchir (et elles
                     # disent ce qu'ils croient des mains cachées ; l'utilisateur, 2026-11-11). Elles restent pour « Revoir la
                     # donne avec les pensées », après la donne, et pour la Démo
@@ -3545,17 +3670,12 @@ def page():
                     ui.label("Appuyez sur ▶ pour commencer : les enchères partent du donneur.").classes("text-base text-gray-700")
                 elif not fini and attente:                      # les autres enchérissent : la boîte reste, grisée
                     boite_encheres(d, actif=False)
+                elif not fini and not attente and avis_ici():  # le coach vous arrête : son avis à la place de la boîte,
+                    bloc_avis_coach(d)                          # en haut, là où l'on regarde (l'utilisateur, 2026-11-18 : la barre)
                 elif not fini and not attente:
                     boite_encheres(d)
-                    with ui.row().classes("w-full gap-2 items-center"):   # sous la boîte, à gauche : son texte se lit juste dessous
-                        ui.button("Masquer l'indice" if jeu["voir_indice"] else "Indice", icon="lightbulb",
-                                  on_click=lambda: (jeu.update(voir_indice=not jeu["voir_indice"]), vue_jouer.refresh())) \
-                            .props(("unelevated" if jeu["voir_indice"] else "outline") + " dense no-caps")
-                        bouton_expert(c, d, False, pleine=False); expert_ici["fait"] = True   # l'expert, à côté
-                    if jeu["voir_indice"]:                      # comme les enchères de la grille : le sens au survol ou d'un clic
-                        ui.html(f"<div class='enc-sens c0' style='display:inline-block;font-size:16px;text-align:left'>"
-                                f"Le coach dirait <b>{rouge(jeu['indice']['enchere'])}</b>"
-                                f"<span class='bulle'>{rouge(jeu['indice']['texte'])}</span></div>", sanitize=False)
+                    with ui.row().classes("w-full gap-2 items-center"):   # sous la boîte (plus d'Indice : le coach vous arrête)
+                        bouton_expert(c, d, False, pleine=False); expert_ici["fait"] = True
                     if jeu.get("note"):
                         ui.html(f"<div style='font-size:var(--fs-texte);color:var(--bc-jaune-700)'>{rouge(jeu['note'])}</div>", sanitize=False)
                     if jeu.get("clavier"):                      # un chiffre tapé au clavier : la couleur est attendue

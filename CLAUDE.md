@@ -778,6 +778,16 @@ user's folder, never in git. Only `--avec-noms` shows full names in a report: an
   starts by itself after 1.8 s (« Voir les mains sans jouer » stays during the pause; depart_auto, not after ◀◀ back to the auction).
   Revoir: the short reason (carte.justification) with the full thought behind « Plus », and at the costly card « Ici, ♥5 a coûté une
   levée : ♥9 la gardait » (carte.meilleure_carte, jeu["faute"]). Classement with nothing replayed offers « Commencer par la donne N ».
+- Jouer, the coach's stop (2026-11-18, the user; replaces the Indice buttons, removed): when your call or card is not the coach's,
+  it is not played yet. In the right sidebar (the bidding box's place while bidding: avis_ici, bloc_avis_coach) the coach
+  says his own and why: a call with its rule's text and what yours would show (avis_enchere; « Décision serrée » when his
+  rule names your call); a card with how often each succeeds in his imagined worlds and carte.justification (avis_carte;
+  serrée within max(1, n/12) worlds). Buttons: Prendre <his> (his Alert and Stop placed for you), Garder <yours>, Choisir
+  une autre … (jeu_annonce / carte_jouer force=True). His card is computed in the background as soon as it is your turn
+  (coach_prevoir, jeu["coach_carte"]). No stop when the two cards score alike in his worlds (same successes, < 0.1 trick
+  apart) or make the same tricks on the real deal double dummy (meme_resultat: used only to stay quiet, never to advise:
+  the advice comes from what he sees at the table). Options › « Le coach m'arrête quand il aurait fait autrement »
+  (etat coach_arrete, on by default; coach_arrete()).
 - Jouer, keyboard bidding (2026-11-12, encheres_clavier): a digit 1–7 then T K C P S (♣ ♦ ♥ ♠ SA), Enter = passe, X = contre,
   R = surcontre, Escape clears; the digit typed shows under the box. Start-up: a tournament in the Bridgemate folder not yet
   imported opens its import form once per file (etat bws_propose); « Ouvrir une séance » reminds to back up after 30 days

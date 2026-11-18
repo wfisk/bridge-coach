@@ -597,7 +597,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         précisés / non précisés / Autre » line from them (michaels_feuille, the detail in Autre). Following the engine
                         (2026-11-14): rectif_1sa « Rectification fittée » under 1SA, Oui (4 trumps, 16–17 H; rectif_fittee under 2SA
                         stays Non); under « 2 majeure » the 2SA relay's step answers (ouv_2m_suite, Par paliers), new suit forcing
-                        (chgt_2m_forcing) and soutien_3m (Barrage), all à vérifier as systeme.md says « à confirmer ». A blank
+                        (chgt_2m_forcing) and soutien_3m (Barrage), all à vérifier as systeme.md says « à confirmer »; under Conventions,
+                        after Blackwood, bw_sans_fit « 4SA sans fit » (2026-11-18: Blackwood 3041 after a natural suit, trumps the last
+                        suit named; quantitative after natural SA; « à confirmer » in blackwood-3041.md, so à vérifier). A blank
                         cell is the choice « Rien de particulier ». Nothing on the Feuille needs typing and nothing opens empty or
                         « À convenir » (the user, 2026-11-14: « easy to fill in on the screen with all standard defaults already
                         selected »). Defaults are what Bridge Coach plays (systeme.md, entames.md, conventions/, signaux.py: signal on

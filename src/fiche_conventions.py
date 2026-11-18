@@ -244,6 +244,9 @@ AJOUTS = {
     "a_sans_atout": [
         T("flanc_sa_entame", "Entame (la carte)", "", True, court=True),
     ],
+    "chelem": [
+        T("bw_sans_fit", "4SA sans fit annoncé", "", True, court=True),
+    ],
     "conventions": [
         O("sa_forcing", "1SA forcing", "1♥ / 1♠ – 1SA : forcing un tour", False),
         O("smi", "S.M.I.", "Soutien mineur inversé", False),
@@ -291,7 +294,7 @@ FEUILLE = [
         ("2 majeure", ["deux_majeur", "chgt_2m_forcing", "ouv_2m_suite", "soutien_3m"]),
         ("2♣ et 2♦", ["ouv_2t_desc", "ouv_2t_rep", "ouv_2k_desc", "ouv_2k_rep"]),
         ("Barrages au palier de 3 et plus", ["ouv_3x_desc"]),
-        ("Conventions", ["blackwood", "roudi", "drury", "lebensohl", "rubensohl", "quatrieme", "troisieme", "sa_forcing",
+        ("Conventions", ["blackwood", "bw_sans_fit", "roudi", "drury", "lebensohl", "rubensohl", "quatrieme", "troisieme", "sa_forcing",
                          "smi", "autres_conventions"]),
     ]),
     ("Interventions", [
@@ -322,7 +325,7 @@ TITRE_FEUILLE = {"ouv_1sa_desc": "Points", "ouv_2sa_desc": "Points", "deux_majeu
                  "l'ouverture", "flanc_sa_entame": "Entame", "flanc_couleur_entame": "Entame", "sig_entame": "Appel",
                  "sig_entame_couleur": "Appel", "stayman_1sa": "Stayman", "texas_1sa": "Texas", "stayman_2sa": "Stayman",
                  "texas_2sa": "Texas", "quatrieme": "4e couleur forcing",
-                 "rectif_1sa": "Rectification fittée", "rectif_fittee": "Rectification fittée",
+                 "rectif_1sa": "Rectification fittée", "bw_sans_fit": "4SA sans fit", "rectif_fittee": "Rectification fittée",
                  "ouv_2m_suite": "Réponses au relais 2SA", "soutien_3m": "Soutien à 3♥ / 3♠"}
 
 
@@ -518,6 +521,12 @@ CHOIX = {
     "soutien_3m": ("Barrage", [("Barrage", "Barrage : trois atouts, pour jouer"),
                                ("Invitation", "Invitation à la manche")]),
     "deux_majeur": ("Faible", [("Faible", "2♥ / 2♠ : faible, 6 cartes"), ("Fort", "2♥ / 2♠ : fort")]),
+    # 4SA sans fit (2026-11-17, blackwood-3041.md et systeme.md « Chelem : les contrôles », à confirmer)
+    "bw_sans_fit": ("Blackwood", [("Blackwood", "Après une couleur naturelle, le partenaire n'ayant pas limité sa main : "
+                                   "Blackwood 3041, atout la dernière couleur nommée naturellement ; pour jouer sa propre "
+                                   "couleur, la nommer d'abord au palier de 4. Après une enchère naturelle à SA, 4SA reste "
+                                   "quantitatif"),
+                                  ("Quantitatif", "4SA sans fit annoncé : quantitatif")]),
     "blackwood": ("5 clés 30-41", [("5 clés 30-41", "Blackwood 5 clés 30-41 : 5♣ = 3 ou 0, 5♦ = 4 ou 1, 5♥ = 2 sans la "
                   "dame d'atout, 5♠ = 2 avec"), ("5 clés 41-30", "Blackwood 5 clés 41-30"), ("4 as", "Blackwood 4 as")]),
     "int_couleur": ("Naturel", [("Naturel", "Naturelles : au palier de 1, 5 cartes et 8–16 H (10 si la couleur est "
@@ -916,6 +925,8 @@ def _feuille(x, larg, haut, marge, t, B, colors):
                 oui = [c for c in cles if ITEMS[c]["type"] == "oui"]
                 for c in cles:
                     if c == "blackwood": out.append(Paragraph(f"<b>Blackwood</b> : {cases_de(c, x, t)}", ligne))
+                    elif ITEMS[c]["type"] == "choix" and c != "autres_conventions":
+                        out.append(Paragraph(f"<b>{t(titre_feuille(c))}</b> : {cases_de(c, x, t)}", ligne))
                 out.append(Paragraph("   ".join(coche(t(titre_feuille(c)), bool(valeur(c, x)[0])) for c in oui), ligne))
                 a = texte("autres_conventions", x)
                 out.append(Paragraph("<b>Autres</b> : " + (ecrit(t(a)) if a else "……"), ligne))

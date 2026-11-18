@@ -62,6 +62,9 @@ assert F.valeur("rectif_fittee") == (False, False)
 assert F.valeur("ouv_2m_suite")[0] == "Par paliers" and "3♦ = minimum, belle couleur" in F.texte("ouv_2m_suite")
 assert F.valeur("chgt_2m_forcing")[0] is True and F.valeur("soutien_3m")[0] == "Barrage"
 assert all(c in F.SUR_FEUILLE for c in ("rectif_1sa", "ouv_2m_suite", "soutien_3m"))
+# 4SA sans fit (2026-11-17) : Blackwood 3041 après une couleur naturelle, à vérifier (« à confirmer » dans le système)
+assert F.valeur("bw_sans_fit") == ("Blackwood", False) and F.a_verifier("bw_sans_fit") and "bw_sans_fit" in F.SUR_FEUILLE
+assert "dernière couleur nommée" in F.texte("bw_sans_fit") and F.ITEMS["bw_sans_fit"]["section"] == "chelem"
 # les bicolores, une ligne par enchère, comme les joue Bridge Coach (regles.yaml, à confirmer)
 assert "michaels" not in F.ITEMS and "bicolores" not in F.ITEMS
 assert [F.valeur(c)[0] for c in ("bic_min_2k", "bic_min_2sa", "bic_maj_cue", "bic_maj_2sa", "bic_maj_3t")] == \
@@ -137,7 +140,7 @@ for f_, txt_ in ((f, recto + verso), (e, feuille)):       # les adversaires voie
 for mot in ("FEUILLE DE PRÉVISIONS", "INTERVENTIONS", "FLANC", "NOM : MARTIN", "PRÉNOM : Anne", "IV : 45", "IV : 38",
             "Méthode de base : SEF 2024", "Compétition : Promotion", "Landy ☒", "14–16 H ☒", "Lavinthal ☒",
             "NOS ACCORDS PARTICULIERS", "Landy sur 1SA", "Roudi ☐", "Michael's Cue-bid", "précisés ☒",
-            "2SA = Les deux plus basses"):
+            "2SA = Les deux plus basses", "4SA sans fit", "Blackwood ☒"):
     assert mot in feuille, mot
 assert feuille.index("INTERVENTIONS") < feuille.index("FLANC")
 for mot in ("MARTIN Anne", "BERNARD Henri", "ENCHÈRES COMPÉTITIVES", "ENTAMES ET SIGNALISATION", "RÉSUMÉ DU SYSTÈME",

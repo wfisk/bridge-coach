@@ -1,14 +1,16 @@
 # Bridge Coach
 
-Un entraîneur de bridge pour le club, en français, système SEF 2024. Trois usages :
+Le compagnon du cours de bridge au club, en français, système SEF 2024. Il ne remplace pas le professeur ni la
+table : il prolonge le cours. Le professeur prépare et montre ses donnes en classe ; les élèves revoient chez eux le
+tournoi qu'ils ont joué au club et rejouent les donnes avec un coach qui explique. Trois usages :
 
 - **Revoir un tournoi** joué avec Bridgemate : le fichier `.bws`, la feuille de route PDF de FFBClubNet, les pages
   « Donne n° » du site de la FFB (enregistrées ou imprimées en PDF) ou un fichier `.pbn`. Pour chaque donne : les
   mains, les enchères et les résultats de toutes les tables, votre classement, le double mort ; puis l'analyse du
   coach (enchères recommandées, entame, plan de jeu, défense) et des rapports PDF.
 - **S'entraîner** : rejouer chaque donne contre trois robots, enchères puis jeu de la carte, comme déclarant ou en
-  défense. L'**Indice** donne l'enchère ou la carte du coach ; à la fin, **Revoir** rejoue la donne carte par carte
-  avec ce que pensaient les robots. Des donnes d'entraînement se créent par thème (enchères ou jeu de la carte, trois
+  défense. Quand votre enchère ou votre carte n'est pas la sienne, le **coach** vous arrête et dit pourquoi ; à la
+  fin, **Revoir** rejoue la donne carte par carte avec ce que pensaient les robots. Des donnes d'entraînement se créent par thème (enchères ou jeu de la carte, trois
   niveaux), avec un `.pbn` à importer dans Bridgemate pour les jouer au club.
 - **Faire cours** : le **Brouillon** rassemble des donnes de n'importe quelle séance pour préparer une leçon ;
   **Démo** les déroule sur grand écran, enchère par enchère et carte par carte, avec le double mort à la demande et un

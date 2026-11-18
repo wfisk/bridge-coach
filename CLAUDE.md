@@ -499,7 +499,7 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         finesses taken, ruffs before trumps; plan_de_jeu follows these for its steps.
                         PARALLELE is switched on only by rapport.py (spawn re-reads the running script:
                         keep a __main__ guard); one Pool per run, falls back to plain play if it fails. Each worker
-                        takes about 0.7 GB (the solver): nb_processus() leaves one core and 4 GB free
+                        takes about 0.7 GB (the solver): nb_processus() leaves one core and 4 GB free, and since 1.17.1 counts only the memory available now, less MARGE_LIBRE 2 GB (a Windows PC with VS Code open was at 97 % and swapping with 6)
       modele.py         the model of the hidden hands, from one seat (declarer or a defender): Modele(d, seat, calls, cards played,
                         dummy). Imagined deals (known cards in place, shown voids respected, loose prefilter jeu.lire_encheres),
                         each weighted: the engine re-bids it with the real calls imposed (encherir returns "ecarts")

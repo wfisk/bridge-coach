@@ -11,7 +11,7 @@ de l'entame, qui reste aux règles.
                                                      "impasses", "coupes_avant"}
     phrase(a) -> la phrase « Essai à la table » du plan de jeu
 """
-import atexit, multiprocessing, os, random
+import atexit, multiprocessing, os, random, sys
 from collections import Counter
 
 from coups import FR, EN, Position, RANGS, _main
@@ -130,26 +130,44 @@ def _essai(arg):
     return jouer(m, den, decl, lead, pool, need, k, random.Random(graine))
 
 
-def _memoire():
-    """La mémoire de l'ordinateur en Go, 8 si on ne sait pas la lire."""
+def _memoire(libre=False):
+    """La mémoire de l'ordinateur en Go (libre=True : celle qui est disponible maintenant, cache compris), 8 si on ne
+    sait pas la lire."""
     try:
         if os.name == "nt":
             import ctypes
             class M(ctypes.Structure):
-                _fields_ = [("taille", ctypes.c_ulong), ("charge", ctypes.c_ulong), ("total", ctypes.c_ulonglong), ("reste", ctypes.c_ulonglong * 6)]
+                _fields_ = [("taille", ctypes.c_ulong), ("charge", ctypes.c_ulong), ("total", ctypes.c_ulonglong), ("dispo", ctypes.c_ulonglong),
+                            ("reste", ctypes.c_ulonglong * 5)]
             m = M(); m.taille = ctypes.sizeof(M)
             ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m))
-            return m.total / 2 ** 30
+            return (m.dispo if libre else m.total) / 2 ** 30
+        if libre and sys.platform == "darwin":            # libre, inactive (le cache que macOS rend aussitôt), spéculative
+            import subprocess, re
+            t = subprocess.run(["vm_stat"], capture_output=True, text=True, timeout=5).stdout
+            page = int(re.search(r"page size of (\d+)", t).group(1))
+            pages = sum(int(re.search(rf"Pages {k}:\s+(\d+)", t).group(1)) for k in ("free", "inactive", "speculative"))
+            return page * pages / 2 ** 30
+        if libre:
+            with open("/proc/meminfo") as f:
+                return next(int(l.split()[1]) for l in f if l.startswith("MemAvailable")) / 2 ** 20
         return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 2 ** 30
-    except (AttributeError, OSError, ValueError):
+    except Exception:
         return 8
 
 
-def nb_processus(coeurs=None, memoire=None):
+MARGE_LIBRE = 2    # Go de mémoire disponible laissés aux autres programmes quand Bridge Coach lance ses processus
+
+
+def nb_processus(coeurs=None, memoire=None, libre=None):
     """Un cœur reste libre pour le reste de l'ordinateur. Chaque processus prend environ 0,8 Go (le solveur) :
-    on laisse 4 Go à Windows, à Bridgemate et au reste."""
-    coeurs = coeurs or os.cpu_count() or 2; memoire = memoire or _memoire()
-    return max(1, min(6, coeurs - 1, int((memoire - 4) / MEMOIRE_PROCESSUS)))
+    on laisse 4 Go de la mémoire totale à Windows, à Bridgemate et au reste, et on ne prend que la mémoire disponible
+    maintenant, moins MARGE_LIBRE : un PC où d'autres programmes sont ouverts (VS Code, le navigateur…) en lance moins,
+    au lieu d'écrire sur le disque faute de mémoire (2026-11-18 : 6 processus sur 15,7 Go à 97 % de mémoire)."""
+    coeurs = coeurs or os.cpu_count() or 2
+    if libre is None: libre = _memoire(libre=True) if memoire is None else memoire
+    memoire = memoire or _memoire()
+    return max(1, min(6, coeurs - 1, int((memoire - 4) / MEMOIRE_PROCESSUS), int((libre - MARGE_LIBRE) / MEMOIRE_PROCESSUS)))
 
 
 REPLIS = []                    # les fois où les processus ont échoué et où le calcul est passé sur un seul cœur

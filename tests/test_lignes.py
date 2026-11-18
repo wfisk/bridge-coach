@@ -61,6 +61,7 @@ assert jeu.couleurs_nommees(["1♦", "1SA", "passe", "2♥"], "N")["O"] == []   
 assert not jeu.impasses(("N", {"♥": "R"}), ("S", {"♥": "ADX863"}), "♥")
 # le nombre de processus : 8 Go laissent 5 processus au plus ; un petit PC reste à un cœur libre
 assert lignes.nb_processus(8, 8) == 5 and lignes.nb_processus(4, 16) == 3 and lignes.nb_processus(12, 32) == 6 and lignes.nb_processus(2, 4) == 1
+assert lignes.nb_processus(8, 16, libre=4.5) == 3 and lignes.nb_processus(8, 16, libre=1) == 1 and lignes.nb_processus(8, 16, libre=12) == 6
 # l'honneur entamé prend notre carte maîtresse : 62 face à AX8, entame ♠R, on perd encore un pique
 d = dict(n=1, donneur="N", vul="Personne", mains=dict(N="62 V765 AX5 R876", E="RDV93 R3 R64 D52", S="AX8 AD98 DV82 X4", O="754 X42 973 AV93"))
 p = jeu.plan_de_jeu(d, "3♥", "N", {"joueur": "E", "carte": "♠R"}, ["1♥", "passe", "3♥", "passe", "passe", "passe"], simuler=False, verdict=False)

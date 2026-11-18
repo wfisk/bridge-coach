@@ -492,7 +492,7 @@ class Chrono:
         self.etape("fin (rapport expert et comparaison)")
         total = time.time() - self.debut
         lignes_txt = [f"Analyse du {datetime.datetime.now():%d/%m/%Y %H:%M}", f"Système : {platform.platform()}",
-                      f"Python : {platform.python_version()}", f"Cœurs : {os.cpu_count()}, mémoire : {lignes._memoire():.1f} Go, "
+                      f"Python : {platform.python_version()}", f"Cœurs : {os.cpu_count()}, mémoire : {lignes._memoire():.1f} Go, disponible : {lignes._memoire(libre=True):.1f} Go, "
                       f"processus du solveur : {lignes.nb_processus()}",
                       "Repli sur un seul cœur : " + (", ".join(lignes.REPLIS) if lignes.REPLIS else "non"),
                       f"Total : {total / 60:.1f} min pour {n} donnes", ""]

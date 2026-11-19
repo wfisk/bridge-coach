@@ -171,7 +171,7 @@ SECTIONS = [
         O("roudi", "Roudi", "2♣ du répondant après la redemande à 1SA : demande", False),
         O("landy", "Landy", "2♣ sur leur 1SA : les deux majeures", False),
         O("landik", "Landik", "Après 1♣ / 1♦ – passe – 1SA : 2♣ = les deux majeures", False),
-        O("drury", "Drury", "2♣ d'un partenaire qui a passé, sur 1♥ / 1♠ : soutien limite", True, True),
+        O("drury", "Drury", "2♣ fitté d'un partenaire qui a passé, sur 1♥ / 1♠ : 3 atouts (ou 4 sans courte), 11+ HLD", True),
         O("michaels", "Michaels précisé", "Sur 1♥ / 1♠ : le cue-bid = ♣ et l'autre majeure, 3♣ = ♦ et l'autre majeure",
           True, True),
         O("troisieme", "3e couleur forcing", "La troisième couleur nommée par la paire : forcing", False),

@@ -553,7 +553,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         the overcaller's partner after a suit overcall or a take-out double;
                         balancing; after their 1x – passe – 2x, a strong hand (17+ H) doubles first, then bids its suit (+31 IMP on 20 000 random deals, 20 changed: 07/11 deal 24, 2026-11-10; leading the fit suit before partner's other suit was tried and dropped: neutral on the 348 real auctions); opener after an overcall (responder passed, or Spoutnik);
                         partner after our 1SA overcall; overcalls of weak twos and pre-empts; Drury (a passed hand's 2♣ over 1M in
-                        3rd/4th seat: every rule now gets the seat, S 1-2 in a response = passed hand);
+                        3rd/4th seat: every rule now gets the seat, S 1-2 in a response = passed hand; SEF 2024 p. 20 since 2026-11-19: 3 trumps
+                        or 4 without shortness, 11+ HLD; opener 2M weak, 2♦ ambiguous game hope, 3M slam try, 4M to play; after 2♦ responder
+                        2M / 3M by trump count; +177 / +76 IMP; conventions/drury.md);
                         2♣ – 2♦ – 2♥ – 2♠ (four spades) and opener's 3♥; responder after opener's 2SA answer to the 4th suit;
                         cue-bids showing support and strength (nature cue, atout = the fit; follow-ups in
                         encheres/__init__.py: reponse_cue, reponse_cue_intervenant, apres_mon_cue).

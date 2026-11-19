@@ -159,10 +159,12 @@ ouverture:
 "1M | 1M (contre)":
   - passe: { si: "U 3+, HLD(U) 5-", montre: "moins de 6 points" }
   - 4U:  { si: "U 5+, H 5-10, (T 1- || K 1- || C 1- || P 1-)", montre: "fermeture : 5+ atouts, moins de 11 H, un singleton ou une chicane" }
-  # Drury : main passée (siège 1 ou 2), l'ouverture en 3e ou 4e ; 2♣ artificiel (conventions/drury.md)
-  # une main passée n'a pas 13 H : avec 10+ points en comptant ses courtes, toujours Drury, jamais le fit différé
-  # (forcing de manche) ; donne 1 du 18/11, 11 H + singleton + 4 atouts = HLD 14 (2026-11-18)
-  - 2T:  { si: "S 1-2, U 3+, HLD(U) 10+", montre: "Drury : main passée, 3+ atouts, 10+ points", nature: drury, nom: Drury, source: à confirmer, apres: 1C | 1P, alerte: oui }
+  # Drury fitté (SEF 2024 p. 20) : main passée (siège 1 ou 2), l'ouverture en 3e ou 4e ; 2♣ artificiel : trois atouts
+  # et 11+ HLD, ou quatre atouts et 11+ HLD sans singleton ni chicane (conventions/drury.md). Une main passée n'a pas
+  # 13 H : jamais le fit différé (forcing de manche). Quatre atouts et une courte : le soutien limite à 3 (le SEF réserve
+  # le Splinter aux cinq atouts après Passe).
+  - 2T:  { si: "S 1-2, HLD(U) 11+, (U 3 || U 4+, TKCP !1-)", montre: "Drury : main passée, 3 atouts (ou 4 sans courte), 11+ points", nature: drury, nom: Drury, source: SEF 2024, apres: 1C | 1P, alerte: oui }
+  - 3U:  { si: "S 1-2, U 4+, HLD(U) 11+", montre: "main passée : 4+ atouts, une courte, 11+ points", nature: limite, source: à confirmer }
   - 2U:  { si: "U 3+, HLD 6-10", montre: "soutien simple, 6–10 points, 3+ cartes" }
   - 3U:  { si: "U 3+, HLD 11-12, (U 4+ || non P 5+)", montre: "soutien limite, 11–12 points ; avec trois atouts et cinq piques, 1♠ d'abord", source: à confirmer }
   - 2C:  { si: "S 3-4, U 3+, HLD 13+, C 5+, C > K, C > T", montre: "13+ points, fit différé", apres: 1P }
@@ -184,7 +186,8 @@ ouverture:
       - { main: "AV82 75 RV73 X52", apres: 1P, attendu: 2U }     # 4 piques, 9 H + 1 (doubleton)
       - { main: "V82 R7 RV73 DV52", apres: 1P, attendu: 3U }
       - { main: "RX9832 X9 A632 9", apres: 1P, attendu: 4U }     # 6 atouts, singleton : manche
-      - { main: "754 X5 ARV63 V94", apres: 1P, position: 2, attendu: 2T }   # main passée, 3 atouts, HLD 10 : Drury
+      - { main: "754 D5 ARV63 V94", apres: 1P, position: 2, attendu: 2T }   # main passée, 3 atouts, HLD 12 : Drury
+      - { main: "754 X5 ARV63 V94", apres: 1P, position: 2, attendu: 2U }   # HLD 10 : le SEF 2024 veut 11 pour Drury
       - { main: "754 X5 ARV63 V94", apres: 1P, attendu: 2U }                # la même, pas passée : soutien simple
 
 # ------------------------------------------------------------------ réponses à 1♣ (adversaires silencieux)
@@ -304,9 +307,12 @@ ouverture:
 # ------------------------------------------------------------------ après une réponse au palier de 2 (11+, forcing)
 "1M - 2N":                         # 1C - 2T, 1C - 2K, 1P - 2T, 1P - 2K
   # après Drury (ouverture en 3e ou 4e, le partenaire a passé) : la couleur de l'ouverture au bon palier
-  - 4U:  { si: "S 3-4, HL 15+", montre: "Drury : manche", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: à confirmer }
-  - 3U:  { si: "S 3-4, HL 13-14", montre: "Drury : bonne ouverture, invitation", nature: invite, apres: 1C - 2T | 1P - 2T, source: à confirmer }
-  - 2U:  { si: "S 3-4", montre: "Drury : ouverture minimum ou légère, on s'arrête", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: à confirmer }
+  # SEF 2024 p. 20 : 2M ouverture faible (on s'arrête), 2♦ ambigu avec un espoir de manche, 3M enchère de chelem,
+  # 4M conclusion ; les zones de points sont les nôtres (à confirmer)
+  - 3U:  { si: "S 3-4, HL 18+", montre: "Drury : enchère de chelem", nature: forcing, apres: 1C - 2T | 1P - 2T, source: à confirmer }
+  - 4U:  { si: "S 3-4, HL 15+", montre: "Drury : manche, pour la jouer", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: SEF 2024 }
+  - 2K:  { si: "S 3-4, HL 13-14", montre: "Drury : ambigu, un espoir de manche", nature: relais, apres: 1C - 2T | 1P - 2T, alerte: oui, source: SEF 2024 }
+  - 2U:  { si: "S 3-4", montre: "Drury : ouverture faible, on s'arrête", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: SEF 2024 }
   - 3W:  { si: "W 4+, H 11-21", montre: "fit dans la mineure du répondant", nature: forcing }
   - 2SA: { si: "reg, H 11-14", montre: "12–14 H, régulier", nature: limite }
   - 3SA: { si: "reg, H 15-17", montre: "15–17 H, régulier", nature: conclusion, source: SA }
@@ -966,12 +972,21 @@ ouverture:
   - exemples:
       - { main: "A93 652 R4 ARV85", apres: 1K - 2T - 2P, attendu: 3C }
 "1C - 2T - 2K":
+  - 3C:  { si: "S 1-2, C 4+", montre: "Drury : quatre atouts", nature: limite, source: SEF 2024 }
+  - 2C:  { si: "S 1-2", montre: "Drury : trois atouts", nature: limite, source: SEF 2024 }
   - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing }
   - exemples:
       - { main: "D9763 - R5 ADVX83", apres: 1C - 2T - 2K, attendu: 2P }    # donne 9 du 01/11 (214059)
 "1C - 2T - 3C | 1P - 2T - 3P":
-  - 4U:  { si: "S 1-2, HLD(U) 11+", montre: "Drury : maximum, accepte", nature: conclusion, source: à confirmer }
-  - passe: { si: "S 1-2", montre: "Drury : minimum, refuse" }
+  - 4U:  { si: "S 1-2", montre: "Drury : la manche, sur l'enchère de chelem de l'ouvreur", nature: conclusion, source: à confirmer }
+"1P - 2T - 2K":
+  - 3U:  { si: "S 1-2, U 4+", montre: "Drury : quatre atouts", nature: limite, source: SEF 2024 }
+  - 2U:  { si: "S 1-2", montre: "Drury : trois atouts", nature: limite, source: SEF 2024 }
+"1C - 2T - 2K - 2C | 1P - 2T - 2K - 2P":
+  - 4U:  { si: "S 3-4, HL 14+", montre: "Drury : la manche avec 14 points", nature: conclusion, source: à confirmer }
+  - passe: { si: "S 3-4", montre: "Drury : minimum, on s'arrête", source: à confirmer }
+"1C - 2T - 2K - 3C | 1P - 2T - 2K - 3P":
+  - 4U:  { si: "S 3-4", montre: "Drury : neuf atouts, la manche", nature: conclusion, source: à confirmer }
 "1M - 2N - 2U":
   - passe: { si: "S 1-2", montre: "Drury : l'ouvreur s'arrête", apres: 1C - 2T - 2C | 1P - 2T - 2P, source: à confirmer }
   - 4U:  { si: "U 3+, HLD 13+", montre: "fit : manche", nature: conclusion }

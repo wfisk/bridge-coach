@@ -370,8 +370,9 @@ def chelem(m, s, a, hist, infos, etat):
     if not nos or any(b.nature in bloque or (b.enchere[0].isdigit() and rang(b.enchere) >= rang("4SA")) for b in nos):
         return a
     lent = any(b.nature == "soutien_lent" for b in nos)       # déjà fixé au palier de 3 : seulement les clés, plus de contrôles
-    if DRURY_PLACE and any(b.nature == "drury" for x, b in hist if x == PART[s]):   # après Drury, la réponse de l'ouvreur place le contrat
-        return a
+    if DRURY_PLACE and any(b.nature == "drury" for x, b in hist if x == PART[s]) \
+            and not any(b.nature == "forcing" for x, b in hist if x == s):   # après Drury, la réponse de l'ouvreur place le
+        return a                                                           # contrat, sauf son enchère de chelem (3M, SEF 2024)
     dernier = etat["dernier"]
     if a.enchere in MANCHES and rang(a.enchere) > rang(dernier or "passe"): cible = a.enchere
     elif a.enchere == "passe" and etat["par"] == PART[s] and etat["dbl"] == 0 and dernier in MANCHES: cible = dernier

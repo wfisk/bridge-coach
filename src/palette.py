@@ -179,12 +179,19 @@ def toutes_les_nuances():
     return out
 
 
-def inventaire(fichiers=("app.py",)):
+def fichiers_interface():
+    """app.py et les modules de l'interface (src/interface/, 2026-11-19)."""
+    ici = os.path.dirname(os.path.abspath(__file__))
+    return ("app.py",) + tuple(sorted(os.path.join("interface", f) for f in os.listdir(os.path.join(ici, "interface"))
+                                       if f.endswith(".py")))
+
+
+def inventaire(fichiers=None):
     """Les couleurs écrites en dur dans le code : [(hex, nombre, variable la plus proche, sa valeur, écart)], la plus
     employée d'abord. L'écart dit ce que changerait le passage à la palette (moins de 2 : rien de visible)."""
     ici = os.path.dirname(os.path.abspath(__file__))
     n = Counter()
-    for f in fichiers:
+    for f in fichiers or fichiers_interface():
         for h in HEX.findall(open(os.path.join(ici, f), encoding="utf-8").read()):
             h = h.lower()
             if len(h) == 4: h = "#" + "".join(c * 2 for c in h[1:])
@@ -231,11 +238,11 @@ TAILLE_PX = re.compile(r"font-size:\s*(\d+(?:\.\d+)?)px|\btext-(xs|sm|base|lg|xl
 TAILWIND = {"xs": 13, "sm": 14, "base": 16, "lg": 18, "xl": 20, "2xl": 24}
 
 
-def tailles_ecrites(fichiers=("app.py",)):
+def tailles_ecrites(fichiers=None):
     """Les tailles de texte écrites dans le code : [(px, nombre, la variable la plus proche, écart en px)], comme
     l'inventaire des couleurs."""
     compte = {}
-    for f in fichiers:
+    for f in fichiers or fichiers_interface():
         t = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f), encoding="utf-8").read()
         for m in TAILLE_PX.finditer(t):
             px = float(m[1]) if m[1] else TAILWIND[m[2]] if m[2] else dict((n, v) for n, v, *_ in TEXTE)[m[3]]
@@ -326,7 +333,7 @@ def html_page():
                  + (f" <span style='color:var(--bc-tapis-500)'>· aujourd'hui {avant}</span>" if avant else "") + "</td></tr>")
     h.append("</table>")
     ecrites = tailles_ecrites()
-    h.append("<p style='margin:10px 0 4px'>Les tailles écrites aujourd'hui dans app.py (Tailwind compris : text-sm = 14, "
+    h.append("<p style='margin:10px 0 4px'>Les tailles écrites aujourd'hui dans l'interface (Tailwind compris : text-sm = 14, "
              "text-base = 16, text-lg = 18) :</p><div style='display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px'>")
     for px, n, nom, e in ecrites:
         hors = e != 0
@@ -346,7 +353,7 @@ def html_page():
 
     inv = inventaire()
     h.append("<h3 style='font-size:18px;font-weight:700;margin:24px 0 4px'>Les couleurs écrites aujourd'hui dans le code</h3>")
-    h.append(f"<p style='margin:0 0 8px'>src/app.py écrit {len(inv)} couleurs différentes en dur. Pour chacune, la nuance la "
+    h.append(f"<p style='margin:0 0 8px'>l'interface (app.py, src/interface/) écrit {len(inv)} couleurs différentes en dur. Pour chacune, la nuance la "
              "plus proche de la palette : l'écart dit ce que changerait le passage (moins de 2 : invisible ; 5 et plus : un "
              "vrai changement, à décider). Rien n'est encore remplacé.</p>")
     h.append("<table style='border-collapse:collapse;font-size:14px'><tr style='text-align:left'><th style='padding:4px 8px'>"

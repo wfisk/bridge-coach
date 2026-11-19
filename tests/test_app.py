@@ -144,7 +144,8 @@ assert os.path.isfile(app.AIDE)
 assert "<h1>Aide de Bridge Coach</h1>" in app.texte_aide() and "<style>" not in app.texte_aide()   # l'aide s'affiche dans la fenêtre
 with open(rapport.CONFIG, "w") as f: f.write("[dossiers]\nbridgemate = seances\n")
 for nom in ("ancien-01012026.bws", "nouveau-31122026.bws"): open(os.path.join(rapport.SEANCES, nom), "w").close()
-app.creation = lambda f: 2 if "ancien" in f else 1
+import interface.commun
+interface.commun.creation = lambda f: 2 if "ancien" in f else 1   # la fonction vit dans interface.commun (2026-11-19)
 ordre = app.reglages()[0]
 assert os.path.basename(ordre[0]) == "ancien-01012026.bws"
 # donnes saisies : la ligne se relit à l'identique, Ouest se déduit, les erreurs sont dites

@@ -1,9 +1,14 @@
 # BRIDGEZ (Université du Bridge) : le système qu'apprennent les débutants, aux enchères plus directes.
-# Bâti sur le SEF 2024 (« base: ») : une section écrite ici remplace celle du SEF pour la même séquence ; tout ce qui
-# n'est pas écrit ici se joue comme le SEF 2024. Les entames : celles du SEF tant qu'il n'y a pas d'entames.yaml ici.
-# « pret: non » : pas encore proposé aux joueurs (Réglages) ; il le sera quand ses différences seront écrites d'après le
-# livre BRIDGEZ (voir README.md). Ne rien inventer : chaque section cite sa page.
+# Le SEF 2024 avec des conventions coupées (l'utilisateur, 2026-11-19 : pas un second système à entretenir) :
+#   base: sef-2024     tout se joue comme le SEF, sauf ce qui est écrit ici ;
+#   sans: [...]        les conventions coupées, par leur « nom: » dans le regles.yaml du SEF (Stayman, Texas, Roudi,
+#                      Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing ; Blackwood et Spoutnik sont coupés aussi
+#                      dans le code). Une enchère coupée laisse la place à l'enchère naturelle d'après ; sans Blackwood,
+#                      le robot qui voulait demander les clés dit le chelem directement.
+#   une section écrite ici (une séquence, comme "1SA") remplace celle du SEF : pour les enchères plus directes du livre.
+# « pret: non » : pas encore proposé aux joueurs. La liste viendra des pages du livre (README.md) : ne rien deviner.
 systeme: bridgez
 titre: "BRIDGEZ (Université du Bridge)"
 base: sef-2024
 pret: non
+sans: []

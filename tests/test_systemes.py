@@ -34,3 +34,30 @@ E.choisir_systeme("bridgez")
 assert E.systeme_actif() == "bridgez" and os.environ["BRIDGE_COACH_SYSTEME"] == "bridgez"
 E.choisir_systeme("sef-2024")
 print("ok")
+
+# un système sans certaines conventions (« sans: ») : leurs règles disparaissent, l'enchère naturelle les remplace ;
+# Blackwood et Spoutnik, joués aussi par le code, sont coupés là aussi
+with tempfile.TemporaryDirectory() as d:
+    os.symlink(os.path.join(RACINE, "systems", "sef-2024"), os.path.join(d, "sef-2024"))
+    os.makedirs(os.path.join(d, "simple"))
+    open(os.path.join(d, "simple", "regles.yaml"), "w", encoding="utf-8").write(
+        'systeme: simple\ntitre: "Simple"\nbase: sef-2024\nsans: [Roudi, Stayman, Spoutnik, Blackwood]\n')
+    simple = regles.charger(os.path.join(d, "simple", "regles.yaml"))
+assert simple.sans == {"Roudi", "Stayman", "Spoutnik", "Blackwood"} and simple.verifier() == []
+assert sef.choisir("1K - 1P - 1SA", Main("RV972 AR2 A9 643")).enchere == "2♣"            # le SEF : Roudi
+assert simple.choisir("1K - 1P - 1SA", Main("RV972 AR2 A9 643")).enchere != "2♣"         # sans Roudi : naturel
+assert simple.choisir("1SA", Main("AD95 R852 RV4 63")).enchere != "2♣"                    # sans Stayman
+E._SYSTEME["simple"] = simple                             # le moteur s'en sert comme d'un dossier de systems/
+assert E.convention_active("Blackwood") and not E.encherir(dict(D, systeme="simple")) is None
+vus = {"blackwood": False, "spoutnik": False}
+for n in range(4000):
+    d_ = banc_encheres.donne(13, n)
+    natures = [x for x, _nom in E.encherir(d_)["conventions"]]
+    for k in vus:
+        if k in natures and not vus[k]:
+            r = E.encherir(dict(d_, systeme="simple"))
+            assert k not in [x for x, _nom in r["conventions"]], (k, r["encheres"])
+            vus[k] = True
+    if all(vus.values()): break
+assert all(vus.values()), vus
+print("ok")

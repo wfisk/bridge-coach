@@ -49,6 +49,12 @@ The code comes from earlier sessions: build on it rather than rewriting it.
                                    exporter); donnes (training deals), jouer, demo, quiz, classement, moi, maj (updates),
                                    palette, systeme_vue, fiche_conventions, question_expert, regles, entames
 
+Bidding systems: a regles.yaml may say `base: sef-2024` and write only its differences, `sans: [Roudi, …]` switches
+conventions off by their `nom:` (70 calls named: Stayman, Texas, Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur
+forcing; Blackwood and Spoutnik also in the code, encheres.convention_active), `pret: non` hides it. The robots' system:
+donne["systeme"] or encheres.choisir_systeme. systems/bridgez/ (the beginners' system) is an empty skeleton until the
+book's pages arrive.
+
 Interface code: a function that belongs to the page reads and calls everything through `F` (`F.jeu`, `F.vue_jouer()`);
 a new one goes in its subject's module and in that module's `NOMS`. The other modules stay flat on purpose: members'
 installed updater checks a new version with `import rapport, donnes, edition` from `src/`, so those must stay there, and

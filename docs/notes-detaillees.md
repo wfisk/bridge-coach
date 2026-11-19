@@ -712,6 +712,12 @@ tools in src/outils/.
                         ContextVar during encherir; jeu.regles_entame follows it, a system without entames.yaml uses its base's.
                         systems/bridgez/ is a skeleton (base sef-2024, pret: non, README lists what to take from the book); no
                         settings page yet: it appears when a second system is ready. tests/test_systemes.py
+                        Switched-off conventions (2026-11-19, the user: the beginners' system is SEF with some conventions
+                        switched off): `sans: [...]` drops the rules whose `nom:` is listed (examples of a touched sequence
+                        dropped too); encheres.convention_active(nom) for conventions the code plays: Spoutnik
+                        (sef2024.reponse_concurrence), Blackwood (a robot's 4SA ask becomes 6 of the trump suit directly).
+                        Names given that day (70 calls; SEF bench unchanged, 0 sequences on 2 × 20 000 deals). The leftover
+                        « (1SA) contre » sections (answers to the dropped « mineure-majeure » double) were removed then.
 
 Three places outside this folder, none in git. `bridge-coach.ini` sits at a fixed place because it says
 where the rest is: `~/Library/Application Support/Bridge Coach` on Mac, `%APPDATA%\Bridge Coach` on Windows

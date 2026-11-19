@@ -75,8 +75,8 @@ ouverture:
 # Texas (../conventions/texas.md) et Stayman (../conventions/stayman.md), puis les SA selon
 # le total : 25 pour la manche, 31 pour le quantitatif, 33 pour le petit chelem, 37 pour le grand.
 "1SA":
-  - 2C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: texas }
-  - 2K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: texas }
+  - 2C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: Texas }
+  - 2K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: Texas }
   - 2T:  { si: "H 8+, M 4, non forme 4-3-3-3", montre: "Stayman : une majeure 4e, 8+ H", nature: relais, nom: Stayman }
   - 7SA: { si: "H 22+", montre: "grand chelem : 37+ points ensemble", nature: conclusion }
   - 6SA: { si: "H 18-21", montre: "petit chelem : 33+ points ensemble", nature: conclusion }
@@ -91,8 +91,8 @@ ouverture:
       - { main: "R75 D84 AX63 R92", attendu: 3SA }
 
 "2SA":
-  - 3C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: texas }
-  - 3K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: texas }
+  - 3C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: Texas }
+  - 3K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: Texas }
   - 3T:  { si: "H 3+, M 4, non forme 4-3-3-3", montre: "Stayman : une majeure 4e", nature: relais, nom: Stayman, source: à confirmer }
   - 4T:  { si: "T 6+, T >= K, H 9-12", montre: "6+ trèfles, essai de chelem", nature: soutien_lent, source: à confirmer }
   - 4K:  { si: "K 6+, H 9-12", montre: "6+ carreaux, essai de chelem", nature: soutien_lent, source: à confirmer }
@@ -311,10 +311,10 @@ ouverture:
   # après Drury (ouverture en 3e ou 4e, le partenaire a passé) : la couleur de l'ouverture au bon palier
   # SEF 2024 p. 20 : 2M ouverture faible (on s'arrête), 2♦ ambigu avec un espoir de manche, 3M enchère de chelem,
   # 4M conclusion ; les zones de points sont les nôtres (à confirmer)
-  - 3U:  { si: "S 3-4, HL 18+", montre: "Drury : enchère de chelem", nature: forcing, apres: 1C - 2T | 1P - 2T, source: à confirmer }
-  - 4U:  { si: "S 3-4, HL 15+", montre: "Drury : manche, pour la jouer", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: SEF 2024 }
-  - 2K:  { si: "S 3-4, HL 13-14", montre: "Drury : ambigu, un espoir de manche", nature: relais, apres: 1C - 2T | 1P - 2T, alerte: oui, source: SEF 2024 }
-  - 2U:  { si: "S 3-4", montre: "Drury : ouverture faible, on s'arrête", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: SEF 2024 }
+  - 3U:  { si: "S 3-4, HL 18+", montre: "Drury : enchère de chelem", nature: forcing, apres: 1C - 2T | 1P - 2T, source: à confirmer, nom: Drury }
+  - 4U:  { si: "S 3-4, HL 15+", montre: "Drury : manche, pour la jouer", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: SEF 2024, nom: Drury }
+  - 2K:  { si: "S 3-4, HL 13-14", montre: "Drury : ambigu, un espoir de manche", nature: relais, apres: 1C - 2T | 1P - 2T, alerte: oui, source: SEF 2024, nom: Drury }
+  - 2U:  { si: "S 3-4", montre: "Drury : ouverture faible, on s'arrête", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: SEF 2024, nom: Drury }
   - 3W:  { si: "W 4+, H 11-21", montre: "fit dans la mineure du répondant", nature: forcing }
   - 2SA: { si: "reg, H 11-14", montre: "12–14 H, régulier", nature: limite }
   - 3SA: { si: "reg, H 15-17", montre: "15–17 H, régulier", nature: conclusion, source: SA }
@@ -530,8 +530,8 @@ ouverture:
 "1C - 1P - 2T | 1C - 1P - 2K":
   - 4C:  { si: "C 3+, HLD(C) 12-18", montre: "fit cœur, manche", nature: conclusion }
   - 4P:  { si: "P 6+, H 13-18", montre: "6+ piques, manche", nature: conclusion }
-  - 2K:  { si: "H 11+, non arret K, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1C - 1P - 2T, alerte: oui }
-  - 3T:  { si: "H 11+, non arret T, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1C - 1P - 2K, alerte: oui }
+  - 2K:  { si: "H 11+, non arret K, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1C - 1P - 2T, alerte: oui, nom: 4e couleur forcing }
+  - 3T:  { si: "H 11+, non arret T, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1C - 1P - 2K, alerte: oui, nom: 4e couleur forcing }
   - 3SA: { si: "H 13-18", montre: "13+ H, manche", nature: conclusion }
   - 3C:  { si: "C 3+, HLD(C) 10-11", montre: "fit cœur, invitation", nature: invite }
   - 3P:  { si: "P 6+, H 11-12", montre: "6+ piques, invitation", nature: invite }
@@ -580,8 +580,8 @@ ouverture:
 # ------------------------------------------------------------------ sur une ouverture de 1 à la couleur (directement)
 "(1T)":
   - 1SA: { si: "reg, HL 16-18, arret U, C 4-, P 4-", montre: "16–18 HL, régulier, sans majeure 5e, arrêt trèfle", source: SEF 2024 }
-  - 2K:  { si: "C 5+, P 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à cœur et à pique", nature: bicolore, source: à confirmer, alerte: oui }
-  - 2SA: { si: "K 5+, C 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à carreau et à cœur, les deux plus basses", nature: bicolore, source: à confirmer, alerte: oui }
+  - 2K:  { si: "C 5+, P 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à cœur et à pique", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
+  - 2SA: { si: "K 5+, C 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à carreau et à cœur, les deux plus basses", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
   - 1P:  { si: "P 5+, P >= C, P >= K, (H 8-18, bonne P || H 10-18)", montre: "5+ piques, 8–18 H" }
   - 1C:  { si: "C 5+, C >= K, (H 8-16, bonne C || H 10-16)", montre: "5+ cœurs, 8–16 H" }
   - 1K:  { si: "K 5+, (H 8-18, bonne K || H 10-18)", montre: "5+ carreaux, 8–18 H" }
@@ -599,8 +599,8 @@ ouverture:
 
 "(1K)":
   - 1SA: { si: "reg, HL 16-18, arret U, C 4-, P 4-", montre: "16–18 HL, régulier, sans majeure 5e, arrêt carreau", source: SEF 2024 }
-  - 2K:  { si: "C 5+, P 5+, H 8-18", montre: "cue-bid bicolore : 5-5 (au moins) à cœur et à pique", nature: bicolore, source: à confirmer, alerte: oui }
-  - 2SA: { si: "T 5+, C 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à trèfle et à cœur, les deux plus basses", nature: bicolore, source: à confirmer, alerte: oui }
+  - 2K:  { si: "C 5+, P 5+, H 8-18", montre: "cue-bid bicolore : 5-5 (au moins) à cœur et à pique", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
+  - 2SA: { si: "T 5+, C 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à trèfle et à cœur, les deux plus basses", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
   - 1P:  { si: "P 5+, P >= C, (H 8-18, bonne P || H 10-18)", montre: "5+ piques, 8–18 H" }
   - 1C:  { si: "C 5+, (H 8-16, bonne C || H 10-16)", montre: "5+ cœurs, 8–16 H" }
   - 2T:  { si: "T 6+, HL 11-18", montre: "6+ trèfles, 11–18 HL", source: SEF 2024 }
@@ -612,9 +612,9 @@ ouverture:
 
 "(1C)":
   - 1SA: { si: "reg, HL 16-18, arret U, C 4-, P 4-", montre: "16–18 HL, régulier, sans majeure 5e, arrêt cœur", source: SEF 2024 }
-  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui }
-  - 2C:  { si: "T 5+, P 5+, H 8-18", montre: "cue-bid bicolore : 5-5 (au moins) à trèfle et à pique", nature: bicolore, source: à confirmer, alerte: oui }
-  - 3T:  { si: "K 5+, P 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à carreau et à pique", nature: bicolore, source: à confirmer, alerte: oui }
+  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
+  - 2C:  { si: "T 5+, P 5+, H 8-18", montre: "cue-bid bicolore : 5-5 (au moins) à trèfle et à pique", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
+  - 3T:  { si: "K 5+, P 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à carreau et à pique", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
   - 1P:  { si: "P 5+, (H 8-18, bonne P || H 10-18)", montre: "5+ piques, 8–18 H" }
   - 2K:  { si: "K 6+, K >= T, HL 11-18", montre: "6+ carreaux, 11–18 HL", source: SEF 2024 }
   - 2T:  { si: "T 6+, HL 11-18", montre: "6+ trèfles, 11–18 HL", source: SEF 2024 }
@@ -625,9 +625,9 @@ ouverture:
 
 "(1P)":
   - 1SA: { si: "reg, HL 16-18, arret U, C 4-, P 4-", montre: "16–18 HL, régulier, sans majeure 5e, arrêt pique", source: SEF 2024 }
-  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui }
-  - 2P:  { si: "T 5+, C 5+, H 8-18", montre: "cue-bid bicolore : 5-5 (au moins) à trèfle et à cœur", nature: bicolore, source: à confirmer, alerte: oui }
-  - 3T:  { si: "K 5+, C 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à carreau et à cœur", nature: bicolore, source: à confirmer, alerte: oui }
+  - 2SA: { si: "K 5+, T 5+, H 8-18", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
+  - 2P:  { si: "T 5+, C 5+, H 8-18", montre: "cue-bid bicolore : 5-5 (au moins) à trèfle et à cœur", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
+  - 3T:  { si: "K 5+, C 5+, H 8-18", montre: "bicolore : 5-5 (au moins) à carreau et à cœur", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
   - 2C:  { si: "C 6+, C >= K, C >= T, HL 11-18 || C 5+, bonne C, HL 14-18", montre: "6+ cœurs, 11–18 HL (ou cinq beaux, 14–18)", source: SEF 2024 }
   - 2K:  { si: "K 6+, K >= T, HL 11-18", montre: "6+ carreaux, 11–18 HL", source: SEF 2024 }
   - 2T:  { si: "T 6+, HL 11-18", montre: "6+ trèfles, 11–18 HL", source: SEF 2024 }
@@ -647,7 +647,7 @@ ouverture:
 # Contre « mineure-majeure », 2♣ Landy (5-4 en majeures), 2SA les mineures 5-5, le reste naturel.
 "(1SA)":
   - contre: { si: "H 15+", montre: "punitif, 15+ H", nature: punitif }
-  - 2SA: { si: "T 5+, K 5+, H 9+", montre: "bicolore mineur 5-5 (au moins)", nature: bicolore, source: SEF 2024, alerte: oui }
+  - 2SA: { si: "T 5+, K 5+, H 9+", montre: "bicolore mineur 5-5 (au moins)", nature: bicolore, source: SEF 2024, alerte: oui, nom: Bicolores }
   - 2T:  { si: "C 4+, P 4+, (C 5+ || P 5+), H 9+", montre: "Landy : les deux majeures, 5-4 au moins", nature: bicolore, nom: Landy, source: SEF 2024, alerte: oui }
   - 2P:  { si: "P 6+, H 8-16", montre: "6 piques, naturel" }
   - 2C:  { si: "C 6+, H 8-16", montre: "6 cœurs, naturel" }
@@ -658,29 +658,6 @@ ouverture:
       - { main: "AV853 RX74 D2 52", attendu: 2T }      # Landy
       - { main: "5 72 AD953 RV1042", attendu: 2SA }
 
-# le partenaire du contre « mineure-majeure » : 2♣ passe ou corrige, 2♦ demande la majeure, 2♥ / 2♠ naturels
-"(1SA) contre":
-  - 2P:  { si: "P 6+", montre: "6+ piques, pour jouer", nature: conclusion, source: SEF 2024 }
-  - 2C:  { si: "C 6+", montre: "6+ cœurs, pour jouer", nature: conclusion, source: SEF 2024 }
-  - 2K:  { si: "C 3+, P 3+", montre: "demande la majeure 4e", nature: relais, source: SEF 2024, alerte: oui }
-  - 2T:  { montre: "passe ou corrige : jouer dans la mineure de l'intervenant", nature: relais, source: SEF 2024, alerte: oui }
-"(1SA) contre 2T":
-  - passe: { si: "T 5+", montre: "la mineure est trèfle" }
-  - 2K:  { montre: "la mineure est carreau", nature: conclusion }
-"(1SA) contre 2K":
-  - 2C:  { si: "C 4", montre: "la majeure est cœur" }
-  - 2P:  { montre: "la majeure est pique" }
-"(1SA) contre 2K 2C":
-  - 4C:  { si: "C 4+, H 12+", montre: "fit cœur, 12+ H : manche", nature: conclusion }
-  - 3C:  { si: "C 4+, H 10-11", montre: "fit cœur, 10–11 H : invitation", nature: invite }
-  - passe: { montre: "on joue là" }
-"(1SA) contre 2K 2P":
-  - 4P:  { si: "P 4+, H 12+", montre: "fit pique, 12+ H : manche", nature: conclusion }
-  - 3P:  { si: "P 4+, H 10-11", montre: "fit pique, 10–11 H : invitation", nature: invite }
-  - passe: { montre: "on joue là" }
-"(1SA) contre 2T 2K":
-  - passe: { montre: "on joue là" }
-
 # le partenaire du Landy : 2♥ / 2♠ pour jouer, 2♦ demande la majeure la plus longue
 "(1SA) 2T":
   - 4C:  { si: "C 3+, C >= P, H 12+", montre: "fit cœur, 12+ H : manche", nature: conclusion }
@@ -690,7 +667,7 @@ ouverture:
   - passe: { si: "T 6+, C 2-, P 2-", montre: "longs trèfles, pas de fit majeur" }
   - 2C:  { si: "C > P", montre: "préférence cœur", nature: conclusion }
   - 2P:  { si: "P > C", montre: "préférence pique", nature: conclusion }
-  - 2K:  { montre: "demande la majeure la plus longue (2♥ à égalité)", nature: relais, source: SEF 2024, alerte: oui }
+  - 2K:  { montre: "demande la majeure la plus longue (2♥ à égalité)", nature: relais, source: SEF 2024, alerte: oui, nom: Landy }
 "(1SA) 2T (2K) | (1SA) 2T (contre)":                 # le répondant a parlé : on choisit quand même une majeure
   - 3P:  { si: "P 4+, P > C, H 9-11", montre: "fit pique, 9–11 H : invitation", nature: invite }
   - 3C:  { si: "C 4+, C >= P, H 9-11", montre: "fit cœur, 9–11 H : invitation", nature: invite }
@@ -733,7 +710,7 @@ ouverture:
   - "*U": { si: "U 3+, HLD 11-12, palier(U) 3", montre: "soutien, 11–12 points (le saut est trop haut)", nature: invite }
   - passe: { si: "U 3+", montre: "fit, mais trop faible pour monter" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
-  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui, nom: Spoutnik }
   - "*P": { si: "P 5+, non U est P, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
   - "*C": { si: "C 5+, non U est C, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
@@ -754,7 +731,7 @@ ouverture:
   - "*U": { si: "U 3+, HLD 11-12, palier(U) 3", montre: "soutien, 11–12 points (le saut est trop haut)", nature: invite }
   - passe: { si: "U 3+", montre: "fit, mais trop faible pour monter" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
-  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui, nom: Spoutnik }
   - "*P": { si: "P 5+, non U est P, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
   - "*C": { si: "C 5+, non U est C, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
@@ -774,7 +751,7 @@ ouverture:
   - "*U": { si: "U 4+, HLD 11+, palier(U) 3", montre: "soutien, 11+ points (le saut est trop haut)", nature: invite }
   - passe: { si: "U 4+", montre: "fit, mais trop faible pour monter" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
-  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui, nom: Spoutnik }
   - "*P": { si: "P 5+, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
   - "*C": { si: "C 5+, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
@@ -791,7 +768,7 @@ ouverture:
 "1N (2x) | 1N (3x)":
   - 2SA: { si: "reg, H 11-12, arret Y, non majeure libre", montre: "11–12 H, régulier, arrêt : invitation", nature: invite }
   - 3SA: { si: "reg, H 13+, arret Y, non majeure libre", montre: "13+ H, régulier, arrêt : manche", nature: conclusion }
-  - contre: { si: "H 13+, palier(P) 3, majeure libre", montre: "Spoutnik : 13+ H, 4 cartes dans la majeure libre, sur un saut au palier de 3 (la majeure avant le fit mineur)", nature: spoutnik, alerte: oui }   # donne 7 du 13/11 (2026-11-14)
+  - contre: { si: "H 13+, palier(P) 3, majeure libre", montre: "Spoutnik : 13+ H, 4 cartes dans la majeure libre, sur un saut au palier de 3 (la majeure avant le fit mineur)", nature: spoutnik, alerte: oui, nom: Spoutnik }   # donne 7 du 13/11 (2026-11-14)
   - 3SA: { si: "U 4+, H 13+, arret Y", montre: "fit mineur, 13+ H, arrêt : manche", nature: conclusion }
   - "*Y": { si: "U 4+, H 12+, non arret Y, palier(Y) 3-, non majeure libre", montre: "cue-bid : fit mineur, 12+ H, forcing de manche, sans arrêt", nature: cue, atout: U }
   - "*U+1": { si: "U 4+, HLD 11+, palier(U) 2-", montre: "fit, 11+ points : invitation", nature: invite }
@@ -799,7 +776,7 @@ ouverture:
   - "*U": { si: "U 4+, HLD 11+, palier(U) 3", montre: "soutien, 11+ points (le saut est trop haut)", nature: invite }
   - passe: { si: "U 4+", montre: "fit, mais trop faible pour monter" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
-  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui }
+  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui, nom: Spoutnik }
   - "*P": { si: "P 5+, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
   - "*C": { si: "C 5+, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
@@ -1068,9 +1045,9 @@ ouverture:
       - { main: "R2 AV62 9873 R32", apres: (2P) passe, attendu: contre }   # donne 5 du 12/11 : 11 H en réveil
 
 "(2K) | (2C) | (2P)":
-  - 4T:  { si: "T 5+, (U est C, P 5+ || U est P, C 5+), levees 8+", montre: "5 trèfles et 5 cartes dans l'autre majeure, 5 perdantes au plus", nature: bicolore, source: SEF 2024, alerte: oui }
-  - 4K:  { si: "K 5+, (U est C, P 5+ || U est P, C 5+), levees 8+", montre: "5 carreaux et 5 cartes dans l'autre majeure, 5 perdantes au plus", nature: bicolore, source: SEF 2024, alerte: oui }
-  - "*U": { si: "T 5+, K 5+, H 8+, (U est C || U est P)", montre: "cue-bid : bicolore mineur 5-5 (au moins)", nature: bicolore, source: SEF 2024, alerte: oui }
+  - 4T:  { si: "T 5+, (U est C, P 5+ || U est P, C 5+), levees 8+", montre: "5 trèfles et 5 cartes dans l'autre majeure, 5 perdantes au plus", nature: bicolore, source: SEF 2024, alerte: oui, nom: Bicolores }
+  - 4K:  { si: "K 5+, (U est C, P 5+ || U est P, C 5+), levees 8+", montre: "5 carreaux et 5 cartes dans l'autre majeure, 5 perdantes au plus", nature: bicolore, source: SEF 2024, alerte: oui, nom: Bicolores }
+  - "*U": { si: "T 5+, K 5+, H 8+, (U est C || U est P)", montre: "cue-bid : bicolore mineur 5-5 (au moins)", nature: bicolore, source: SEF 2024, alerte: oui, nom: Bicolores }
   - 2SA: { si: "reg, HL 16-18, arret U, (U est C || U est P)", montre: "16–18 HL, régulier, arrêt", source: SEF 2024 }
   - "*P": { si: "P 5+, P >= C, non U est P, palier(P) 2, HL 11-18, bonne P", montre: "5 beaux piques, 11–18 HL", source: SEF 2024 }
   - "*C": { si: "C 5+, non U est C, palier(C) 2, HL 11-18, bonne C", montre: "5 beaux cœurs, 11–18 HL", source: SEF 2024 }
@@ -1112,7 +1089,7 @@ ouverture:
   - "*C": { si: "C 5+, non U est C, palier(C) 3-4, H 10-18, bonne C", montre: "5+ cœurs, 10–18 H", source: SEF 2024 }
   - "*K": { si: "K 5+, non U est K, palier(K) 3-4, H 10-18, bonne K, K >= T", montre: "5+ carreaux, 10–18 H", source: SEF 2024 }
   - "*T": { si: "T 5+, non U est T, palier(T) 3-4, H 10-18, bonne T", montre: "5+ trèfles, 10–18 H", source: SEF 2024 }
-  - 4SA: { si: "T 5+, K 5+, H 8+, (U est C || U est P)", montre: "bicolore mineur 5-5 (au moins)", nature: bicolore, source: SEF 2024, alerte: oui }
+  - 4SA: { si: "T 5+, K 5+, H 8+, (U est C || U est P)", montre: "bicolore mineur 5-5 (au moins)", nature: bicolore, source: SEF 2024, alerte: oui, nom: Bicolores }
   - contre: { si: "HL 12-18, U 2-, (C 3+ || U est C), (P 3+ || U est P), (T 3+ || U est T), (K 3+ || U est K) || HL 19+", montre: "contre d'appel sur barrage : soutien dans les trois autres couleurs", nature: appel, source: SEF 2024 }
   - passe: { montre: "pas d'intervention au palier de 3" }
   - exemples:
@@ -1139,7 +1116,7 @@ ouverture:
   - 4UM: { si: "UM 4+, HLD(UM) 13+", montre: "fit dans la majeure de l'ouvreur : manche", nature: conclusion }
   - 3UM: { si: "UM 4+, HLD(UM) 11-12", montre: "fit dans la majeure de l'ouvreur : invitation", nature: invite }
   - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing, apres: 1K - 2T - 2C }
-  - 3C:  { si: "H 11+, non arret C, P 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1K - 2T - 2P, alerte: oui, source: à confirmer }
+  - 3C:  { si: "H 11+, non arret C, P 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1K - 2T - 2P, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - 3SA: { si: "H 13+", montre: "13+ H : manche", nature: conclusion }
   - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
   - 3T:  { si: "T 6+", montre: "6+ trèfles", nature: limite }
@@ -1147,23 +1124,23 @@ ouverture:
   - exemples:
       - { main: "A93 652 R4 ARV85", apres: 1K - 2T - 2P, attendu: 3C }
 "1C - 2T - 2K":
-  - 3C:  { si: "S 1-2, C 4+", montre: "Drury : quatre atouts", nature: limite, source: SEF 2024 }
-  - 2C:  { si: "S 1-2", montre: "Drury : trois atouts", nature: limite, source: SEF 2024 }
+  - 3C:  { si: "S 1-2, C 4+", montre: "Drury : quatre atouts", nature: limite, source: SEF 2024, nom: Drury }
+  - 2C:  { si: "S 1-2", montre: "Drury : trois atouts", nature: limite, source: SEF 2024, nom: Drury }
   - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing }
   - exemples:
       - { main: "D9763 - R5 ADVX83", apres: 1C - 2T - 2K, attendu: 2P }    # donne 9 du 01/11 (214059)
 "1C - 2T - 3C | 1P - 2T - 3P":
-  - 4U:  { si: "S 1-2", montre: "Drury : la manche, sur l'enchère de chelem de l'ouvreur", nature: conclusion, source: à confirmer }
+  - 4U:  { si: "S 1-2", montre: "Drury : la manche, sur l'enchère de chelem de l'ouvreur", nature: conclusion, source: à confirmer, nom: Drury }
 "1P - 2T - 2K":
-  - 3U:  { si: "S 1-2, U 4+", montre: "Drury : quatre atouts", nature: limite, source: SEF 2024 }
-  - 2U:  { si: "S 1-2", montre: "Drury : trois atouts", nature: limite, source: SEF 2024 }
+  - 3U:  { si: "S 1-2, U 4+", montre: "Drury : quatre atouts", nature: limite, source: SEF 2024, nom: Drury }
+  - 2U:  { si: "S 1-2", montre: "Drury : trois atouts", nature: limite, source: SEF 2024, nom: Drury }
 "1C - 2T - 2K - 2C | 1P - 2T - 2K - 2P":
-  - 4U:  { si: "S 3-4, HL 14+", montre: "Drury : la manche avec 14 points", nature: conclusion, source: à confirmer }
-  - passe: { si: "S 3-4", montre: "Drury : minimum, on s'arrête", source: à confirmer }
+  - 4U:  { si: "S 3-4, HL 14+", montre: "Drury : la manche avec 14 points", nature: conclusion, source: à confirmer, nom: Drury }
+  - passe: { si: "S 3-4", montre: "Drury : minimum, on s'arrête", source: à confirmer, nom: Drury }
 "1C - 2T - 2K - 3C | 1P - 2T - 2K - 3P":
-  - 4U:  { si: "S 3-4", montre: "Drury : neuf atouts, la manche", nature: conclusion, source: à confirmer }
+  - 4U:  { si: "S 3-4", montre: "Drury : neuf atouts, la manche", nature: conclusion, source: à confirmer, nom: Drury }
 "1M - 2N - 2U":
-  - passe: { si: "S 1-2", montre: "Drury : l'ouvreur s'arrête", apres: 1C - 2T - 2C | 1P - 2T - 2P, source: à confirmer }
+  - passe: { si: "S 1-2", montre: "Drury : l'ouvreur s'arrête", apres: 1C - 2T - 2C | 1P - 2T - 2P, source: à confirmer, nom: Drury }
   - 4U:  { si: "U 3+, HLD 13+", montre: "fit : manche", nature: conclusion }
   - 3U:  { si: "U 3+, HLD 11-12", montre: "fit : invitation", nature: invite }
   - 2P:  { si: "P 4+, H 11+", montre: "4+ piques", nature: forcing, apres: 1C - 2T - 2C | 1C - 2K - 2C }
@@ -1260,9 +1237,9 @@ ouverture:
   - 2UM: { si: "UM 4+, HLD(UM) 6-10", montre: "fit : soutien simple", nature: limite }
   - 1P:  { si: "P 4+, H 6+", montre: "4+ piques", nature: forcing, apres: 1T - 1K - 1C }
   - 3W:  { si: "W 6+, H 11-12", montre: "6+ cartes : invitation", nature: invite }
-  - 2K:  { si: "H 11+, non arret K", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1T - 1C - 1P, alerte: oui }
-  - 2T:  { si: "H 11+, non arret T", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1K - 1C - 1P, alerte: oui }
-  - 2C:  { si: "H 11+, non arret C", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1T - 1K - 1P, alerte: oui }
+  - 2K:  { si: "H 11+, non arret K", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, apres: 1T - 1C - 1P, alerte: oui, nom: 4e couleur forcing }
+  - 2T:  { si: "H 11+, non arret T", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, apres: 1K - 1C - 1P, alerte: oui, nom: 4e couleur forcing }
+  - 2C:  { si: "H 11+, non arret C", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1T - 1K - 1P, alerte: oui, nom: 4e couleur forcing }
   - 3SA: { si: "H 13-18", montre: "13+ H : manche", nature: conclusion }
   - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
   - 2W:  { si: "W 6+, H 6-10", montre: "6+ cartes : pour jouer", nature: conclusion }
@@ -1379,8 +1356,8 @@ ouverture:
 # Après 2♣ – 2♦ – 2SA, le système de 2SA, deux points de moins chez le répondant ; U devient UM
 # (U serait le trèfle artificiel de 2♣).
 "2T - 2K - 2SA":
-  - 3C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: texas }
-  - 3K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: texas }
+  - 3C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: Texas }
+  - 3K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: Texas }
   - 3T:  { si: "H 1+, M 4, non forme 4-3-3-3", montre: "Stayman : une majeure 4e", nature: relais, nom: Stayman, source: à confirmer }
   - 7SA: { si: "H 15+", montre: "grand chelem", nature: conclusion }
   - 6SA: { si: "H 11-14", montre: "petit chelem", nature: conclusion }
@@ -1420,7 +1397,7 @@ ouverture:
   - "*C": { si: "C 6+, non U est C, non W est C, palier(C) 3, H 11-16", montre: "6+ cœurs" }
   - "*K": { si: "K 6+, K >= T, non U est K, non W est K, palier(K) 3, H 11-16", montre: "6+ carreaux" }
   - "*T": { si: "T 6+, non U est T, non W est T, palier(T) 3, H 11-16", montre: "6+ trèfles" }
-  - 2SA: { si: "K 5+, T 5+, H 10-18, (U est C || U est P), (W est C || W est P)", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui }
+  - 2SA: { si: "K 5+, T 5+, H 10-18, (U est C || U est P), (W est C || W est P)", montre: "bicolore mineur, 5-5 (au moins) à carreau et trèfle", nature: bicolore, source: à confirmer, alerte: oui, nom: Bicolores }
   - contre: { si: "H 12+, (T 4+ || U est T || W est T), (K 4+ || U est K || W est K), (C 4+ || U est C || W est C), (P 4+ || U est P || W est P)", montre: "contre : 4+ cartes dans les deux couleurs restantes", nature: appel }
   # une main forte (17+) : contrer d'abord, puis nommer sa couleur ; comme sur l'ouverture directe (07/11 donne 24)
   - contre: { si: "H 17+", montre: "contre : 17+ H, main forte (puis sa couleur)", nature: appel }
@@ -1449,8 +1426,8 @@ ouverture:
 
 # ------------------------------------------------------------------ 1.3 (suite) répondant après la deuxième couleur de l'ouvreur
 "1K - 1M - 2T":
-  - 2P:  { si: "H 11+, non arret P, P 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, apres: 1K - 1C - 2T, alerte: oui }
-  - 2C:  { si: "H 11+, non arret C, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1K - 1P - 2T, alerte: oui }
+  - 2P:  { si: "H 11+, non arret P, P 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, apres: 1K - 1C - 2T, alerte: oui, nom: 4e couleur forcing }
+  - 2C:  { si: "H 11+, non arret C, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, apres: 1K - 1P - 2T, alerte: oui, nom: 4e couleur forcing }
   - 3SA: { si: "H 13-18", montre: "13+ H : manche", nature: conclusion }
   - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
   - 3T:  { si: "T 4+, H 10-12", montre: "soutien trèfle : invitation", nature: invite }
@@ -1467,55 +1444,55 @@ ouverture:
 # la 4e couleur au palier de 3 aussi. Sans fit dans la deuxième couleur de l'ouvreur (ni dans sa majeure). À confirmer.
 # Après 1♦ – 2♣ – 2♥ et 1♥ – 2♣ – 2♦, 2♠ reste naturel (4 piques), comme écrit plus haut.
 "1T - 1C - 2K":
-  - 2P:  { si: "H 11+, non arret P, K 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer }
+  - 2P:  { si: "H 11+, non arret P, K 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "752 AR96 D3 R842", attendu: 2P }
 "1T - 1P - 2K":
-  - 2C:  { si: "H 11+, non arret C, K 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer }
+  - 2C:  { si: "H 11+, non arret C, K 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "AV852 643 R2 AD3", attendu: 2C }
 "1T - 1P - 2C":
-  - 3K:  { si: "H 11+, non arret K, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer }
+  - 3K:  { si: "H 11+, non arret K, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "AR852 X3 754 AD2", attendu: 3K }
 "1K - 1P - 2C":
-  - 3T:  { si: "H 11+, non arret T, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer }
+  - 3T:  { si: "H 11+, non arret T, C 3-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle ; forcing de manche après le bicolore cher", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "ARV52 X3 AD4 852", attendu: 3T }
 "1C - 2T - 2P":
-  - 3K:  { si: "H 11+, non arret K, P 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, alerte: oui, source: à confirmer }
+  - 3K:  { si: "H 11+, non arret K, P 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "A93 V6 652 ARV85", attendu: 3K }
 "1C - 2K - 2P":
-  - 3T:  { si: "H 11+, non arret T, P 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, alerte: oui, source: à confirmer }
+  - 3T:  { si: "H 11+, non arret T, P 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "A93 V6 ARV85 652", attendu: 3T }
 "1P - 2T - 2C":
-  - 3K:  { si: "H 11+, non arret K, C 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, alerte: oui, source: à confirmer }
+  - 3K:  { si: "H 11+, non arret K, C 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "V6 A93 652 ARV85", attendu: 3K }
 "1P - 2K - 2C":
-  - 3T:  { si: "H 11+, non arret T, C 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, alerte: oui, source: à confirmer }
+  - 3T:  { si: "H 11+, non arret T, C 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt trèfle", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "V6 A93 ARV85 652", attendu: 3T }
 "1P - 2C - 3T":
-  - 3K:  { si: "H 11+, non arret K, T 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, alerte: oui, source: à confirmer }
+  - 3K:  { si: "H 11+, non arret K, T 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt carreau", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "V6 ARV85 652 A93", attendu: 3K }
 "1C - 2K - 3T":
-  - 3P:  { si: "H 11+, non arret P, T 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, alerte: oui, source: à confirmer }
+  - 3P:  { si: "H 11+, non arret P, T 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "652 V6 ARV85 A93", attendu: 3P }
 "1P - 2K - 3T":
-  - 3C:  { si: "H 11+, non arret C, T 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, alerte: oui, source: à confirmer }
+  - 3C:  { si: "H 11+, non arret C, T 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "V6 652 ARV85 A93", attendu: 3C }
 "1C - 2T - 3K":
-  - 3P:  { si: "H 11+, non arret P, K 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, alerte: oui, source: à confirmer }
+  - 3P:  { si: "H 11+, non arret P, K 3-, C 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt pique", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "652 V6 A93 ARV85", attendu: 3P }
 "1P - 2T - 3K":
-  - 3C:  { si: "H 11+, non arret C, K 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, alerte: oui, source: à confirmer }
+  - 3C:  { si: "H 11+, non arret C, K 3-, P 2-", montre: "4e couleur forcing : 11+ H, souvent sans arrêt cœur", nature: forcing, alerte: oui, source: à confirmer, nom: 4e couleur forcing }
   - exemples:
       - { main: "V6 652 A93 ARV85", attendu: 3C }
 

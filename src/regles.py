@@ -422,6 +422,7 @@ def rang(b):
 class Systeme:
     def __init__(self, nom, sequences, exemples, chemin):
         self.nom, self.sequences, self.exemples, self.chemin = nom, sequences, exemples, chemin
+        self.sans = set()                                  # les conventions coupées (« sans: » d'un regles.yaml)
 
     def choisir(self, seq, main, position=None, vul=(), partenaire=None):
         """Première règle de la séquence (« ouverture », « 1K - 1C » ou un tuple) vraie pour la main.
@@ -547,18 +548,26 @@ def charger(chemin):
                 regles.append(r)
             sequences[seq] = regles
             exemples.append((seq, exs))
-    base = doc.get("base")
+    base = doc.get("base"); sans_base = set()
     if base:                                              # un système bâti sur un autre : ses sections remplacent
         b = charger(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(chemin))), str(base), "regles.yaml"))
         exemples = [x for x in b.exemples if x[0] not in sequences] + exemples   # celles de la base, les autres restent
         sequences = {**b.sequences, **sequences}
+        sans_base = set(b.sans)
+    sans = {str(x).strip() for x in (doc.get("sans") or [])}   # les conventions coupées : leurs règles disparaissent,
+    if sans:                                              # l'enchère naturelle d'après les remplace
+        coupees = {x.lower() for x in sans}
+        avant = {k: len(v) for k, v in sequences.items()}
+        sequences = {k: [r for r in v if (r.nom or "").lower() not in coupees] for k, v in sequences.items()}
+        exemples = [x for x in exemples if len(sequences.get(x[0], [])) == avant.get(x[0])]   # les exemples d'une séquence touchée : plus sûrs
     s = Systeme(doc.get("systeme"), sequences, exemples, chemin)
+    s.sans = sans | sans_base
     s.titre = str(doc.get("titre") or doc.get("systeme") or ""); s.base = str(base or ""); s.pret = doc.get("pret", True) is not False \
         and str(doc.get("pret", "oui")) != "non"
     return s
 
 
-INFOS_SYSTEME = ("base", "titre", "pret")                  # en tête d'un regles.yaml : pas des séquences
+INFOS_SYSTEME = ("base", "titre", "pret", "sans")                  # en tête d'un regles.yaml : pas des séquences
 
 
 def systemes(racine=None):

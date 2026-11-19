@@ -39,6 +39,13 @@ def systeme_actif():
     return _COURANT.get() or SYSTEME_DEFAUT
 
 
+def convention_active(nom):
+    """La convention (le « nom: » de regles.yaml : Stayman, Spoutnik, Blackwood…) est-elle jouée dans le système actif ?
+    Un système la coupe par sa liste « sans: » (un système pour débutants : le SEF sans certaines conventions)."""
+    sy = systeme()
+    return not (sy is not None and nom.lower() in {x.lower() for x in getattr(sy, "sans", ())})
+
+
 def systeme(nom=None):
     """Les règles écrites dans systems/<nom>/regles.yaml (src/regles.py), ou None si elles ne
     peuvent pas être lues (ruamel.yaml absent, fichier en erreur : le moteur garde son code).
@@ -293,6 +300,9 @@ def _encherir(donne, bruit=None, imposees=None, arret=None):
         if ouvreur is not None and statut == "complète":
             a = avant_3sa(mains[s], s, a, hist, infos, etat)
             a = chelem(mains[s], s, a, hist, infos, etat)
+            if a.nature == "blackwood" and a.atout and k >= len(imposees) and not convention_active("Blackwood"):
+                a = Appel(f"6{a.atout}", f"chelem en vue : 6{a.atout} directement (le système ne joue pas le Blackwood)",
+                          nature="conclusion", atout=a.atout)
             a = punir(mains[s], s, a, hist, infos, etat)
             a = sacrifier(mains[s], s, a, hist, infos, etat)
         if not legal(a.enchere, s, etat):

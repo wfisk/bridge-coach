@@ -3,6 +3,9 @@
 Le système enseigné aux débutants par l'Université du Bridge (livre « BRIDGEZ »), aux enchères plus directes que le SEF.
 
 ## Comment il est fait
+- Le SEF 2024 avec des conventions coupées : `sans: [Roudi, Drury, …]` dans `regles.yaml`, par leur nom dans le
+  fichier du SEF (`nom:`). Les noms : Stayman, Texas, Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing,
+  Blackwood. `tests/test_systemes.py` vérifie qu'une convention coupée n'est plus jouée.
 - `regles.yaml` porte `base: sef-2024` : il n'écrit que ses différences. Une section (une séquence, comme `"1M"` ou
   `"1N - 1M - 1SA"`) écrite ici remplace celle du SEF ; le reste se joue comme le SEF 2024.
 - Les entames et la signalisation : celles du SEF tant qu'il n'y a pas de `entames.yaml` ici.

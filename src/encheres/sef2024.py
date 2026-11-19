@@ -346,6 +346,8 @@ def reponse_concurrence(m, ouv, oc, dernier):
         return Appel("passe", "rien d'adapté après l'intervention sur 1SA")
     if oc != "SA":
         libres = [c for c in MAJEURES if c not in (p, oc) and m.L[c] >= 4]
+        from encheres import convention_active
+        if libres and not convention_active("Spoutnik"): libres = []   # Spoutnik coupé : le répondant parle naturellement
         if libres and rang(dernier) < rang("3♣"):
             return Appel("contre", f"Spoutnik : 6+ H, 4 cartes à {' et '.join(libres)} (à confirmer)", (6, 40),
                          {c: 4 for c in libres}, nature="spoutnik")

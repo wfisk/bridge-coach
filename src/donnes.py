@@ -284,7 +284,8 @@ def roudi(e):
 
 
 def quatrieme(e):
-    return any("couleur" in str(x[2]).lower() and ("4e" in str(x[2]) or "quatrième" in str(x[2]).lower()) for x in e.enc["explications"])
+    """Le moteur emploie la 4e couleur forcing (regles.yaml « nom: 4e couleur forcing »)."""
+    return nommee(e, "4e couleur forcing")
 
 
 def reveil(e):

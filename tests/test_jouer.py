@@ -102,7 +102,8 @@ _d5 = {"n": 5, "donneur": "N", "vul": "N-S", "mains": {"N": "R2 AV62 9873 R32", 
 assert _encherir(_d5)["contrat"] == "3SA"
 _d20 = {"n": 20, "donneur": "O", "vul": "Tous", "mains": {"N": "D4 RV3 V6432 732", "E": "X82 DX7652 D D85",
                                                            "S": "AR63 A R987 AV64", "O": "V975 984 AX5 RX9"}}
-assert _encherir(_d20)["contrat"] == "3SA"
+# (depuis le 19/11, O soutient le deux faible contré à 3♥, loi des levées : on lui fait passer, comme à la table)
+assert _encherir(_d20, imposees=["passe", "passe", "2♥", "contre", "passe"])["contrat"] == "3SA"
 _r = _encherir(_d20, imposees=["passe", "passe", "2♥", "contre", "passe", "3♦", "passe", "3♥"])
 assert _r["encheres"][9] == "3SA" and _r["contrat"] == "3SA", _r["encheres"]
 _d29 = {"n": 29, "donneur": "N", "vul": "Tous", "mains": {"N": "ADVX92 X3 832 D8", "E": "6 A984 RX7 ARX93",

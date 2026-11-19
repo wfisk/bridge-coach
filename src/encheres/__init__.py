@@ -728,6 +728,9 @@ def cote_ouvreur(m, s, hist, infos, etat, ouvreur):
 RESERVE_SA = True   # pas de points empruntés en réveil quand ils s'arrêtent à SA après un échange (2026-11-13)
 
 
+REPARLE_6 = True   # l'intervenant reparle au palier de 2 avec six cartes quand ils s'arrêtent à 2 sur leur fit
+
+
 def cote_defense(m, s, hist, infos, etat, seq):
     dernier = etat["dernier"]
     nos = [(x, a) for x, a in hist if camp(x) == camp(s)]
@@ -771,6 +774,12 @@ def cote_defense(m, s, hist, infos, etat, seq):
             c = m.longue([x for x in COULEURS if x not in eux])
             n = S.plus_bas(c, dernier)
             if n <= 3: return Appel(e(n, c), f"contre fort puis {m.L[c]} cartes à {c}", (17, 21), {c: 5})
+        c = moi.enchere[1:]
+        if REPARLE_6 and c in S.COULEURS and m.L[c] >= 6 and len(eux) >= 2 and eux[-1] == eux[-2] and eux[-1] != "SA" \
+                and S.plus_bas(c, dernier) == 2:
+            # ils se sont arrêtés au palier de 2 sur leur fit : l'intervenant reparle avec six cartes (donne 12 du 19/11)
+            return Appel(e(2, c), f"{m.L[c]} cartes à {c} : ils s'arrêtent à 2 sur leur fit, on dispute la partielle",
+                         L={c: 6}, nature="limite")
         return Appel("passe", "")
     return placer(m, s, nos, infos, dernier, adverse=adverse)
 
@@ -978,11 +987,20 @@ def moi_pts(m, moi):
     return max(m.hcp, moi.pts[0])
 
 
+CONCLUSION_DISPUTEE = False   # le « pour jouer » du partenaire est dépassé par eux : la loi des levées décide
+
+
 def placer(m, s, nos, infos, dernier, adverse=False):
     """adverse : le contrat en cours appartient aux adversaires (concurrence)."""
     part = infos[PART[s]]; moi = infos[s]
     dp = next((a for x, a in reversed(nos) if x == PART[s]), None)
     if dp is None: return Appel("passe", "le partenaire n'a pas parlé : rien à ajouter")
+    if dp.nature == "conclusion" and CONCLUSION_DISPUTEE and adverse and dp.enchere[1:] in COULEURS:
+        c = dp.enchere[1:]; n = S.plus_bas(c, dernier)
+        # ils ont enchéri au-dessus de notre « pour jouer » : la loi des levées dit jusqu'où se battre (donne 14 du 19/11)
+        if n <= 3 and m.L[c] >= 3 and m.L[c] + max(part.L[c], 5) >= n + 6:
+            return Appel(e(n, c), f"{m.L[c]} cartes à {c} : loi des levées, on dispute la partielle", L={c: m.L[c]}, nature="conclusion")
+        return Appel("passe", "laisse jouer l'adversaire")
     if dp.nature == "conclusion":
         M = m.longue(MAJEURES)
         if dp.enchere == "3SA" and m.L[M] >= 7 and not m.reguliere:

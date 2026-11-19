@@ -558,6 +558,20 @@ def tours_adverses(a, b, r, partage=None):
     return out
 
 
+def sans_partage(a, b):
+    """Le partage des cartes adverses ne change pas le nombre de nos levées dans la couleur : elles viennent toutes de nos
+    honneurs (♥RX6 face à ♥DV : l'♥A chassé, deux levées sur tout partage ; donne 3 du 19/11). On compare le partage le
+    plus égal et le plus inégal (toutes les cartes d'un côté, puis de l'autre)."""
+    r = max(len(a), len(b))
+    if not r: return True
+    dehors = [x for x in ORDRE if x not in a + b]
+    if len(dehors) < 2: return True
+    egal = lambda x: [x[0::2], x[1::2]]
+    tous_g = lambda x: [list(x), []]; tous_d = lambda x: [[], list(x)]
+    pertes = {len(tours_adverses(a, b, r, f)) for f in (egal, tous_g, tous_d)}
+    return len(pertes) == 1
+
+
 def sures(a, b):
     """Levées d'honneurs de tête : nos cartes qui se suivent depuis l'as, dans la limite des tours. Quand ces tours
     épuisent les adversaires sauf si l'un a toutes leurs cartes (cinq ou plus : 4 % au plus), toute la longueur est sûre :
@@ -926,6 +940,11 @@ def compter_plan(d, contrat, decl, entame=None, encheres=None, essai=None, infos
     etapes = []; vue = set()
     if den == "SA":
         sur = {c: sures(s_dec[c], s_mort[c]) for c in COULEURS}
+        if lead and meneur == LHO[decl] and not sur[lead]:   # le déclarant joue en dernier sur l'entame : son roi (la
+            dehors_ = [x for x in ORDRE if x not in s_dec[lead] + s_mort[lead]]   # deuxième carte de la couleur) fait une levée
+            if dehors_ and len(s_dec[lead]) >= 2 and len(dehors_) >= 2 and any(
+                    ORDRE.index(dehors_[0]) < ORDRE.index(x) < ORDRE.index(dehors_[1]) for x in s_dec[lead]):
+                sur[lead] = 1                              # ♥RV en N, entame ♥5 d'E : une levée de ♥ (donne 22 du 19/11)
         tops = {c: r[c] - len(tours_adverses(s_dec[c], s_mort[c], r[c])) for c in COULEURS}
         ks = sum(sur.values())
         ordre = sorted(COULEURS, key=lambda c: (-(tops[c] - sur[c]), -len(s_dec[c] + s_mort[c])))

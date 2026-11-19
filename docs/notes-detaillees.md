@@ -314,6 +314,11 @@ tools in src/outils/.
                         and compared to the page's grid, scores and notes compared to the page (alertes). No licences, no club name;
                         title from fichiers.titre_propose (session.moment « après-midi » from the page title). The app's Nouveau page
                         accepts .html (in the window; in browser mode only the uploaded page is seen). tests/test_ffb_html.py
+                        2026-11-19 (Tournoi du Beaujolais): the FFB dropped the nsTeam / ewTeam columns from a deal's table (a
+                        « details » button instead), so the import read 0 results. Each row keeps its id (id="189319065"), and a
+                        pair page's roadmap-table-body lists the ids of its rows: lire_pages now fills a row's N-S and E-O names
+                        from those, and says which pages are missing when a row has no pair. So the member must save the pair
+                        pages (NS1…, EO1…) too, not only the deals and the rankings.
       ffb_pdf.py        an FFB website « Donne n°N » page printed to PDF (2026-11-16: a member took one for a feuille de route
                         and the import failed). Text read with pdfium character by character, words by baseline (FPDFText_
                         GetCharOrigin, so descenders stay in their word); the suit symbols are 10.5 pt form XObjects whose
@@ -533,6 +538,14 @@ tools in src/outils/.
                         conseil_encheres (the engine's close decisions; not used in the standard analysis, whose notes
                         already say « … convenait aussi »). Finesses the auction does not place are one sentence, left out
                         when the plan says the contract does not depend on a finesse (a deal stays within two pages). tests/test_coach.py
+                        2026-11-19, from the expert on the Beaujolais session: « Il faut trouver les X n-m » is said only
+                        when the split changes the suit's tricks (jeu.sans_partage compares the even split and all cards on
+                        one side: ♥RX6 face à ♥DV needs no 4-4, deal 3); at SA no finesse advice in the suit the defence
+                        led (deal 13); at SA the declarer who plays last on the lead with the second card of the suit
+                        (♥RV, the ♥A outside, at least two cards) counts a sure trick there (jeu.compter_plan; deal 22:
+                        8 → 9 tricks with normal splits, the two finesses no longer « il faut »). Not changed: the
+                        trick-one card (coups.premier_pli, chosen by double-dummy simulation; deal 5's ♦D from ♦D65 ties
+                        with the small card there), and setting up a suit whose entry is with the danger hand (deal 4).
       essai_defense.py  bench of the defence against our own simulated declarer (who cannot see the hidden cards): the same fresh
                         random deals played by each variant (sans: no signals; signaux; modele = base: signals read by the hand model; then base plus habitudes, sequence, menee, lecture, difficile, coupe, tout; flags on carte or « modele.X »),
                         declarer's tricks, sets, and the gain per deal with its margin: .venv/bin/python -I -X utf8 src/outils/essai_defense.py 600

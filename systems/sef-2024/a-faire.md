@@ -388,3 +388,28 @@ Pas encore écrits : les texas en face de notre intervention à 1SA ; les interv
 la redemande de l'intervenant après un cue-bid ; la redemande du contreur ; le n° 3 qui parle après notre contre d'appel
 (contre punitif, cue-bid naturel) ; 2SA relais et mini cue-bid face à l'intervention sur un deux faible ; 3SA et le
 cue-bid à saut (mineure 7e maîtresse) ; 4SA bicolore mineur 6-5 sur une ouverture de 1.
+
+## La concurrence, d'après l'expert sur la séance du 19/11 (2026-11-19)
+Les enchères de l'expert comparées à celles des robots sur les 22 donnes du 19/11 : les robots passaient trop dans les
+séquences disputées avec une main de forme. Chaque essai sur deux lots de 20 000 donnes (graines 11 et 12), mesuré sur le
+fichier qui garde les précédents ; en tout +214 et +281 IMP.
+Gardés :
+- « 2M (contre) » : le partenaire du deux faible soutient à 3 avec trois atouts et 10- H (loi des levées) : +13 et +32
+  (4M avec dix atouts aussi : −45 et +43, retiré).
+- Sur leur deux faible contré d'appel, le partenaire du contreur dit 4M avec cinq cartes et 10+ DH, quand la couleur
+  sans saut est au palier de 3 (sef2024.AVANCE_MANCHE = 10) : +9 et +62 (9 : −4 et +53 ; 11 : +41 et +10).
+- « 1SA (2x) » : six cartes au palier de 2, même avec 0–5 H, pour jouer : +20 et +18.
+- L'avance d'une intervention : six cartes au palier de 2 avec 5–9 H et au plus un singleton dans la couleur de
+  l'intervenant (misfit) : +37 et +1 (sans la condition de misfit : +65 et −8).
+- L'intervenant reparle au palier de 2 avec six cartes quand ils s'arrêtent à 2 sur leur fit (encheres.REPARLE_6) :
+  +193 et +249.
+- « 1N (1x) » : le contre Spoutnik avant le soutien de la mineure quand on n'a que quatre cartes dans la mineure :
+  +31 et +18 (avant le soutien dans tous les cas : +66 et −5).
+- « 3N » : 3SA avec 13–18 H et l'as ou le roi de la couleur du barrage, même sec (à confirmer) : +19 et 0 (dès 14 H :
+  −3 et +8).
+Essayé et retiré : sur notre « pour jouer » dépassé par eux, se battre d'après la loi des levées
+(encheres.CONCLUSION_DISPUTEE) : −3 et +21.
+Restent ouverts (donnes du 19/11) : le soutien 3♥ de l'invitation après qu'on s'est limité (donne 12, E invite avec 7 H) ;
+accepter l'invitation en comptant la forme face à un saut sur Spoutnik (donne 16) ; les texas après un 2SA de réveil
+(donne 18 : le système ne le dit pas, il faut la page) ; 1SA de l'avance avec un singleton dans la couleur de
+l'intervenant (donne 19).

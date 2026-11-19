@@ -52,3 +52,16 @@ from comparer import pct_face_aux_tables
 tabs = [{"score_ns": s} for s in (420, 420, 170, -50)]
 assert pct_face_aux_tables(tabs, 420) == 75.0 and pct_face_aux_tables(tabs, 450) == 100.0 and pct_face_aux_tables([], 0) is None
 print("ok")
+# le compte du coach, d'après l'expert du 19/11 : une couleur d'honneurs ne demande pas de partage (♥RX6 face à ♥DV) ;
+# à SA, le déclarant qui joue en dernier sur l'entame avec le roi (♥RV, l'as dehors) a une levée sûre
+import jeu
+assert jeu.sans_partage("RX6", "DV") and jeu.sans_partage("AR", "D987")
+assert not jeu.sans_partage("V982", "D7643") and not jeu.sans_partage("AR87", "D642")
+_d22 = {"n": 22, "donneur": "E", "vul": "E-O", "mains": {"N": "ARV62 RV 7 AX642", "E": "73 ADX53 R982 V8",
+                                                         "S": "8 987 ADX54 RD97", "O": "DX954 642 V63 53"}}
+_inf = {}
+jeu.compter_plan(_d22, "3SA", "N", {"joueur": "E", "carte": "♥5"}, None, infos=_inf)
+_inf2 = {}
+jeu.compter_plan(_d22, "3SA", "N", None, None, infos=_inf2)
+assert _inf["ks"] == _inf2["ks"] + 1 and _inf["k"] >= 9, (_inf, _inf2)
+print("ok")

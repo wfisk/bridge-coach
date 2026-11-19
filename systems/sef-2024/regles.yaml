@@ -746,12 +746,13 @@ ouverture:
   - 3SA: { si: "reg, H 13+, arret Y, non majeure libre", montre: "13+ H, régulier, arrêt : manche", nature: conclusion }
   - 3SA: { si: "U 4+, H 13+, arret Y", montre: "fit mineur, 13+ H, arrêt : manche", nature: conclusion }
   - "*Y": { si: "U 4+, H 12+, non arret Y, palier(Y) 3-, non majeure libre", montre: "cue-bid : fit mineur, 12+ H, forcing de manche, sans arrêt", nature: cue, atout: U }
+  # les majeures 4e d'abord (Spoutnik), le soutien mineur ensuite (donne 16 du 19/11)
+  - contre: { si: "H 6+, U 4-, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui, nom: Spoutnik }
   - "*U+1": { si: "U 4+, HLD 11+, palier(U) 2-", montre: "fit, 11+ points : invitation", nature: invite }
   - "*U": { si: "U 4+, HLD 6-10, palier(U) 3-", montre: "soutien, 6–10 points", nature: limite }
   - "*U": { si: "U 4+, HLD 11+, palier(U) 3", montre: "soutien, 11+ points (le saut est trop haut)", nature: invite }
   - passe: { si: "U 4+", montre: "fit, mais trop faible pour monter" }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
-  - contre: { si: "H 6+, palier(T) 3-, majeure libre", montre: "Spoutnik : 6+ H, 4 cartes dans la majeure libre", nature: spoutnik, alerte: oui, nom: Spoutnik }
   - "*P": { si: "P 5+, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, H 11+)", montre: "5+ piques", nature: forcing }
   - "*C": { si: "C 5+, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, H 11+)", montre: "5+ cœurs", nature: forcing }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, H 11+)", montre: "5+ carreaux", nature: forcing }
@@ -764,6 +765,7 @@ ouverture:
   - exemples:
       - { main: "R8 AV75 RV73 X52", apres: 1T (1P), attendu: contre }   # Spoutnik : 4 cœurs
       - { main: "85 AD2 RD2 D8632", apres: 1T (1P), attendu: 2P }       # 13 H, pas d'arrêt : cue-bid
+      - { main: "X832 D754 5 AX74", apres: 1T (1K), attendu: contre }   # donne 16 du 19/11
 
 "1N (2x) | 1N (3x)":
   - 2SA: { si: "reg, H 11-12, arret Y, non majeure libre", montre: "11–12 H, régulier, arrêt : invitation", nature: invite }
@@ -789,6 +791,10 @@ ouverture:
       - { main: "RD93 AD9 8653 RD", apres: 1K (3T), attendu: contre }   # donne 7 du 13/11 : les piques avant le fit carreau
 
 "1SA (2x)":
+  # une longue de six cartes au palier de 2 se dit même faible : pour jouer (donne 14 du 19/11)
+  - "*P": { si: "P 6+, non Y est P, palier(P) 2, H 5-", montre: "6+ piques, faible : pour jouer", nature: conclusion }
+  - "*C": { si: "C 6+, non Y est C, palier(C) 2, H 5-", montre: "6+ cœurs, faible : pour jouer", nature: conclusion }
+  - "*K": { si: "K 6+, non Y est K, palier(K) 2, H 5-", montre: "6+ carreaux, faible : pour jouer", nature: conclusion }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
   - 3SA: { si: "H 10+, arret Y", montre: "10+ H, arrêt : manche", nature: conclusion }
   - 2SA: { si: "H 8-9, arret Y, reg", montre: "8–9 H, arrêt : invitation", nature: invite }
@@ -803,6 +809,8 @@ ouverture:
 # ================================================================== le partenaire de l'intervenant (avance)
 # Ils ont ouvert (U), le partenaire est intervenu (Y) ; nous sommes Z. W : le répondant adverse.
 
+  - exemples:
+      - { main: "X964 V987642 - DX", apres: 1SA (2K), attendu: 2C }   # donne 14 du 19/11
 # ------------------------------------------------------------------ après une intervention à la couleur
 "(1x) 1x | (1x) 2x | (1x) 3x | (1x) 1x (contre) | (1x) 2x (contre)":
   - "*U+1": { si: "Y 4+, HLD(Y) 12+, (Y est C || Y est P), palier(U) 2-", montre: "cue-bid à saut : 4+ atouts, 12+ points", nature: cue, atout: Y }
@@ -822,11 +830,16 @@ ouverture:
   - "*C": { si: "C 5+, non Y est C, non U est C, (palier(C) 1, H 8+ || palier(C) 2, H 10+)", montre: "5+ cœurs" }
   - "*K": { si: "K 5+, non Y est K, non U est K, (palier(K) 1, H 8+ || palier(K) 2, H 10+)", montre: "5+ carreaux" }
   - "*T": { si: "T 5+, non Y est T, non U est T, (palier(T) 1, H 8+ || palier(T) 2, H 10+)", montre: "5+ trèfles" }
+  # sans fit, une couleur de six cartes au palier de 2 avec 5–9 H : pour jouer (donne 21 du 19/11)
+  - "*C": { si: "C 6+, non Y est C, non U est C, palier(C) 2, H 5-9, Y 1-", montre: "6+ cœurs, sans fit : pour jouer", nature: limite }
+  - "*K": { si: "K 6+, non Y est K, non U est K, palier(K) 2, H 5-9, Y 1-", montre: "6+ carreaux, sans fit : pour jouer", nature: limite }
+  - "*T": { si: "T 6+, non Y est T, non U est T, palier(T) 2, H 5-9, Y 1-", montre: "6+ trèfles, sans fit : pour jouer", nature: limite }
   - passe: { montre: "rien à ajouter" }
   - exemples:
       - { main: "R82 D752 RV7 X52", apres: (1T) 1P, attendu: 2P }       # soutien simple
       - { main: "R82 AD75 R87 X52", apres: (1T) 1P, attendu: 2T }       # 12 points : cue-bid
       - { main: "R842 AD75 R87 52", apres: (1T) 1P, attendu: 3T }       # 13 points, 4 atouts : cue-bid à saut
+      - { main: "4 A8762 D98643 5", apres: (1T) 1P (contre), attendu: 2K }   # donne 21 du 19/11
 
 "(1x) 1x (2x) | (1x) 1x (3x) | (1x) 2x (3x)":     # le répondant adverse a nommé une couleur
   - 4Y:  { si: "Y 3+, HLD 13+, (Y est C || Y est P)", montre: "fit et 13+ points : manche", nature: conclusion }
@@ -1325,9 +1338,13 @@ ouverture:
   - 4U:  { si: "fit(U) 10+", montre: "dix atouts ensemble : 4M pour jouer (loi des levées)", nature: conclusion }
   - passe: { montre: "pas de manche face au barrage" }
 "3N":
+  # l'as ou le roi de sa couleur, même sec, et 13+ H : les levées du barrage sont là (donne 17 du 19/11)
+  - 3SA: { si: "H(U) 3+, H 13-18", montre: "13+ H avec un gros honneur dans la couleur du barrage : 3SA", nature: conclusion, source: à confirmer }
   - 3SA: { si: "U 2+, H 15-18", montre: "15+ H, la couleur du barrage pour faire des levées : 3SA", nature: conclusion, source: à confirmer }
   - 5U:  { si: "U 2+, HLD(U) 19+", montre: "fit : manche en mineure", nature: conclusion }
   - passe: { montre: "pas de manche face au barrage" }
+  - exemples:
+      - { main: "92 ADX542 AV86 R", apres: 3T, attendu: 3SA }   # donne 17 du 19/11
 "3M - 4U | 3N - 3SA | 3N - 5U":
   - passe: { montre: "le partenaire a décidé" }
 
@@ -1638,7 +1655,13 @@ ouverture:
 # ------------------------------------------------------------------ contrats atteints : on passe
 "1M - 3U - 4U | 1SA - 3SA | 1SA - 4C | 1SA - 4P | 2SA - 3SA | 1N - 2SA - 3SA":
   - passe: { montre: "contrat atteint" }
-"(2SA) | (1SA) passe (3SA) | (1M) passe (3U) passe (4U) | (1M) passe (2U) passe (4U) | (1M) passe (4U) | 2M passe (contre) | 2M (contre)":
+"2M (contre)":                    # le partenaire du deux faible, après leur contre d'appel : la loi des levées (donne 8 du 19/11)
+  - 3U:  { si: "U 3+, H 10-", montre: "soutien : barrage à 3 (loi des levées)", nature: conclusion }
+  - passe: { montre: "rien à ajouter" }
+  - exemples:
+      - { main: "D954 9 D9652 943", apres: 2P (contre), attendu: 3P }   # donne 8 du 19/11
+
+"(2SA) | (1SA) passe (3SA) | (1M) passe (3U) passe (4U) | (1M) passe (2U) passe (4U) | (1M) passe (4U) | 2M passe (contre)":
   - passe: { montre: "rien à ajouter" }
 
 # ------------------------------------------------------------------ 3.2 le répondant après une intervention à 1SA ; l'ouvreur quand ils interviennent après notre réponse

@@ -52,7 +52,9 @@ def conseil_plan(d, contrat, decl, entame, encheres, sans_impasse=False, morceau
     if a_parle & {g, dr}:
         out["points"] = f"Les enchères donnent à {NOMS[g]} {_pts(p, g)} et à {NOMS[dr]} {_pts(p, dr)}."
     vus = set()
-    for c in COULEURS:                                     # les impasses du plan, et leur chance d'après les enchères
+    sa_entame = contrat[1:].rstrip("X") == "SA" and entame["carte"][0]   # à SA, la couleur d'entame est ouverte par la
+    for c in COULEURS:                                     # défense : pas d'impasse à y conseiller (donne 13 du 19/11)
+        if c == sa_entame: continue                        # les impasses du plan, et leur chance d'après les enchères
         for texte, hs, qui in jeu.impasses((decl, s_dec), (mort, s_mort), c):
             q = 1.0
             for h in hs: q *= p[qui]["cartes"].get((c, h), 0)
@@ -306,7 +308,8 @@ def redaction_plan(d, contrat, decl, entame, encheres):
         mort = PART[decl]
         for c in a_affranchir:                             # la couleur à affranchir : le partage qu'il faut
             n = len(jeu.suites(d["mains"][decl])[c] + jeu.suites(d["mains"][mort])[c])
-            if 13 - n >= 4: besoins.append(f"trouver les {c} {jeu.partage_favorable(13 - n)}")
+            if 13 - n >= 4 and not jeu.sans_partage(jeu.suites(d["mains"][decl])[c], jeu.suites(d["mains"][mort])[c]):
+                besoins.append(f"trouver les {c} {jeu.partage_favorable(13 - n)}")
         if besoins:
             ph = "Il faut " + (besoins[0] if len(besoins) == 1 else ", ".join(besoins[:-1]) + " et " + besoins[-1]) + "."
             if a and taux < .15: ph += " Même alors, une bonne défense trouve presque toujours la parade."

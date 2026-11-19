@@ -200,12 +200,48 @@ def barrage(e):
     return o in ("2♥", "2♠") or (o and o[0] in "34" and o[1:] != "SA")
 
 
-BICOLORES = ("cue-bid bicolore", "bicolore : 5-5", "bicolore mineur")
+def conventions(e):
+    """[(indice, siège, enchère, nature, nom)] : ce que disent les règles (regles.yaml) de chaque enchère du moteur."""
+    k = SIEGES.index(e.d["donneur"])
+    return [(i, SIEGES[(k + i) % 4], b, n, nom) for i, (b, (n, nom)) in enumerate(zip(e.seq, e.enc.get("conventions", [])))]
+
+
+def du_camp_qui_defend(e, s):
+    a = e.actives()
+    return bool(a) and s not in (a[0][1], PART[a[0][1]])
 
 
 def bicolore(e):
-    """Une intervention bicolore du moteur (regles.yaml) : cue-bid (Michaels), 2♦ sur 1♣ (les majeures), 2SA, 3♣."""
-    return any(any(m in x for m in BICOLORES) for _s, _b, x in e.enc.get("explications", []))
+    """Une intervention bicolore du moteur (regles.yaml) : Michaels, 2♦ sur 1♣ (les majeures), 2SA, 3♣, Landy, 4♣ / 4♦
+    sur un deux faible… : une enchère « bicolore » du camp qui n'a pas ouvert."""
+    return any(n == "bicolore" and du_camp_qui_defend(e, s) for _i, s, _b, n, _nom in conventions(e))
+
+
+def nommee(e, nom):
+    """Le moteur emploie la convention de ce nom (regles.yaml « nom: »)."""
+    return any(x == nom for *_r, x in conventions(e))
+
+
+def landy(e):
+    """Sur leur 1SA : Landy (les majeures) ou 2SA (les mineures), puis le partenaire choisit."""
+    a = e.actives()
+    return len(a) >= 2 and a[0][2] == "1SA" and a[1][2] in ("2♣", "2SA") and du_camp_qui_defend(e, a[1][1]) \
+        and any(n == "bicolore" for _i, s, _b, n, _nom in conventions(e) if s == a[1][1])
+
+
+def contre_barrage(e):
+    """Ils ouvrent d'un deux faible ou d'un barrage, et nous intervenons (contre, couleur, SA, bicolore)."""
+    a = e.actives()
+    return len(a) >= 2 and barrage(e) and du_camp_qui_defend(e, a[1][1])
+
+
+def concurrence(e):
+    """Les deux camps enchérissent chacun au moins deux fois (contres compris) : une vraie séquence disputée."""
+    a = e.actives()
+    if len(a) < 4: return False
+    ouv = a[0][1]
+    nous = sum(1 for _i, s, _b in a if s in (ouv, PART[ouv]))
+    return nous >= 2 and len(a) - nous >= 2
 
 
 def blackwood(e):
@@ -238,19 +274,13 @@ def spoutnik(e):
 
 
 def drury(e):
-    """Un partenaire qui a passé, un fit et 9–11 H, sur une ouverture de 1♥ ou 1♠ en 3e ou 4e (conventions/drury.md)."""
-    i, s, o = premier_actif(e)
-    if i not in (2, 3) or o not in ("1♥", "1♠"): return False
-    k = COULEURS.index(o[1]); p = PART[s]
-    return len(e.mains[p].split()[k].replace("-", "")) >= 3 and 9 <= e.h(p) <= 11
+    """Le moteur dit 2♣ Drury : un partenaire qui a passé, sur 1♥ / 1♠ en 3e ou 4e (SEF 2024 p. 20, conventions/drury.md)."""
+    return nommee(e, "Drury")
 
 
 def roudi(e):
-    """Pas dans le système : 1m – 1M – 1SA, et le répondant a de quoi chercher la manche (11+ H)."""
-    a = e.actives()
-    if len(a) < 3: return False
-    if a[0][2] not in ("1♣", "1♦") or a[1][2] not in ("1♥", "1♠") or a[2][2] != "1SA": return False
-    return a[1][1] == PART[a[0][1]] and a[2][1] == a[0][1] and e.h(a[1][1]) >= 11
+    """Le moteur dit 2♣ Roudi après 1m – 1M – 1SA (conventions/roudi.md)."""
+    return nommee(e, "Roudi")
 
 
 def quatrieme(e):
@@ -596,6 +626,9 @@ THEMES = {
     "Contre d'appel": contre_appel,
     "Contre Spoutnik": spoutnik,
     "Drury": drury,
+    "Défense contre 1SA": landy,
+    "Défense contre les barrages": contre_barrage,
+    "Enchères disputées": concurrence,
     "Enchères à SA": lambda e: ouverture(e) in ("1SA", "2SA"),
     "Entame décisive": jeu_entame,
     "Grand chelem": lambda e: chelem(e, (7,)),
@@ -650,7 +683,8 @@ META = {
     "Stayman": ("encheres", 1), "Texas": ("encheres", 1), "Barrage": ("encheres", 1), "Intervention": ("encheres", 1),
     "Contre d'appel": ("encheres", 2), "Contre Spoutnik": ("encheres", 2), "Réveil": ("encheres", 2), "Michaels et bicolores": ("encheres", 2),
     "Quatrième couleur forcing": ("encheres", 2), "Partielle disputée": ("encheres", 2), "Blackwood": ("encheres", 2),
-    "Petit chelem": ("encheres", 2), "Drury": ("encheres", 2),
+    "Petit chelem": ("encheres", 2), "Drury": ("encheres", 2), "Défense contre 1SA": ("encheres", 2),
+    "Défense contre les barrages": ("encheres", 2), "Enchères disputées": ("encheres", 2),
     "Chelem": ("encheres", 3), "Grand chelem": ("encheres", 3), "Roudi": ("encheres", 3), "Sacrifice": ("encheres", 3),
     "Compter ses levées": ("carte", 1), "L'impasse": ("carte", 1), "Entame décisive": ("carte", 1), "Jeu de la carte": ("carte", 1),
     "Hold-up": ("carte", 2),

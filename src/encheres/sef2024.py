@@ -33,6 +33,7 @@ class Appel:
         self.enchere, self.texte, self.nature, self.atout = enchere, texte, nature, atout
         self.pts, self.L, self.reguliere = pts, L, reguliere
         self.alerte = False                                  # vrai pour une enchère que le partenaire alerte (regles.yaml)
+        self.nom = ""                                        # le nom de la convention (regles.yaml « nom: » : Drury, Landy…)
 
 
 def rang(enchere):

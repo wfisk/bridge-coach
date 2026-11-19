@@ -491,7 +491,9 @@ def lire_doc(nom):
 
 
 CONVENTIONS = (("stayman", "Stayman", "conventions/stayman.md"), ("texas", "Texas", "conventions/texas.md"),
-               ("blackwood", "Blackwood 3041", "conventions/blackwood-3041.md"), ("drury", "Drury", "conventions/drury.md"))
+               ("blackwood", "Blackwood 3041", "conventions/blackwood-3041.md"), ("drury", "Drury", "conventions/drury.md"),
+               ("roudi", "Roudi", "conventions/roudi.md"), ("bicolores", "Bicolores (Michaels)", "conventions/bicolores.md"),
+               ("landy", "Défense contre 1SA", "conventions/landy.md"))
 
 
 def compter(s=None):

@@ -69,18 +69,35 @@ dans `ffb/` avant de s'y fier.
 - 4SA : quantitatif
 - 4♣ / 4♦ : naturel, six cartes, 9–12 H : essai de chelem ; l'ouvreur répond par ses contrôles **(à confirmer)**
 
-## Concurrence (toute la section est à confirmer)
-Règles suivies par le moteur d'enchères (src/encheres/sef2024.py, étape 2).
+## Roudi (après 1♣ / 1♦ – 1♥ / 1♠ – 1SA)
+- 2♣ Roudi : 5+ cartes dans la majeure et 11+ H (ou six cartes et 10 H) ; l'ouvreur dit 2♦ sans trois cartes, 2♥ avec
+  trois cartes minimum, 2♠ avec trois cartes maximum (après 1♥ : **à confirmer**). Voir conventions/roudi.md.
+- 2♥ sans saut après 1♠ : cinq piques et quatre cœurs, faible, pour jouer.
 
-### Intervention sur un barrage de 3
-- Couleur naturelle avec six cartes, 10–17 H ; contre d'appel 15+ H court dans leur couleur **(à confirmer)**
+## Concurrence
+Règles suivies par le moteur d'enchères (regles.yaml, puis src/encheres/sef2024.py). Confrontées au SEF 2024, chapitre 10
+(p. 66–82, « Les interventions et les réveils »), le 2026-11-19 : ce qui vient du SEF le dit ; le reste est **à confirmer**.
+Là où le moteur garde autre chose que le SEF, c'est que le SEF perdait au banc (voir a-faire.md, 2026-11-19).
+
+### Intervention sur un deux faible (2♥, 2♠) (SEF 2024 p. 78)
+- Couleur sans saut : cinq belles cartes en majeure, six en mineure, 11–18 HL
+- 2SA : 16–18 HL, régulier, arrêt ; le cue-bid : les deux mineures 5-5 ; 4♣ / 4♦ : cinq cartes dans la mineure nommée
+  et cinq dans l'autre majeure, cinq perdantes au plus
+- Contre d'appel : avec la majeure libre 4e ; sinon 12+ H court dans leur couleur ; en réveil dès 9 H, et 2SA 14–17 HL
+
+### Intervention sur un barrage de 3 (SEF 2024 p. 79)
+- Couleur naturelle avec cinq cartes, 10–18 H ; 3SA : arrêt, huit levées de jeu, sans courte **(à confirmer)**
+- Contre d'appel : 12–18 HL avec un soutien dans les trois autres couleurs, ou 19+ HL ; sur 3♥ / 3♠, 4SA = les mineures 5-5
 
 ### Intervention sur une ouverture à la couleur
-- 1SA : 15–18 H, régulier, arrêt dans la couleur adverse
-- Couleur au palier de 1 : 5+ cartes, 8–16 H (10+ si la couleur est pauvre)
-- Couleur au palier de 2 : bonne 5e ou 6e, 11–16 H
-- Saut faible : 6 cartes, 6–10 H (sauf 2♦ sur 1♣ et 3♣ sur une majeure : bicolores, ci-dessous)
-- Bicolores 5-5 (au moins), 8–18 H, alertés **(à confirmer)** :
+- 1SA : 16–18 HL, régulier, sans majeure 5e, arrêt dans la couleur adverse (SEF 2024)
+- Couleur au palier de 1 : 5+ cartes, 8–18 H (10+ si la couleur est pauvre ; le SEF dit 8–18 HL sans condition de qualité)
+- Couleur au palier de 2 : six cartes, 11–18 HL ; 2♥ sur 1♠ aussi avec cinq beaux cœurs et 14–18 HL ; 2♣ sur 1♣ est
+  naturel (SEF 2024)
+- Saut faible : 6 cartes, 6–10 H (sauf 2♦ sur 1♣ et 3♣ sur une majeure : bicolores, ci-dessous) ; le SEF veut sept
+  cartes au palier de 3
+- Bicolores 5-5 (au moins), 8–18 H, alertés (les enchères sont celles du SEF 2024 ; le SEF les limite en perdantes :
+  7 en vulnérabilité favorable, 6 à égalité, 5 en défavorable) :
   - sur 1♣ ou 1♦ : 2♦ = les deux majeures (le cue-bid sur 1♦) ; 2SA = les deux couleurs libres les plus basses
     (carreau et cœur sur 1♣, trèfle et cœur sur 1♦) ;
   - sur 1♥ ou 1♠ : le cue-bid (2♥, 2♠) = trèfle et l'autre majeure (Michaels) ; 2SA = les mineures ;
@@ -91,17 +108,23 @@ Règles suivies par le moteur d'enchères (src/encheres/sef2024.py, étape 2).
   le camp de l'intervenant, contre les interventions naturelles d'avant ; chacune des cinq enchères gagne.
 - Contre d'appel : 12+ H, court dans la couleur adverse, 3+ cartes dans les majeures non nommées ;
   ou 17+ H quelle que soit la forme (puis on nomme sa couleur)
-- Réveil (après 1x – passe – passe) : mêmes enchères avec 3 points de moins
+  (le SEF : 12–18 HL sans courte hors de leur couleur, 4-3 ou 4-4 en majeures sur une mineure ; 19+ HL toute forme)
+- Réveil (après 1x – passe – passe) : mêmes enchères avec 3 points de moins ; 1SA 10–13 HL sans arrêt garanti,
+  2SA 17–19 HL avec arrêt (SEF 2024 p. 81) ; contre dès 7 H avec un tricolore court dans leur couleur, sinon dès 9 H
 - Pas d'intervention au palier de 4, ni de réveil au-dessus du palier de 2 ; au palier de 3, 3 points de plus
-- Sur 1SA : couleur 6e naturelle au palier de 2 (8+ H) ; contre = 15+ H, punitif
+- Sur 1SA (SEF 2024 p. 77) : 2♣ Landy, les deux majeures 5-4 au moins ; 2SA les mineures 5-5 ; 3♣ naturel ; tout dès
+  9 H. Couleur 6e naturelle au palier de 2 (8+ H) ; contre = 15+ H, punitif (le SEF joue le contre « mineure-majeure »,
+  qui perdait au banc). Sur Landy, 2♦ demande la majeure la plus longue (2♥ à égalité).
 
 ### Partenaire de l'intervenant
 - Sur une intervention en majeure : soutien 7–10 DH au palier le plus bas, saut = barrage (4+ atouts),
   cue-bid de l'ouverture avec 11+ points (voir Cue-bids)
 - Sur une intervention en mineure : soutien 7–10 DH, saut = invitation (11–12), 13+ fit forcing
-- Sans fit : SA avec arrêt (1SA 8–11, 2SA 12–14, 3SA 15+) ou couleur 5e
-- Sur un contre d'appel : meilleure couleur (majeure 4e d'abord) au palier le plus bas (0–8 H),
-  saut avec 9–11 H, manche avec 12+ ; 1SA avec 6–9 H et un arrêt ; obligé de parler sauf si l'adversaire a enchéri
+- Sans fit : SA avec arrêt (1SA 8–12 HL, 2SA 13–14 HL, 3SA 15+) ou couleur 5e (SEF 2024 ; le SEF ne garantit pas
+  l'arrêt pour 1SA)
+- Sur un contre d'appel (SEF 2024 p. 75) : meilleure couleur (majeure 4e d'abord) au palier le plus bas (0–7 H),
+  saut avec 8–11 H (quatre cartes en majeure, cinq en mineure), manche avec 12+ ; 1SA 7–10 H, 2SA 10–11 H, avec un
+  arrêt ; obligé de parler sauf si l'adversaire a enchéri
 
 ### Camp de l'ouvreur après une intervention
 - Soutien : 6–10 DH au palier le plus bas, saut = invitation (11–12), manche en majeure avec 13+ et 3 cartes

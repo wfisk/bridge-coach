@@ -266,6 +266,10 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         who spoke in the auction (squeeze_lisible), the plain test after half the delay (SOUPLE). Mise en main
                         unchanged (no cheap readable test). Each keeps "chances" with a genre for commentaires.chances.
                         About 3 s a deal (Entame, Partielle), 10–25 s (L'impasse, Hold-up, Sacrifice), squeeze rare
+                        Convention themes check the engine really used the convention: encherir returns "conventions",
+                        (nature, nom) per call from regles.yaml « nom: » (Drury, Roudi, Landy…), donnes.nommee / conventions;
+                        Michaels et bicolores = a « bicolore » call by the side that did not open; new themes (2026-11-19)
+                        Défense contre 1SA (Landy or 2SA), Défense contre les barrages, Enchères disputées (each side 2+ calls).
                         Each theme has a family and a level (META: encheres / carte, 1 = 1re année, 2 = intermédiaire,
                         3 = avancé; new first-year themes Évaluer sa main, Soutien de la majeure, Compter ses levées, L'impasse);
                         a bidding theme and a card-play theme chosen together are combined in the same deals ("A + B",
@@ -563,6 +567,19 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         2SA = the two lowest unbid; over 1♥/1♠ the cue-bid = clubs + other major (Michaels), 2SA = minors,
                         3♣ = diamonds + other major; advancer picks a suit by strength; +0.61 IMP a deal on 20 000 random
                         deals (331 uses) against the old natural overcalls.
+                        SEF 2024 chapter 10 (pp. 66–82, the user's photos, 2026-11-19; transcription in systems/sef-2024/ffb/,
+                        ignored by git): each difference benched alone on 2 × 20 000 deals, kept when it gained (a-faire.md lists
+                        all): 1SA overcall 16–18 HL without a five-card major; 2-level overcall six cards 11–18 HL; balancing 1SA
+                        10–13 HL, 2SA 17–19; over 1SA Landy 2♣, 2SA minors, 3♣ natural (the 15+ penalty double kept: SEF's
+                        « mineure-majeure » double lost); over a weak two 2SA 16–18, cue = minors, 4♣/4♦ minor + other major, suits
+                        11–18 HL; over 3-level pre-empts suit 5+ 10–18, double 12–18 HL, 4SA minors; answers to a take-out double
+                        jump 8–11; SEF's looser 1-level overcall, 7-card 3-level jumps, loser-limited Michaels, SEF take-out double
+                        and SEF raises of an overcall all lost and were dropped.
+                        Roudi (2026-11-19, « Roudi 3 réponses », SEF 2024 unchanged, details from « Les 20 conventions
+                        essentielles », transcription in ffb/): after 1m – 1M – 1SA, 2♣ with 5+ in the major and 11+ H (or six
+                        and 10); opener 2♦ no three cards, 2♥ three minimum, 2♠ three maximum (14 HL; after 1♥ à confirmer);
+                        2♥ without a jump after 1♠ = 5♠ 4♥ weak; +12 / +32 IMP. conventions/roudi.md, landy.md, bicolores.md
+                        (also pages of the Système tab). Drury stays as SEF p. 20 (the user, 2026-11-19: the book's version not used)
                         Over a weak two (2026-11-13, deals 5, 20, 29 of 12/11, each kept on 2 × 20 000 deals, a-faire.md): balancing
                         (2x – passe – passe) has its own rules, double from 10 H; the take-out double comes before a 3-level suit with
                         four cards in the free major; a strong doubler (18+, no 5-card major) after partner's minor looks for 3SA
@@ -683,6 +700,15 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         (format in systems/README.md; */ffb/ official docs are ignored by git).
                         The program doesn't read them: they are the reference Claude reads
                         to update sef2024.py and jeu.py; keep files and code in step
+                        Several systems (2026-11-19, the user: SEF 2024 the main one, also the beginners' « BRIDGEZ » of
+                        the Université du Bridge): a regles.yaml may say `base: sef-2024` and write only its differences (a
+                        section replaces the base's for that sequence; regles.charger merges; INFOS_SYSTEME base / titre / pret);
+                        `pret: non` hides it from members. regles.systemes() lists them. The robots' system: donne["systeme"],
+                        else encheres.SYSTEME_DEFAUT (choisir_systeme, env BRIDGE_COACH_SYSTEME for rapport.py and benches;
+                        app.precharger applies etat « systeme_robots » when that system is ready), per thread through a
+                        ContextVar during encherir; jeu.regles_entame follows it, a system without entames.yaml uses its base's.
+                        systems/bridgez/ is a skeleton (base sef-2024, pret: non, README lists what to take from the book); no
+                        settings page yet: it appears when a second system is ready. tests/test_systemes.py
 
 Three places outside this folder, none in git. `bridge-coach.ini` sits at a fixed place because it says
 where the rest is: `~/Library/Application Support/Bridge Coach` on Mac, `%APPDATA%\Bridge Coach` on Windows

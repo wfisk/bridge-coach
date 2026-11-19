@@ -86,3 +86,11 @@ print("ok")
 t = D.placer(["Sacrifice"] * 4 + ["Squeeze"] * 4)
 assert all(D.VUL16[i % 16] != "Tous" for i, x in enumerate(t) if x == "Sacrifice") and sorted(t) == sorted(["Sacrifice"] * 4 + ["Squeeze"] * 4)
 assert D.chercher((4, "Sacrifice", 1, 120))[3] is False    # la donne 4 est « Tous » : rendue tout de suite, au hasard
+
+# les conventions des thèmes : le moteur les emploie vraiment (regles.yaml « nom: »), pas seulement la forme des mains
+for th, nom in (("Drury", "Drury"), ("Roudi", "Roudi"), ("Défense contre 1SA", "Landy")):
+    n, _t, mains, ok, _c = D.chercher((2, th, 15, 60))
+    e = D.Essai(dict(n=n, donneur=D.SIEGES[(n - 1) % 4], vul=D.VUL16[(n - 1) % 16], mains=mains))
+    assert ok and (D.nommee(e, nom) or th == "Défense contre 1SA" and D.landy(e)), (th, e.seq)
+for th in ("Michaels et bicolores", "Défense contre les barrages", "Enchères disputées"):
+    assert D.chercher((3, th, 16, 60))[3], th

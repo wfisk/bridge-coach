@@ -21,15 +21,30 @@ def camp(s): return "NS" if s in "NS" else "EO"
 
 # ---------------------------------------------------------------- règles du fichier (systems/<système>/regles.yaml)
 _SYSTEME = {}
-import threading
+import threading, contextvars, os as _os
 _VERROU = threading.Lock()      # l'application les charge d'avance dans un fil à part : une seule lecture à la fois
+# Le système des robots : celui de la donne (donne["systeme"]), sinon celui choisi pour tout le programme (choisir_systeme ;
+# la variable d'environnement le passe aux processus de rapport.py et des bancs), sinon le SEF 2024.
+SYSTEME_DEFAUT = _os.environ.get("BRIDGE_COACH_SYSTEME") or "sef-2024"
+_COURANT = contextvars.ContextVar("systeme_courant", default=None)   # pendant un encherir : par fil, sans se mélanger
 
 
-def systeme(nom="sef-2024"):
+def choisir_systeme(nom):
+    """Le système des robots pour tout le programme, et pour les processus qu'il lance."""
+    global SYSTEME_DEFAUT
+    SYSTEME_DEFAUT = nom or "sef-2024"; _os.environ["BRIDGE_COACH_SYSTEME"] = SYSTEME_DEFAUT
+
+
+def systeme_actif():
+    return _COURANT.get() or SYSTEME_DEFAUT
+
+
+def systeme(nom=None):
     """Les règles écrites dans systems/<nom>/regles.yaml (src/regles.py), ou None si elles ne
     peuvent pas être lues (ruamel.yaml absent, fichier en erreur : le moteur garde son code).
     La première lecture prend 2 à 3 secondes (le fichier, puis ses milliers de conditions) : l'application
-    l'appelle dès son ouverture, en arrière-plan (app.precharger)."""
+    l'appelle dès son ouverture, en arrière-plan (app.precharger). Sans nom : le système actif (systeme_actif)."""
+    nom = nom or systeme_actif()
     if nom in _SYSTEME: return _SYSTEME[nom]
     with _VERROU:
         return _systeme(nom)
@@ -126,7 +141,7 @@ def depuis_regles(cle, m, position=None, vul=(), partenaire=None):
         texte += f". {autre.enchere} ({autre.montre}) était possible"
     a = Appel(r.enchere, texte, mo["pts"], mo["L"], True if mo["reg"] else None, nature=r.nature,
               atout=r.atout or (r.enchere[1:] if r.enchere[0].isdigit() and r.enchere[1:] != "SA" else None))
-    a.alerte = getattr(r, "alerte", False)
+    a.alerte = getattr(r, "alerte", False); a.nom = getattr(r, "nom", "")
     return a
 
 
@@ -206,7 +221,7 @@ def quatrieme_couleur(m, hist, dernier):
     if not r or cle + (r.enchere,) not in sy.sequences: return None
     a = Appel(r.enchere, f"{m.hcp} H, sans fit : 4e couleur forcing, pour chercher le chelem ; sur une réponse à SA, "
               "4SA sera quantitatif", (11, 40), nature="forcing")
-    a.alerte = getattr(r, "alerte", False)
+    a.alerte = getattr(r, "alerte", False); a.nom = getattr(r, "nom", "")
     return a
 
 
@@ -224,7 +239,7 @@ def interpreter(cle, enchere, a_dire=""):
             a = Appel(enchere, f"votre enchère : {r.montre}" if r.montre else "votre enchère", mo["pts"], mo["L"],
                       True if mo["reg"] else None, nature=r.nature,
                       atout=r.atout or (enchere[1:] if enchere[0].isdigit() and enchere[1:] != "SA" else None))
-            a.alerte = getattr(r, "alerte", False)
+            a.alerte = getattr(r, "alerte", False); a.nom = getattr(r, "nom", ""); a.nom = getattr(r, "nom", "")
             return a
     if enchere[0].isdigit() and enchere[1:] != "SA":
         return Appel(enchere, "votre enchère, non décrite par le système : lue comme naturelle", L={enchere[1:]: 4})
@@ -233,6 +248,15 @@ def interpreter(cle, enchere, a_dire=""):
 
 
 def encherir(donne, bruit=None, imposees=None, arret=None):
+    """Les enchères de la donne, dans le système de la donne (donne["systeme"]) ou le système actif."""
+    jeton = _COURANT.set(donne.get("systeme") or SYSTEME_DEFAUT)
+    try:
+        return _encherir(donne, bruit, imposees, arret)
+    finally:
+        _COURANT.reset(jeton)
+
+
+def _encherir(donne, bruit=None, imposees=None, arret=None):
     """bruit = {siège: ±points} : jugement d'un joueur plus optimiste ou plus prudent (simulations).
     imposees : les premières enchères de la séquence, depuis le donneur, déjà faites à la table (un joueur en a choisi
     certaines) ; le moteur reprend après elles. arret : le siège d'un joueur ; on s'arrête quand c'est à lui de parler,
@@ -242,7 +266,7 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
     mains = {s: Main(donne["mains"][s]) for s in ROT}
     for s, dv in (bruit or {}).items(): mains[s].hcp += dv
     i0 = ROT.index(donne["donneur"])
-    seq, expl, hist = [], [], []         # hist : [(siège, Appel)] de toutes les enchères autres que passe
+    seq, expl, hist, conv = [], [], [], []   # conv : (nature, nom de la convention) de chaque enchère ; hist : [(siège, Appel)] de toutes les enchères autres que passe
     alertes = []                         # les rangs des enchères à alerter (alerte: oui dans regles.yaml)
     ecarts = []                          # les rangs où l'enchère imposée n'est pas celle du système (modele.py)
     infos = {s: Info() for s in ROT}
@@ -274,7 +298,7 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
         if not legal(a.enchere, s, etat):
             a = Appel("passe", f"({a.enchere} n'est plus possible)")
         if k >= len(imposees) and s == arret:               # au joueur de parler : on s'arrête, avec l'avis du système
-            return dict(encheres=seq, explications=expl, contrat=None, declarant=None, statut=statut, notes=[], alertes=alertes, ecarts=ecarts,
+            return dict(encheres=seq, explications=expl, conventions=conv, contrat=None, declarant=None, statut=statut, notes=[], alertes=alertes, ecarts=ecarts,
                         a_vous=True, conseil=dict(enchere=a.enchere, texte=a.texte))
         if k < len(imposees) and imposees[k] != a.enchere:   # l'enchère faite à la table, pas celle du moteur
             ecarts.append(k)
@@ -296,7 +320,7 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
                 bw = next((b for x, b in reversed(hist) if x == s and b.nature == "blackwood"), None)
                 if bw: a = Appel("5SA", f"votre enchère : demande des rois (toutes les clés réunies), atout {bw.atout}",
                                  nature="rois", atout=bw.atout)
-        seq.append(a.enchere); expl.append((s, a.enchere, a.texte))
+        seq.append(a.enchere); expl.append((s, a.enchere, a.texte)); conv.append((a.nature or "", getattr(a, "nom", "") or ""))
         if getattr(a, "alerte", False): alertes.append(len(seq) - 1)
         if a.enchere != "passe":
             completer(a, s, hist, infos)
@@ -308,7 +332,7 @@ def encherir(donne, bruit=None, imposees=None, arret=None):
         if fin(seq): break
     d = etat["dernier"]
     decl = next(x for x, a in hist if camp(x) == camp(etat["par"]) and a.enchere[1:] == d[1:]) if d else None
-    return dict(encheres=seq, explications=expl, contrat=(d + "X" * etat["dbl"]) if d else "passe",
+    return dict(encheres=seq, explications=expl, conventions=conv, contrat=(d + "X" * etat["dbl"]) if d else "passe",
                 declarant=decl, statut=statut, notes=[], a_vous=False, alertes=alertes, ecarts=ecarts)
 
 

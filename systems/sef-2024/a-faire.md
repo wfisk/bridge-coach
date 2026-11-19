@@ -355,3 +355,36 @@ Corrigé, chacun mesuré sur deux lots de 20 000 donnes :
   relais, la manche s'écrit 4U (« *U » restait au palier de 3) : +141 et +64 IMP (27 et 34 séquences).
 Essayé et retiré : 3SA = 18–19 H régulier après une réponse au palier de 2 (+31 et −19 IMP, des chelems en majeure perdus) ;
 sans plafond « H 13+ » au 3SA du répondant (−63 et −107 IMP : les mains de 19+ trouvaient 6SA par le code général).
+
+## Les interventions et les réveils du SEF 2024 (2026-11-19)
+Le chapitre 10 du SEF 2024 (p. 66–82, photographié par le joueur ; transcription dans ffb/, hors de git) confronté à
+regles.yaml, puis chaque écart essayé seul, sur deux lots de 20 000 donnes (banc_encheres, graines 11 et 12), chacun
+mesuré sur le fichier qui garde les précédents.
+Gardés :
+- Intervention à 1SA : 16–18 HL, sans majeure 5e (était 15–18 H) : +234 et +13 IMP.
+- Intervention au palier de 1 jusqu'à 18 H (le contre prenait les 17–18) : +54 et −47, neutre, gardé parce que SEF.
+- Au palier de 2 : six cartes et 11–18 HL ; 2♥ sur 1♠ avec cinq beaux et 14–18 ; 2♣ naturel sur 1♣ : −50 et +135.
+- Réveil : 1SA 10–13 HL sans arrêt garanti (était 12–15 H avec arrêt), 2SA 17–19 HL : −14 et +63.
+- Sur 1SA : 2♣ Landy, 2SA les mineures, 3♣ naturel, avec leurs suites (le contre punitif 15+ reste) : +88 et +42.
+- Sur un deux faible : 2SA 16–18 HL, le cue-bid = les mineures, 4♣ / 4♦ = mineure + autre majeure : +14 et +42 ;
+  la couleur sans saut cinq belles en majeure, six en mineure, 11–18 HL : +162 et +96.
+- Sur un barrage de 3 : couleur 5e 10–18 H, contre 12–18 HL avec soutien partout ou 19+, 4SA les mineures sur 3M (et
+  la préférence du partenaire) : +122 et +19.
+- Réponse au contre d'appel : saut avec 8–11 H (cinq cartes en mineure), 1SA 7–10, 2SA 10–11 : +146 et −10.
+- Réponse à l'intervention sans fit : 1SA 8–12 HL, 2SA 13–14 HL, 3SA 15+ (avec arrêt) : +20 et −9.
+- Contre de réveil dès 7 H avec un tricolore : +24 et −5 ; sur un deux faible, contre de réveil dès 9 H et 2SA
+  14–17 HL : +45 et −11.
+Essayés et retirés (le moteur garde autre chose que le SEF) :
+- Intervention au palier de 1 dès 8 HL sans condition de qualité : +31 et −62.
+- Saut au palier de 3 avec sept cartes : −40 et −247.
+- Bicolores limités en perdantes selon la vulnérabilité (levées de jeu 6 / 7 / 8) : −93 et −56.
+- Contre d'appel du SEF (forme 4-3 / 4-4 en majeures, pas de courte, 19+ HL toute forme) : −11 et −103 ; le seul
+  « 19+ HL » à la place de 17+ H : −2 et −102.
+- Réponses à l'intervention du SEF (soutien jusqu'à 11, saut = barrage seul, cue-bid dès 12 avec trois atouts) : −60 et +3.
+- 1SA sans arrêt ni main régulière en réponse à l'intervention : −36 et −84.
+- Contre « mineure-majeure » sur 1SA à la place du contre punitif : avec le reste du SEF, −60 et −60 (le punitif
+  gagnait gros sur 1SA contré).
+Pas encore écrits : les texas en face de notre intervention à 1SA ; les interventions du n° 4 après 1x – passe – 1y ;
+la redemande de l'intervenant après un cue-bid ; la redemande du contreur ; le n° 3 qui parle après notre contre d'appel
+(contre punitif, cue-bid naturel) ; 2SA relais et mini cue-bid face à l'intervention sur un deux faible ; 3SA et le
+cue-bid à saut (mineure 7e maîtresse) ; 4SA bicolore mineur 6-5 sur une ouverture de 1.

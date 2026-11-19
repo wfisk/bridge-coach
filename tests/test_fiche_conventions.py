@@ -51,7 +51,7 @@ for c in F.PLUSIEURS:
     assert F.ITEMS[c]["type"] == "cases" and F.ITEMS[c]["autre"] and len(F.ITEMS[c]["defaut"]) == 1, c
 assert F.valeur("sig_entame_couleur", {"valeurs": {"sig_entame_couleur": "Appel direct"}}) == (["Appel direct"], True)
 assert F._migrer({"sig_entame_couleur": "Appel direct", "sig_defausse": "Préférence"}) == {"sig_entame_couleur": ["Appel direct"]}
-assert F.valeur("def_sa_2t")[0] == "Naturel" and F.valeur("blackwood")[0] == "5 clés 30-41" and F.valeur("drury")[0]
+assert F.valeur("def_sa_2t")[0] == "Landy" and F.valeur("blackwood")[0] == "5 clés 30-41" and F.valeur("drury")[0]
 # la feuille en noir et blanc : un choix en gras sur fond gris clair, avec ☒ ; les autres simples, avec ☐
 assert F.coche("Oui", True).startswith(f'<font backColor="{F.SURLIGNE}"><b>') and F.coche("Non", False) == "Non ☐"
 assert F.cases_de("rectif_fittee", {}, str).count("backColor") == 1 and "<b>&nbsp;NON ☒" in F.cases_de("rectif_fittee", {}, str)
@@ -101,9 +101,9 @@ json.dump({"joueurs": "MARTIN Anne et BERNARD Henri", "accords": "Landy sur 1SA"
 x = F.lire()
 assert (x["nom1"], x["prenom1"], x["nom2"], x["prenom2"]) == ("MARTIN", "Anne", "BERNARD", "Henri")
 assert "joueurs" not in x and "joueur1" not in x and "conventions" not in x
-assert x["valeurs"] == {"sig_atout": "Parité", "systeme": "SEF 2024, 1SA 14–16 H", "def_sa_2t": "Landy", "drury": False,
-                        "majeures5": "Majeure 4e"}, x["valeurs"]
-assert F.valeur("def_sa_2t") == ("Landy", True) and not F.a_verifier("drury")    # changé : plus « à vérifier »
+assert x["valeurs"] == {"sig_atout": "Parité", "systeme": "SEF 2024, 1SA 14–16 H", "drury": False,
+                        "majeures5": "Majeure 4e"}, x["valeurs"]   # Landy : le choix de Bridge Coach depuis 2026-11-19
+assert F.valeur("def_sa_2t")[0] == "Landy" and not F.a_verifier("drury")    # changé : plus « à vérifier »
 F.changer("drury", True)                                  # la première écriture range tout dans « valeurs »
 y = json.load(open(F.chemin(), encoding="utf-8"))
 assert "conventions" not in y and "joueurs" not in y and y["nom1"] == "MARTIN" and "drury" not in y["valeurs"]
@@ -139,7 +139,7 @@ for f_, txt_ in ((f, recto + verso), (e, feuille)):       # les adversaires voie
     assert "Bridge Coach" not in (pypdfium2.PdfDocument(f_).get_metadata_dict().get("Author") or "")
 for mot in ("FEUILLE DE PRÉVISIONS", "INTERVENTIONS", "FLANC", "NOM : MARTIN", "PRÉNOM : Anne", "IV : 45", "IV : 38",
             "Méthode de base : SEF 2024", "Compétition : Promotion", "Landy ☒", "14–16 H ☒", "Lavinthal ☒",
-            "NOS ACCORDS PARTICULIERS", "Landy sur 1SA", "Roudi ☐", "Michael's Cue-bid", "précisés ☒",
+            "NOS ACCORDS PARTICULIERS", "Landy sur 1SA", "Roudi ☒", "Michael's Cue-bid", "précisés ☒",
             "2SA = Les deux plus basses", "4SA sans fit", "Blackwood ☒"):
     assert mot in feuille, mot
 assert feuille.index("INTERVENTIONS") < feuille.index("FLANC")

@@ -87,10 +87,10 @@ SECTIONS = [
     ]),
     # ---------------------------------------------------------------- ENCHÈRES COMPÉTITIVES (tout est à confirmer)
     ("interventions", "Interventions", "competitives", [
-        T("int_couleur", "Interventions", "Naturelles : au palier de 1, 5 cartes et 8–16 H (10 si la couleur est pauvre) ; "
-          "au palier de 2, bonne 5e ou 6e et 11–16 H ; saut : faible, 6 cartes", True, court=True),
+        T("int_couleur", "Interventions", "Naturelles : au palier de 1, 5 cartes et 8–18 H (10 si la couleur est pauvre) ; "
+          "au palier de 2, 6 cartes et 11–18 HL (5 beaux cœurs sur 1♠, 14–18) ; saut : faible, 6 cartes", True, court=True),
         T("int_reponses", "Réponses à l'intervention", "Soutien 7–10 DH au plus bas ; cue-bid de l'ouverture : fit et 11+ ; "
-          "sans fit : SA avec arrêt ou couleur 5e", True, court=True),
+          "sans fit : 1SA 8–12 HL, 2SA 13–14 avec arrêt, ou couleur 5e", True, court=True),
         T("int_saut", "Saut dans une nouvelle couleur en réponse", "Enchère de rencontre", "ffb"),
         T("int_reveil", "En réveil, par une couleur", "Les mêmes enchères avec 3 points de moins", True),
         T("bicolores", "Bicolores 5-5", "Sur 1♣ / 1♦ : 2♦ = les majeures, 2SA = les deux couleurs libres les plus basses ; "
@@ -104,15 +104,15 @@ SECTIONS = [
         O("contre_appel", "Contre d'appel", "Court dans leur couleur, les autres couleurs", True),
         T("ca_style", "Style général", "12 H et plus, court dans leur couleur, 3 cartes au moins dans les majeures libres ; "
           "ou 17 H et plus, toute forme", True, court=True),
-        T("ca_reponses", "Réponses", "La meilleure couleur (majeure 4e d'abord) au plus bas avec 0–8 H, à saut avec 9–11, "
-          "la manche avec 12 ; 1SA avec 6–9 H et un arrêt", True),
-        T("ca_reveil", "En réveil", "3 points de moins : dès 9 H", True),
+        T("ca_reponses", "Réponses", "La meilleure couleur (majeure 4e d'abord) au plus bas avec 0–7 H, à saut avec 8–11 (4 cartes en majeure, "
+          "5 en mineure), la manche avec 12 ; 1SA 7–10 H, 2SA 10–11 H avec un arrêt", True),
+        T("ca_reveil", "En réveil", "Dès 7 H avec un tricolore court dans leur couleur, sinon dès 9 H", True),
         T("bic_reveil", "Bicolores en réveil", "Les mêmes qu'en 2e position", True),
     ]),
     ("sa_intervention", "Intervention à 1SA", "competitives", [
-        T("sa2", "En 2e position", "15–18 H, régulier, arrêt dans leur couleur", True, court=True),
+        T("sa2", "En 2e position", "16–18 HL, régulier, sans majeure 5e, arrêt dans leur couleur", False, court=True),
         T("sa2_rep", "Réponses du partenaire", "Comme sur une ouverture de 1SA : Stayman, texas", True),
-        T("sa4", "En réveil (4e position)", "12–15 H (3 points de moins)", True),
+        T("sa4", "En réveil (4e position)", "10–13 HL, l'arrêt n'est pas garanti", False),
         T("sa4_rep", "Réponses du partenaire", "Comme en 2e position", True),
     ]),
     ("quatrieme_position", "Intervention en 4e position", "competitives", [
@@ -122,16 +122,17 @@ SECTIONS = [
         T("q4_contre", "Contre", "L'ouverture et les deux autres couleurs, 4-4", "ffb"),
     ]),
     ("defense_sa", "Défense contre le SA fort", "competitives", [
-        T("dsa", "Sur leur 1SA", "Couleur 6e naturelle au palier de 2, dès 8 H ; contre = 15 H et plus, punitif", True,
+        T("dsa", "Sur leur 1SA", "2♣ Landy (les majeures, 5-4), 2SA les mineures 5-5, dès 9 H ; couleur 6e naturelle au "
+          "palier de 2, dès 8 H ; contre = 15 H et plus, punitif", True,
           court=True),
         T("dsa_contre", "Après notre 1SA contré", "Contre artificiel : on l'oublie ; contre punitif : sauvetage", "ffb"),
     ]),
     ("defense_2f", "Défense contre le deux faible", "competitives", [
-        T("d2_contre", "Contre d'appel", "Avec la majeure libre 4e, avant une couleur au palier de 3 ; en réveil dès 10 H",
+        T("d2_contre", "Contre d'appel", "Avec la majeure libre 4e, avant une couleur au palier de 3 ; en réveil dès 9 H",
           True, court=True),
-        T("d2_2sa", "2SA", "16–18 H, naturel, arrêt", "ffb"),
-        T("d2_cue", "Cue-bid de leur majeure", "Demande en priorité un arrêt pour jouer 3SA", "ffb"),
-        T("d2_4m", "4♣ / 4♦", "L'autre majeure 5e et la mineure nommée 5e", "ffb"),
+        T("d2_2sa", "2SA", "16–18 HL, régulier, arrêt ; en réveil 14–17 HL", False),
+        T("d2_cue", "Cue-bid de leur majeure", "Les deux mineures, 5-5", False),
+        T("d2_4m", "4♣ / 4♦", "L'autre majeure 5e et la mineure nommée 5e, 5 perdantes au plus", False),
         T("d2_rep", "Réponses au contre", "La meilleure couleur ; 2SA : mini cue-bid, 8 H et plus", "ffb"),
     ]),
     # ---------------------------------------------------------------- ENTAMES ET SIGNALISATION
@@ -168,7 +169,8 @@ SECTIONS = [
     ("conventions", "Conventions", "conventions", [
         O("fit_2sa", "2SA fitté", "Sur 1♥ / 1♠, même après intervention : fit par 3 cartes, 10–12 H", False, "sef"),
         O("fit_3sa", "3SA fitté", "Sur 1♥ / 1♠ : fit par 4 cartes, main régulière de manche", False),
-        O("roudi", "Roudi", "2♣ du répondant après la redemande à 1SA : demande", False),
+        O("roudi", "Roudi", "2♣ du répondant après 1m – 1M – 1SA : demande le fit de trois cartes (2♦ non, 2♥ minimum, "
+          "2♠ maximum)", True),
         O("landy", "Landy", "2♣ sur leur 1SA : les deux majeures", False),
         O("landik", "Landik", "Après 1♣ / 1♦ – passe – 1SA : 2♣ = les deux majeures", False),
         O("drury", "Drury", "2♣ fitté d'un partenaire qui a passé, sur 1♥ / 1♠ : 3 atouts (ou 4 sans courte), 11+ HLD", True),
@@ -466,12 +468,13 @@ CHOIX = {
                                  ("ROPI", "ROPI (après leur contre) : surcontre = 0 clé, passe = 1 clé"),
                                  ("DEPO", "DEPO : contre = nombre pair de clés, passe = impair")]),
     "int_saut": ("Fitté", [("Fitté", "Fitté : enchère de rencontre"), ("Barrage", None), ("Naturel, forcing", None)]),
-    "ca_reveil": ("Dès 9 H", [("Dès 7 H", "7 H et plus"), ("Dès 8 H", "8 H et plus"),
+    "ca_reveil": ("Dès 7 H", [("Dès 7 H", "Dès 7 H avec un tricolore court dans leur couleur, sinon dès 9 H"), ("Dès 8 H", "8 H et plus"),
                               ("Dès 9 H", "3 points de moins : dès 9 H")]),
     "bic_reveil": ("Oui", [("Oui", "Les mêmes qu'en 2e position"), ("Non", "Pas de bicolores en réveil")]),
-    "sa2": ("15–18 H", [("15–18 H", "15–18 H, régulier, arrêt dans leur couleur"),
-                        ("16–18 H", "16–18 H, régulier, arrêt dans leur couleur")]),
-    "sa4": ("12–15 H", [("10–12 H", None), ("12–15 H", "12–15 H (3 points de moins)"), ("10–13 HL", None)]),
+    "sa2": ("16–18 HL", [("15–18 H", "15–18 H, régulier, arrêt dans leur couleur"),
+                        ("16–18 HL", "16–18 HL, régulier, sans majeure 5e, arrêt dans leur couleur")]),
+    "sa4": ("10–13 HL", [("10–12 H", None), ("12–15 H", "12–15 H (3 points de moins)"),
+                         ("10–13 HL", "10–13 HL, l'arrêt n'est pas garanti")]),
     "sa4_rep": ("Comme en 2e position", [("Comme en 2e position", None), ("Minou-Matou", None), ("Naturelles", None)]),
     "q4_cue": ("5-5 constructif", [("5-5 constructif", "Bicolore 5-5 constructif des deux autres couleurs"),
                                    ("Naturel", None)]),
@@ -480,8 +483,9 @@ CHOIX = {
     "q4_contre": ("4-4", [("4-4", "L'ouverture et les deux autres couleurs, 4-4"), ("Punitif", None)]),
     "dsa_contre": ("Contre artificiel : on l'oublie", [("Contre artificiel : on l'oublie", "Contre artificiel : on "
                    "l'oublie ; contre punitif : sauvetage"), ("Système de sauvetage", "Système de sauvetage à convenir")]),
-    "d2_2sa": ("16–18 H", [("15–18 H", "15–18 H, naturel, arrêt"), ("16–18 H", "16–18 H, naturel, arrêt")]),
-    "d2_cue": ("Demande d'arrêt", [("Demande d'arrêt", "Demande en priorité un arrêt pour jouer 3SA"),
+    "d2_2sa": ("16–18 HL", [("15–18 H", "15–18 H, naturel, arrêt"), ("16–18 HL", "16–18 HL, régulier, arrêt ; en réveil 14–17 HL")]),
+    "d2_cue": ("Bicolore mineur", [("Bicolore mineur", "Les deux mineures, 5-5"),
+                                   ("Demande d'arrêt", "Demande en priorité un arrêt pour jouer 3SA"),
                                    ("Bicolore", "Bicolore : l'autre majeure et une mineure")]),
     "d2_4m": ("Autre majeure + mineure", [("Autre majeure + mineure", "L'autre majeure 5e et la mineure nommée 5e"),
                                           ("Naturel", None)]),
@@ -551,7 +555,7 @@ CHOIX = {
     "bic_maj_3t": ("♦ et l'autre majeure", [("♦ et l'autre majeure", "Carreau et l'autre majeure, 5-5, 8–18 H"),
                                             ("Naturel", "Naturel, barrage")]),
     "def_sa_contre": ("Punitif", [("Punitif", "Contre punitif, 15 H et plus")]),
-    "def_sa_2t": ("Naturel", [("Landy", "Landy : les deux majeures"), ("Naturel", "Naturel, 6 cartes, dès 8 H")]),
+    "def_sa_2t": ("Landy", [("Landy", "Landy : les deux majeures, 5-4 au moins, dès 9 H"), ("Naturel", "Naturel, 6 cartes, dès 8 H")]),
     "def_sa_2k": ("Naturel", [("Naturel", "Naturel, 6 cartes, dès 8 H")]),
     "def_sa_2m": ("Naturel", [("Naturel", "Naturels, 6 cartes, dès 8 H")]),
     "reveil_2sa": ("17–19 H", [("17–19 H", "17–19 H, régulier")]),

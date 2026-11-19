@@ -69,11 +69,23 @@ def couleurs_nommees(encheres, donneur):
 _ENTAMES = {}
 
 
-def regles_entame(nom="sef-2024"):
+def regles_entame(nom=None):
     """Les règles de systems/<nom>/entames.yaml (src/entames.py), ou None si le fichier ne peut
-    pas être lu (le programme garde alors son code, entame_code)."""
+    pas être lu (le programme garde alors son code, entame_code). Sans nom : le système des robots ; un système
+    sans entames.yaml prend celles de sa base (« base: » de son regles.yaml)."""
+    if nom is None:
+        try:
+            from encheres import systeme_actif
+            nom = systeme_actif()
+        except Exception:
+            nom = "sef-2024"
     if nom not in _ENTAMES:
         racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if not os.path.isfile(os.path.join(racine, "systems", nom, "entames.yaml")):
+            from regles import systemes
+            base = next((b for n, _t, b, _p in systemes() if n == nom), "") or "sef-2024"
+            _ENTAMES[nom] = regles_entame(base) if base != nom else None
+            return _ENTAMES[nom]
         try:
             from entames import charger
             _ENTAMES[nom] = charger(os.path.join(racine, "systems", nom, "entames.yaml"))

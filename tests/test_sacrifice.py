@@ -10,7 +10,7 @@ def enc(mains, vul, donneur="N"):
 
 # 1. Un manuel : Nord barre à 3♠ (sept piques, deux chicanes), Ouest dit 4♥ ; Sud, non vulnérable contre vulnérables,
 #    deux piques et rien en défense : 4♠, et les adversaires le contrent.
-M = {"N": "AV98532 - - RVX965", "E": "X6 A932 AR942 A3", "S": "D4 8754 D763 872", "O": "R7 RDVX6 VX85 D4"}
+M = {"N": "AV98532 - - RVX965", "E": "X6 A932 AR94 A43", "S": "D4 8754 D763 872", "O": "R7 RDVX6 VX852 D"}
 r = enc(M, "E-O")
 assert r["encheres"][:8] == ["3♠", "contre", "passe", "4♥", "passe", "passe", "4♠", "contre"], r["encheres"]
 assert r["contrat"] == "4♠X" and r["declarant"] == "N"

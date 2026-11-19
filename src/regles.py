@@ -396,7 +396,7 @@ class Regle:
     def __init__(self, enchere, condition, montre, source, note, ligne):
         self.enchere, self.condition, self.montre = enchere, condition, montre
         self.source, self.note, self.ligne = source, note, ligne
-        self.nature = ""; self.atout = None; self.alerte = False
+        self.nature = ""; self.atout = None; self.alerte = False; self.nom = ""
 
 
 def palier_libre(d, dernier):
@@ -496,7 +496,7 @@ def charger(chemin):
     definitions({j: ["♣"] for j in JOUEURS}, "", -1)    # vérifie la syntaxe une fois
     sequences, exemples, origine, generalite = {}, [], {}, {}
     for cle in doc:
-        if cle in ("systeme", cle_defs): continue
+        if cle in ("systeme", cle_defs) or cle in INFOS_SYSTEME: continue
         ligne_cle = doc.lc.key(cle)[0] + 1
         # « a | b » : plusieurs clés ; chacune garde son degré de généralité (le nombre de 1x, 1M, 1N qu'elle déplie)
         cles = [(x, len(re.findall(r"[1-7][MNx]", k))) for k in str(cle).split("|") for x in deplier(k.strip())]
@@ -541,13 +541,40 @@ def charger(chemin):
                 si = remplacer_joueurs(v.get("si") or "", roles, ligne, cle_reelle)
                 r = Regle(e, Condition(si, defs or {}, ligne, atout, dernier), v.get("montre", ""),
                           v.get("source", "SEF"), v.get("note"), ligne)
-                r.nature = v.get("nature", "")
+                r.nature = v.get("nature", ""); r.nom = v.get("nom", "")
                 r.alerte = v.get("alerte") in (True, "oui")         # une enchère que le partenaire alerte
                 r.atout = _couleur(remplacer_joueurs(v["atout"], roles, ligne, cle_reelle)) if v.get("atout") else None
                 regles.append(r)
             sequences[seq] = regles
             exemples.append((seq, exs))
-    return Systeme(doc.get("systeme"), sequences, exemples, chemin)
+    base = doc.get("base")
+    if base:                                              # un système bâti sur un autre : ses sections remplacent
+        b = charger(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(chemin))), str(base), "regles.yaml"))
+        exemples = [x for x in b.exemples if x[0] not in sequences] + exemples   # celles de la base, les autres restent
+        sequences = {**b.sequences, **sequences}
+    s = Systeme(doc.get("systeme"), sequences, exemples, chemin)
+    s.titre = str(doc.get("titre") or doc.get("systeme") or ""); s.base = str(base or ""); s.pret = doc.get("pret", True) is not False \
+        and str(doc.get("pret", "oui")) != "non"
+    return s
+
+
+INFOS_SYSTEME = ("base", "titre", "pret")                  # en tête d'un regles.yaml : pas des séquences
+
+
+def systemes(racine=None):
+    """[(nom du dossier, titre, base, prêt)] : les systèmes de systems/ qui ont un regles.yaml. Lu sans compiler les
+    règles (l'en-tête seulement) : rapide."""
+    racine = racine or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "systems")
+    out = []
+    for nom in sorted(os.listdir(racine)):
+        f = os.path.join(racine, nom, "regles.yaml")
+        if not os.path.isfile(f): continue
+        tete = {}
+        for ligne in open(f, encoding="utf-8"):
+            m = re.match(r"^(systeme|titre|base|pret)\s*:\s*(.*?)\s*$", ligne)
+            if m: tete[m[1]] = m[2].strip("\"'")
+        out.append((nom, tete.get("titre") or tete.get("systeme") or nom, tete.get("base", ""), tete.get("pret", "oui") != "non"))
+    return out
 
 
 if __name__ == "__main__":

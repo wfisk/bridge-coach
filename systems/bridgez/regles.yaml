@@ -1,0 +1,9 @@
+# BRIDGEZ (Université du Bridge) : le système qu'apprennent les débutants, aux enchères plus directes.
+# Bâti sur le SEF 2024 (« base: ») : une section écrite ici remplace celle du SEF pour la même séquence ; tout ce qui
+# n'est pas écrit ici se joue comme le SEF 2024. Les entames : celles du SEF tant qu'il n'y a pas d'entames.yaml ici.
+# « pret: non » : pas encore proposé aux joueurs (Réglages) ; il le sera quand ses différences seront écrites d'après le
+# livre BRIDGEZ (voir README.md). Ne rien inventer : chaque section cite sa page.
+systeme: bridgez
+titre: "BRIDGEZ (Université du Bridge)"
+base: sef-2024
+pret: non

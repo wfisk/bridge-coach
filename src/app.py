@@ -6204,7 +6204,10 @@ def precharger():
     """Le système d'enchères (regles.yaml : 2 à 3 secondes à lire) chargé dès l'ouverture, pendant que vous regardez la
     première page : le premier clic sur Jouer n'attend plus."""
     try:
-        from encheres import systeme
+        from encheres import systeme, choisir_systeme
+        from regles import systemes
+        nom = lire_etat().get("systeme_robots")             # un autre système choisi (prêt : « pret: oui »), sinon le SEF 2024
+        if nom and any(n == nom and pret for n, _t, _b, pret in systemes()): choisir_systeme(nom)
         systeme()
     except Exception:
         pass                                               # il sera lu au premier besoin, comme avant

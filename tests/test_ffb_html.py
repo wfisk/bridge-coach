@@ -33,24 +33,25 @@ def main(siege):
     return out
 
 
-def ligne(k, ns, eo, contrat, decl, entame, res, sns, seo, note):
+def ligne(k, ns, eo, contrat, decl, entame, res, sns, seo, note, n=1, noms=True):
     niv, den, x = contrat if contrat else (None, None, "")
     c = "PASSE" if not contrat else f'<ffb-contract><span><span>{niv}</span>{icone(den)}<span> {x}</span></span></ffb-contract>'
     e = "—" if not entame else f'<ffb-opening-lead><span>{icone(entame[0])}<span> {entame[1:]} </span></span></ffb-opening-lead>'
     td = lambda i, v: f'<td data-ui-id="teams-board-scores-table-row-{k}-{i}" id="{i}">{v}</td>'
-    return (f'<tr data-ui-id="teams-board-scores-table-row-{k}" id="{100 + k}">' + td("table", "<div> </div>") + td("nsTeam", ns)
-            + td("ewTeam", eo) + td("contract", c) + td("declarer", decl) + td("lead", e) + td("result", res)
+    equipes = td("nsTeam", ns) + td("ewTeam", eo) if noms else ""    # sans noms : les pages depuis le 2026-11-19
+    return (f'<tr data-ui-id="teams-board-scores-table-row-{k}" id="{100 * n + k}">' + td("table", "<div> </div>") + equipes
+            + td("contract", c) + td("declarer", decl) + td("lead", e) + td("result", res)
             + td("nsScore", sns) + td("ewScore", seo) + td("nsNote", note) + td("ewNote", "") + "</tr>")
 
 
-def donne(n, donneur, vul, lignes, optimum):
+def donne(n, donneur, vul, lignes, optimum, noms=True):
     grille = "".join(f'<tr data-ui-id="optimum-score-table-row-{i}"><td id="declarer"> {s} </td>'
                      + "".join(f'<td id="{d}"> {v} </td>' for d, v in zip(("C", "D", "H", "S", "NT"), vals)) + "</tr>"
                      for i, (s, vals) in enumerate(optimum))
     return (TETE + f'<h5 data-ui-id="board-number"> {n} </h5><p data-ui-id="dealer"> {donneur} </p>'
             f'<p data-ui-id="vulnerability"> {vul} </p>' + "".join(main(s) for s in "NESW")
             + '<table data-ui-id="teams-board-scores-table"><tbody data-ui-id="teams-board-scores-table-body">'
-            + "".join(ligne(k, *l) for k, l in enumerate(lignes)) + "</tbody></table>"
+            + "".join(ligne(k, *l, n=n, noms=noms) for k, l in enumerate(lignes)) + "</tbody></table>"
             + f'<table data-ui-id="optimum-score-table"><tbody data-ui-id="optimum-score-table-body">{grille}</tbody></table>' + FIN)
 
 
@@ -61,6 +62,15 @@ def classement(rangs):
                    f'<td data-ui-id="ranking-row-{k}-sessionScore"> {pct}&nbsp;% </td></tr></a>'
                    for k, (r, pos, a, b, pct) in enumerate(rangs))
     return TETE + f'<table><tbody data-ui-id="ranking-body">{rows}</tbody></table>' + FIN
+
+
+def page_paire(pos, joueurs, rang, pct, ids):
+    """La page d'une paire : sa position, son rang, ses joueurs et sa feuille de route (les id des lignes jouées)."""
+    a, b = joueurs.split(" - ")
+    return (TETE + f'<ffb-competitions-results-team-chapo><p>Position : {pos} • Rang : {rang} avec {pct} %</p>'
+            f'<ffb-team-players><span> {a} </span><span> - {b} </span></ffb-team-players></ffb-competitions-results-team-chapo>'
+            '<table><tbody data-ui-id="roadmap-table-body">' + "".join(f'<tr id="{i}"><td> x </td></tr>' for i in ids)
+            + "</tbody></table>" + FIN)
 
 
 NS1, NS2 = "DURAND Alice - MARTIN Paul", "PETIT Claire - LE ROUX Jean-Marc"
@@ -109,6 +119,27 @@ assert any("Donne 2 : double mort différent de la page de la FFB (N SA)" in a f
 
 from bws_extract import JOUEURS
 assert JOUEURS["1NS"] == ["DURAND Alice", "MARTIN Paul"]                  # les noms complets, comme pour un .bws
+
+# les pages des donnes sans les noms des paires (la FFB, depuis le 2026-11-19) : les pages de paire disent qui a joué
+d2_ = tempfile.mkdtemp()
+L1 = [(NS1, EO1, ("7", "NT", ""), "N", "S10", "=", "1520", "—", "100,00 %"),
+      (NS2, EO2, ("6", "C", "X"), "S", "HV", "+1", "1190", "—", "0 %")]
+L2 = [(NS2, EO2, None, "", "", "", "", "", "0 %"), (NS1, EO2, ("7", "S", ""), "N", "D2", "=", "2210", "—", "100 %")]
+sans = {"donne-01.html": donne(1, "Nord", "Personne", L1, OPT, noms=False),
+        "donne-02.html": donne(2, "Est", "Nord - Sud", L2, OPT, noms=False),
+        "ns1.html": page_paire("NS1", NS1, 1, "75,00", [100, 201]), "ns2.html": page_paire("NS2", NS2, 2, "25,00", [101, 200]),
+        "eo1.html": page_paire("EO1", EO1, 2, "25,00", [100, 101]), "eo2.html": page_paire("EO2", EO2, 1, "75,00", [200, 201])}
+for f, h in sans.items(): open(os.path.join(d2_, f), "w", encoding="utf-8").write(h)
+s2 = ffb_html.seance(os.path.join(d2_, "donne-01.html"))
+assert [len(x["tables"]) for x in s2["donnes"]] == [2, 2] and s2["session"]["mitchell"]
+t = {x["table"]: x for x in s2["donnes"][1]["tables"]}
+assert t[1]["paire_ns"] == "1NS" and t[1]["paire_eo"] == "2EO" and t[1]["contrat"] == "7♠" and t[2]["contrat"] == "passe"
+assert s2["paires"]["1EO"]["nom"] == "HB/LN" and s2["paires"]["2EO"]["rang"] == 1
+os.remove(os.path.join(d2_, "eo2.html"))                  # une page de paire manque : on le dit
+try:
+    ffb_html.seance(os.path.join(d2_, "donne-01.html")); raise AssertionError
+except ffb_html.ErreurFFB as ex:
+    assert "pages de paire" in str(ex)
 
 try:
     ffb_html.pages_du_tournoi(os.path.join(d, "autre.html")); raise AssertionError

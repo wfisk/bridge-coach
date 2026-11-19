@@ -204,9 +204,13 @@ def lire_donne(racine):
     corps = racine.ui("teams-board-scores-table-body")
     for tr in corps.tous(lambda e: e.tag == "tr"):
         cases = {td.attrs.get("id"): td for td in tr.tous(lambda e: e.tag == "td")}
-        if "nsTeam" not in cases: continue
+        if "contract" not in cases: continue
         dec = cases["declarer"].texte().strip().upper()
-        lignes.append(dict(id=tr.attrs.get("id"), ns=noms_equipe(cases["nsTeam"]), eo=noms_equipe(cases["ewTeam"]),
+        # depuis le 2026-11-19, la FFB ne met plus les noms dans la grille d'une donne (un bouton à la place) :
+        # lire_pages les reprend des pages de paire, par l'id de la ligne
+        lignes.append(dict(id=tr.attrs.get("id"),
+                           ns=noms_equipe(cases["nsTeam"]) if "nsTeam" in cases else None,
+                           eo=noms_equipe(cases["ewTeam"]) if "ewTeam" in cases else None,
                            contrat=contrat(cases["contract"]), declarant=dec[:1] if dec[:1] in "NESO" else "",
                            entame=entame(cases["lead"]), resultat=cases["result"].texte().strip(),
                            score_ns=nombre(cases["nsScore"].texte()), score_eo=nombre(cases["ewScore"].texte()),
@@ -263,6 +267,23 @@ def lire_pages(chemin):
             if rang: p["rang"] = rang
             p["ids"].update(ids)
     if not donnes: raise ErreurFFB("Aucune page de donne (« Donne n°… ») de ce tournoi dans le dossier.")
+    # les lignes sans noms (pages de la FFB depuis le 2026-11-19) : la paire N-S et la paire E-O dont la page de paire
+    # cite l'id de la ligne
+    par_id = {}
+    for pos, p in paires.items():
+        for i in p["ids"]: par_id.setdefault(i, {})[pos[:2]] = p["noms"]
+    manque = 0
+    for d in donnes.values():
+        for l in d["lignes"]:
+            for cote, k in (("ns", "NS"), ("eo", "EO")):
+                if l[cote] is None: l[cote] = par_id.get(l["id"], {}).get(k)
+            if l["ns"] is None or l["eo"] is None: manque += 1
+        d["lignes"] = [l for l in d["lignes"] if l["ns"] is not None and l["eo"] is not None]
+    if manque and not any(d["lignes"] for d in donnes.values()):
+        raise ErreurFFB("Les pages des donnes ne disent plus qui a joué : enregistrez aussi les pages de chaque paire "
+                        "(NS1, EO1…), puis recommencez.")
+    if manque:
+        raise ErreurFFB(f"{manque} résultat(s) sans paire : il manque des pages de paire (NS1, EO1…) dans le dossier.")
     return ref, club, titre, [donnes[n] for n in sorted(donnes)], paires
 
 

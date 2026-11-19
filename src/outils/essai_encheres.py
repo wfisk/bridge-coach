@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """Essai du moteur d'enchères sur une séance : contrat atteint, double mort, écart au par.
 
-Usage : python3 -I src/essai_encheres.py seances/AAAA-MM/<nom>.bc.json [n° de donne…]
+Usage : python3 -I src/outils/essai_encheres.py seances/AAAA-MM/<nom>.bc.json [n° de donne…]
 """
 import sys, os, json
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # src/ (les outils sont dans src/outils/)
+sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 from encheres import encherir
 from bws_extract import score, vul_of, imp
 

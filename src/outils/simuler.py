@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Fabrique une séance simulée (Mitchell, N tables) pour essayer le rapport sans vrai tournoi.
 
-Usage : python3 -I src/simuler.py source.bws N sortie.json
+Usage : python3 -I src/outils/simuler.py source.bws N sortie.json
 
 Les mains et le double mort viennent du .bws source ; le mouvement, les joueurs (noms inventés),
 les contrats, les résultats, les entames et les enchères sont simulés. La sortie contient les
@@ -9,7 +9,8 @@ mêmes tables que le .bws (RoundData, PlayerNumbers, ReceivedData…) au format 
 rapport.sh l'accepte comme un .bws :  ./rapport.sh sortie.json
 """
 import sys, os, json, random, datetime
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # src/ (les outils sont dans src/outils/)
+sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 from bws_extract import construire, lire
 from encheres import encherir
 

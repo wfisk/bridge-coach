@@ -6,7 +6,7 @@ RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(RACINE, "src"))
 import regles, encheres as E
 from encheres.main import Main
-import banc_encheres
+from outils import banc_encheres
 
 noms = {n: (t, b, p) for n, t, b, p in regles.systemes()}
 assert noms["sef-2024"] == ("SEF 2024", "", True) and noms["bridgez"][1:] == ("sef-2024", False)

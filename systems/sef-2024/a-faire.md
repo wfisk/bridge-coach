@@ -233,7 +233,7 @@ faible : +17 puis −15 IMP sur deux lots de 20 000 (neutre), bien que le 6♠ d
 ## Fit différé, contrôles et Blackwood (2026-11-12)
 Donne 17 du 12/11 : après 1♥ – 2♦ (fit différé, trois cœurs) – 2SA, le moteur nommait un contrôle (3♦ « fit à ♥,
 contrôle à ♦ ») qu'aucun partenaire de club ne lirait ainsi ; il devrait fixer l'atout (3♥, forcing) d'abord.
-Remesuré et allumé le 2026-11-17 (`DIFFERE_PAS_ETABLI`, src/banc_encheres.py, après l'avis de l'expert sur la donne 5 du 17/11) : +8 et +37 IMP sur deux lots de 20 000 donnes (124 et 97 séquences changées). Avant cela, essayé et éteint : un fit montré seulement par un fit différé n'est pas établi, d'où 3♥ forcing
+Remesuré et allumé le 2026-11-17 (`DIFFERE_PAS_ETABLI`, src/outils/banc_encheres.py, après l'avis de l'expert sur la donne 5 du 17/11) : +8 et +37 IMP sur deux lots de 20 000 donnes (124 et 97 séquences changées). Avant cela, essayé et éteint : un fit montré seulement par un fit différé n'est pas établi, d'où 3♥ forcing
 avant les contrôles : +15 puis −54 IMP sur deux lots de 20 000 donnes (environ 110 séquences changées par lot) : neutre
 à négatif, les suites (signature à la manche du partenaire minimum) perdent des chelems. Les enchères recommandées de
 l'expert, elles, doivent rester lisibles : la consigne le demande maintenant (règle 1).

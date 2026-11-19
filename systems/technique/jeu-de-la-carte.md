@@ -73,7 +73,7 @@ double mort. Le déclarant simulé décide alors du plan :
   devinées juste, et sembleraient gratuites. Ici, chaque décision se prend sur des mondes variés.
 - Limites : la défense parfaite est sévère ; le déclarant suppose qu'il pourra deviner plus tard,
   ce qui le rend un peu optimiste ; 40 donnes donnent un ordre de grandeur (±15 points), pas une précision.
-- Banc d'essai sur la donne elle-même : `src/essai_jeu.py`. Deux séances : 45 contrats gagnés sur 52 possibles,
+- Banc d'essai sur la donne elle-même : `src/outils/essai_jeu.py`. Deux séances : 45 contrats gagnés sur 52 possibles,
   0,7 levée sous le double mort. 150 donnes nouvelles (`--aleatoire`) : 89 sur 107, 0,8 levée sous le double
   mort ; le taux annoncé tient (annoncé 8 %, réel 15 % ; 36 %, 28 % ; 62 %, 57 % ; 81 %, 67 % ; 98 %, 98 %).
 

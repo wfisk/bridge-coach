@@ -10,7 +10,7 @@ on imagine des donnes complètes et on les pondère :
     chose) divise le poids ;
   - l'entame : la règle d'entame (entames.yaml) appliquée à la main imaginée de l'entameur doit donner la carte jouée.
 On en tire, pour chaque joueur caché, ses points H, la longueur de chaque couleur et la place des honneurs (A R D V X 9).
-Mesure : src/essai_modele.py, sur des donnes tirées au hasard."""
+Mesure : src/outils/essai_modele.py, sur des donnes tirées au hasard."""
 import os, random, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import encheres, jeu, jouer

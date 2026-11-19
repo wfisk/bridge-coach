@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Banc d'essai du déclarant simulé :
-    .venv/bin/python -I src/essai_jeu.py <nom>.bc.json <analyse.json> [k]
-    .venv/bin/python -I src/essai_jeu.py --aleatoire <nombre de donnes> [graine]
+    .venv/bin/python -I src/outils/essai_jeu.py <nom>.bc.json <analyse.json> [k]
+    .venv/bin/python -I src/outils/essai_jeu.py --aleatoire <nombre de donnes> [graine]
 
 Chaque contrat est joué sur la donne réelle par le déclarant simulé (lignes.py), qui ne la voit pas, et
 comparé au double mort. --aleatoire : donnes nouvelles, enchères du moteur, entame aux règles, et le taux
@@ -9,7 +9,8 @@ annoncé par analyser() comparé au résultat réel. À relancer après tout cha
 """
 import json, sys, os, random
 from multiprocessing import Pool
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # src/ (les outils sont dans src/outils/)
+sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 
 
 def un(arg):

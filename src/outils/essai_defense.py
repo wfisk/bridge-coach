@@ -4,7 +4,7 @@ un déclarant au double mort (essai_modele.banc_defense) ne peut montrer ni la v
 qui trompe ; celui-ci le peut. Mêmes donnes au hasard, mêmes enchères du moteur, mêmes tirages : chaque variante de la
 défense joue la même donne contre le même déclarant.
 
-    .venv/bin/python -I -X utf8 src/essai_defense.py 200 [graine] [variantes…]
+    .venv/bin/python -I -X utf8 src/outils/essai_defense.py 200 [graine] [variantes…]
 
 Variantes : sans (ni signal ni demande suivie), signaux (carte.SIGNAUX), modele = base (signaux et le modèle des mains
 cachées, carte.MODELE), puis chacun des ajouts du 2026-11-11 sur la base : habitudes (carte.HABITUDES), sequence
@@ -12,7 +12,8 @@ cachées, carte.MODELE), puis chacun des ajouts du 2026-11-11 sur la base : habi
 mieux pour la défense) et les chutes, donne par donne, puis l'écart moyen de chaque variante à la première.
 """
 import os, random, sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # src/ (les outils sont dans src/outils/)
+sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 
 NEUF_OFF = {"HABITUDES": False, "SEQUENCE": False, "PREF_COUPE": False, "MONDES_DIFFICILE": 16,
             "modele.LIRE_HONNEURS": False}

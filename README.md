@@ -219,13 +219,13 @@ Les enchères, les entames et le jeu de la carte sont décrits dans `systems/` :
 
 Ces fichiers se modifient à la main ; leurs exemples sont vérifiés à chaque lecture, et une erreur est signalée
 avec son numéro de ligne. Une règle n'est gardée que si elle gagne sur des donnes tirées au hasard, pas seulement
-sur les séances du club : `src/banc_encheres.py` enchérit les mêmes donnes avant et après un changement et juge au
+sur les séances du club : `src/outils/banc_encheres.py` enchérit les mêmes donnes avant et après un changement et juge au
 double mort, en IMP, chaque séquence qui change (environ 15 secondes pour 20 000 donnes) :
 
 ```
-.venv/bin/python -I -X utf8 src/banc_encheres.py avant.json 20000 11
-.venv/bin/python -I -X utf8 src/banc_encheres.py apres.json 20000 11      # après le changement
-.venv/bin/python -I -X utf8 src/banc_encheres.py --comparer avant.json apres.json
+.venv/bin/python -I -X utf8 src/outils/banc_encheres.py avant.json 20000 11
+.venv/bin/python -I -X utf8 src/outils/banc_encheres.py apres.json 20000 11      # après le changement
+.venv/bin/python -I -X utf8 src/outils/banc_encheres.py --comparer avant.json apres.json
 ```
 
 `systems/sef-2024/a-faire.md` garde le journal des essais : ce qui a été mesuré, gardé ou retiré.

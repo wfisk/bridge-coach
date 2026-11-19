@@ -3,15 +3,16 @@
 et chaque séquence qui change jugée au double mort, en IMP pour le camp dont l'enchère change. Un outil de
 développeur, lancé à la main (la règle du projet : un changement n'est gardé que s'il gagne sur des donnes neuves).
 
-    .venv/bin/python -I -X utf8 src/banc_encheres.py avant.json 20000 11            # enchérit, garde les contrats
-    .venv/bin/python -I -X utf8 src/banc_encheres.py apres.json 20000 11 DIFFERE_PAS_ETABLI=True
-    .venv/bin/python -I -X utf8 src/banc_encheres.py --comparer avant.json apres.json
+    .venv/bin/python -I -X utf8 src/outils/banc_encheres.py avant.json 20000 11            # enchérit, garde les contrats
+    .venv/bin/python -I -X utf8 src/outils/banc_encheres.py apres.json 20000 11 DIFFERE_PAS_ETABLI=True
+    .venv/bin/python -I -X utf8 src/outils/banc_encheres.py --comparer avant.json apres.json
 
 Un drapeau du moteur se change en ajoutant NOM=valeur ; une règle de regles.yaml, en relançant après l'avoir écrite.
 """
 import json, multiprocessing, os, random, sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # src/ (les outils sont dans src/outils/)
+sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 RANGS = "AKQJT98765432"
 FR = str.maketrans({"K": "R", "Q": "D", "J": "V", "T": "X"})
 ROT = "NESO"

@@ -3,12 +3,12 @@
 
 Un outil de développeur, lancé à la main. Il faut :
   1. un dossier de démonstration, avec des joueurs inventés (jamais vos vraies séances : les images vont sur GitHub) :
-       .venv/bin/python -I src/simuler.py --aleatoire 6 <démo>/tournoi-du-club.json 24 2026
+       .venv/bin/python -I src/outils/simuler.py --aleatoire 6 <démo>/tournoi-du-club.json 24 2026
        BRIDGE_COACH_DONNEES=<démo> .venv/bin/python -I src/rapport.py <démo>/tournoi-du-club.json --importer "--titre=Tournoi du club (exemple)"
        puis l'analyse (--analyse-seule) et les rapports (--rapports), « Vous êtes » MARTIN Anne dans <démo>/etat.json ;
   2. l'application lancée sur ce dossier, dans le navigateur :
        BRIDGE_COACH_DONNEES=<démo> BRIDGE_COACH_PORT=8125 .venv/bin/python -I -X utf8 src/app.py --navigateur
-  3. puis : .venv/bin/python -I -X utf8 src/captures_aide.py <démo> [nom de capture…]
+  3. puis : .venv/bin/python -I -X utf8 src/outils/captures_aide.py <démo> [nom de capture…]
 
 Google Chrome, sans fenêtre (--headless), ouvre chaque page à 1200×850, deux fois plus fin (deviceScaleFactor 2), sur
 la page voulue (etat.json « page », comme au lancement), clique ce qu'il faut et enregistre l'image. Le chemin du dossier
@@ -18,7 +18,7 @@ import asyncio, json, os, shutil, subprocess, sys, tempfile, time, urllib.reques
 
 import websockets
 
-ICI = os.path.dirname(os.path.abspath(__file__))
+ICI = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # src/ (l'outil est dans src/outils/)
 SORTIE = os.path.join(os.path.dirname(ICI), "help", "images")
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 PORT_APP = int(os.environ.get("BRIDGE_COACH_PORT") or 8125)

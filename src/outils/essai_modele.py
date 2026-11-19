@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Banc d'essai du modèle des mains cachées (modele.py) : .venv/bin/python -I src/essai_modele.py [donnes] [graine]
+"""Banc d'essai du modèle des mains cachées (modele.py) : .venv/bin/python -I src/outils/essai_modele.py [donnes] [graine]
 
 Des donnes tirées au hasard ; les enchères du moteur ; le jeu de la carte joué au hasard parmi les cartes légales
 (seules comptent ici les cartes vues et les chicanes). À quatre moments (après les enchères, après l'entame,
@@ -11,7 +11,8 @@ vraie donne :
 Trois versions : « hasard » (aucune information), « filtre » (le préfiltre seul, comme les simulations actuelles)
 et « modèle » (enchères refaites par le moteur, entame)."""
 import os, random, sys, time
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # src/ (les outils sont dans src/outils/)
+sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 import carte, encheres, jouer
 from jeu import COULEURS, ORDRE, ROT, PTS, LHO, PART
 from modele import Modele, SUIVIS

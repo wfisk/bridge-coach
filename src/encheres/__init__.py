@@ -350,7 +350,7 @@ SOUTIEN_LENT = True            # fit et chelem possible : soutien forcing au pal
 # partenaire, qui a entendu des carreaux : avant de nommer un contrôle, on fixe l'atout au palier de 3, forcing (soutien
 # lent). Sinon le moteur nommait un contrôle (1♥ – 2♦ – 2SA – 3♦ « fit à ♥, contrôle à ♦ ») qu'aucun partenaire ne
 # lirait ainsi (donne 17 du 12/11/2026, l'utilisateur).
-DIFFERE_PAS_ETABLI = True       # le 2026-11-12 : +15 et -54 IMP, éteint ; remesuré le 2026-11-17 avec src/banc_encheres.py
+DIFFERE_PAS_ETABLI = True       # le 2026-11-12 : +15 et -54 IMP, éteint ; remesuré le 2026-11-17 avec src/outils/banc_encheres.py
 # (l'avis de l'expert, donne 5 du 17/11 : 1♠ – 2♣ – 2♦ – 3♠, l'atout avant les contrôles) : +8 et +37 IMP sur 2 × 20 000
 # donnes (124 et 97 séquences changées) : allumé. Un joueur de club lit 2♥ après 1♠ – 2♣ – 2♦ comme la 4e couleur.
 # Le camp du joueur humain de Jouer (arret) le suit de toute façon (son robot partenaire, et son Indice).
@@ -530,7 +530,7 @@ def punir(m, s, a, hist, infos, etat):
 # + les leurs, montrés, 8 au moins) donne nos levées s'ils gagnent juste leur contrat ; nos levées de défense (les miennes,
 # et celles que promettent les points montrés par le partenaire) disent s'ils le gagnent vraiment. Jamais vulnérable contre
 # non vulnérable. Les adversaires contrent un contrat qui passe au-dessus de leur manche (CONTRE_SACRIFICE).
-SACRIFICE = True               # (à confirmer) 2026-11-18, src/banc_encheres.py, 4 × 20 000 donnes : +494 / +356 / +521 / +383 IMP
+SACRIFICE = True               # (à confirmer) 2026-11-18, src/outils/banc_encheres.py, 4 × 20 000 donnes : +494 / +356 / +521 / +383 IMP
                                # (les sacrifices seuls +13 / +81 / +85 / +24 sur 83 donnes, 13 fantômes ; le contre +1 551)
 SACRIFICE_FIT = 9              # nos atouts connus (les miens + ceux montrés par le partenaire)
 SACRIFICE_EGAL = "nv"          # aussi à vulnérabilité égale : True ; seulement tous non vulnérables : "nv" (tous vulnérables : −86 IMP)

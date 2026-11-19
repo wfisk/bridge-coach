@@ -251,7 +251,9 @@ A Python program that opens a Bridgemate `.bws` file and produces a PDF report.
                         The same at-the-table idea for the other themes (2026-11-18; mondes_vus: the deciding side's or player's
                         hands kept, the rest imagined from the auction; levees_dm): Sacrifice = the robots' doubled sacrifice over
                         their game, or the robots let them play it while our side named a 9+ card suit; their contract makes in
-                        60 %+ and our sacrifice (cheapest level, doubled) costs less on average (the old par test: none of 20
+                        60 %+ and our sacrifice (cheapest level, doubled) costs less on average by GAIN_SACRIFICE 100 points or more, our side
+                        not vulnerable as the robots' rule (2026-11-19: a « Tous » board is skipped at once, and placer moves Sacrifice deals
+                        off « Tous » boards when another theme can take them; 20 deals in 13 s) (the old par test: none of 20
                         deals had a sacrifice in the auction; quick filter ≤ 17 H and a 9-card fit); Partielle disputée = both
                         sides' last decision right on average in IMP (play c rather than defend their last contract; they defend
                         rather than bid one more; old: 8 of 20 kept); Entame décisive = the rules' lead (entame_et_defense) is the

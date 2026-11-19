@@ -67,7 +67,8 @@ def trouve(theme, graine):
     return e, chances
 
 e, c = trouve("Sacrifice", 6)                             # leur manche gagne souvent, le sacrifice coûte moins
-assert c["genre"] == "sacrifice" and c["taux"] >= D.TAUX["sacrifice"] and 0 < c["cout"] < c["perte"] and c["contrat"].endswith("X")
+assert c["genre"] == "sacrifice" and c["taux"] >= D.TAUX["sacrifice"] and 0 < c["cout"] <= c["perte"] - D.GAIN_SACRIFICE and c["contrat"].endswith("X")
+assert not D.vul_of(e.d["vul"], D.camp_de(c["declarant"]))   # notre camp non vulnérable, comme les robots
 e, c = trouve("Partielle disputée", 2)
 assert c["genre"] == "partielle" and int(c["contrat"][0]) <= 3
 e, c = trouve("Entame décisive", 1)                       # l'entame des règles, qui bat le contrat ici et souvent à la table
@@ -80,3 +81,8 @@ assert c["genre"] == "impasse" and c["taux"] >= D.IMPASSE_MIN
 e, c = trouve("Hold-up", 3)                               # laisser passer gagne et prendre chute, ici ; et à la table
 assert c["genre"] == "hold-up" and D.laisser_passer_reel(e, c["entame"]) and "Ne pas prendre" in c["texte"]
 print("ok")
+
+# un sacrifice ne tombe pas sur une donne « Tous vulnérables » quand un autre thème peut la prendre
+t = D.placer(["Sacrifice"] * 4 + ["Squeeze"] * 4)
+assert all(D.VUL16[i % 16] != "Tous" for i, x in enumerate(t) if x == "Sacrifice") and sorted(t) == sorted(["Sacrifice"] * 4 + ["Squeeze"] * 4)
+assert D.chercher((4, "Sacrifice", 1, 120))[3] is False    # la donne 4 est « Tous » : rendue tout de suite, au hasard

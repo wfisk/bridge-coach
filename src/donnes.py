@@ -28,6 +28,7 @@ VUL_TEXTE = {"NN": "Personne", "VN": "N-S", "NV": "E-O", "VV": "Tous"}
 DELAI = 150                                                # secondes pour trouver une donne d'un thème
 MONDES = 60                                                # donnes imaginées pour juger un contrat à la table
 TAUX = {"petit": .6, "grand": .7, "manche": .55, "sacrifice": .6}   # sa réussite minimale dans ces donnes imaginées
+GAIN_SACRIFICE = 100                                       # ce que le sacrifice doit épargner en moyenne (points) : un exemple net
 SIEGES = "NESO"
 EN = {"N": "N", "E": "E", "S": "S", "O": "W"}
 COUL = {"SA": "NT", "♠": "S", "♥": "H", "♦": "D", "♣": "C"}
@@ -373,7 +374,8 @@ def fit(e, s):
 def sacrifice(e):
     """Un sacrifice, jugé à la table (les deux mains du camp qui se sacrifie connues, les autres imaginées d'après les
     enchères) : leur contrat, une manche ou un chelem, gagne au moins TAUX["sacrifice"] du temps, et le sacrifice contré
-    coûte en moyenne moins que ce qu'ils auraient marqué. Deux cas : le moteur le fait lui-même (son contrat est contré
+    coûte en moyenne au moins GAIN_SACRIFICE points de moins que ce qu'ils auraient marqué, notre camp non vulnérable
+    (la règle des robots, encheres.sacrifier). Deux cas : le moteur le fait lui-même (son contrat est contré
     au-dessus du leur), ou il les laisse jouer alors que le camp a nommé une couleur où il a 9 cartes ou plus : le
     sacrifice au palier le moins cher dans cette couleur était le bon pari (le commentaire le dit)."""
     if not any(e.camp_h(x) <= 17 and fit(e, x) >= 9 for x in "NE"): return False   # filtre rapide, avant les enchères
@@ -399,13 +401,14 @@ def sacrifice(e):
         if niveau > 7: return False
         sac, sac_decl = f"{niveau}{den}X", declarant_de(e, x, den)
     if leur is None or marque(leur, leur_decl, vul, int(leur[0]) + 6) < 300: return False   # pas une manche
+    if vul_of(vul, nous): return False                     # comme les robots : on ne se sacrifie que non vulnérable
     w = levees_dm(mondes_vus(e.d, tuple(x for x in SIEGES if camp_de(x) == nous), e.seq), {sac[1:-1], leur[1:]})
     if len(w) < MONDES_VUS // 2: return False
     eux_marquent = [marque(leur, leur_decl, vul, t[leur[1:]][leur_decl]) for t in w]
     nous_marquons = [marque(sac, sac_decl, vul, t[sac[1:-1]][sac_decl]) for t in w]
     taux = sum(t[leur[1:]][leur_decl] >= int(leur[0]) + 6 for t in w) / len(w)
     cout = -sum(nous_marquons) / len(w); perte = sum(eux_marquent) / len(w)
-    if taux < TAUX["sacrifice"] or cout <= 0 or cout >= perte: return False
+    if taux < TAUX["sacrifice"] or cout <= 0 or perte - cout < GAIN_SACRIFICE: return False
     e.chances = dict(genre="sacrifice", contrat=sac, declarant=sac_decl, contre=leur, contre_decl=leur_decl, robots=robots,
                      taux=round(taux, 2), cout=round(cout), perte=round(perte), mondes=len(w), encheres=list(e.seq),
                      dm=e.dm[sac[1:-1]][sac_decl])
@@ -621,6 +624,22 @@ THEMES = {
 
 # un thème rare : à mi-temps, le test d'avant suffit (le commentaire ne dit alors rien de la table)
 SOUPLE = {"Squeeze": lambda e: coup(e, "squeeze")}
+IMPOSSIBLE = {"Sacrifice": lambda vul: vul == "Tous"}   # la vulnérabilité du numéro l'exclut (les robots ne se sacrifient pas vulnérables)
+
+
+def impossible(theme, vul):
+    return any(x in IMPOSSIBLE and IMPOSSIBLE[x](vul) for x in theme.split(COMBINE))
+
+
+def placer(tirage):
+    """Les thèmes que la vulnérabilité d'un numéro exclut (IMPOSSIBLE) changent de place avec un autre thème : un sacrifice
+    ne tombe pas sur une donne « Tous vulnérables » tant qu'une donne d'un autre thème peut la prendre."""
+    t = list(tirage)
+    for i, x in enumerate(t):
+        if impossible(x, VUL16[i % 16]):
+            j = next((j for j, y in enumerate(t) if not impossible(y, VUL16[i % 16]) and not impossible(x, VUL16[j % 16])), None)
+            if j is not None: t[i], t[j] = t[j], t[i]
+    return t
 
 # la famille (enchères ou jeu de la carte) et le niveau (1 : 1re année, 2 : intermédiaire, 3 : avancé) de chaque thème
 FAMILLES = {"encheres": "Enchères", "carte": "Jeu de la carte"}
@@ -697,6 +716,7 @@ def chercher(arg):
     n, theme, graine, delai = arg
     rnd = random.Random(graine); test = test_theme(theme)
     d = dict(n=n, donneur=SIEGES[(n - 1) % 4], vul=VUL16[(n - 1) % 16], mains=None)
+    if impossible(theme, d["vul"]): return n, theme, tirer(rnd), False, None   # pas la peine de chercher
     debut = time.time(); fin = debut + delai; essais = 0
     seul = theme.split(COMBINE)[0] if COMBINE in theme else None   # deux thèmes : à mi-temps, le premier suffit
     while True:
@@ -772,6 +792,7 @@ def creer(quotas, graine=None, delai=DELAI, dossier=None):
     tirage = [t for t, k in quotas for _ in range(k)]
     nombre = len(tirage)
     rnd.shuffle(tirage)
+    tirage = placer(tirage)
     args = [(i, t, rnd.randrange(2 ** 31), delai) for i, t in enumerate(tirage, 1)]
     res = []; departs = []; durees = []; npro = lignes.nb_processus(); t_pool = time.time()
     with multiprocessing.Pool(npro) as p:

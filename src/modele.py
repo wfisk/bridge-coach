@@ -265,7 +265,8 @@ def aime(tenue):
 
 def signaux_vus(jouees, decl, den=None):
     """Les signaux qu'un défenseur a pu donner : [(siège, (couleur, rang), sens, couleur, couleur menée)], sens
-    « attitude » (le partenaire mène : pair-impair), « parité » (le déclarant mène) ou « défausse » (préférence).
+    « appel », « préférence » ou « parité » quand le partenaire mène (signaux.mode_entame, d'après sa carte), « parité »
+    quand le déclarant mène, « défausse » (parité, ou appel direct).
     Seulement la première carte d'un défenseur dans la couleur menée, jamais à l'atout ; une défausse hors atout.
     Comme carte.Partie.signal, vu de l'extérieur (signaux.py)."""
     from jeu import PART as P, LHO as G
@@ -287,7 +288,9 @@ def signaux_vus(jouees, decl, den=None):
             if c[0] == c0:
                 if (x, c0) in deja or c0 == den: continue
                 deja.add((x, c0))
-                if meneur == P[x]: out.append((x, carte, "attitude", c0, c0))
+                if meneur == P[x]:                         # le sens dépend de la carte menée (signaux.mode_entame)
+                    import signaux
+                    out.append((x, carte, signaux.mode_entame(den, pli[0][1][1:], None), c0, c0))
                 elif meneur in (decl, P[decl]): out.append((x, carte, "parité", c0, c0))
             elif c[0] != den:
                 out.append((x, carte, "défausse", c[0], c0))
@@ -316,17 +319,18 @@ def signal_plausible(main, carte, sens, c, den=None, c0=None):
     m = signaux.lire(carte[1], sens, c, den, c0)
     t = lambda k: tenues[COULEURS.index(k)]
     fort = lambda k: "A" in t(k) or "R" in t(k)
-    if sens == "attitude":
+    if sens in ("appel", "attitude"):
         veut = aime(tenue) or (den == "SA" and len(tenue) >= 4) or \
             (den in COULEURS and den != c and len(tenue) <= 2 and len(t(den)) >= 1)
         if m.get("continuer") is not None and m["continuer"] != veut: return EPS_SIGNAL
+        return 1.0
+    if sens == "préférence":
         if m.get("prefere") and not fort(m["prefere"]) and any(fort(k) for k in signaux.autres(den, c, c) if k != m["prefere"]):
             return EPS_SIGNAL
         return 1.0
     if sens == "défausse":
+        if m.get("prefere"): return 1.0 if aime(tenue) else EPS_SIGNAL   # appel direct : il veut cette couleur
         if aime(tenue) and len(tenue) >= 2: return EPS_SIGNAL   # il garde une couleur qu'il aime
-        if m.get("prefere") and not fort(m["prefere"]) and any(fort(k) for k in signaux.autres(den, c, c0) if k != m["prefere"]):
-            return EPS_SIGNAL
         return 1.0
     return 1.0
 

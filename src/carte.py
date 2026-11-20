@@ -35,6 +35,7 @@ MONDES_DIFFICILE = 16                                     # > MONDES : sur une c
 REGLES_SIGNAL = True                                      # les règles générales de l'appel (regle_signal) passent avant les donnes imaginées
 MARGE_CONTINUER = 0.05                                    # « continuez » (impaire) seulement quand rejouer la couleur est vraiment le mieux : avec 0,25, une égalité
                                                            # approximative disait « continuez » quand changer valait mieux (donne 5 du 13/11, 2026-11-14)
+URGENCE_APPEL = 1.0                                       # défausse : une couleur qui rapporte une levée de plus que les autres (donnes imaginées) s'appelle par une grosse carte
 PREF_COUPE = False                                        # en donnant une coupe, la hauteur demande le retour : rare, −0,005 (± 0,004) : non gardé
 MODELE_DECLARANT = False                                  # vrai : la réserve du déclarant simulé vient aussi du modèle ;
                                                           # « suivi » : renouvelée à chaque carte par le modèle mis à jour
@@ -396,17 +397,26 @@ class Partie:
         if memes:
             if len(memes) < 2: return None
             rangs = [x[1] for x in memes]
-            if meneur == PART[s]:                       # le partenaire mène : pair-impair
+            if meneur == PART[s]:                       # le partenaire mène : le sens dépend de sa carte (SEF 2024 p. 84)
+                mort = self.mort()
+                tenue = self.pos.reste[mort].get(c0, "") + "".join(r for x, cc, r in pli if x == mort and cc == c0)
+                mode = signaux.mode_entame(self.den, pli[0][2], tenue)
+                if mode == "parité":
+                    choix = signaux.carte_parite(rangs, len(self.pos.reste[s][c0]))
+                    return ((c0, choix[0]), choix[1]) if choix else None
                 v = self.voeu(s)
                 if c0 not in v: return None
                 deux = signaux.autres(self.den, c0, c0)
-                continuer = v[c0] >= max([v[c] for c in v if c != c0] or [0]) - MARGE_CONTINUER
-                regle = self.regle_signal(s, c0) if REGLES_SIGNAL else None
-                if regle and regle[0] is not None: continuer = regle[0]
-                if regle: self.dernier["regle"] = regle[1]
                 self._voeu_signal = (c0, v)                 # pour l'expliquer (explication_signal)
-                pref = max(deux, key=lambda c: v.get(c, -1)) if deux else None
-                choix = signaux.carte_attitude(rangs, continuer, pref, deux)
+                if mode == "préférence":
+                    pref = max(deux, key=lambda c: v.get(c, -1)) if deux else None
+                    choix = signaux.carte_preference(rangs, pref, deux)
+                else:
+                    continuer = v[c0] >= max([v[c] for c in v if c != c0] or [0]) - MARGE_CONTINUER
+                    regle = self.regle_signal(s, c0) if REGLES_SIGNAL else None
+                    if regle and regle[0] is not None: continuer = regle[0]
+                    if regle: self.dernier["regle"] = regle[1]
+                    choix = signaux.carte_appel(rangs, continuer)
             elif self.camp(meneur):                     # le déclarant mène : la parité
                 choix = signaux.carte_parite(rangs, len(self.pos.reste[s][c0]))
             else:
@@ -418,8 +428,10 @@ class Partie:
             v = self.voeu(s)
             self._voeu_signal = (c0, v)
             ordre = sorted(COULEURS, key=lambda c: -v.get(c, -1))
-            choix = signaux.carte_defausse(par, ordre, self.den, c0)
-            return choix
+            vals = sorted(v.values(), reverse=True)
+            urgence = len(vals) >= 2 and ordre[0] != c0 and vals[0] - vals[1] >= URGENCE_APPEL   # appel direct
+            nombres = {c: len(self.pos.reste[s].get(c, "")) for c in COULEURS}
+            return signaux.carte_defausse(par, ordre, nombres, urgence)
         return None
 
     def demande(self, s):
@@ -442,10 +454,15 @@ class Partie:
                 if c == c0:
                     if (x, c0) in vu or c0 == self.den: continue
                     vu.add((x, c0))
-                    if meneur != s: continue            # seule l'attitude sur notre couleur dit quoi rejouer
-                    m = signaux.lire(rang, "attitude", c0, self.den, c0)
-                    if m.get("continuer"): out = {"couleur": c0, "texte": signaux.phrase(NOMS[x], c + rang.translate(FR), "attitude", c0, self.den)}
-                    elif m.get("prefere"): out = {"couleur": m["prefere"], "texte": signaux.phrase(NOMS[x], c + rang.translate(FR), "attitude", c0, self.den)}
+                    if meneur != s: continue            # seul l'appel sur notre couleur dit quoi rejouer
+                    mort = self.mort(); L = {v: k for k, v in zip("SHDC", COULEURS)}[c0]
+                    tenue = self.pos.reste[mort].get(c0, "") + "".join(   # le mort dans la couleur au début de ce pli
+                        j2[1:] for x2, j2 in zip(self.pos.sieges[i:], self.pos.jouees[i:]) if x2 == mort and j2[0] == L)
+                    mode = signaux.mode_entame(self.den, cartes[0][1:], tenue)
+                    if mode not in ("appel", "préférence"): continue
+                    m = signaux.lire(rang, mode, c0, self.den, c0)
+                    if m.get("continuer"): out = {"couleur": c0, "texte": signaux.phrase(NOMS[x], c + rang.translate(FR), mode, c0, self.den)}
+                    elif m.get("prefere"): out = {"couleur": m["prefere"], "texte": signaux.phrase(NOMS[x], c + rang.translate(FR), mode, c0, self.den)}
                 elif c != self.den:
                     m = signaux.lire(rang, "défausse", c, self.den, c0)
                     if m.get("prefere"): out = {"couleur": m["prefere"], "texte": signaux.phrase(NOMS[x], c + rang.translate(FR), "défausse", c, self.den, c0)}
@@ -534,22 +551,20 @@ NOMS = {"N": "Nord", "S": "Sud", "E": "Est", "O": "Ouest"}
 
 
 def sens_signal(sig, c):
-    """Ce que dit un signal (carte.Partie.signal, signaux.py), en français : « impaire à ♥ : il demande de continuer »."""
-    if sig == "impair": return f"impaire à {c} : il demande de continuer la couleur"
-    if sig == "pair": return f"paire à {c} : il demande de changer de couleur"
-    if sig.startswith("pair "):
-        h, x = sig[5:].split(":")
-        return f"paire {'haute' if h == 'haut' else 'basse'} à {c} : il demande de changer, pour {x}"
+    """Ce que dit un signal (carte.Partie.signal, signaux.py), en français : « un appel à ♥ : il demande de continuer »."""
+    if sig.startswith("préférence "):
+        h, x = sig[11:].split(":")
+        return f"préférence à {c} ({h}) : il demande {x}"
     if sig.startswith("coupe "):
         h, x = sig[6:].split(":")
         return f"{c} {'haut' if h == 'haute' else 'bas'} pour la coupe : il demande le retour à {x}"
-    if sig.startswith("défausse"):
-        morceaux = sig.split(":")
-        if len(morceaux) == 3:
-            h = "haute" if morceaux[0].endswith("haute") else "basse"
-            return f"défausse {h} à {morceaux[1]} : il ne veut pas de {morceaux[1]} et préfère {morceaux[2]}"
-        return f"défausse à {morceaux[1]} : il ne veut pas de {morceaux[1]}"
-    return {"appel": f"un appel à {c} : il aime la couleur", "refus": f"un refus à {c} : il n'aime pas la couleur",
+    if sig.startswith("défausse appel"):
+        return f"défausse d'une grosse carte à {sig.split(':')[1]} : appel direct, il veut cette couleur"
+    if sig.startswith("défausse parité"):
+        x = sig.split(":")[1]
+        return f"défausse à {x} : il n'en veut pas, et donne sa parité ({'pair' if 'paire' in sig else 'impair'})"
+    return {"appel": f"un appel à {c} : grosse carte, il demande de continuer",
+            "refus": f"un refus à {c} : sa plus petite, il demande de changer",
             "parité paire": f"la parité à {c} : un nombre pair de cartes (grosse puis petite)",
             "parité impaire": f"la parité à {c} : un nombre impair de cartes (la plus petite)"}.get(sig, sig)
 
@@ -625,43 +640,43 @@ def _texte_pensee(pz, decl):
 
 def explication_signal(sig, c, voeu=None, den=None, regle=None):
     """Pourquoi cette petite carte, comme un professeur le dirait (l'utilisateur, 2026-11-14) : quelle sorte de signal
-    la situation demande (l'appel pair-impair sur l'entame du partenaire, la parité quand le déclarant mène, la
-    préférence en défausse ou en donnant une coupe), ce que le défenseur veut dire, et pourquoi (voeu : (couleur menée,
+    la situation demande (SEF 2024 p. 84–85 et notre méthode, entames.md : l'appel-refus sur l'As ou la Dame du
+    partenaire, la préférence quand le mort a un singleton, la parité sinon et quand le déclarant mène ; en défausse la
+    parité, ou l'appel direct en urgence), ce que le défenseur veut dire, et pourquoi (voeu : (couleur menée,
     {couleur: levées de la défense si le partenaire la joue}), lu dans ses donnes imaginées). Règles : signaux.py."""
-    import signaux
     co = c[0]
     debut = f"Ses petites cartes à {co} se valent : la carte sert à renseigner le partenaire. "
-    def chere(x, deux): return "la plus chère" if deux and x == deux[0] else "la moins chère"
-    if sig == "impair" or sig == "pair" or sig.startswith("pair "):
-        t = debut + "Sur la couleur menée par le partenaire, la première carte est un appel pair-impair. "
-        mieux = None
-        if voeu and voeu[1]:
-            v = voeu[1]; mieux = max(v, key=v.get)
-        maj = lambda x: x[0].upper() + x[1:]
-        if sig == "impair":
+    maj = lambda x: x[0].upper() + x[1:]
+    mieux = None
+    if voeu and voeu[1]:
+        v = voeu[1]; mieux = max(v, key=v.get)
+    if sig in ("appel", "refus"):
+        t = debut + "Sur l'as ou la dame du partenaire (à l'atout : l'as ou le roi, le mort a trois petites cartes), la carte dit s'il faut continuer : c'est l'appel-refus. "
+        if sig == "appel":
             return t + (f"{maj(regle)} : " if regle else f"Rejouer {co} est ce qui rapporte le plus à la défense : ") \
-                + "une carte impaire dit « continuez »."
-        deux = signaux.autres(den, co, co)
+                + "la plus grosse carte inutile dit « continuez »."
         if regle: pourquoi = maj(regle) + (f" ; un retour à {mieux} vaut mieux. " if mieux and mieux != co else ". ")
         else: pourquoi = (f"Rejouer {co} ne rapporte rien de plus : un retour à {mieux} vaut mieux. " if mieux and mieux != co
                           else f"Rejouer {co} ne rapporte rien de plus. ")
-        if sig == "pair": return t + pourquoi + "Une carte paire dit « changez »."
-        h, x = sig[5:].split(":")
-        return (t + pourquoi + f"Une carte paire dit « changez » ; {'haute (7 ou plus)' if h == 'haut' else 'basse (6 ou moins)'}, elle "
-                f"demande {chere(x, deux)} des deux autres couleurs ({deux[0]} ou {deux[-1]}) : {x}.")
+        return t + pourquoi + "La plus petite carte dit « changez »."
+    if sig.startswith("préférence "):
+        h, x = sig[11:].split(":")
+        return (debut + f"Le mort a un singleton à {co} : continuer ne sert à rien, la carte dit quelle couleur rejouer. "
+                f"{'Grosse' if h == 'haute' else 'Petite'}, elle demande {'la plus chère' if h == 'haute' else 'la moins chère'} "
+                f"des deux autres couleurs hors atout : {x}.")
     if sig.startswith("parité"):
         pair_ = sig.endswith("paire")
-        return (debut + f"Le déclarant mène {co} : la carte donne la parité, pour que le partenaire compte la main. "
+        return (debut + "La carte donne la parité, pour que le partenaire compte la main. "
                 + ("Avec un nombre pair de cartes, la grosse d'abord." if pair_ else
                    "Avec un nombre impair de cartes, la plus petite."))
-    if sig.startswith("défausse"):
-        m = sig.split(":")
-        t = (f"Il défausse : c'est un appel de préférence. Il jette dans la couleur dont il ne veut pas ({m[1]})")
-        if len(m) == 3:
-            deux = signaux.autres(den, m[1], None) if den in COULEURS else None
-            h = "haute" if m[0].endswith("haute") else "basse"
-            return t + f" ; {h} ({'7 ou plus' if h == 'haute' else '6 ou moins'}), la carte demande {chere(m[2], deux) if deux else 'une des deux autres couleurs'} : {m[2]}."
-        return t + "."
+    if sig.startswith("défausse appel"):
+        x = sig.split(":")[1]
+        return (f"Il défausse une grosse carte à {x} : c'est un appel direct, réservé à l'urgence. "
+                + (f"Un retour à {x} est nettement ce qui rapporte le plus à la défense." if mieux == x else ""))
+    if sig.startswith("défausse parité"):
+        x = sig.split(":")[1]
+        return (f"Il défausse dans une couleur dont il ne veut pas ({x}) et en donne la parité : "
+                + ("une grosse carte, nombre pair." if "paire" in sig else "la plus petite, nombre impair."))
     if sig.startswith("coupe "):
         h, x = sig[6:].split(":")
         return (f"Il donne une coupe à son partenaire : la hauteur de la carte demande le retour ; "

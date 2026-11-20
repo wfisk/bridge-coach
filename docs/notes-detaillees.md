@@ -614,6 +614,17 @@ tools in src/outils/.
                         lowest of an odd number, 3rd best of an honour fourth; partner's suit lowest of three). jeu.carte_dans and
                         carte_partenaire now read entames.yaml, so the lead quiz's other cards agree with the rules. The book's
                         signalling (count, attitude on A/Q leads, count discards) differs from the robots' (user's choice, 11/11).
+                        Signals switched to the book's on 2026-11-20 (the user: « use the book … the book is just a brief summary –
+                        we need to develop our method »; « signals comes down to conventions »): signaux.mode_entame decides the
+                        meaning of partner's first card from his lead (SA: A/Q appel-refus, else count; suit: A/K appel-refus when
+                        dummy has three small or is unseen, preference on dummy's singleton, else count); carte_appel (7+ =
+                        continue, the lowest 6- = switch, None when no card says it), carte_preference, discards carte_defausse
+                        (count from the least wanted suit with cards 6-, appel direct with a 7+ of the wanted suit when it is worth
+                        a trick more, carte.URGENCE_APPEL). Read the same way (lire, modele.signaux_vus/signal_plausible,
+                        carte.demande with dummy's holding at the trick). entames.md « Notre signalisation » is the method: the
+                        book's rules, then our additions marked « (notre ajout) » with a reason. The convention card's default
+                        signals are now « SEF 2024 » (fiche_conventions SEF_SIG, SEF_DEF; Pair-impair and Lavinthal stay options);
+                        an old card that had saved « Préférence » keeps Lavinthal. The paragraph above describes the old method.
                         Over a weak two (2026-11-13, deals 5, 20, 29 of 12/11, each kept on 2 × 20 000 deals, a-faire.md): balancing
                         (2x – passe – passe) has its own rules, double from 10 H; the take-out double comes before a 3-level suit with
                         four cards in the free major; a strong doubler (18+, no 5-card major) after partner's minor looks for 3SA

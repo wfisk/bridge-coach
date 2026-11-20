@@ -88,45 +88,63 @@ règles).
   (« Avec les cartes vues, ♠V aurait fait mieux »), l'effet des entames des tables, et si les
   impasses du plan réussissent.
 
-## Signalisation (le choix de l'utilisateur, 2026-11-11 ; src/signaux.py)
-Les robots signalent et lisent avec les mêmes règles (src/signaux.py) : un défenseur lit son partenaire comme il
-aurait signalé lui-même. Un signal ne se donne que parmi des cartes également bonnes : il ne coûte jamais de levée.
+## Notre signalisation (SEF 2024 p. 83–85, développée ; l'utilisateur, 2026-11-20 ; src/signaux.py)
+Le livre donne la base en une page ; nous la complétons là où il ne dit rien, chaque ajout marqué **(notre ajout)**
+avec sa raison. Les signaux sont une convention du camp : ils figurent sur la feuille de conventions (Système). Les
+robots signalent et lisent avec les mêmes règles : un défenseur lit son partenaire comme il aurait signalé lui-même.
+Un signal ne se donne que parmi des cartes également bonnes : il ne coûte jamais de levée.
 
-**Quel sens a cette carte ?** La situation le dit, pas la carte (le coach l'explique ainsi dans l'Indice et dans
-Revoir, carte.explication_signal, 2026-11-14) :
+**Trois signaux** (SEF 2024 p. 83) :
+- **L'appel-refus** : une grosse carte inutile demande au partenaire de continuer ; la plus petite dit non.
+- **La parité** (le compte) : la plus petite avec un nombre impair de cartes ; une grosse puis une petite avec un
+  nombre pair.
+- **La préférence** : une grosse carte demande la plus chère des deux autres couleurs (jamais l'atout), une petite
+  la moins chère.
+
+**Quel sens a cette carte ?** La situation le dit, pas la carte (le coach l'explique dans l'Indice et dans Revoir,
+carte.explication_signal) :
 
 | La situation | Le sens de la petite carte |
 |---|---|
-| Le partenaire a mené la couleur, je fournis pour la première fois | **Appel pair-impair** (impaire : continuez ; paire : changez, et sa hauteur dit pour quelle couleur) |
-| Le déclarant (ou le mort) a mené la couleur | **Parité** (le nombre de cartes) |
-| Je n'ai plus la couleur menée et je ne coupe pas | **Préférence** (défausse) |
-| Je mène une couleur que le partenaire coupe | **Préférence** pour le retour (écrit, éteint) |
-| La couleur d'atout, ou un honneur | **Rien** |
+| À sans-atout, le partenaire mène l'As ou la Dame | **Appel-refus** (livre) |
+| À sans-atout, le partenaire mène le Roi | **Débloquer** un honneur (As, Dame ou Valet) ; sinon **parité** (livre) |
+| À sans-atout, le partenaire mène une petite carte | **Parité** (livre) ; jouer d'abord pour la levée si on le peut |
+| À la couleur, le partenaire mène l'As ou le Roi, le mort a trois petites cartes | **Appel-refus** (livre) |
+| À la couleur, le partenaire mène l'As ou le Roi, le mort a un singleton | **Préférence** (livre) |
+| À la couleur, le partenaire mène l'As ou le Roi, le mort a un doubleton ou un honneur | **Parité** (livre) |
+| À la couleur, le partenaire mène une autre carte | **Parité** (livre) |
+| Le déclarant (ou le mort) mène | **Parité** (livre) |
+| Je défausse | **Parité** dans une couleur que je ne veux pas ; en urgence **appel direct** (livre) |
+| Je mène une couleur que le partenaire coupe | **Préférence** pour le retour (notre ajout, éteint) |
+| L'atout, ou un honneur | **Rien** |
 
-
-- **Sur l'entame (ou la couleur menée) du partenaire, la première carte : pair-impair.** Une carte impaire demande
-  de continuer la couleur. Une carte paire demande de changer ; sa hauteur dit pour quelle couleur : paire haute
-  (7 ou plus) la plus chère des deux autres couleurs, paire basse (6 ou moins) la moins chère. À la couleur, les
-  deux autres sont les couleurs hors atout autres que celle menée ; à sans-atout, la plus chère et la moins chère
-  des trois autres. **« Continuez » seulement quand rejouer la couleur est vraiment le mieux** (carte.MARGE_CONTINUER,
-  2026-11-14) : quand le mort garde la couleur (son As sur le Roi du partenaire), quand elle ne rapporte plus rien, la
-  carte paire demande le changement. Donne 5 du 13/11 : ♠V de Sud, ♠D du mort (AD), Nord ♠8743 fournit le ♠4 (paire
-  basse : ♦), pas le ♠3.
-- **En défausse : préférence de couleur.** On défausse dans une couleur qu'on ne veut pas ; une carte haute (7 ou
-  plus) demande la plus chère des deux autres couleurs (hors atout), une basse (6 ou moins) la moins chère. À
-  sans-atout, les deux autres sont celles qui ne sont ni la défausse ni la couleur menée.
-- **Quand le déclarant mène : la parité.** Grosse puis petite avec un nombre pair de cartes, la plus petite avec un
-  nombre impair.
-- **Jamais à l'atout** : ni pair-impair ni parité dans la couleur d'atout.
+Nos ajouts, là où le livre se tait :
+- **Plus tard dans le coup (notre ajout)** : la même table vaut chaque fois que le partenaire mène une nouvelle
+  couleur, pas seulement à l'entame. Raison : une seule règle à retenir.
+- **Le premier signal seulement (notre ajout)** : on signale la première fois qu'on fournit dans une couleur ; la
+  carte suivante suit la parité déjà donnée (grosse puis petite). Raison : un signal par couleur, lisible.
+- **Grosse = 7 ou plus, petite = 6 ou moins (notre ajout)** : le partenaire ne voit pas nos autres petites cartes ;
+  une frontière fixe se lit sans calcul. Avec 5-3 ou 9-8, aucune carte ne dit clairement le message : on fournit sans
+  signal (la plus petite). Raison : pour les élèves, une carte ambiguë ne doit pas tromper.
 - **Ce qu'on veut ne vient pas d'une règle fixe sur les honneurs** : selon la situation (longueur à sans-atout,
-  doubleton pour couper, honneurs du mort placés devant les siens, urgence de changer), le défenseur le lit dans
-  ses donnes imaginées : si son partenaire avait la main, quelle couleur rapporterait le plus (carte.Partie.voeu).
+  doubleton pour couper, honneurs du mort placés devant les siens), le défenseur le lit dans ses donnes imaginées : si
+  son partenaire avait la main, quelle couleur rapporterait le plus (carte.Partie.voeu). **« Continuez » seulement
+  quand rejouer la couleur est vraiment le mieux** (carte.MARGE_CONTINUER) : quand le mort garde la couleur (son As
+  sur le Roi du partenaire) ou la coupera, la petite carte dit « changez » (carte.Partie.regle_signal).
+- **La défausse (notre ajout)** : on défausse dans la couleur qu'on veut le moins, et l'on y donne la parité avec ses
+  petites cartes (6 ou moins, pour ne pas ressembler à un appel). L'appel direct (une grosse carte, 7 ou plus, de la
+  couleur voulue) est réservé à l'urgence : une couleur qui rapporte au moins une levée de plus que les autres
+  (carte.URGENCE_APPEL). Raison : le livre dit « en cas d'urgence » sans dire quand.
 - **Le partenaire suit la demande** : quand il a la main, parmi ses cartes également bonnes, il joue la couleur
   demandée ; ses pensées le disent.
 - **Les honneurs ne signalent pas** (ni A, R, D, V) : on ne lit que les cartes de 2 à 10.
-- **En donnant une coupe au partenaire** (il n'a plus la couleur et peut avoir de l'atout) : la hauteur de la carte
-  demande le retour, haute (7 ou plus) la plus chère des deux autres couleurs hors atout, basse la moins chère.
-  Écrit (carte.PREF_COUPE) mais éteint : rare, et sans gain sur 600 donnes.
+- **À l'atout, rien** : ni appel ni parité dans la couleur d'atout (notre ajout ; le livre n'en parle pas).
+- **En donnant une coupe au partenaire (notre ajout)** : la hauteur de la carte demande le retour, haute la plus chère
+  des deux autres couleurs hors atout, basse la moins chère. Écrit (carte.PREF_COUPE) mais éteint : rare, et sans gain
+  sur 600 donnes.
+
+Jusqu'au 2026-11-20, les robots jouaient l'appel pair-impair (impaire = continuez) et la défausse de préférence
+(Lavinthal), un choix du 2026-11-11 ; remplacés par la méthode du livre à la demande de l'utilisateur.
 
 ## Honneurs équivalents et habitudes classiques (2026-11-11 ; src/carte.py)
 - **Honneurs équivalents** : en fournissant, le plus bas de cartes équivalentes (la dame de DV : elle nie le valet) ;

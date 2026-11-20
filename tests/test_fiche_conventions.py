@@ -32,7 +32,7 @@ for c in ("majeures5", "meilleure_mineure", "ouv_1sa_desc", "stayman_1sa", "texa
     assert c in F.SUR_FEUILLE, c
 assert F.ITEMS["texas_1sa"]["type"] == "cases" and [o for o, _ in F.ITEMS["texas_1sa"]["options"]] == ["2♦", "2♥", "2♠", "2SA", "3♣"]
 assert [o for o, _ in F.ITEMS["ouv_2t_desc"]["options"]] == ["Fort indéterminé", "Albarran"]
-assert set(dict(F.ITEMS["sig_defausse"]["options"])) == {"Appel direct", "Pair-impair", "Italien", "Lavinthal"}
+assert set(dict(F.ITEMS["sig_defausse"]["options"])) == {"SEF 2024", "Appel direct", "Pair-impair", "Italien", "Lavinthal"}
 assert not F.reste([F.ITEMS["bic_maj_cue"]]) and F.reste([F.ITEMS["multi"]])      # le reste de la carte, sans la feuille
 
 # tout s'ouvre déjà rempli comme le joue Bridge Coach : rien de vide ni « À convenir » ; des choix plutôt que du texte
@@ -44,13 +44,14 @@ for i in F.ITEMS.values():
 assert all(F.ITEMS[c]["type"] != "texte" for c in F.SUR_FEUILLE)          # la feuille : rien à taper
 assert F.valeur("ouv_1sa_desc") == ("15–17 H", False) and F.texte("ouv_1sa_desc") == "15–17 H, régulier"
 assert F.valeur("texas_1sa") == (["2♦", "2♥", "2♠"], False) and F.texte("texas_1sa") == "2♦, 2♥, 2♠"
-assert F.valeur("sig_entame")[0] == F.valeur("sig_entame_couleur")[0] == ["Pair-impair"]   # les signaux des robots
-assert F.valeur("sig_defausse")[0] == ["Lavinthal"]      # défausse de préférence (src/signaux.py)
+assert F.valeur("sig_entame")[0] == F.valeur("sig_entame_couleur")[0] == ["SEF 2024"]   # les signaux des robots (2026-11-20)
+assert F.valeur("sig_defausse")[0] == ["SEF 2024"]       # défausse : parité, appel direct en urgence (src/signaux.py)
 # le flanc : plusieurs cases sur chaque ligne, le choix de Bridge Coach seul coché au départ, et « Autre… »
 for c in F.PLUSIEURS:
     assert F.ITEMS[c]["type"] == "cases" and F.ITEMS[c]["autre"] and len(F.ITEMS[c]["defaut"]) == 1, c
 assert F.valeur("sig_entame_couleur", {"valeurs": {"sig_entame_couleur": "Appel direct"}}) == (["Appel direct"], True)
-assert F._migrer({"sig_entame_couleur": "Appel direct", "sig_defausse": "Préférence"}) == {"sig_entame_couleur": ["Appel direct"]}
+assert F._migrer({"sig_entame_couleur": "Appel direct", "sig_defausse": "Préférence"}) == {"sig_entame_couleur": ["Appel direct"],
+                                                                                  "sig_defausse": ["Lavinthal"]}   # plus le choix par défaut depuis le 2026-11-20
 assert F.valeur("def_sa_2t")[0] == "Landy" and F.valeur("blackwood")[0] == "5 clés 30-41" and F.valeur("drury")[0]
 # la feuille en noir et blanc : un choix en gras sur fond gris clair, avec ☒ ; les autres simples, avec ☐
 assert F.coche("Oui", True).startswith(f'<font backColor="{F.SURLIGNE}"><b>') and F.coche("Non", False) == "Non ☐"
@@ -90,7 +91,7 @@ assert F.libre_de("sig_defausse") == "Défausse paire : appel" and F.autre("sig_
 f_ = F.cases_de("sig_defausse", F.lire(), str)
 assert f_.count("backColor") == 1 and "Pair-impair ☐" in f_ and "<b>Défausse paire : appel</b>" in f_   # « Autre » : gras seul
 assert "<b>&nbsp;Lavinthal ☒&nbsp;</b>" in F.coches_texte("sig_defausse", F.lire(), str)
-F.changer("sig_defausse", ["Lavinthal"]); assert "valeurs" not in F.lire()
+F.changer("sig_defausse", ["SEF 2024"]); assert "valeurs" not in F.lire()   # revenu au choix de Bridge Coach
 
 # le fichier de la version 1.13 se lit : « joueurs » sur une ligne, « conventions » à part, des Oui / Non devenus des choix
 os.makedirs(os.path.dirname(F.chemin()), exist_ok=True)
@@ -102,7 +103,7 @@ x = F.lire()
 assert (x["nom1"], x["prenom1"], x["nom2"], x["prenom2"]) == ("MARTIN", "Anne", "BERNARD", "Henri")
 assert "joueurs" not in x and "joueur1" not in x and "conventions" not in x
 assert x["valeurs"] == {"sig_atout": "Parité", "systeme": "SEF 2024, 1SA 14–16 H", "drury": False,
-                        "majeures5": "Majeure 4e"}, x["valeurs"]   # Landy : le choix de Bridge Coach depuis 2026-11-19
+                        "majeures5": "Majeure 4e", "sig_defausse": ["Lavinthal"]}, x["valeurs"]   # Landy (2026-11-19) ; la préférence n'est plus le choix de Bridge Coach (2026-11-20)
 assert F.valeur("def_sa_2t")[0] == "Landy" and not F.a_verifier("drury")    # changé : plus « à vérifier »
 F.changer("drury", True)                                  # la première écriture range tout dans « valeurs »
 y = json.load(open(F.chemin(), encoding="utf-8"))
@@ -138,7 +139,7 @@ for f_, txt_ in ((f, recto + verso), (e, feuille)):       # les adversaires voie
     assert "Bridge Coach" not in txt_ and "Établie le" in txt_
     assert "Bridge Coach" not in (pypdfium2.PdfDocument(f_).get_metadata_dict().get("Author") or "")
 for mot in ("FEUILLE DE PRÉVISIONS", "INTERVENTIONS", "FLANC", "NOM : MARTIN", "PRÉNOM : Anne", "IV : 45", "IV : 38",
-            "Méthode de base : SEF 2024", "Compétition : Promotion", "Landy ☒", "14–16 H ☒", "Lavinthal ☒",
+            "Méthode de base : SEF 2024", "Compétition : Promotion", "Landy ☒", "14–16 H ☒", "SEF 2024 ☒",
             "NOS ACCORDS PARTICULIERS", "Landy sur 1SA", "Roudi ☒", "Michael's Cue-bid", "précisés ☒",
             "2SA = Les deux plus basses", "4SA sans fit", "Blackwood ☒"):
     assert mot in feuille, mot

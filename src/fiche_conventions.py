@@ -139,18 +139,19 @@ SECTIONS = [
     ("a_la_couleur", "À la couleur", "entames", [
         T("entame_couleur", "Entame", "Celle du partenaire ; sinon une séquence ; contre une couleur, jamais sous un as ; "
           "un singleton pour couper", court=True),
-        T("sig_defausse", "Défausse", "Préférence : dans une couleur dont on ne veut pas ; haute = la plus chère des deux "
-          "autres, basse = la moins chère", court=True),
-        T("entame_as", "Sur l'entame de l'as", "Pair-impair, comme sur toute entame du partenaire"),
+        T("sig_defausse", "Défausse", "Parité dans une couleur dont on ne veut pas ; en urgence, appel direct (une "
+          "grosse carte de la couleur voulue)", court=True),
+        T("entame_as", "Sur l'entame de l'as", "Appel-refus quand le mort a trois petites cartes, préférence sur un "
+          "singleton du mort, sinon la parité"),
     ]),
     ("a_sans_atout", "À sans-atout", "entames", [
         T("entame_sa", "Entame", "Celle du partenaire ; sinon la plus longue hors de leurs couleurs (4 cartes au moins), "
           "4e meilleure", court=True),
-        T("defausse_sa", "Défausse", "Préférence, comme à la couleur"),
+        T("defausse_sa", "Défausse", "Parité ; en urgence, appel direct, comme à la couleur"),
     ]),
     ("signalisation", "Signalisation", "entames", [
-        T("sig_entame", "Sur l'entame du partenaire", "Pair-impair : impaire = continuez ; paire = changez, haute (7 et plus) "
-          "vers la plus chère des deux autres couleurs, basse vers la moins chère", court=True),
+        T("sig_entame", "Sur l'entame du partenaire", "SEF 2024 : appel-refus sur l'as ou la dame à sans-atout (l'as ou le "
+          "roi à la couleur, trois petites au mort) ; sinon la parité", court=True),
         T("sig_parite", "Quand le déclarant mène", "Parité : grosse puis petite avec un nombre pair, la plus petite avec un "
           "nombre impair", court=True),
         T("sig_atout", "À l'atout", "Pas de signal"),
@@ -428,6 +429,9 @@ TOUTES = SECTIONS + SECTIONS_OUVERTURES
 # « Autre… » reste toujours possible : un texte à soi. Une case vide sur la carte devient « Rien de particulier ».
 RIEN = "Rien de particulier"
 PREF = "Préférence : dans une couleur dont on ne veut pas ; haute = la plus chère des deux autres, basse = la moins chère"
+SEF_SIG = ("SEF 2024 : appel-refus sur l'as ou la dame (à la couleur l'as ou le roi, le mort a trois petites cartes) : "
+           "grosse = continuez ; préférence sur un singleton du mort ; sinon la parité")
+SEF_DEF = "SEF 2024 : la parité dans une couleur dont on ne veut pas ; en urgence, appel direct (une grosse carte)"
 PAIR_IMPAIR = ("Pair-impair : impaire = continuez ; paire = changez, haute (7 et plus) vers la plus chère des deux autres "
                "couleurs, basse vers la moins chère")
 CHOIX = {
@@ -491,14 +495,14 @@ CHOIX = {
                                           ("Naturel", None)]),
     "d2_rep": ("2SA mini cue-bid", [("2SA mini cue-bid", "La meilleure couleur ; 2SA : mini cue-bid, 8 H et plus"),
                                     ("Lebensohl", "Lebensohl"), ("Naturelles", None)]),
-    "sig_defausse": ("Lavinthal", [("Appel direct", "Appel direct : une grosse carte appelle"),
+    "sig_defausse": ("SEF 2024", [("SEF 2024", SEF_DEF), ("Appel direct", "Appel direct : une grosse carte appelle"),
                                    ("Pair-impair", "Pair-impair : impaire = je veux cette couleur ; paire = non, sa hauteur dit "
                                     "laquelle"), ("Italien", "Italien (appel-refus et préférence)"), ("Lavinthal", PREF)]),
-    "defausse_sa": ("Lavinthal", [("Lavinthal", PREF), ("Pair-impair", "Pair-impair : impaire = je veux cette couleur ; "
+    "defausse_sa": ("SEF 2024", [("SEF 2024", SEF_DEF), ("Lavinthal", PREF), ("Pair-impair", "Pair-impair : impaire = je veux cette couleur ; "
                                   "paire = non, sa hauteur dit laquelle"), ("Italien", "Italien (appel-refus et préférence)")]),
-    "sig_entame": ("Pair-impair", [("Pair-impair", PAIR_IMPAIR), ("Gros appel", "Gros appel : une grosse carte "
+    "sig_entame": ("SEF 2024", [("SEF 2024", SEF_SIG), ("Pair-impair", PAIR_IMPAIR), ("Gros appel", "Gros appel : une grosse carte "
                                    "demande de continuer"), ("Petit appel", "Petit appel : une petite carte demande de continuer")]),
-    "sig_entame_couleur": ("Pair-impair", [("Pair-impair", PAIR_IMPAIR), ("Appel direct", "Appel direct : une grosse "
+    "sig_entame_couleur": ("SEF 2024", [("SEF 2024", SEF_SIG), ("Pair-impair", PAIR_IMPAIR), ("Appel direct", "Appel direct : une grosse "
                                            "carte demande de continuer"), ("Petit appel", "Petit appel : une petite carte "
                                            "demande de continuer")]),
     "flanc_sa_entame": ("4e meilleure", [("4e meilleure", "4e meilleure sous un honneur ; la tête d'une séquence"),

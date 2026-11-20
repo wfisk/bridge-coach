@@ -44,7 +44,7 @@ def question_entame(m):
         elif c in nommees[jeu.PART[meneur]]:
             x, r = jeu.carte_partenaire(p, den), "dans la couleur du partenaire"
         else:
-            x, r = jeu.carte_dans(p)
+            x, r = jeu.carte_dans(p, den)
             if len(p) == 3 and r.startswith("4e meilleure"): r = "la plus petite, sous un honneur"
         choix.append(dict(carte=c + x, raison=r, bonne=c + x == bonne))
     return dict(id="entame", type="entame", pas=m.n_encheres, siege=meneur,

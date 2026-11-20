@@ -50,22 +50,31 @@ couleur:
 
 carte:
   # dans une couleur choisie librement
+  # SEF 2024 p. 83–84 : à SA, le Roi de trois honneurs (ARV10, ARVxx) demande le déblocage ; la Dame de RDxx ;
+  # l'intermédiaire d'un honneur troisième. À l'atout, la petite carte donne la parité : la plus petite d'un nombre
+  # impair, la 2e de quatre ou six petites, la 3e d'un honneur quatrième.
   normale:
+    - { contrat: SA, si: "tete ARV, longueur 4+", carte: 2e, raison: "le roi : trois honneurs, demande le déblocage" }
+    - { contrat: SA, si: "tete RD, non tete RDV, longueur 4+", carte: 2e, raison: "la dame de RD : couleur pas assez solide pour le roi" }
     - { si: "sequence", carte: tete, raison: "tête de séquence" }
     - { si: "longueur 1", carte: haute, raison: "singleton" }
     - { si: "longueur 2", carte: haute, raison: "la plus haute du doubleton" }
-    - { si: "longueur 3, honneur", carte: basse, raison: "4e meilleure sous un honneur" }
-    - { si: "honneur", carte: 4e, raison: "4e meilleure sous un honneur" }
-    - { si: "longueur 3", carte: haute, raison: "la plus haute de trois petites" }
-    - { carte: 2e, raison: "deuxième carte, sans honneur" }
+    - { contrat: SA, si: "longueur 3, honneur", carte: milieu, raison: "l'intermédiaire d'un honneur troisième" }
+    - { contrat: SA, si: "honneur", carte: 4e, raison: "4e meilleure sous un honneur" }
+    - { contrat: SA, si: "longueur 3", carte: haute, raison: "la plus haute de trois petites" }
+    - { contrat: SA, carte: 2e, raison: "deuxième carte, sans honneur" }
+    - { si: "longueur 3", carte: basse, raison: "la plus petite : nombre impair (parité)" }
+    - { si: "longueur 5", carte: basse, raison: "la plus petite : nombre impair (parité)" }
+    - { si: "longueur 7", carte: basse, raison: "la plus petite : nombre impair (parité)" }
+    - { si: "honneur, longueur 4", carte: 3e, raison: "3e meilleure d'un honneur quatrième (parité)" }
+    - { carte: 2e, raison: "deuxième carte : nombre pair (parité)" }
   # dans la couleur du partenaire
   partenaire:
     - { contrat: couleur, si: "tete A", carte: A }
     - { si: "longueur 2-", carte: haute }
     - { si: "sequence", carte: tete }
-    - { si: "longueur 3, honneur", carte: basse }
+    - { si: "longueur 3", carte: basse, raison: "la plus petite : nombre impair (pair-impair, SEF 2024 p. 84)" }
     - { si: "honneur", carte: 4e }
-    - { si: "longueur 3", carte: haute }
     - { carte: 2e }
   # séquence à la couleur : l'as de AR (et de A-D-V)
   sequence:
@@ -87,3 +96,8 @@ exemples:
   - { main: "943 RD82 A7 V865", contrat: 6P, attendu: "♦A" }                          # contre un chelem, l'as
   - { main: "98432 A942 72 32", contrat: 5K, attendu: "♥A" }                          # au palier de 5, l'as
   - { main: "9 7654 AD63 A942", contrat: 2P, attendu: "♥6" }                          # plus bas, on garde ses as
+  # la carte, SEF 2024 p. 83–84 (2026-11-20)
+  - { main: "852 R852 D73 V82", contrat: 4P, attendu: "♥5" }                          # honneur 4e à l'atout : la 3e
+  - { main: "852 R8532 D7 V82", contrat: 4P, attendu: "♥2" }                          # nombre impair : la plus petite
+  - { main: "ARV52 943 72 852", contrat: 3SA, attendu: "♠R" }                         # ARV à SA : le roi
+  - { main: "RD52 943 872 852", contrat: 3SA, attendu: "♠D" }                         # RD sans le V à SA : la dame

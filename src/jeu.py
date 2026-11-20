@@ -142,7 +142,10 @@ def entame_code(main_fr, den, singleton=True, partenaire=(), adverses=(), palier
 
 def carte_partenaire(p, den):
     """Carte dans la couleur du partenaire : as en tête à la couleur, plus haute du doubleton,
-    tête de séquence, petite sous un honneur (le 10 compte avec 4 cartes), la plus haute de trois petites."""
+    tête de séquence, petite sous un honneur (le 10 compte avec 4 cartes), la plus haute de trois petites.
+    Les règles de entames.yaml (« carte: partenaire ») quand elles sont lues."""
+    r = regles_entame()
+    if r: return r.carte(p, den, "partenaire")[0]
     if p[0] == "A" and den != "SA": return "A"
     if len(p) <= 2: return p[0]
     t = tete_de_sequence(p)
@@ -158,8 +161,11 @@ def tete_de_sequence(p):
     return None
 
 
-def carte_dans(p):
-    """(carte, raison) dans une couleur p (cartes de la plus haute à la plus basse)."""
+def carte_dans(p, den=None):
+    """(carte, raison) dans une couleur p (cartes de la plus haute à la plus basse) : les règles de entames.yaml
+    (« carte: normale ») quand le contrat est connu, sinon le code."""
+    r = regles_entame() if den else None
+    if r: return r.carte(p, den, "normale")
     t = tete_de_sequence(p)
     if t: return t, "tête de séquence"
     if len(p) <= 2: return p[0], "la plus haute du doubleton" if len(p) == 2 else "singleton"

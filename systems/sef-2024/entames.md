@@ -30,18 +30,20 @@ décrivent la pratique sans que le programme l'applique.
   quand le déclarant a nommé deux couleurs (avec ou sans soutien du mort), elle ne gagnait rien
   au double mort sur 1 700 contrats.
 
-## Choix de la carte
-- Séquence : la tête (R de RD5, D de DV83) ; A de AR.
-  **(à confirmer : à sans-atout, tête de séquence avec seulement deux honneurs ?)**
-- Doubleton : la plus haute.
-- Honneur dans la couleur : 4e meilleure, ou la plus petite de trois cartes. Le 10 compte
+## Choix de la carte (SEF 2024, chapitre 11)
+- Séquence : la tête (R de RD5, D de DV83) ; A de AR. À sans-atout, avec quatre cartes ou plus : le R
+  de ARV (trois honneurs, le partenaire débloque) et la D de RD sans le V (la couleur n'est pas assez
+  solide pour demander le déblocage).
+- Singleton, doubleton : la plus haute.
+- À sans-atout : honneur troisième, la carte du milieu (8 de D85) ; honneur quatrième ou plus, la
+  4e meilleure ; trois petites, la plus haute ; quatre petites ou plus, la deuxième. Le 10 compte
   comme honneur avec 4 cartes ou plus (2 de X952), pas avec trois (X65 = trois petites).
-- Trois petites : la plus haute (X de X65).
-- Quatre petites ou plus : la deuxième carte (7 de 8743, 8 de 9853).
-  **(à confirmer : SEF « pair-impair » plutôt que la deuxième carte ?)**
-- Dans la couleur du partenaire : l'as à la couleur, la plus haute du doubleton, la tête
-  de séquence, la plus petite sous un honneur (4e meilleure avec 4 cartes), la plus haute
-  de trois petites.
+- À l'atout, la petite carte donne la parité : avec un nombre impair de cartes, la plus petite
+  (2 de 852, 5 de D85, 2 de R8532) ; avec quatre ou six petites, la deuxième ; avec un honneur
+  quatrième, la 3e meilleure (5 de R852).
+- Dans la couleur du partenaire (pair-impair) : l'as à la couleur, la plus haute du doubleton, la
+  tête de séquence, la plus petite de trois cartes, la 4e meilleure avec un honneur quatrième, la
+  deuxième de quatre petites.
 
 ## Pas de simulation
 L'entame vient des règles seules. Une simulation au double mort ne convient pas à l'entame : elle

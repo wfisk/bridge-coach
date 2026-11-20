@@ -77,7 +77,7 @@ class Regle:
         return self.contrat is None or (self.contrat == "SA") == (den == "SA")
 
 
-CARTES = ("tete", "haute", "basse", "4e", "2e", "A")
+CARTES = ("tete", "haute", "basse", "4e", "3e", "2e", "milieu", "A")
 
 
 class Entames:
@@ -127,7 +127,8 @@ class Entames:
                                                         "atouts": 0}):
                 continue
             x = {"tete": tete_de_sequence(p), "haute": p[0], "basse": p[-1], "A": "A",
-                 "4e": p[3] if len(p) >= 4 else p[-1], "2e": p[1] if len(p) >= 2 else p[0]}[r.carte]
+                 "4e": p[3] if len(p) >= 4 else p[-1], "3e": p[2] if len(p) >= 3 else p[-1],
+                 "2e": p[1] if len(p) >= 2 else p[0], "milieu": p[len(p) // 2]}[r.carte]
             return x, r.raison or ""
         raise ErreurRegles(f"{self.chemin} : liste de cartes « {liste} » sans règle pour {p}")
 

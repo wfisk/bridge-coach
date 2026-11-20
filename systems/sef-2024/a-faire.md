@@ -470,3 +470,16 @@ redemandes du 2♣ fort indéterminé (2M = six cartes 8–8½ levées, 3x = sep
 décalé d'un palier (3SA = les deux majeures) ; le mini-maxi 1♦ – 2♣ – 2SA (12–14 ou 18–19) et 3SA = 4-4-4-1 (p. 41) ;
 1m – 1SA – 2SA = 15–17 irrégulier ; les Splinters et le super-forcing de l'ouvreur ; les contres de l'ouvreur
 (p. 47–48) ; la deuxième enchère du répondant après un soutien (p. 49 : essais, contrôles).
+
+## Le livre SEF 2024, pp. 50–65 et 82–85 (scans du 2026-11-20)
+- pp. 50–65 (deuxième enchère du répondant, enchères de chelem) : le fichier suit déjà le livre (Roudi, 4e couleur
+  forcing, 2SA 11–12 et 3SA 13+ après 1SA, soutien de la majeure de l'ouvreur 6–10 / 11–12 / 13–15, Blackwood 3041).
+  Pas encore écrits : le relais dans l'autre mineure après 2SA à saut (p. 51–52), le 2SA modérateur après un bicolore
+  cher (p. 57), les réponses à la 3e couleur forcing (p. 61), les enchères de contrôle (p. 64), la Dame d'atout et
+  5SA aux rois après le Blackwood (p. 65).
+- pp. 82–85 : la carte d'entame suit maintenant le livre (entames.yaml, entames.md) : à SA l'intermédiaire d'un honneur
+  troisième, le R de ARV et la D de RD avec quatre cartes ; à l'atout la parité (la plus petite d'un nombre impair,
+  la 3e d'un honneur quatrième) ; dans la couleur du partenaire la plus petite de trois cartes. Pas de banc pour
+  l'entame (elle vient des règles). La signalisation du livre (parité par défaut, appel-refus sur l'entame de l'as ou
+  de la dame, défausses de parité) n'est pas celle des robots (pair-impair d'attitude et défausses préférentielles,
+  choix de l'utilisateur du 2026-11-11) : à décider avec lui.

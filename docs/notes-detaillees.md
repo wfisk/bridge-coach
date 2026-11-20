@@ -596,6 +596,16 @@ tools in src/outils/.
                         and 10); opener 2♦ no three cards, 2♥ three minimum, 2♠ three maximum (14 HL; after 1♥ à confirmer);
                         2♥ without a jump after 1♠ = 5♠ 4♥ weak; +12 / +32 IMP. conventions/roudi.md, landy.md, bicolores.md
                         (also pages of the Système tab). Drury stays as SEF p. 20 (the user, 2026-11-19: the book's version not used)
+                        SEF 2024 pp. 8–29 (the user's scan, 2026-11-20; chapters 1–4 and the start of 5; transcription in ffb/,
+                        ignored by git): each difference benched alone (a-faire.md lists all, +723 / +705 IMP in all). Kept: 1SA with
+                        15–16 H and a 5-3-3-2 five-card major or a 6-3-2-2 six-card minor; Stayman 2SA = both majors, then 3♣/3♦ and
+                        4♣/4♦ transfers; weak minor texas 2♠/3♣; 5-4 majors with game values bid Stayman, then chassé-croisé on 2♦;
+                        1M – 3M accepted from 13 HL; Spoutnik from 8 HL; weak twos from 5 H; redouble 10+ H after their take-out
+                        double, with the doubler's partner running (« (1x) contre (surcontre) »: without it the bench showed the
+                        robots leaving 1x XX, a false +700). Dropped: the book's minor raises, 6m-5M minor first, Truscott, 3M
+                        pre-empt after X, 2SA fitté, 3SA fitté, 4M pre-empt ≤ 8 H. The book counts a length point from the fifth
+                        card; main.hl from the sixth; switching lost −507 / −224 IMP (every HL threshold is tuned to the old count).
+                        The user's rule (2026-11-20): scans and transcriptions stay in ffb/; public files say the system in our words.
                         Over a weak two (2026-11-13, deals 5, 20, 29 of 12/11, each kept on 2 × 20 000 deals, a-faire.md): balancing
                         (2x – passe – passe) has its own rules, double from 10 H; the take-out double comes before a 3-level suit with
                         four cards in the free major; a strong doubler (18+, no 5-card major) after partner's minor looks for 3SA

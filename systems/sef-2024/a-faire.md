@@ -413,3 +413,39 @@ Restent ouverts (donnes du 19/11) : le soutien 3♥ de l'invitation après qu'on
 accepter l'invitation en comptant la forme face à un saut sur Spoutnik (donne 16) ; les texas après un 2SA de réveil
 (donne 18 : le système ne le dit pas, il faut la page) ; 1SA de l'avance avec un singleton dans la couleur de
 l'intervenant (donne 19).
+
+## Le livre SEF 2024, pp. 8–29 (ouvertures, réponses, 1SA, deux faibles), scan du 2026-11-20
+Le texte relu page à page (transcription privée dans ffb/, jamais dans git) et comparé à regles.yaml. Chaque écart essayé
+sur deux lots de 20 000 donnes (graines 11 et 12), mesuré sur le fichier qui garde les précédents ; en tout +723 et +705 IMP.
+Gardés :
+- Ouverture de 1SA avec 15–16 H et une majeure 5e en 5-3-3-2 (p. 24) : +22 et +55 ; avec une mineure 6e en 6-3-2-2 :
+  +62 et +48 ; les deux ensemble +84 et +103. Le 5-4-2-2 mineure 5e et quatre cœurs ou carreaux : −38 et +66, pas gardé.
+- Sur le Stayman, 2SA = les deux majeures 4e, puis les transferts 3♣/3♦ (proposition de manche) et 4♣/4♦ (manche)
+  (p. 25) : +89 et +66.
+- Les texas mineurs 2♠ (trèfles) et 3♣ (carreaux) avec une mineure 6e et 0–7 H (p. 26) : +9 et +97. Pas encore écrits :
+  les mains de manche avec une courte et les mains de chelem (la courte nommée après la rectification, 3SA, 4SA).
+- L'ouvreur accepte le soutien limite 3M dès 13 HL (14 avant) : +176 et +110 (un essai de contrôle à côté du 2SA fitté).
+- Le contre Spoutnik dès 8 HL (p. 14 et 22 ; 6 H avant) : +203 et +98. La donne 16 du 19/11 (6 H) soutient donc 2♣.
+- Deux faibles dès 5 H (p. 29 ; 6 avant), toujours 8 H vulnérable contre non vulnérable : +78 et +78.
+- Le surcontre avec 10+ H après leur contre d'appel (p. 13 et 21), et le partenaire du contreur qui se sauve dans sa
+  meilleure couleur (section « (1x) contre (surcontre) ») : +29 et +106. Sans la fuite, les robots adverses laissaient
+  jouer 1x surcontré (+656 et +820, faux) : la fuite est écrite avant de mesurer.
+- 5-4 en majeures et la manche : le Stayman d'abord, puis le chassé-croisé 3♥/3♠ sur 2♦ (p. 25) : +64 et +44.
+Essayés et retirés :
+- Les soutiens de mineure du livre (2m 6–9 H, 3m 10–11 H, p. 12) : −19 et −15 ; variante 3m après les SA : +10 et −16.
+- Ouvrir la mineure 6e avant la majeure 5e (p. 17) : +23 et −110.
+- Après leur contre d'appel sur 1M : 2SA Truscott (quatre atouts, 11–12) −25 et −13, 3M barrage −46 et −54.
+- Le 2SA fitté sur 1M (trois atouts, 11–12 HLD, p. 18) : −18 et −77 (l'ouvreur accepte dès 14 HL), +86 et +7 (dès
+  13 HL), puis −36 et −86 face au 3M accepté dès 13 HL : le soutien 3M reste.
+- Le 3SA fitté (quatre atouts, 13–15, régulier, p. 18) : −60 et +75 (sans recherche de chelem derrière).
+- Le 2SA fitté après leur intervention sur 1M (trois atouts, 11–15 HLD, p. 21) : −14 et −5.
+- 4M direct en barrage limité à 8 H (p. 18) : −17 et −36 (la fermeture jusqu'à 10 H avec une courte reste).
+- Sur leur intervention à 1SA : une mineure 6e pour jouer (+13 et −12) ; 2SA cue-bid quatre atouts sur 1M (+9 et −4).
+À voir :
+- Les points de longueur : le livre compte 1 point dès la cinquième carte (p. 9), le moteur dès la sixième
+  (encheres/main.py, hl). Passer au compte du livre : −507 et −224 (les seuils HL sont réglés sur l'ancien compte).
+- Pas encore écrits : l'exception 5♠-5♣ ouverte de 1♣ ; la réponse à simple saut (unicolore 18+ HL) ; le saut après Passe
+  (enchère de rencontre) ; la séquence 1♦ – 2♣ – X ; les réponses au Spoutnik simple ; le cue-bid bivalent ; le 2♣
+  bicolore majeur sur leur 1SA ; le Spoutnik généralisé plus fort au palier de 3 (11+ HL) ; les misères dorées, les
+  Splinters et la convention 2012 après le Stayman ; le Rubensohl et la défense contre un contre du Stayman ou du texas ;
+  le relais 2SA sur un deux faible (le livre : le maximum nomme un as ou un roi, suite p. 30, à scanner).

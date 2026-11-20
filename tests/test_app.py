@@ -102,6 +102,21 @@ for entame, ok in (({"joueur": "E", "carte": "♥R"}, True), ({"joueur": "O", "c
         app.importer_expert(sc, x); assert ok, entame
     except ValueError as e:
         assert not ok and "Donne 1" in str(e) and "Est qui entame" in str(e), str(e)
+# les mains de l'analyse (2026-11-20) : celles de la donne, sinon l'import refuse ; sans mains, il prévient
+M1 = {"N": "AR5 D84 RV7 A962", "E": "943 RD82 7 V8652", "S": "DV2 AV3 AD3 RD73", "O": "X876 X5 X986543 -"}
+json.dump({"donnes": {"1": {"mains": M1, "enc": grille, "entame": {"joueur": "E", "carte": "♥R"}}}}, open(x, "w"))
+assert "cartes de chaque donne sont vérifiées" in app.importer_expert(sc, x)
+assert "mains" not in json.load(open(sc))["analyses"]["expert"]["donnes"]["1"]          # pas gardées deux fois
+json.dump({"donnes": {"1": {"mains": dict(M1, S="DV2 AV3 AD3 RD72"), "enc": grille}}}, open(x, "w"))
+try:
+    app.importer_expert(sc, x); raise AssertionError("mains différentes")
+except ValueError as e:
+    assert "main de Sud différente" in str(e) and "rien n'a été importé" in str(e), str(e)
+json.dump({"donnes": {"1": {"mains": dict(M1, O="10876 105 10986543 -"), "enc": grille,
+                            "entame": {"joueur": "E", "carte": "♥R"}}}}, open(x, "w"))
+assert "vérifiées" in app.importer_expert(sc, x)                                      # le 10 écrit « 10 » ou « X »
+json.dump({"donnes": {"1": {"enc": grille, "entame": {"joueur": "E", "carte": "♥R"}}}}, open(x, "w"))
+assert "n'ont pas pu être vérifiées (donne 1)" in app.importer_expert(sc, x)
 # une analyse déjà rangée avec une carte absente : le rapport saute les cartes vues au lieu de s'arrêter
 assert rapport.entame_valide({"mains": {"E": "943 RD82 7 V8652"}}, "N", "♥R") and not rapport.entame_valide({"mains": {"E": "943 RD82 7 V8652"}}, "N", "♦A")
 assert rapport.cartes_vues({"n": 1, "mains": {"E": "943 RD82 7 V8652"}}, "1♠", "N", {"carte": "♦A"}) == ""

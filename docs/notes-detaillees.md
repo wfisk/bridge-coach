@@ -637,6 +637,11 @@ tools in src/outils/.
                         stayman.md, texas.md and systeme.md rewritten from the book. Fichier › Nouveau: the card is « Importer un
                         tournoi » (Bridgemate, feuille de route, FFB pages) and says to save the deal and pair pages and pick
                         donne01.html. The 19/11 expert analysis imported (importer_expert). Quoi de neuf 1.18.0 drafted, not published.
+                        Expert analysis carries each deal's hands (« mains », copied from the session; CONSIGNE says so) and
+                        importer_expert compares them card by card with the session (_cartes, the 10 as X or 10): a different hand
+                        refuses the whole file, naming the deal and the seat; without « mains » it imports and says the cards could
+                        not be checked. The hands are dropped before saving. Purpose (the user, 2026-11-20): write the expert
+                        analysis on a session made from the .pbn before play, then import it into the session made from the .bws.
                         Over a weak two (2026-11-13, deals 5, 20, 29 of 12/11, each kept on 2 × 20 000 deals, a-faire.md): balancing
                         (2x – passe – passe) has its own rules, double from 10 H; the take-out double comes before a 3-level suit with
                         four cards in the free major; a strong doubler (18+, no 5-card major) after partner's minor looks for 3SA

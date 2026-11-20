@@ -1569,9 +1569,12 @@ Le format du fichier rendu (celui de « exemple_analyse ») :
 {{"titre_pied": "Analyse des donnes – séance du {date} – Système SEF, marque {marque}",
  "systeme": "sef-2024",
  "note_encheres": "Enchères recommandées choisies à la table (sans double mort).",
- "donnes": {{"1": {{"enc": [["–", "1♠", "passe", "2♦"], ["passe", "…", "…", "…"]],
+ "donnes": {{"1": {{"mains": {{"N": "…", "E": "…", "S": "…", "O": "…"}},
+                   "enc": [["–", "1♠", "passe", "2♦"], ["passe", "…", "…", "…"]],
                    "notes": "…", "entame": {{"joueur": "E", "carte": "♣R"}}, "defense": "…", "plan": "…", "comm": "…"}},
             "2": {{…}}}}}}
+« mains » : les quatre mains de la donne, recopiées telles quelles de « seance » : l'import vérifie que l'analyse va
+bien sur la donne qui a ces cartes (une séance du même tournoi, créée depuis un autre fichier, peut numéroter autrement).
 « enc » : la grille Ouest, Nord, Est, Sud, une ligne de quatre par tour, « – » avant le donneur, « passe »,
 « contre », « surcontre », « 1SA »… ; « entame.joueur » : N, E, S ou O. Une clé par donne, toutes les donnes.
 L'entame part toujours du joueur à gauche du déclarant de « enc » (le premier de son camp à avoir nommé la dénomination
@@ -1638,8 +1641,19 @@ def importer_expert(c, chemin):
     seance = {str(d["n"]): d for d in (lire_seance(c) or {}).get("donnes", [])}
     nums = set(seance)
     from comparer import final
+    sans_mains = []
     for k, a in donnes_.items():
         if k not in nums: raise ValueError(f"La donne {k} n'est pas dans cette séance : est-ce la bonne séance ?")
+        mains_ = a.get("mains") if isinstance(a, dict) else None
+        if isinstance(mains_, dict) and mains_:              # les cartes de l'analyse sont-elles celles de la donne ?
+            ici = seance[k].get("mains") or {}
+            autres_ = [x for x in "NESO" if _cartes(mains_.get(x)) != _cartes(ici.get(x))]
+            if autres_:
+                raise ValueError(f"Donne {k} : les cartes de l'analyse ne sont pas celles de cette séance (main de "
+                                 f"{SIEGE[autres_[0]]} différente). L'analyse a été écrite pour une autre donne ou une autre "
+                                 "numérotation : rien n'a été importé.")
+        else:
+            sans_mains.append(k)
         enc = a.get("enc") if isinstance(a, dict) else None
         if not (isinstance(enc, list) and enc and all(isinstance(r, list) and len(r) == 4 for r in enc)):
             raise ValueError(f"Donne {k} : les enchères (« enc ») ne sont pas une grille de quatre colonnes.")
@@ -1651,13 +1665,25 @@ def importer_expert(c, chemin):
                 raise ValueError(f"Donne {k} : d'après les enchères, {contrat} est joué par {SIEGE[decl]} et c'est "
                                  f"{SIEGE[bon]} qui entame, avec une carte de sa main ; l'analyse donne l'entame "
                                  f"{e.get('carte')} à {SIEGE.get(e.get('joueur'), e.get('joueur'))}. Demandez à Claude de corriger cette donne.")
+    donnes_ = {k: ({x: y for x, y in a.items() if x != "mains"} if isinstance(a, dict) else a)   # les mains ont servi à
+               for k, a in donnes_.items()}                                                    # la vérification
     ancien = rapport.analyse_de(c, "expert") or {}
     fusion = dict(ancien, **{k: v for k, v in neuf.items() if k != "donnes"})
     fusion["donnes"] = dict(ancien.get("donnes", {}), **donnes_)
     fusion.setdefault("systeme", "sef-2024")
     rapport.ecrire_analyse(c, "expert", fusion)              # le fichier d'avant est gardé dans versions/
     return (f"{len(donnes_)} donne{'s' if len(donnes_) > 1 else ''} importée{'s' if len(donnes_) > 1 else ''} ; l'analyse de "
-            f"l'expert couvre maintenant {len(fusion['donnes'])} donnes sur {len(nums)}.")
+            f"l'expert couvre maintenant {len(fusion['donnes'])} donnes sur {len(nums)}."
+            + (" Les cartes de chaque donne sont vérifiées." if not sans_mains else
+               f" Attention : sans les mains dans l'analyse, les cartes n'ont pas pu être vérifiées (donne"
+               f"{'s' if len(sans_mains) > 1 else ''} {', '.join(sorted(sans_mains, key=int))})."))
+
+
+def _cartes(main):
+    """Une main (« AX93 X64 V8 RV62 », le 10 en X ou 10) comme un ensemble de cartes, pour comparer deux fichiers."""
+    if not isinstance(main, str): return None
+    parts = main.replace("10", "X").split()
+    return frozenset((i, r) for i, p in enumerate(parts) for r in ("" if p in ("-", "—") else p))
 
 
 PART_ = {"N": "S", "S": "N", "E": "O", "O": "E"}

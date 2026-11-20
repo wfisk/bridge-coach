@@ -497,3 +497,22 @@ Essayés, sur deux lots de 20 000 donnes, contre le fichier gardé :
   les réponses par les as ne serviraient que si l'ouvreur s'en servait ensuite pour le chelem (à écrire avec).
 Ce qui reste à gagner du livre tient donc surtout à la suite des enchères de chelem (contrôles, p. 64 ; la Dame d'atout
 et 5SA, p. 65) : le moteur s'arrête ou monte encore sur les points plus que sur les contrôles.
+
+## Les chelems (2026-11-20)
+Diagnostic sur 6 000 donnes du banc : 230 chelems demandés, 165 faits au double mort, 65 chutés ; parmi les chutés, 50
+avaient toutes les clés et tous les contrôles (une levée de moins, le plus souvent un fit de huit et 26–30 H), 9 manquaient
+deux clés, 1 un contrôle. Les manqués (12 levées au double mort, manche jouée) sont surtout sous 29 H (388 sur 555).
+Gardés (2 × 20 000 donnes ; en tout +766 et +673 IMP) :
+- Un bug : après le Spoutnik du partenaire, l'ouvreur répondait au contre à chaque tour (donne 839 : 3♠, 4♠, 5♠, 6♠ et
+  7♠ contrés, 20 H). Il ne répond plus qu'une fois : +273 et +273.
+- Les clés après les contrôles seulement avec 31 points ensemble (encheres.SEUIL_ACCORD ; 29 avant) : à 30, +306 et
+  +277 ; à 31 en plus, +187 et +123 ; 32 : +20 et +36 de plus que 30.
+Essayés et retirés :
+- Le seuil du chelem avec un fit (SEUIL_CHELEM_FIT, 31) : 30 −143 et −179 ; 32 −227 et −151 ; 33 (le livre) −432.
+  À l'IMP, les chelems à 31 points rapportent plus qu'ils ne coûtent.
+- Le seuil des contrôles (SEUIL_CONTROLES, 28) : 27 −166 et −83 ; 29 −38 et +55 (après le seuil des clés) ; 30 −162
+  et −169.
+- La dame d'atout (p. 65) : une clé manque, 5♥ (deux clés sans la dame) ou la couleur collée qui la demande après
+  5♣ / 5♦ (S.reponse_dame : sans elle l'atout au plus bas, avec elle le roi le plus économique) : +10 et −9
+  (encheres.DAME_ATOUT, écrit, éteint).
+Pas encore écrits : les réponses au Blackwood avec une chicane (5SA, 6x), le 2♦ forcing de manche à réponses par les as.

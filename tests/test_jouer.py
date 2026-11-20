@@ -123,3 +123,9 @@ _d18 = {"n": 18, "donneur": "E", "vul": "N-S", "mains": {"N": "V9 D9 RX9 RDVX73"
                                                          "S": "X8654 87654 876 -", "O": "A72 AVX2 AD32 A8"}}
 _r = _encherir(_d18)
 assert _r["contrat"] == "2♣X" and _r["encheres"][8] == "passe", _r["encheres"]
+
+# l'ouvreur ne répond qu'une fois au Spoutnik du partenaire (donne 839 du banc, graine 11 : 3♠, 4♠… 7♠ contrés, 2026-11-20)
+_d839 = {"n": 839, "donneur": "O", "vul": "Personne", "mains": {"N": "RX98 DV RDX8 VX4", "E": "- AR9763 A97 A987",
+                                                                 "S": "DV52 X4 62 RD653", "O": "A7643 852 V543 2"}}
+_r = _encherir(_d839)
+assert _r["encheres"].count("contre") <= 2 and not _r["contrat"].startswith(("5", "6", "7")), _r["encheres"]

@@ -374,7 +374,7 @@ SEUIL_FIT_MINEUR = 29          # …et ce total : 4 de la mineure, forcing, au l
 PASSE_PUNITIVE = True          # l'ouvreur recontre après 1x (2y) passe passe : le répondant peut passer (passe embusqué, 2026-11-13)
 CONTRE_FORT_3SA = True         # contre d'appel fort (18+), réponse en mineure : 3SA, ou le cue-bid qui demande l'arrêt (donne 20 du 12/11)
 ARRET_CUE = True               # avant 3SA sans arrêt dans leur couleur : cue-bid qui demande l'arrêt
-SEUIL_ACCORD = 29              # total des deux mains pour demander les clés une fois toutes les couleurs contrôlées
+SEUIL_ACCORD = 31              # total des deux mains pour demander les clés une fois toutes les couleurs contrôlées
 INVITE_LARGE = "vul"           # vulnérable, ma zone montrée large (plus de 6 points) : accepter sur le total avec le partenaire
 INVITE_VUL = 1                 # …un point de moins vulnérable (manche vulnérable à l'IMP)
 INVITE_MILIEU_VUL = 1          # zone étroite : accepter avec ce nombre de points de moins vulnérable
@@ -712,11 +712,16 @@ def cote_ouvreur(m, s, hist, infos, etat, ouvreur):
     dp = du_part[-1]
     if dp.nature == "rois": return S.reponse_rois(m, dp.atout)
     if dp.nature == "blackwood": return S.reponse_blackwood(m, dp.atout)
+    if dp.nature == "dame": return S.reponse_dame(m, dp.atout, dp.enchere)
+    if len(nos) >= 2 and nos[-2][1].nature == "dame" and nos[-2][0] == s:
+        return apres_dame(m, nos[-2][1].atout, nos[-1][1].enchere)
     if len(nos) >= 2 and nos[-2][1].nature == "rois" and nos[-2][0] == s:
         return apres_rois(m, nos[-2][1].atout, nos[-1][1].enchere)
     if len(nos) >= 2 and nos[-2][1].nature == "blackwood" and nos[-2][0] == s:
         return apres_blackwood(m, nos[-2][1].atout, nos[-1][1].enchere, infos[PART[s]])
-    if dp.nature == "spoutnik": return S.apres_spoutnik(m, ouv, oc, dp, dernier)
+    if dp.nature == "spoutnik":                           # une seule réponse au Spoutnik (pas à chaque tour : donne 839 du banc,
+        i_part = max(i for i, (x, _) in enumerate(hist) if x == PART[s])   # 3♠, 4♠… 7♠ contrés, 2026-11-20)
+        if not any(x == s for x, _ in hist[i_part + 1:]): return S.apres_spoutnik(m, ouv, oc, dp, dernier)
     moi = next((a for x, a in reversed(hist) if x == s and a.enchere not in DOUBLES), None)
     if moi and moi.nature == "cue": return apres_mon_cue(m, s, moi, etat, False)
     if dp.nature == "cue": return reponse_cue(m, dp, oc, dernier)
@@ -757,6 +762,8 @@ def cote_defense(m, s, hist, infos, etat, seq):
     dp = du_part[-1] if du_part else Appel("passe", "")
     if dp.nature == "rois": return S.reponse_rois(m, dp.atout)
     if dp.nature == "blackwood": return S.reponse_blackwood(m, dp.atout)
+    if dp.nature == "dame": return S.reponse_dame(m, dp.atout, dp.enchere)
+    if len(mes) >= 1 and mes[-1].nature == "dame": return apres_dame(m, mes[-1].atout, dp.enchere)
     moi = mes[-1]
     if moi.nature == "cue": return apres_mon_cue(m, s, moi, etat, True)
     if dp.nature == "cue": return reponse_cue_intervenant(m, dp, dernier)
@@ -869,6 +876,10 @@ def suivante(m, s, nos, infos, dernier):
         return S.reponse_rois(m, dern_part.atout)
     if dern_part.nature == "blackwood":
         return S.reponse_blackwood(m, dern_part.atout)
+    if dern_part.nature == "dame":
+        return S.reponse_dame(m, dern_part.atout, dern_part.enchere)
+    if len(nos) >= 2 and nos[-2][1].nature == "dame":
+        return apres_dame(m, nos[-2][1].atout, dern_part.enchere)
     if len(nos) >= 2 and nos[-2][1].nature == "rois":
         return apres_rois(m, nos[-2][1].atout, dern_part.enchere)
     if len(nos) >= 2 and nos[-2][1].nature == "blackwood":
@@ -968,6 +979,10 @@ def apres_rois(m, atout, reponse):
     return Appel("passe", "un roi manque : le petit chelem est atteint", nature="conclusion")
 
 
+DENOMS_ASC = S.DENOMS          # ♣ ♦ ♥ ♠ SA
+DAME_ATOUT = False             # une clé manque : vérifier la dame d'atout avant le chelem (SEF 2024 p. 65) ; +10 et −9 IMP : éteint
+
+
 def apres_blackwood(m, atout, reponse, part):
     mes = m.cles(atout)
     n = {"5♣": (0, 3), "5♦": (1, 4), "5♥": (2, 2), "5♠": (2, 2)}[reponse]
@@ -976,9 +991,27 @@ def apres_blackwood(m, atout, reponse, part):
     if manque >= 2:
         if rang(e(5, atout)) > rang(reponse): return Appel(e(5, atout), "il manque deux clés", nature="conclusion")
         return Appel(e(6, atout), "il manque deux clés, mais 5" + atout + " n'est plus possible", nature="conclusion")
+    if DAME_ATOUT and manque == 1 and "D" not in m.cartes[atout] and m.L[atout] + part.L[atout] < 10:
+        cinq = e(5, atout)
+        if reponse == "5♥":                                # deux clés sans la dame : une clé et la dame manquent
+            if rang(cinq) > rang(reponse):
+                return Appel(cinq, "une clé et la dame d'atout manquent : on s'arrête", nature="conclusion")
+        elif reponse in ("5♣", "5♦"):                      # la dame n'est pas dite : la couleur collée la demande
+            i = DENOMS_ASC.index(reponse[1]) + 1
+            if DENOMS_ASC[i] == atout: i += 1
+            if i < len(DENOMS_ASC) and DENOMS_ASC[i] != "SA" and rang(e(5, DENOMS_ASC[i])) < rang(e(6, atout)):
+                return Appel(e(5, DENOMS_ASC[i]), f"une clé manque : la couleur collée demande la dame d'atout", nature="dame",
+                             atout=atout)
     if manque == 0 and m.hcp + part.pts[0] >= GRAND_CHELEM:
         return Appel(e(7, atout), "toutes les clés, grand chelem", nature="conclusion")
     return Appel(e(6, atout), "petit chelem" + (" (une clé manque)" if manque else ""), nature="conclusion")
+
+
+def apres_dame(m, atout, reponse):
+    """La réponse à la demande de la dame d'atout : sans la dame, il a mis l'atout au palier le plus bas (on passe) ;
+    avec, un roi ou 6 dans l'atout : le petit chelem."""
+    if reponse == e(6, atout) or reponse == e(5, atout): return Appel("passe", "la réponse à la dame a fixé le contrat")
+    return Appel(e(6, atout), "il a la dame d'atout : petit chelem", nature="conclusion")
 
 
 # ---------------------------------------------------------------- placement du contrat

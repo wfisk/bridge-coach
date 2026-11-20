@@ -220,6 +220,22 @@ def reponse_blackwood(m, atout):
     return Appel("5♠" if dame else "5♥", f"réponse au Blackwood 3041 : 2 clés {'avec' if dame else 'sans'} la dame d'atout")
 
 
+def reponse_dame(m, atout, demande):
+    """Sur la demande de la dame d'atout (la couleur collée après 5♣ / 5♦, SEF 2024 p. 65) : sans elle, l'atout au palier
+    le plus bas ; avec elle, le roi annexe le plus économique sous 6 dans l'atout, sinon 6 dans l'atout."""
+    six = e(6, atout)
+    if "D" not in m.cartes[atout]:
+        b = e(5, atout) if rang(e(5, atout)) > rang(demande) else six
+        return Appel(b, "réponse à la demande de la dame d'atout : je ne l'ai pas", nature="conclusion", atout=atout)
+    for n in (5, 6):
+        for c in DENOMS[:4]:                               # du ♣ au ♠ : le plus économique
+            if c == atout or "R" not in m.cartes.get(c, ""): continue
+            b = e(n, c)
+            if rang(demande) < rang(b) < rang(six):
+                return Appel(b, f"réponse à la demande de la dame d'atout : je l'ai, et le roi à {c}", atout=atout, nature="dame_oui")
+    return Appel(six, "réponse à la demande de la dame d'atout : je l'ai, sans roi à montrer", nature="conclusion", atout=atout)
+
+
 def reponse_rois(m, atout):
     """Sur 5SA (après le Blackwood du partenaire, toutes les clés réunies) : les rois hors le roi d'atout, par paliers :
     6♣ = 0, 6♦ = 1, 6♥ = 2, 6♠ = 3 (systems/conventions/blackwood-3041.md, à confirmer)."""

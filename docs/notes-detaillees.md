@@ -625,6 +625,11 @@ tools in src/outils/.
                         book's rules, then our additions marked « (notre ajout) » with a reason. The convention card's default
                         signals are now « SEF 2024 » (fiche_conventions SEF_SIG, SEF_DEF; Pair-impair and Lavinthal stay options);
                         an old card that had saved « Préférence » keeps Lavinthal. The paragraph above describes the old method.
+                        Slams (2026-11-20, a-faire.md « Les chelems »): opener answers partner's Spoutnik double only once (the
+                        Spoutnik dispatch in encheres/__init__.py checks the opener has not spoken since; deal 839 had run to 7♠X;
+                        test_jouer); SEUIL_ACCORD 31 (keys after controls). The trump-queen ask (DAME_ATOUT, apres_dame,
+                        S.reponse_dame: the « couleur collée » after 5♣/5♦, sign-off at 5 after 5♥ when a key is missing) is
+                        written and off (neutral on the bench). The book's 33 HLD slam threshold lost: at IMP 31 pays.
                         Over a weak two (2026-11-13, deals 5, 20, 29 of 12/11, each kept on 2 × 20 000 deals, a-faire.md): balancing
                         (2x – passe – passe) has its own rules, double from 10 H; the take-out double comes before a 3-level suit with
                         four cards in the free major; a strong doubler (18+, no 5-card major) after partner's minor looks for 3SA

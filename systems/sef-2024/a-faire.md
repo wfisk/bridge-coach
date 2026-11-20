@@ -483,3 +483,17 @@ décalé d'un palier (3SA = les deux majeures) ; le mini-maxi 1♦ – 2♣ – 
   l'entame (elle vient des règles). La signalisation du livre (parité par défaut, appel-refus sur l'entame de l'as ou
   de la dame, défausses de parité) n'est pas celle des robots (pair-impair d'attitude et défausses préférentielles,
   choix de l'utilisateur du 2026-11-11) : à décider avec lui.
+
+## Les gains restants du livre (2026-11-20, suite)
+Essayés, sur deux lots de 20 000 donnes, contre le fichier gardé :
+- Le 3SA fitté (p. 18 et 37) avec la suite du livre : l'ouvreur conclut à 4M sans ambition de chelem, sinon le code
+  (contrôles, Blackwood). 4M jusqu'à 16 HL : −78 et +39 ; jusqu'à 17 : −79 et +38 ; 18 : −91 et +38 ; en HLD(U),
+  jusqu'à 16 : −152 et −39, 17 : −136 et +8, 18 : −92 et +21. La nature « soutien_lent » faisait partir le code des
+  contrôles avant les règles (−30 et +100, le chelem à 31 points). Le chemin actuel (une couleur d'attente, puis le
+  soutien) trouve mieux les chelems : la suite des contrôles du moteur ne vaut pas encore celle d'un joueur.
+- Le 2SA modérateur après le bicolore cher (p. 57), avec 6–8 HL ; l'ouvreur minimum répète sa couleur à 3 : −12 et −18
+  (18 séquences sur 20 000 : face à 17+, la manche est le plus souvent juste).
+- Le 2♦ forcing de manche à réponses par les as (p. 34) : pas écrit. Les robots ouvrent de 2♦ sur 59 donnes de 20 000 ;
+  les réponses par les as ne serviraient que si l'ouvreur s'en servait ensuite pour le chelem (à écrire avec).
+Ce qui reste à gagner du livre tient donc surtout à la suite des enchères de chelem (contrôles, p. 64 ; la Dame d'atout
+et 5SA, p. 65) : le moteur s'arrête ou monte encore sur les points plus que sur les contrôles.

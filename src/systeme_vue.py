@@ -496,6 +496,26 @@ CONVENTIONS = (("stayman", "Stayman", "conventions/stayman.md"), ("texas", "Texa
                ("landy", "Défense contre 1SA", "conventions/landy.md"))
 
 
+# le nom d'une page de convention → le « nom: » de ses règles dans regles.yaml (Blackwood : le code, pas de règle)
+NOM_REGLES = {"stayman": "Stayman", "texas": "Texas", "drury": "Drury", "roudi": "Roudi", "bicolores": "Bicolores",
+              "landy": "Landy"}
+
+
+def regles_convention(cle, s=None):
+    """Sous le texte d'une convention : les séquences du fichier de règles où les robots la jouent, avec leurs mains
+    d'exemple vérifiées (2026-11-20 : montrer le système avec des mains, en nos mots). "" sans règle nommée."""
+    nom = NOM_REGLES.get(cle)
+    if not nom: return ""
+    s = s or lire()
+    ix = index(s); defs = s["definitions"]
+    blocs = [sequence_bloc(c, r, e, ix, defs) for _, seqs in s["sections"] for c, r, e in seqs
+             if any(str(x.get("nom") or "").strip().lower() == nom.lower() for x in r)]
+    if not blocs: return ""
+    return ("<div class='syst'><h3>Comme les robots la jouent</h3><p class='note' style='font-style:normal;font-size:15px;"
+            "margin:0 0 var(--sp-3)'>Chaque séquence où la convention intervient, avec les mains d'exemple que le "
+            "programme vérifie à chaque lancement.</p>" + "".join(blocs) + "</div>")
+
+
 def compter(s=None):
     """(séquences, enchères décrites, exemples) : pour la vue d'ensemble."""
     s = s or lire()

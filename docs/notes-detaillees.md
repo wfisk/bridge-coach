@@ -630,6 +630,13 @@ tools in src/outils/.
                         test_jouer); SEUIL_ACCORD 31 (keys after controls). The trump-queen ask (DAME_ATOUT, apres_dame,
                         S.reponse_dame: the « couleur collée » after 5♣/5♦, sign-off at 5 after 5♥ when a key is missing) is
                         written and off (neutral on the bench). The book's 33 HLD slam threshold lost: at IMP 31 pays.
+                        Evening (2026-11-20, a-faire.md): 2SA responses from the book (Stayman shifted, 4♦ majors, 3♠/4♣ minor
+                        texas), the relay in the other minor after 1m–1M–2SA, the take-out double after their overcall of our 1SA
+                        (+179 / +137 IMP in all). systeme_vue.regles_convention adds, under each convention page of the Système
+                        tab, the sequences whose rules carry that « nom: » with their checked example hands (NOM_REGLES);
+                        stayman.md, texas.md and systeme.md rewritten from the book. Fichier › Nouveau: the card is « Importer un
+                        tournoi » (Bridgemate, feuille de route, FFB pages) and says to save the deal and pair pages and pick
+                        donne01.html. The 19/11 expert analysis imported (importer_expert). Quoi de neuf 1.18.0 drafted, not published.
                         Over a weak two (2026-11-13, deals 5, 20, 29 of 12/11, each kept on 2 × 20 000 deals, a-faire.md): balancing
                         (2x – passe – passe) has its own rules, double from 10 H; the take-out double comes before a 3-level suit with
                         four cards in the free major; a strong doubler (18+, no 5-card major) after partner's minor looks for 3SA

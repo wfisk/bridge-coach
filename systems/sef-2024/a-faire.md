@@ -516,3 +516,18 @@ Essayés et retirés :
   5♣ / 5♦ (S.reponse_dame : sans elle l'atout au plus bas, avec elle le roi le plus économique) : +10 et −9
   (encheres.DAME_ATOUT, écrit, éteint).
 Pas encore écrits : les réponses au Blackwood avec une chicane (5SA, 6x), le 2♦ forcing de manche à réponses par les as.
+
+## La suite du livre : 2SA, redemandes, intervention sur 1SA (2026-11-20, soir)
+Contre le fichier du matin (q0) ; chaque essai sur 2 × 20 000 donnes ; en tout +179 et +137 IMP.
+Gardés :
+- Sur 2SA (p. 35) : le Stayman décalé (3SA = les deux majeures, puis 4♣ / 4♦ transferts), 4♦ = les deux majeures 5-5,
+  3♠ / 4♣ texas trèfle / carreau avec un espoir de chelem (à la place du 4♣ / 4♦ naturel) : +37 et +3 (rare). Le 5SA
+  proposition de grand chelem (16 H) et 6SA 13–15 : jamais sur 40 000 donnes, gardés pour suivre le livre.
+- Après 1m – 1M – 2SA (18–19), l'autre mineure au palier de 3 : relais, trois cartes dans la majeure (p. 51) : +45 et +59.
+- Sur leur intervention à 2 après notre 1SA, le contre d'appel (8+ H, court chez eux, une majeure 4e ; p. 27) et les
+  réponses de l'ouvreur : +97 et +75.
+Essayés et retirés :
+- Le 2SA mini-maxi après 1♦ – 2♣ (12–14 ou 18–19, p. 41) et 3SA = 4-4-4-1 : −19 et −33 (le répondant conclut à 3SA
+  sans savoir si l'ouvreur a 18–19 : des chelems perdus).
+Pas encore écrits : les texas du Rubensohl et le 3♠ demande d'arrêt (p. 27), la défense après un contre du Stayman ou
+du texas (p. 28).

@@ -109,13 +109,17 @@ ouverture:
       - { main: "AV852 RD84 72 92", attendu: 2T }                    # 5-4 en majeures, 10 H : Stayman d'abord
 
 "2SA":
+  # SEF 2024 p. 35 : 4♦ = les deux majeures 5-5 (l'ouvreur choisit)
+  - 4K:  { si: "C 5+, P 5+, H 5-12", montre: "5+ cœurs et 5+ piques : choisissez la majeure", nature: relais, alerte: oui }
   - 3C:  { si: "P 5+, P >= C", montre: "texas : 5+ piques", nature: relais, nom: Texas }
   - 3K:  { si: "C 5+", montre: "texas : 5+ cœurs", nature: relais, nom: Texas }
   - 3T:  { si: "H 3+, M 4, non forme 4-3-3-3", montre: "Stayman : une majeure 4e", nature: relais, nom: Stayman, source: à confirmer }
-  - 4T:  { si: "T 6+, T >= K, H 9-12", montre: "6+ trèfles, essai de chelem", nature: soutien_lent, source: à confirmer }
-  - 4K:  { si: "K 6+, H 9-12", montre: "6+ carreaux, essai de chelem", nature: soutien_lent, source: à confirmer }
+  # SEF 2024 p. 35 : 3♠ texas trèfle et 4♣ texas carreau, avec un espoir de chelem
+  - 3P:  { si: "T 6+, T >= K, H 9-12", montre: "texas trèfle : 6+ trèfles, espoir de chelem", nature: soutien_lent, atout: T, alerte: oui }
+  - 4T:  { si: "K 6+, H 9-12", montre: "texas carreau : 6+ carreaux, espoir de chelem", nature: soutien_lent, atout: K, alerte: oui }
   - 7SA: { si: "H 17+", montre: "grand chelem", nature: conclusion }
-  - 6SA: { si: "H 13-16", montre: "petit chelem", nature: conclusion }
+  - 5SA: { si: "H 16", montre: "proposition de grand chelem (16 H)", nature: invite }
+  - 6SA: { si: "H 13-15", montre: "petit chelem", nature: conclusion }
   - 4SA: { si: "H 11-12", montre: "quantitatif : invite au chelem", nature: invite }
   - 3SA: { si: "H 5-10", montre: "manche", nature: conclusion }
   - passe: { si: "H 4-", montre: "pas de manche possible" }
@@ -154,13 +158,32 @@ ouverture:
 "1SA - 2C - 3P":
   - 4P:  { si: "H 5-14 || HLD(P) 7-14", montre: "neuf atouts, 16–17 H en face : la manche", nature: conclusion }
   - passe: { si: "H 14-", montre: "trop faible même face à 16–17 H" }
-"2SA - 4T | 2SA - 4K":
+"2SA - 3P | 2SA - 4T":
   - exemples:
-      - { main: "2 RV2 642 AV8754", apres: 2SA, attendu: 4T }     # donne 20 du 01/11 (214059)
+      - { main: "2 RV2 642 AV8754", apres: 2SA, attendu: 3P }     # donne 20 du 01/11 (214059) : texas trèfle
+"2SA - 4K":
+  - 4C:  { si: "C >= P", montre: "choisit les cœurs" }
+  - 4P:  { montre: "choisit les piques" }
+"2SA - 4K - 4C | 2SA - 4K - 4P":
+  - passe: { montre: "contrat atteint" }
+"2SA - 5SA":
+  - 7SA: { si: "H 21", montre: "maximum : grand chelem", nature: conclusion }
+  - 6SA: { montre: "minimum : petit chelem", nature: conclusion }
 "2SA - 3T":
-  - 3C:  { si: "C 4+", montre: "réponse au Stayman : 4 cœurs, peut avoir 4 piques", source: à confirmer }
-  - 3P:  { si: "P 4+", montre: "réponse au Stayman : 4 piques, pas 4 cœurs", source: à confirmer }
-  - 3K:  { montre: "réponse au Stayman : pas de majeure 4e", source: à confirmer }
+  # SEF 2024 p. 35 : les réponses décalées d'un palier, 3SA = les deux majeures
+  - 3SA: { si: "C 4, P 4", montre: "réponse au Stayman : 4 cœurs et 4 piques", nom: Stayman }
+  - 3C:  { si: "C 4+", montre: "réponse au Stayman : 4 cœurs, pas 4 piques" }
+  - 3P:  { si: "P 4+", montre: "réponse au Stayman : 4 piques, pas 4 cœurs" }
+  - 3K:  { montre: "réponse au Stayman : pas de majeure 4e" }
+"2SA - 3T - 3SA":                  # les deux majeures : le transfert à 4 (4♣ pour les cœurs, 4♦ pour les piques)
+  - 4T:  { si: "C 4+, C >= P", montre: "transfert : fit cœur", nature: relais, alerte: oui, nom: Stayman }
+  - 4K:  { si: "P 4+", montre: "transfert : fit pique", nature: relais, alerte: oui, nom: Stayman }
+"2SA - 3T - 3SA - 4T":
+  - 4C:  { montre: "complète le transfert" }
+"2SA - 3T - 3SA - 4K":
+  - 4P:  { montre: "complète le transfert" }
+"2SA - 3T - 3SA - 4T - 4C | 2SA - 3T - 3SA - 4K - 4P":
+  - passe: { montre: "contrat atteint" }
 "2SA - 3K":
   - 3C:  { montre: "réponse au texas : complète le texas", nature: relais }
 "2SA - 3C":
@@ -593,8 +616,21 @@ ouverture:
 # ------------------------------------------------------------------ après 2SA de l'ouvreur (18–19, régulier)
 "1N - 1M - 2SA":
   - 4W:  { si: "W 6+, H 7+", montre: "6+ cartes, manche", nature: conclusion }
+  # SEF 2024 p. 51 : l'autre mineure au palier de 3, relais : trois cartes dans ma majeure ?
+  - 3K:  { si: "W 5, H 6+", montre: "relais : cinq cartes, trois cartes dans ma majeure ?", nature: relais, alerte: oui, apres: 1T - 1C - 2SA | 1T - 1P - 2SA }
+  - 3T:  { si: "W 5, H 6+", montre: "relais : cinq cartes, trois cartes dans ma majeure ?", nature: relais, alerte: oui, apres: 1K - 1C - 2SA | 1K - 1P - 2SA }
   - 3SA: { si: "H 6+", montre: "manche", nature: conclusion, source: à confirmer }
   - passe: { montre: "trop faible" }
+"1T - 1C - 2SA - 3K | 1K - 1C - 2SA - 3T":
+  - 3C:  { si: "C 3+", montre: "trois cartes à cœur" }
+  - 3SA: { montre: "pas trois cœurs", nature: conclusion }
+"1T - 1P - 2SA - 3K | 1K - 1P - 2SA - 3T":
+  - 3P:  { si: "P 3+", montre: "trois cartes à pique" }
+  - 3SA: { montre: "pas trois piques", nature: conclusion }
+"1T - 1C - 2SA - 3K - 3C | 1K - 1C - 2SA - 3T - 3C | 1T - 1P - 2SA - 3K - 3P | 1K - 1P - 2SA - 3T - 3P":
+  - 4W:  { montre: "le fit 5-3 : la manche", nature: conclusion }
+"1T - 1C - 2SA - 3K - 3SA | 1K - 1C - 2SA - 3T - 3SA | 1T - 1P - 2SA - 3K - 3SA | 1K - 1P - 2SA - 3T - 3SA":
+  - passe: { montre: "pas de fit : 3SA" }
 "1T - 1K - 2SA":
   - 3SA: { si: "H 6+", montre: "manche", nature: conclusion, source: à confirmer }
   - passe: { montre: "trop faible" }
@@ -832,6 +868,8 @@ ouverture:
   - "*K": { si: "K 6+, non Y est K, palier(K) 2, H 5-", montre: "6+ carreaux, faible : pour jouer", nature: conclusion }
   - passe: { si: "H 5-", montre: "moins de 6 H" }
   - 3SA: { si: "H 10+, arret Y", montre: "10+ H, arrêt : manche", nature: conclusion }
+  # SEF 2024 p. 27 : le contre est d'appel (8+ H, court dans leur couleur, une majeure libre 4e)
+  - contre: { si: "H 8+, Y 2-, (C 4, non Y est C || P 4, non Y est P), palier(T) 3-", montre: "contre d'appel : 8+ H, court dans leur couleur, une majeure 4e", nature: appel }
   - 2SA: { si: "H 8-9, arret Y, reg", montre: "8–9 H, arrêt : invitation", nature: invite }
   - 3P: { si: "P 5+, non Y est P, H 10+, palier(P) 2", montre: "5+ piques, 10+ H", nature: forcing, source: à confirmer }
   - 3C: { si: "C 5+, non Y est C, H 10+, palier(C) 2", montre: "5+ cœurs, 10+ H", nature: forcing, source: à confirmer }
@@ -846,6 +884,17 @@ ouverture:
 
   - exemples:
       - { main: "X964 V987642 - DX", apres: 1SA (2K), attendu: 2C }   # donne 14 du 19/11
+      - { main: "RV82 AD74 85 V93", apres: 1SA (2K), attendu: contre }   # 11 H, court à ♦, les deux majeures (SEF 2024 p. 27)
+"1SA (2x) contre":
+  - passe: { si: "Y 4+, arret Y", montre: "quatre cartes dans leur couleur : on transforme le contre" }
+  - "*P": { si: "P 4+, non Y est P, P >= C", montre: "4+ piques" }
+  - "*C": { si: "C 4+, non Y est C", montre: "4+ cœurs" }
+  - 3SA: { si: "arret Y, H 16-17", montre: "arrêt, maximum : 3SA", nature: conclusion }
+  - "*SA": { si: "arret Y", montre: "arrêt dans leur couleur" }
+  - "*K": { si: "K >= T, non Y est K", montre: "carreaux" }
+  - "*T": { si: "non Y est T", montre: "trèfles" }
+  - "*K": { si: "non Y est K", montre: "carreaux" }
+
 # ------------------------------------------------------------------ après une intervention à la couleur
 "(1x) 1x | (1x) 2x | (1x) 3x | (1x) 1x (contre) | (1x) 2x (contre)":
   - "*U+1": { si: "Y 4+, HLD(Y) 12+, (Y est C || Y est P), palier(U) 2-", montre: "cue-bid à saut : 4+ atouts, 12+ points", nature: cue, atout: Y }

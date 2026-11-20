@@ -5,15 +5,14 @@ Les lignes **(à confirmer)** viennent de la mémoire, pas du livret FFB : à v�
 dans `ffb/` avant de s'y fier.
 
 ## Ouvertures
-- 1♣ : 12–21 H, 3+ trèfles **(à confirmer : cas des mineures 3-3 et 4-4)**
-- 1♦ : 12–21 H, 4+ carreaux sauf exceptions **(à confirmer)**
+- 1♣ / 1♦ : 12–21 H, la mineure la plus longue ; 1♣ avec 3-3, 1♦ avec 4-4 ou plus (SEF 2024)
 - 1♥ / 1♠ : 12–21 H, 5+ cartes
-- 1SA : 15–17 H, régulier **(à confirmer : avec une majeure 5e ?)**
+- 1SA : 15–17 H, régulier ; aussi avec 15–16 H et une majeure 5e en 5-3-3-2, ou une mineure 6e en 6-3-2-2 (SEF 2024)
   Sur un texas, rectification fittée avec quatre atouts et 16–17 H : 1SA – 2♦ – 3♥, 1SA – 2♥ – 3♠ ; le répondant
-  dit la manche dès 5 H. **(à confirmer)**
-- 2♣ : fort indéterminé **(à confirmer)**
-- 2♦ : forcing de manche **(à confirmer)**
-- 2♥ / 2♠ : faible, 6 cartes **(à confirmer : zone de points)**
+  dit la manche dès 5 H.
+- 2♣ : fort indéterminé (SEF 2024 : 22–23 HL régulier, ou une main forte de 8 levées et plus)
+- 2♦ : forcing de manche (24+ HL) ; le livre répond par les as, les robots répondent 2♥ d'attente **(à écrire)**
+- 2♥ / 2♠ : faible, 6 belles cartes, 5–10 H (8 H vulnérable contre non vulnérable)
   Réponses au deux faible (2026-11-14) : 2SA relais forcing (15+ H ; avec un fit et 20+ points, toujours le relais d'abord, pour le chelem), l'ouvreur répond par paliers : 3♣ minimum
   (5–8 H) couleur sans deux des trois gros honneurs, 3♦ minimum bonne couleur, 3♥ maximum (9–10 H) mauvaise
   couleur, 3♠ maximum bonne couleur, 3SA avec ARD ; changement de couleur forcing un tour (5+ piques sur 2♥, 6+
@@ -22,7 +21,8 @@ dans `ffb/` avant de s'y fier.
   Réponses aux deux faibles et aux barrages majeurs : 4M avec dix atouts ensemble (4 sur un deux faible, 3 sur un
   barrage de 3), pour jouer, quels que soient les points (loi des levées) ; sur 3M, la manche aussi avec deux atouts et
   12 HLD (au lieu de 15). **(à confirmer)**
-- 2SA : 20–21 H, régulier **(à confirmer)**
+- 2SA : 20–21 H, régulier
+- 3♣ à 3♠ : barrage, sept cartes, 4–10 H ; 4♣ à 4♠ : huit cartes (ou 7-4), 5–10 H (SEF 2024)
 - En troisième position : ouverture légère dès 8 H avec la règle des 20, ou à 10 H avec neuf cartes dans les
   majeures. Un deux faible ou un barrage reste prioritaire.
 - En concurrence, après leur soutien (1♠ – passe – 2♠) : on intervient au palier de 3 avec six cartes et 11–16 H.
@@ -35,7 +35,12 @@ dans `ffb/` avant de s'y fier.
   (ex. 1♦ – 2♣ – … – 2♠).
 
 ## Redemande de l'ouvreur
-- Deuxième couleur moins chère avec 18+ HL : saut dans cette couleur, forcing **(à confirmer)**.
+- Deuxième couleur moins chère avec 18+ HL : saut dans cette couleur, forcing (SEF 2024 : 20–23 HL après une réponse
+  au palier de 1).
+- Après 1♥ / 1♠ et une réponse au palier de 2 : 2SA = 15–17 H régulier, 3SA = 18–19 (SEF 2024).
+- Sur le soutien limite 1M – 3M : la manche dès 13 HL.
+- Après 1m – 1M – 2SA (18–19) : l'autre mineure au palier de 3 est un relais (cinq cartes dans la majeure) ;
+  l'ouvreur dit la majeure avec trois cartes, sinon 3SA (SEF 2024).
 
 ## Après la redemande à 1SA de l'ouvreur (12–14)
 - 1♣/1♦ – 1♠ – 1SA – 3♥ : cinq piques, quatre cœurs, manche, forcing. L'ouvreur dit 4♥ avec quatre cœurs, 3♠ avec
@@ -59,15 +64,18 @@ dans `ffb/` avant de s'y fier.
   sinon il répète. Après 1♦–2♣–2♥ et 1♥–2♣–2♦, 2♠ reste naturel (4 piques).
 
 ## Après 1SA
-- 2♣ : Stayman (`../conventions/stayman.md`)
-- 2♦ / 2♥ : texas (`../conventions/texas.md`)
-- 4SA : quantitatif
+- 2♣ : Stayman (`../conventions/stayman.md`) ; 2SA en réponse = les deux majeures
+- 2♦ / 2♥ : texas ; 2♠ / 3♣ : texas mineurs (`../conventions/texas.md`)
+- 2SA 8–9, 3SA 10–15, 4SA quantitatif 16–17, 6SA 18–21
+
+## Après une intervention sur notre 1SA
+- Contre d'appel : 8+ H, court dans leur couleur, une majeure 4e ; l'ouvreur laisse le contre avec quatre cartes et
+  l'arrêt dans leur couleur, sinon nomme une majeure 4e, les SA avec l'arrêt, ou une mineure (SEF 2024).
 
 ## Après 2SA
-- 3♣ : Stayman **(à confirmer)**
-- 3♦ / 3♥ : texas
-- 4SA : quantitatif
-- 4♣ / 4♦ : naturel, six cartes, 9–12 H : essai de chelem ; l'ouvreur répond par ses contrôles **(à confirmer)**
+- 3♣ : Stayman, réponses un palier plus haut, 3SA = les deux majeures
+- 3♦ / 3♥ : texas ; 3♠ / 4♣ : texas trèfle / carreau, six cartes, espoir de chelem ; 4♦ : les deux majeures 5-5
+- 4SA quantitatif 11–12, 6SA 13–15, 5SA 16 (proposition de grand chelem)
 
 ## Roudi (après 1♣ / 1♦ – 1♥ / 1♠ – 1SA)
 - 2♣ Roudi : 5+ cartes dans la majeure et 11+ H (ou six cartes et 10 H) ; l'ouvreur dit 2♦ sans trois cartes, 2♥ avec
@@ -130,10 +138,11 @@ Là où le moteur garde autre chose que le SEF, c'est que le SEF perdait au banc
 - Soutien : 6–10 DH au palier le plus bas, saut = invitation (11–12), manche en majeure avec 13+ et 3 cartes
   (avec 4 cartes et 13+ : cue-bid, voir Cue-bids)
 - Soutien mineur avec 13+ H et un arrêt : 3SA **(à confirmer)**
-- Contre Spoutnik : 6+ H, 4 cartes dans la ou les majeures non nommées
+- Contre Spoutnik : 8+ HL, 4 cartes dans la ou les majeures non nommées (SEF 2024)
+- Après leur contre d'appel : surcontre avec 10+ H (SEF 2024) ; leur partenaire se sauve dans sa meilleure couleur
 - Couleur 5e : au palier de 1 avec 6+ H, au palier de 2 avec 11+ H (forcing)
 - SA avec arrêt : 1SA 8–10, 2SA 11–12, 3SA 13+
-- Après 1SA – (intervention) : couleur 5e naturelle, 2SA 8–9 avec arrêt, 3SA 10+ avec arrêt
+- Après 1SA – (intervention) : couleur 5e naturelle, 2SA 8–9 avec arrêt, 3SA 10+ avec arrêt, contre d'appel (8+ H)
 - L'ouvreur répond au Spoutnik par la majeure 4e (saut avec 16+), sinon SA avec arrêt, sinon sa couleur
 - Partenaire muet : l'ouvreur répète une 6e, conclut la manche avec 7 cartes en majeure et 19+ HL,
   ou recontre (appel) avec 17+ court dans la couleur adverse

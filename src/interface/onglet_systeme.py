@@ -34,6 +34,7 @@ def panneau():
             elif cle.startswith("sy-conv-"):
                 doc = next((d for k_, _, d in systeme_vue.CONVENTIONS if "sy-conv-" + k_ == cle), "")
                 ui.markdown(systeme_vue.lire_doc(doc)).classes("syst aide")
+                ui.html(systeme_vue.regles_convention(cle[len("sy-conv-"):], SYSTEME_DATA), sanitize=False)
             else:
                 ui.html(systeme_vue.page_famille(cle[3:], SYSTEME_DATA), sanitize=False)
         F.page_systeme = page_systeme

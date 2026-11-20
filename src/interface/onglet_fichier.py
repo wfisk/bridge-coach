@@ -346,7 +346,8 @@ def panneau():
     titre_page("Nouvelle séance", "importer")
     ui.html("Une séance réunit les donnes, les joueurs, les résultats et les analyses. Trois façons d'en créer "
             "une :", sanitize=False).classes("text-base text-gray-700")
-    F.FACONS = [("bws", "Importer un tournoi Bridgemate", "depuis le fichier .bws du tournoi", "table_restaurant"),
+    F.FACONS = [("bws", "Importer un tournoi", "Bridgemate (.bws), feuille de route (.pdf) ou pages du site de la FFB",
+                 "table_restaurant"),
               ("pbn", "Importer un fichier PBN", "des donnes de BBO, Funbridge, d'un autre logiciel…", "description"),
               ("themes", "Créer des donnes d'entraînement", "sur des thèmes choisis, ou une séance vide", "school")]
     F.sections_n = {}
@@ -696,9 +697,11 @@ def pages_ouvrir_nouveau():
         F.liste_i = liste_i
         F.liste_i()
         ui.label("Ou un tournoi ailleurs sur l'ordinateur : un .bws, la feuille de route .pdf de FFBClubNet, ou les pages "
-                 "du site de la FFB enregistrées depuis le navigateur (choisissez une page « Donne n° », par exemple "
-                 "donne-01.html : les autres pages du même tournoi, dans le même dossier, sont lues avec elle). Ces deux "
-                 "dernières donnent les mains et les résultats, sans les enchères.").classes("text-base mt-2")
+                 "du site de la FFB enregistrées depuis le navigateur.").classes("text-base mt-2")
+        ui.html("<b>Les pages du site de la FFB :</b> enregistrez toutes les pages « Donne n° » et toutes les pages des "
+                "paires (NS 1, EO 1…) dans un même dossier, puis choisissez la première donne, par exemple "
+                "<b>donne01.html</b> : les autres pages sont lues avec elle. La feuille de route et les pages de la FFB "
+                "donnent les mains et les résultats, sans les enchères.", sanitize=False).classes("text-base")
         F.envoi_i = ui.upload(on_upload=lambda e: F.recu_i(e), auto_upload=True, max_files=1).props('accept=".bws,.pdf,.html,.htm"').classes("hidden")
         ui.button("Choisir un fichier…", icon="folder_open", on_click=lambda: F.parcourir_i(TYPES_BWS, F.envoi_i)).props("outline").classes("self-start")
 

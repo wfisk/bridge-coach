@@ -606,6 +606,9 @@ tools in src/outils/.
                         pre-empt after X, 2SA fitté, 3SA fitté, 4M pre-empt ≤ 8 H. The book counts a length point from the fifth
                         card; main.hl from the sixth; switching lost −507 / −224 IMP (every HL threshold is tuned to the old count).
                         The user's rule (2026-11-20): scans and transcriptions stay in ffb/; public files say the system in our words.
+                        SEF 2024 pp. 30–49 (second scan, 2026-11-20): kept 3-level pre-empts from 4 H, 4-level pre-empts (eight
+                        cards or 7-4, 5–10 H; test_sacrifice now imposes its 3♠), 2SA = 15–17 regular after 1M and a 2-level
+                        response (+659 / +498 IMP). Pp. 50–65 (third scan: responder's rebids, slam bidding) mostly matched the file.
                         Over a weak two (2026-11-13, deals 5, 20, 29 of 12/11, each kept on 2 × 20 000 deals, a-faire.md): balancing
                         (2x – passe – passe) has its own rules, double from 10 H; the take-out double comes before a 3-level suit with
                         four cards in the free major; a strong doubler (18+, no 5-card major) after partner's minor looks for 3SA

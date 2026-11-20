@@ -46,10 +46,15 @@ ouverture:
   - 1T:  { si: "ouvrable", montre: "12–21 H, 3+ trèfles" }
   - 2P:  { si: "H 5-10, P 6, C 3-, S 1-3, non VN || H 8-10, P 6, C 3-, S 1-3", montre: "faible, 6 piques", note: "SEF 2024 p. 29 : six belles cartes, 5–10 H ; 8 H minimum vulnérable contre non vulnérable (banc)" }
   - 2C:  { si: "H 5-10, C 6, P 3-, S 1-3, non VN || H 8-10, C 6, P 3-, S 1-3", montre: "faible, 6 cœurs", note: "SEF 2024 p. 29 : six belles cartes, 5–10 H ; 8 H minimum vulnérable contre non vulnérable (banc)" }
-  - 3P:  { si: "H 6-10, P 7+, S 1-3, non VN || H 8-10, P 7+, S 1-3", montre: "barrage, 7 piques" }
-  - 3C:  { si: "H 6-10, C 7+, S 1-3, non VN || H 8-10, C 7+, S 1-3", montre: "barrage, 7 cœurs" }
-  - 3K:  { si: "H 6-10, K 7+, S 1-3, non VN || H 8-10, K 7+, S 1-3", montre: "barrage, 7 carreaux" }
-  - 3T:  { si: "H 6-10, T 7+, S 1-3, non VN || H 8-10, T 7+, S 1-3", montre: "barrage, 7 trèfles" }
+  # SEF 2024 p. 30 : huit cartes (ou 7-4), 5–10 H
+  - 4P:  { si: "H 5-10, S 1-3, (P 8+ || P 7, (C 4+ || K 4+ || T 4+)), (non VN || H 8-10)", montre: "barrage, 8 piques (ou 7-4)" }
+  - 4C:  { si: "H 5-10, S 1-3, (C 8+ || C 7, (P 4+ || K 4+ || T 4+)), (non VN || H 8-10)", montre: "barrage, 8 cœurs (ou 7-4)" }
+  - 4K:  { si: "H 5-10, S 1-3, (K 8+ || K 7, T 4+), (non VN || H 8-10)", montre: "barrage, 8 carreaux (ou 7-4 mineur)" }
+  - 4T:  { si: "H 5-10, S 1-3, (T 8+ || T 7, K 4+), (non VN || H 8-10)", montre: "barrage, 8 trèfles (ou 7-4 mineur)" }
+  - 3P:  { si: "H 4-10, P 7+, S 1-3, non VN || H 8-10, P 7+, S 1-3", montre: "barrage, 7 piques" }
+  - 3C:  { si: "H 4-10, C 7+, S 1-3, non VN || H 8-10, C 7+, S 1-3", montre: "barrage, 7 cœurs" }
+  - 3K:  { si: "H 4-10, K 7+, S 1-3, non VN || H 8-10, K 7+, S 1-3", montre: "barrage, 7 carreaux" }
+  - 3T:  { si: "H 4-10, T 7+, S 1-3, non VN || H 8-10, T 7+, S 1-3", montre: "barrage, 7 trèfles" }
   # en troisième, ouverture légère pour les mains qui ne barrent pas (un barrage y rapporte plus)
   - 1P:  { si: "leger, P 5+, P >= C", montre: "ouverture légère en troisième" }
   - 1C:  { si: "leger, C 5+", montre: "ouverture légère en troisième" }
@@ -75,6 +80,8 @@ ouverture:
       - { main: "AR852 D84 RV7 D9", position: 1, attendu: 1SA }      # 15 H, 5-3-3-2 avec cinq piques (SEF 2024 p. 24)
       - { main: "A8 D84 V7 ARV962", position: 1, attendu: 1SA }      # 15 H, six trèfles 6-3-2-2
       - { main: "RD7652 85 942 83", position: 1, attendu: 2P }       # 5 H : deux faible (SEF 2024 p. 29)
+      - { main: "RD76542 85 942 3", position: 1, attendu: 3P }       # 5 H, sept piques : barrage dès 4 H (SEF 2024 p. 30)
+      - { main: "RDV76542 85 94 3", position: 1, attendu: 4P }       # huit piques : barrage à 4
 
 # ------------------------------------------------------------------ réponses à 1SA (15–17) et 2SA (20–21)
 # Texas (../conventions/texas.md) et Stayman (../conventions/stayman.md), puis les SA selon
@@ -342,8 +349,9 @@ ouverture:
   - 2K:  { si: "S 3-4, HL 13-14", montre: "Drury : ambigu, un espoir de manche", nature: relais, apres: 1C - 2T | 1P - 2T, alerte: oui, source: SEF 2024, nom: Drury }
   - 2U:  { si: "S 3-4", montre: "Drury : ouverture faible, on s'arrête", nature: conclusion, apres: 1C - 2T | 1P - 2T, source: SEF 2024, nom: Drury }
   - 3W:  { si: "W 4+, H 11-21", montre: "fit dans la mineure du répondant", nature: forcing }
-  - 2SA: { si: "reg, H 11-14", montre: "12–14 H, régulier", nature: limite }
-  - 3SA: { si: "reg, H 15-17", montre: "15–17 H, régulier", nature: conclusion, source: SA }
+  # SEF 2024 p. 41 : après 1M et une réponse au palier de 2, 2SA = 15–17 H régulier, 3SA = 18–19
+  - 2SA: { si: "reg, H 15-17", montre: "15–17 H, régulier", nature: forcing }
+  - 3SA: { si: "reg, H 18-19", montre: "18–19 H, régulier", nature: conclusion }
   - 2C:  { si: "C 4+, P 5-, H 11-17", montre: "deuxième couleur, 4+ cœurs", apres: 1P - 2T | 1P - 2K }
   - 2K:  { si: "K 4+, U 5-, H 11-17", montre: "deuxième couleur, 4+ carreaux", apres: 1C - 2T | 1P - 2T }
   - 2P:  { si: "HL 17-21, P 4+, C 5-", montre: "bicolore cher, 17+ HL", nature: forcing, apres: 1C - 2T | 1C - 2K }
@@ -1196,10 +1204,9 @@ ouverture:
   - 2SA: { si: "H 11-12", montre: "11–12 H : invitation", nature: invite }
   - 3W:  { si: "W 6+", montre: "6+ cartes", nature: limite }
   - 2SA: { montre: "sans enchère meilleure", nature: invite }
-"1M - 2N - 2SA":
-  - 4U:  { si: "U 3+, H 12+", montre: "fit : manche", nature: conclusion }
-  - 3SA: { si: "H 12+", montre: "12+ H : manche", nature: conclusion }
-  - passe: { montre: "minimum" }
+"1M - 2N - 2SA":                  # 15–17 H en face : la manche
+  - 4U:  { si: "U 3+", montre: "fit : manche", nature: conclusion }
+  - 3SA: { montre: "manche", nature: conclusion }
 
 "1K - 1C - 1P - 1SA | 1T - 1C - 1P - 1SA | 1T - 1K - 1C - 1SA | 1T - 1K - 1P - 1SA":
   - passe: { si: "H 16-, non (U 6+), non (W 4+)", montre: "12–16 H : on joue 1SA" }
@@ -1411,6 +1418,13 @@ ouverture:
   - passe: { montre: "pas de manche face au barrage" }
   - exemples:
       - { main: "92 ADX542 AV86 R", apres: 3T, attendu: 3SA }   # donne 17 du 19/11
+"4M":
+  - passe: { montre: "le barrage est la manche" }
+"4N":
+  - 4C:  { si: "C 6+, H 10+", montre: "conclusion à cœur", nature: conclusion }
+  - 4P:  { si: "P 6+, H 10+", montre: "conclusion à pique", nature: conclusion }
+  - 5U:  { si: "U 2+, HLD(U) 16+", montre: "fit : manche", nature: conclusion }
+  - passe: { montre: "pas de manche face au barrage" }
 "3M - 4U | 3N - 3SA | 3N - 5U":
   - passe: { montre: "le partenaire a décidé" }
 

@@ -449,3 +449,24 @@ Essayés et retirés :
   bicolore majeur sur leur 1SA ; le Spoutnik généralisé plus fort au palier de 3 (11+ HL) ; les misères dorées, les
   Splinters et la convention 2012 après le Stayman ; le Rubensohl et la défense contre un contre du Stayman ou du texas ;
   le relais 2SA sur un deux faible (le livre : le maximum nomme un as ou un roi, suite p. 30, à scanner).
+
+## Le livre SEF 2024, pp. 30–49 (barrages, ouvertures fortes, redemande de l'ouvreur), scan du 2026-11-20
+Même méthode (transcription privée dans ffb/). En tout +659 et +498 IMP.
+Gardés :
+- Barrages au palier de 3 dès 4 H (p. 30 ; 6 avant) : +159 et +224.
+- Ouvertures de barrage au palier de 4 : huit cartes ou 7-4, 5–10 H (8 H vulnérable contre non vulnérable, comme les
+  autres barrages) ; le partenaire passe sur 4M, conclut ou soutient sur 4m (p. 30–31) : +443 et +213.
+- Après 1M et une réponse au palier de 2 : 2SA = 15–17 H régulier, 3SA = 18–19 (p. 41 ; avant 2SA 12–14 et 3SA 15–17) ;
+  le répondant conclut à la manche : +49 et +51.
+Essayés et retirés :
+- Le bicolore cher dès 18 HL après une réponse au palier de 1 (p. 42 ; 17 avant) : +15 et −104.
+- La répétition à saut dès 17 HL (p. 43 ; 16 avant) : +53 et −18.
+- Les soutiens de l'ouvreur sur la majeure du répondant (p. 37 : 2 = 12–16 HLD, 3 = 17–19, 4 au-delà) : +224 et −11.
+- 2SA essai généralisé à la place de 3M après 1M – 2M (p. 36) : −1 et +12 (même résultat sans intervention).
+- L'ouverture de 3SA (mineure 7e affranchie, p. 31) : −22 et +17 (moins de 5 donnes sur 20 000).
+Pas encore écrits : le 2♦ forcing de manche du livre (réponses par les as, p. 34 ; le moteur répond 2♥ relais) ; les
+redemandes du 2♣ fort indéterminé (2M = six cartes 8–8½ levées, 3x = sept cartes, 3SA/4♣/4♦ bicolores majeurs) ; sur
+2SA, 3♠/4♣ texas mineurs de chelem, 4♦ les deux majeures, 4SA 12 HL, 5SA 16, 6SA 13–15 (p. 35) ; le Stayman sur 2SA
+décalé d'un palier (3SA = les deux majeures) ; le mini-maxi 1♦ – 2♣ – 2SA (12–14 ou 18–19) et 3SA = 4-4-4-1 (p. 41) ;
+1m – 1SA – 2SA = 15–17 irrégulier ; les Splinters et le super-forcing de l'ouvreur ; les contres de l'ouvreur
+(p. 47–48) ; la deuxième enchère du répondant après un soutien (p. 49 : essais, contrôles).

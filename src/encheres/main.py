@@ -19,8 +19,9 @@ class Main:
 
     @property
     def hl(self):
-        """Points H + points de longueur (1 par carte au-delà de la 5e)."""
-        return self.hcp + sum(max(0, n - 5) for n in self.L.values())
+        """Points H + points de longueur : 1 pour la 5e carte et chacune des suivantes (le livre SEF 2024, p. 8 ; le
+        moteur les comptait dès la 6e jusqu'au 2026-11-21 : +74 / +318 IMP en SEF 2024 sur 2 × 20 000 donnes)."""
+        return self.hcp + sum(max(0, n - 4) for n in self.L.values())
 
     def dh(self, atout):
         """Points H + points de distribution avec un fit à `atout` (chicane 3, singleton 2, doubleton 1)."""

@@ -820,6 +820,11 @@ tools in src/outils/.
                         « systeme » and titre_pied, and adds « LE SYSTÈME DE CETTE SÉANCE » to the consigne (judge in this
                         system, never recommend a switched-off convention). Two real sessions (40 deals) bid in both systems
                         differed on 3 auctions, all natural (1♥ – 4♥ 13 points, 1♠ – 2SA – 3SA, 1♣ (1♦) 1♥).
+                        Length points from the 5th card (2026-11-21, the user agreed): Main.hl = H + (length − 4) per suit, as the
+                        SEF book (p. 8) and the SIF count them; it was from the 6th. SEF 2024 +74 / +318 IMP, SEF simplifié
+                        +255 / +585 (15 % of auctions change); SEF simplifié's 2♣ back to the summary's 22 HL (+27 / +27).
+                        avant_3sa now asks for their suit's stopper before 6SA / 7SA too (test_lignes: 18 HL jumped to 6SA with
+                        four small cards in the overcaller's suit). Log in systems/sef-2024/a-faire.md.
 
 Three places outside this folder, none in git. `bridge-coach.ini` sits at a fixed place because it says
 where the rest is: `~/Library/Application Support/Bridge Coach` on Mac, `%APPDATA%\Bridge Coach` on Windows

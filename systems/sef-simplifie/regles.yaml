@@ -237,7 +237,7 @@ sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]
 # 2♥ / 2♠ ». Après 2♣ – 2♦, le palier dit la force : 2SA 22–23, 3SA 24–25 réguliers ; une couleur sans saut 22–23,
 # avec saut 24–25, à 4 en majeure 26–27.)
 ouverture:
-  - 2T:  { si: "reg, H 22+ || non reg, HL 21+", montre: "2♣ fort : 22+ HL (21 HL avec une main irrégulière, comme le SEF), toutes les mains fortes (le 2♦ forcing de manche du SEF n'existe pas ici)", source: à confirmer }
+  - 2T:  { si: "reg, H 22+ || non reg, HL 22+", montre: "2♣ fort : 22+ HL, toutes les mains fortes (le 2♦ forcing de manche du SEF n'existe pas ici)", source: à confirmer }
   - 2SA: { si: "reg, H 20-21", montre: "20–21 H, régulier" }
   - 1SA: { si: "reg, H 15-17, M 4-", montre: "15–17 H, régulier" }
   - 1SA: { si: "H 15-16, forme 5-3-3-2, M 5", montre: "15–16 H, 5-3-3-2 avec la majeure 5e" }
@@ -308,9 +308,9 @@ ouverture:
   - exemples:
       - { main: "AR5 AD4 RD7 AD92", apres: 2T - 2K, attendu: 3SA }    # 24 H régulier
       - { main: "AR5 AD4 RD7 DV92", apres: 2T - 2K, attendu: 2SA }    # 22 H régulier
-      - { main: "AR4 ARDV95 A5 R2", apres: 2T - 2K, attendu: 3C }     # 6 cœurs, 24 HL
-      - { main: "ARDV952 A R5 AD2", apres: 2T - 2K, attendu: 3P }     # 7 piques, 25 HL : le saut
-      - { main: "ARDV952 AR R5 AD", apres: 2T - 2K, attendu: 4P }     # 7 piques, 28 HL : la manche
+      - { main: "AR4 ARDV9 A532 R", apres: 2T - 2K, attendu: 3C }     # 5 cœurs, singleton, 24 H + 1 L = 25 HL
+      - { main: "ARDV95 A5 R5 AD2", apres: 2T - 2K, attendu: 3P }     # 6 piques, 23 H + 2 L = 25 HL : le saut
+      - { main: "ARDV952 A R5 AD2", apres: 2T - 2K, attendu: 4P }     # 7 piques, 23 H + 3 L = 26 HL : la manche
 
 # le répondant (2♦, 0+ H) : après une couleur sans saut (22–23), il peut passer avec 0–3 (UM : la majeure de l'ouvreur)
 "2T - 2K - 2C | 2T - 2K - 2P":

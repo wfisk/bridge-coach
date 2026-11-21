@@ -644,8 +644,9 @@ def transformer(m, oc):
 
 def avant_3sa(m, s, a, hist, infos, etat):
     """3SA sans arrêt dans leur couleur : le cue-bid demande l'arrêt au partenaire. S'il ne l'a pas, on joue
-    la manche dans sa couleur la plus longue."""
-    if not ARRET_CUE or a.enchere != "3SA": return a
+    la manche dans sa couleur la plus longue. Le chelem à SA aussi (6SA, 7SA) : jamais sans savoir leur couleur
+    arrêtée (2026-11-21 : avec les points de longueur du livre, 18 HL sautaient à 6SA avec quatre petites cartes chez eux)."""
+    if not ARRET_CUE or a.enchere not in ("3SA", "6SA", "7SA"): return a
     oc = couleur_adverse(hist, s)
     if not oc or S.arret(m, oc): return a
     nos = [b for x, b in hist if camp(x) == camp(s)]

@@ -797,6 +797,12 @@ tools in src/outils/.
                         usf.bridge.free.fr, the online BRIDGEZ system; copy in its ffb/, ignored) where the summary is silent:
                         balanced NT with a stopper, 5-card major at the 2-level, all doubles penalty; its one Spoutnik
                         (1m (1♠)) left out at the user's wish. Open points between summary and SIF: systems/sef-simplifie/README.md.
+                        Switched on (pret: oui, 2026-11-21, the user: « we need a way to switch it on »): the Système tab's
+                        Vue d'ensemble opens with « Les robots jouent : SEF 2024 / SEF simplifié » (onglet_systeme.
+                        choix_systeme_robots, shown when two systems are ready; changer_systeme_robots: choisir_systeme,
+                        etat systeme_robots, rules read ahead in a thread); a line names the switched-off conventions; the
+                        family pages still show the full SEF 2024. Help: « Le système des robots ». The 2003 SIF is old: SEF
+                        2024 and the user's summary win over it (2♦ opening kept as SEF; the user would personally drop it).
 
 Three places outside this folder, none in git. `bridge-coach.ini` sits at a fixed place because it says
 where the rest is: `~/Library/Application Support/Bridge Coach` on Mac, `%APPDATA%\Bridge Coach` on Windows

@@ -9,7 +9,7 @@ from encheres.main import Main
 from outils import banc_encheres
 
 noms = {n: (t, b, p) for n, t, b, p in regles.systemes()}
-assert noms["sef-2024"] == ("SEF 2024", "", True) and noms["sef-simplifie"][1:] == ("sef-2024", False)
+assert noms["sef-2024"] == ("SEF 2024", "", True) and noms["sef-simplifie"] == ("SEF simplifié", "sef-2024", True)
 
 # un système d'essai bâti sur le SEF : sa section « 1SA » remplace celle du SEF, le reste est hérité
 with tempfile.TemporaryDirectory() as d:

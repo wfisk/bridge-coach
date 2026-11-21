@@ -20,8 +20,12 @@ def panneau():
                     .props("outlined dense clearable debounce=400").classes("w-80")
             F.resultats_sy()
             if cle == "sy-vue":
+                F.choix_systeme_robots()
                 n_seq, n_enc, n_ex = systeme_vue.compter(SYSTEME_DATA)
-                ui.html(f"<div class='syst'><p>Les robots de Bridge Coach jouent le <b>SEF 2024</b>, tel qu'il est écrit "
+                import encheres
+                debut_ = ("Les robots de Bridge Coach jouent le <b>SEF 2024</b>" if encheres.systeme_actif() == "sef-2024"
+                          else "Le <b>SEF 2024</b> complet (la base du système des robots)")
+                ui.html(f"<div class='syst'><p>{debut_}, tel qu'il est écrit "
                         f"dans son fichier de règles : <b>{n_seq}</b> séquences, <b>{n_enc}</b> enchères décrites, "
                         f"<b>{n_ex}</b> mains d'exemple vérifiées à chaque lancement. Les pages à gauche les montrent "
                         "famille par famille, en lecture seule. Ce qui n'y est pas décrit, les robots le jouent avec "
@@ -76,4 +80,33 @@ def panneau():
         F.page_ecarts()
 
 
-NOMS = ()
+def choix_systeme_robots():
+    """En haut de la Vue d'ensemble : le système que jouent les robots, quand un autre que le SEF 2024 est prêt
+    (« pret: oui » dans son regles.yaml). Gardé dans etat.json (systeme_robots), repris à l'ouverture (app.precharger)."""
+    import encheres
+    from regles import systemes
+    prets = {n: t for n, t, _b, p in systemes() if p}
+    if len(prets) < 2: return
+    actuel = encheres.systeme_actif()
+    with ui.row().classes("items-center gap-4"):
+        ui.label("Les robots jouent :").classes("text-lg font-bold")
+        ui.radio(prets, value=actuel if actuel in prets else "sef-2024",
+                 on_change=lambda e: F.changer_systeme_robots(e.value)).props("inline").classes("text-base")
+    if actuel != "sef-2024" and actuel in prets:
+        sy = encheres.systeme(actuel)
+        coupees = ", ".join(sorted(getattr(sy, "sans", ()) or (), key=str.lower))
+        ui.label(f"Le {prets[actuel]} : le SEF 2024 sans {coupees}, avec des enchères naturelles après une intervention "
+                 "(le contre y est punitif). Les pages à gauche décrivent le SEF 2024 complet.") \
+            .classes("text-base text-gray-700 max-w-3xl")
+
+
+def changer_systeme_robots(nom):
+    """Les robots jouent ce système dès la donne suivante, et aux prochaines ouvertures de Bridge Coach."""
+    import threading, encheres
+    encheres.choisir_systeme(nom); ecrire_etat(systeme_robots=nom)
+    threading.Thread(target=encheres.systeme, daemon=True).start()    # ses règles lues d'avance (2 à 3 secondes)
+    ui.notify(f"Les robots jouent maintenant le {dict((n, t) for n, t, _b, _p in __import__('regles').systemes()).get(nom, nom)}.")
+    F.page_systeme.refresh()
+
+
+NOMS = ("choix_systeme_robots", "changer_systeme_robots")

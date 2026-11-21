@@ -58,3 +58,5 @@ Le but n'est pas de battre le SEF mais de voir où les robots enchérissent mal 
   Blackwood aux clés 3041 (le SEF) ; le 2♦ d'ouverture et les deux faibles du SEF 2024 ; les interventions du SEF 2024
   sans les bicolores ni Landy. Le SIF ne sert plus que là où ni le résumé ni le SEF simplifié ne disent rien (les
   réponses après une intervention, aujourd'hui).
+- **Le 2♦ d'ouverture (2026-11-21) :** gardé comme dans le SEF 2024 (fort, forcing de manche). L'utilisateur, pour lui,
+  l'aurait supprimé d'un système simplifié : à revoir si le club le souhaite.

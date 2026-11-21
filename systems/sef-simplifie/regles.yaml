@@ -10,11 +10,11 @@
 #                      dans le code). Une enchère coupée laisse la place à l'enchère naturelle d'après ; sans Blackwood,
 #                      le robot qui voulait demander les clés dit le chelem directement.
 #   une section écrite ici (une séquence, comme "1SA") remplace celle du SEF : pour les enchères plus directes du livre.
-# « pret: non » : pas encore proposé aux joueurs.
+# « pret: oui » (2026-11-21, l'utilisateur : le choisir) : proposé dans l'onglet Système, Vue d'ensemble.
 systeme: sef-simplifie
 titre: "SEF simplifié"
 base: sef-2024
-pret: non
+pret: oui
 # Première liste (2026-11-21, proposée par Claude, acceptée par l'utilisateur) : on garde Stayman, Texas et Blackwood
 # (le résumé) ; on coupe le reste. Le Spoutnik aussi (l'utilisateur : pas pour ce système ; le SIF le garde seulement
 # après 1m (1♠) : −141 / −79 IMP sur 2 × 20 000 donnes sans lui, négligeable).

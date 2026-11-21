@@ -1512,7 +1512,9 @@ def page_analyse_resume(data, an, expert):
     else:
         lignes = [("État", f"{k} donnes sur {n}" if an else "pas encore faite : « Lancer l'analyse »")]
     if an:
-        lignes += [("Faite le", fait_le(an)), ("Système", an.get("systeme", "sef-2024"))]
+        sy_ = an.get("systeme", "sef-2024")
+        sy_ = next((t_ for n_, t_, _b, _p in __import__("regles").systemes() if n_ == sy_), sy_)   # « SEF simplifié »
+        lignes += [("Faite le", fait_le(an)), ("Système", sy_)]
     with ui.grid(columns="auto 1fr").classes("gap-x-6 gap-y-1 text-base"):
         for a, b in lignes:
             ui.label(a).classes("text-gray-700"); ui.label(b).classes("break-all")
@@ -1639,6 +1641,20 @@ def preparer_pour_claude(c):
     for src, dst in POUR_CLAUDE:
         f = os.path.join(rapport.RACINE, src)
         if os.path.exists(f): documents[dst] = open(f, encoding="utf-8").read()
+    # le système de l'analyse du coach (celui des robots quand elle a été faite), sinon celui choisi : l'expert juge les
+    # enchères dans ce système (2026-11-21 : le SEF simplifié). Ses documents à lui, en plus de ceux du SEF, sa base.
+    sy = (lire_analyses(c)[0] or {}).get("systeme") or systeme_choisi()
+    if sy != "sef-2024" and os.path.exists(os.path.join(rapport.RACINE, "systems", sy, "regles.yaml")):
+        titre = next((t_ for n_, t_, _b, _p in __import__("regles").systemes() if n_ == sy), sy)
+        for src, dst in ((f"systems/{sy}/systeme.md", f"systeme-{sy}.md"), (f"systems/{sy}/regles.yaml", f"regles-{sy}.yaml")):
+            f = os.path.join(rapport.RACINE, src)
+            if os.path.exists(f): documents[dst] = open(f, encoding="utf-8").read()
+        consigne = consigne.replace("Système SEF, marque", f"Système {titre}, marque").replace('"systeme": "sef-2024"', f'"systeme": "{sy}"')
+        consigne += (f"\nLE SYSTÈME DE CETTE SÉANCE : {titre}. Les robots et le coach jouent le {titre}, pas le SEF 2024 "
+                     f"complet : juge chaque enchère dans ce système. Il est bâti sur le SEF 2024 (systeme.md, regles.yaml) ; "
+                     f"systeme-{sy}.md dit, pour un joueur, ce qui change ; regles-{sy}.yaml donne ses règles : sa liste "
+                     f"« sans: » nomme les conventions qu'il ne joue pas, et chacune de ses séquences remplace celle du SEF "
+                     f"qui a la même clé. Ne recommande jamais une convention qu'il ne joue pas.\n")
     ex = os.path.join(rapport.DONNEES, "documents", "exemple_analyse_2026-10-23.json")
     tout = {"consigne": consigne, "seance": seance_pour_claude(data),
             "analyse_standard": {k: v for k, v in (lire_analyses(c)[0] or {}).items() if k != "fait_le"},

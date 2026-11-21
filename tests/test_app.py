@@ -72,10 +72,19 @@ assert os.listdir(dossier) == ["seance-du-2026-10-23.ai.json"]           # un se
 tout = json.load(open(os.path.join(dossier, "seance-du-2026-10-23.ai.json")))
 assert tout["consigne"] == consigne and "seance-du-2026-10-23-expert.json" in consigne and "Décision serrée" in consigne
 assert "systeme.md" in tout["documents"] and "regles.yaml" in tout["documents"] and "lecons-expert.md" in tout["documents"]
+assert "regles-sef-simplifie.yaml" not in tout["documents"] and "LE SYSTÈME DE CETTE SÉANCE" not in consigne
 assert "lecons-expert.md" in consigne and tout["analyse_standard"]["donnes"] == {"1": {"enc": []}}
 texte = json.dumps(tout, ensure_ascii=False)                                        # ni noms, ni club, ni fichier d'origine
 assert "Anne" not in texte and "Durand" not in texte and "Lilas" not in texte and "6000010" not in texte
 assert tout["seance"]["joueurs"] == {"1": [{"initiales": "AM"}, {"initiales": "BD"}]} and "analyses" not in tout["seance"]
+# une séance analysée dans le SEF simplifié : l'expert reçoit ce système et la consigne le dit
+d_ = json.load(open(sc)); d_["analyses"]["standard"]["systeme"] = "sef-simplifie"; json.dump(d_, open(sc, "w"))
+dossier, consigne = app.preparer_pour_claude(sc)
+tout_s = json.load(open(os.path.join(dossier, "seance-du-2026-10-23.ai.json")))
+assert "regles-sef-simplifie.yaml" in tout_s["documents"] and "systeme-sef-simplifie.md" in tout_s["documents"]
+assert "LE SYSTÈME DE CETTE SÉANCE : SEF simplifié" in consigne and '"systeme": "sef-simplifie"' in consigne
+assert "Système SEF simplifié, marque" in consigne
+d_["analyses"]["standard"]["systeme"] = "sef-2024"; json.dump(d_, open(sc, "w"))
 grille = [["–", "1♠", "passe", "passe"], ["passe", "", "", ""]]
 x = os.path.join(ESSAI, "x-expert.json")
 json.dump({"donnes": {"1": {"enc": grille, "notes": "a"}}}, open(x, "w"))

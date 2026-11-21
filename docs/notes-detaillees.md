@@ -814,6 +814,12 @@ tools in src/outils/.
                         lire_doc(nom, systeme, base) takes the system's own systeme.md (sef-simplifie has one for members),
                         else its base's. commun.vue_systeme(nom) refills SYSTEME_DATA / PAGES / ANCRES / GROUPES in place
                         (the modules imported them), at import from etat (systeme_choisi) and on a change, then reloads.
+                        The coach's analysis records the robots' system (rapport.py: env BRIDGE_COACH_SYSTEME, was always
+                        « sef-2024 »; the Analyse panel shows its title). preparer_pour_claude sends, for a session analysed in
+                        another system, its systeme-<nom>.md and regles-<nom>.yaml beside SEF's files, sets the format's
+                        « systeme » and titre_pied, and adds « LE SYSTÈME DE CETTE SÉANCE » to the consigne (judge in this
+                        system, never recommend a switched-off convention). Two real sessions (40 deals) bid in both systems
+                        differed on 3 auctions, all natural (1♥ – 4♥ 13 points, 1♠ – 2SA – 3SA, 1♣ (1♦) 1♥).
 
 Three places outside this folder, none in git. `bridge-coach.ini` sits at a fixed place because it says
 where the rest is: `~/Library/Application Support/Bridge Coach` on Mac, `%APPDATA%\Bridge Coach` on Windows

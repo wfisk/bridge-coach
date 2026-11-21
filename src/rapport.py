@@ -656,7 +656,7 @@ def main():
                              f"{', '.join(manquent)} : relancez l'analyse standard.")
         print("Analyse standard reprise")
     else:
-        auto = {"systeme": "sef-2024", "automatique": True, "donnes": {}}
+        auto = {"systeme": os.environ.get("BRIDGE_COACH_SYSTEME") or "sef-2024", "automatique": True, "donnes": {}}   # celui des robots
         for k, d in enumerate(data["donnes"], 1):
             print(f"Donne {k} sur {len(data['donnes'])}", flush=True)   # l'application en fait sa barre de progression
             x = encheres_auto(d); n = str(d["n"])

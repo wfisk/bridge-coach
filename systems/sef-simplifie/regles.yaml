@@ -229,3 +229,139 @@ sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]
 "1T - 4T | 1K - 4K":
   - 5U:  { si: "HL 16+", montre: "16+ : la manche à 5 (30 points ensemble)", nature: conclusion, source: à confirmer }
   - passe: { montre: "minimum : on reste à 4" }
+
+
+# ================================================================== 2♣ pour toutes les mains fortes, 2♦ faible
+# (2026-11-21, l'utilisateur : « je supprimerais le 2♦ et jouerais un 2♣ modifié pour 22+ », puis « 2♦ faible, comme
+# 2♥ / 2♠ ». Après 2♣ – 2♦, le palier dit la force : 2SA 22–23, 3SA 24–25 réguliers ; une couleur sans saut 22–23,
+# avec saut 24–25, à 4 en majeure 26–27.)
+ouverture:
+  - 2T:  { si: "reg, H 22+ || non reg, HL 21+", montre: "2♣ fort : 22+ HL (21 HL avec une main irrégulière, comme le SEF), toutes les mains fortes (le 2♦ forcing de manche du SEF n'existe pas ici)", source: à confirmer }
+  - 2SA: { si: "reg, H 20-21", montre: "20–21 H, régulier" }
+  - 1SA: { si: "reg, H 15-17, M 4-", montre: "15–17 H, régulier" }
+  - 1SA: { si: "H 15-16, forme 5-3-3-2, M 5", montre: "15–16 H, 5-3-3-2 avec la majeure 5e" }
+  - 1SA: { si: "H 15-16, forme 6-3-2-2, N 6", montre: "15–16 H, mineure 6e" }
+  - 1P:  { si: "ouvrable, P 5+, P >= C", montre: "12–21 H, 5+ piques" }
+  - 1C:  { si: "ouvrable, C 5+", montre: "12–21 H, 5+ cœurs" }
+  - 1K:  { si: "ouvrable, K > T", montre: "12–21 H, 4+ carreaux" }
+  - 1K:  { si: "ouvrable, K 4+, K = T", montre: "12–21 H, 4+ carreaux" }
+  - 1K:  { si: "ouvrable, forme 4-4-3-2, K 3, T 2", montre: "12–21 H, 4-4 en majeures, 3 carreaux" }
+  - 1T:  { si: "ouvrable", montre: "12–21 H, 3+ trèfles" }
+  - 2P:  { si: "H 5-10, P 6, C 3-, S 1-3, non VN || H 8-10, P 6, C 3-, S 1-3", montre: "faible, 6 piques", note: "SEF 2024 p. 29 : six belles cartes, 5–10 H ; 8 H minimum vulnérable contre non vulnérable (banc)" }
+  - 2C:  { si: "H 5-10, C 6, P 3-, S 1-3, non VN || H 8-10, C 6, P 3-, S 1-3", montre: "faible, 6 cœurs", note: "SEF 2024 p. 29 : six belles cartes, 5–10 H ; 8 H minimum vulnérable contre non vulnérable (banc)" }
+  - 2K:  { si: "H 5-10, K 6, M 3-, T 3-, S 1-3, non VN || H 8-10, K 6, M 3-, T 3-, S 1-3", montre: "faible, 6 carreaux (comme 2♥ et 2♠)", source: à confirmer }
+  # SEF 2024 p. 30 : huit cartes (ou 7-4), 5–10 H
+  - 4P:  { si: "H 5-10, S 1-3, (P 8+ || P 7, (C 4+ || K 4+ || T 4+)), (non VN || H 8-10)", montre: "barrage, 8 piques (ou 7-4)" }
+  - 4C:  { si: "H 5-10, S 1-3, (C 8+ || C 7, (P 4+ || K 4+ || T 4+)), (non VN || H 8-10)", montre: "barrage, 8 cœurs (ou 7-4)" }
+  - 4K:  { si: "H 5-10, S 1-3, (K 8+ || K 7, T 4+), (non VN || H 8-10)", montre: "barrage, 8 carreaux (ou 7-4 mineur)" }
+  - 4T:  { si: "H 5-10, S 1-3, (T 8+ || T 7, K 4+), (non VN || H 8-10)", montre: "barrage, 8 trèfles (ou 7-4 mineur)" }
+  - 3P:  { si: "H 4-10, P 7+, S 1-3, non VN || H 8-10, P 7+, S 1-3", montre: "barrage, 7 piques" }
+  - 3C:  { si: "H 4-10, C 7+, S 1-3, non VN || H 8-10, C 7+, S 1-3", montre: "barrage, 7 cœurs" }
+  - 3K:  { si: "H 4-10, K 7+, S 1-3, non VN || H 8-10, K 7+, S 1-3", montre: "barrage, 7 carreaux" }
+  - 3T:  { si: "H 4-10, T 7+, S 1-3, non VN || H 8-10, T 7+, S 1-3", montre: "barrage, 7 trèfles" }
+  # en troisième, ouverture légère pour les mains qui ne barrent pas (un barrage y rapporte plus)
+  - 1P:  { si: "leger, P 5+, P >= C", montre: "ouverture légère en troisième" }
+  - 1C:  { si: "leger, C 5+", montre: "ouverture légère en troisième" }
+  - 1K:  { si: "leger, K >= T", montre: "ouverture légère en troisième" }
+  - 1T:  { si: "leger", montre: "ouverture légère en troisième" }
+  - passe: { montre: "pas d'ouverture" }
+  - exemples:
+      - { main: "A765 AX43 A982 3", position: 1, attendu: 1K }     # donne 2 du 23/10
+      - { main: "AR5 D84 RV7 A962", position: 1, attendu: 1SA }
+      - { main: "RD7652 85 X42 V3", position: 1, attendu: 2P }
+      - { main: "RD7652 85 X42 V3", position: 4, attendu: passe }
+      - { main: "5 RX96543 R2 AD5", position: 4, attendu: 1C }             # donne 15 du 30/10 : 12 H, règle des 15 non remplie
+      - { main: "AD984 8 RV63 X62", position: 4, attendu: 1P }             # 10 H + 5 piques
+      - { main: "A5 RV842 RX3 932", position: 4, attendu: passe }          # 11 H + 2 piques
+      - { main: "5 AV96543 R2 R52", position: 4, attendu: 1C }             # 11 H, sept cœurs
+      - { main: "DX82 ARV96 85 72", position: 3, attendu: 1C }             # donne 17 du 30/10 : neuf cartes en majeures
+      - { main: "8 - AD9842 R76321", position: 3, attendu: 1K }            # 9 H, règle des 20
+      - { main: "DX8 ARV96 852 72", position: 3, attendu: passe }          # 10 H + 5 + 3 = 18
+      - { main: "85 92 RDV976 852", position: 1, attendu: 2K }             # 2♦ faible : 6 carreaux, 6 H
+      - { main: "AR5 AD4 RD7 AV92", position: 1, attendu: 2T }             # 24 H régulier : 2♣ (le SEF dit 2♦)
+      - { main: "ARDV952 A R5 AD2", position: 1, attendu: 2T }            # unicolore fort : 2♣
+      - { main: "A5 842 R4 RV9732", position: 4, attendu: 1T }             # 11 H, six trèfles
+      - { main: "RD7652 85 X42 V3", position: 1, vul: VN, attendu: passe }   # 7 H : trop faible en VN (vulnérables contre non vulnérables)
+      - { main: "RD7652 85 X42 V3", position: 1, vul: VV, attendu: 2P }
+      - { main: "AV32 RD54 V72 D3", position: 1, attendu: 1K }
+      - { main: "AR852 D84 RV7 D9", position: 1, attendu: 1SA }      # 15 H, 5-3-3-2 avec cinq piques (SEF 2024 p. 24)
+      - { main: "A8 D84 V7 ARV962", position: 1, attendu: 1SA }      # 15 H, six trèfles 6-3-2-2
+      - { main: "RD7652 85 942 83", position: 1, attendu: 2P }       # 5 H : deux faible (SEF 2024 p. 29)
+      - { main: "RD76542 85 942 3", position: 1, attendu: 3P }       # 5 H, sept piques : barrage dès 4 H (SEF 2024 p. 30)
+      - { main: "RDV76542 85 94 3", position: 1, attendu: 4P }       # huit piques : barrage à 4
+
+"2T - 2K":
+  - 2SA: { si: "reg, H 22-23", montre: "22–23 H, régulier", nature: invite }
+  - 3SA: { si: "reg, H 24+", montre: "24–25 H, régulier", nature: conclusion, source: à confirmer }
+  - 4P:  { si: "P 5+, P >= C, P >= K, P >= T, HL 26+", montre: "5+ piques, 26–27 HL : la manche, le partenaire parle avec un as ou 6+ points", source: à confirmer }
+  - 4C:  { si: "C 5+, C >= K, C >= T, HL 26+", montre: "5+ cœurs, 26–27 HL : la manche, le partenaire parle avec un as ou 6+ points", source: à confirmer }
+  - 3P:  { si: "P 5+, P >= C, P >= K, P >= T, HL 24+", montre: "5+ piques, 24–25 HL : forcing de manche", nature: forcing, source: à confirmer }
+  - 3C:  { si: "C 5+, C >= K, C >= T, HL 24+", montre: "5+ cœurs, 24–25 HL : forcing de manche", nature: forcing, source: à confirmer }
+  - 4K:  { si: "K 5+, K >= T, HL 24+", montre: "5+ carreaux, 24+ HL : forcing de manche", nature: forcing, source: à confirmer }
+  - 4T:  { si: "T 5+, HL 24+", montre: "5+ trèfles, 24+ HL : forcing de manche", nature: forcing, source: à confirmer }
+  - 2P:  { si: "P 5+, P >= C, P >= K, P >= T", montre: "5+ piques, 22–23 HL", source: à confirmer }
+  - 2C:  { si: "C 5+, C >= K, C >= T", montre: "5+ cœurs, 22–23 HL", source: à confirmer }
+  - 3K:  { si: "K 5+, K >= T", montre: "5+ carreaux, 22–23 HL", source: à confirmer }
+  - 3T:  { si: "T 5+", montre: "5+ trèfles, 22–23 HL", source: à confirmer }
+  - 2SA: { montre: "main forte sans couleur 5e", nature: invite }
+  - exemples:
+      - { main: "AR5 AD4 RD7 AD92", apres: 2T - 2K, attendu: 3SA }    # 24 H régulier
+      - { main: "AR5 AD4 RD7 DV92", apres: 2T - 2K, attendu: 2SA }    # 22 H régulier
+      - { main: "AR4 ARDV95 A5 R2", apres: 2T - 2K, attendu: 3C }     # 6 cœurs, 24 HL
+      - { main: "ARDV952 A R5 AD2", apres: 2T - 2K, attendu: 3P }     # 7 piques, 25 HL : le saut
+      - { main: "ARDV952 AR R5 AD", apres: 2T - 2K, attendu: 4P }     # 7 piques, 28 HL : la manche
+
+# le répondant (2♦, 0+ H) : après une couleur sans saut (22–23), il peut passer avec 0–3 (UM : la majeure de l'ouvreur)
+"2T - 2K - 2C | 2T - 2K - 2P":
+  - 4UM: { si: "UM 3+, HLD(UM) 4+", montre: "fit et 4+ points : la manche", nature: conclusion, source: à confirmer }
+  - 2P:  { si: "P 4+, C 2-, H 3+", montre: "4+ piques, forcing", nature: forcing, apres: 2T - 2K - 2C, source: à confirmer }
+  - 3SA: { si: "UM 2-, H 4+", montre: "4+ H sans fit : 3SA", nature: conclusion, source: à confirmer }
+  - 3UM: { si: "UM 3+, HLD(UM) 2-3", montre: "fit, 2–3 points : invitation", nature: invite, source: à confirmer }
+  - passe: { montre: "0–3 points : la partielle" }
+  - exemples:
+      - { main: "6542 72 A876 V84", apres: 2T - 2K - 2C, attendu: 2P }     # donne 4 du 01/11
+      - { main: "652 V72 8762 984", apres: 2T - 2K - 2C, attendu: passe }  # 1 H
+      - { main: "652 V72 A762 984", apres: 2T - 2K - 2C, attendu: 4C }     # fit, 5 H
+"2T - 2K - 3T":
+  - 3SA: { si: "H 4+", montre: "4+ H : 3SA", nature: conclusion, source: à confirmer }
+  - 5T:  { si: "T 3+, HLD(T) 6+", montre: "fit, 6+ points : la manche en mineure", nature: conclusion, source: à confirmer }
+  - passe: { montre: "0–3 points : la partielle" }
+"2T - 2K - 3K":
+  - 3SA: { si: "H 4+", montre: "4+ H : 3SA", nature: conclusion, source: à confirmer }
+  - 5K:  { si: "K 3+, HLD(K) 6+", montre: "fit, 6+ points : la manche en mineure", nature: conclusion, source: à confirmer }
+  - passe: { montre: "0–3 points : la partielle" }
+# après le saut (24–25, forcing de manche) : la manche au moins
+"2T - 2K - 3C | 2T - 2K - 3P":
+  - 4UM: { si: "UM 2+", montre: "deux cartes ou plus : la manche dans sa majeure", nature: conclusion, source: à confirmer }
+  - 3P:  { si: "P 5+", montre: "5+ piques, forcing", nature: forcing, apres: 2T - 2K - 3C, source: à confirmer }
+  - 3SA: { montre: "court dans sa couleur : 3SA", nature: conclusion, source: à confirmer }
+"2T - 2K - 4T":
+  - 5T:  { montre: "la manche en mineure", nature: conclusion, source: à confirmer }
+"2T - 2K - 4K":
+  - 5K:  { montre: "la manche en mineure", nature: conclusion, source: à confirmer }
+# après 4 dans la majeure (26–27) : le chelem à 33 points ensemble
+"2T - 2K - 4C | 2T - 2K - 4P":
+  - 6UM: { si: "UM 2+, HLD(UM) 6+", montre: "6+ points avec deux atouts : le petit chelem", nature: conclusion, source: à confirmer }
+  - passe: { montre: "la manche suffit" }
+"2T - 2K - 3SA":
+  - 6SA: { si: "H 8+", montre: "8+ H : petit chelem (33 ensemble)", nature: conclusion, source: à confirmer }
+  - 4SA: { si: "H 7", montre: "quantitatif : invite au chelem", nature: invite, source: à confirmer }
+  - passe: { montre: "3SA pour jouer" }
+
+# le 2♦ faible : comme le partenaire du 2♥ / 2♠ faible, sans le relais 2SA (la manche est le plus souvent 3SA)
+"2K":
+  - 2P:  { si: "P 5+, bonne P, H 14+", montre: "5+ piques, 14+ H : forcing un tour", nature: forcing, source: à confirmer }
+  - 2C:  { si: "C 5+, bonne C, H 14+", montre: "5+ cœurs, 14+ H : forcing un tour", nature: forcing, source: à confirmer }
+  - 3SA: { si: "H 16+, K 2+", montre: "16+ H, de quoi jouer les carreaux : 3SA", nature: conclusion, source: à confirmer }
+  - 5K:  { si: "K 3+, HLD(K) 20+", montre: "fit et 20+ points : la manche en mineure", nature: conclusion, source: à confirmer }
+  - 3K:  { si: "K 3+, H 14-", montre: "trois atouts : barrage (loi des levées), pour jouer", nature: conclusion, source: à confirmer }
+  - passe: { montre: "pas de manche face au deux faible" }
+  - exemples:
+      - { main: "A852 R4 AR93 D72", attendu: 3SA }      # 19 H, deux carreaux
+      - { main: "V85 D94 R97 8632", attendu: 3K }       # trois atouts, faible
+      - { main: "AR9752 4 AD3 R72", attendu: 2P }
+"2K - 2C | 2K - 2P":
+  - "*W": { si: "W 3+ || W 2, H(W) 3+", montre: "soutien", nature: limite, source: à confirmer }
+  - "*U": { montre: "pas de soutien : répète ses carreaux", nature: limite, source: à confirmer }
+"2K - 3K | 2K - 5K | 2K - 3SA":
+  - passe: { montre: "le partenaire a décidé" }

@@ -58,5 +58,10 @@ Le but n'est pas de battre le SEF mais de voir où les robots enchérissent mal 
   Blackwood aux clés 3041 (le SEF) ; le 2♦ d'ouverture et les deux faibles du SEF 2024 ; les interventions du SEF 2024
   sans les bicolores ni Landy. Le SIF ne sert plus que là où ni le résumé ni le SEF simplifié ne disent rien (les
   réponses après une intervention, aujourd'hui).
-- **Le 2♦ d'ouverture (2026-11-21) :** gardé comme dans le SEF 2024 (fort, forcing de manche). L'utilisateur, pour lui,
-  l'aurait supprimé d'un système simplifié : à revoir si le club le souhaite.
+- **2♣ pour toutes les mains fortes, 2♦ faible (2026-11-21, l'utilisateur, après avoir d'abord gardé le 2♦ du SEF) :**
+  2♣ = 22+ H régulier, ou 21+ HL irrégulier (le seuil du SEF) ; réponse 2♦ (0+). Puis le palier dit la force : 2SA
+  22–23 et 3SA 24–25 réguliers ; une couleur sans saut 22–23 (le répondant passe avec 0–3), avec saut 24–25 (forcing
+  de manche), 4 en majeure 26–27 (le répondant dit le chelem avec deux atouts et 6+ HLD). Le 2♦ d'ouverture devient un
+  deux faible à carreau (6 cartes, 5–10 H, ni majeure 4e ni trèfles 4e), réponses comme au 2♥ / 2♠ sans le relais
+  2SA. Ajusté par Claude (l'utilisateur : « modify my suggestions a little ») : les mineures au saut vont à 4♣ / 4♦,
+  forcing ; 3SA reçoit 4SA quantitatif ou 6SA. Banc : +447 / +439 IMP par rapport au 2♦ forcing de manche.

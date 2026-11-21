@@ -802,7 +802,11 @@ tools in src/outils/.
                         choix_systeme_robots, shown when two systems are ready; changer_systeme_robots: choisir_systeme,
                         etat systeme_robots, rules read ahead in a thread); a line names the switched-off conventions; the
                         family pages still show the full SEF 2024. Help: « Le système des robots ». The 2003 SIF is old: SEF
-                        2024 and the user's summary win over it (2♦ opening kept as SEF; the user would personally drop it).
+                        2024 and the user's summary win over it. Then the user dropped SEF's game-forcing 2♦: 2♣ = every
+                        strong hand (22+ H balanced, 21+ HL unbalanced as in SEF), after 2♣ – 2♦ the level shows strength
+                        (2SA 22–23, 3SA 24–25; a suit 22–23 passable, a jump 24–25 game-forcing, 4M 26–27), and 2♦ is a weak
+                        two in diamonds. +447 / +439 IMP on 2 × 20 000 deals. Sequences after 2♣ – 2♦ – 2M use UM (U is the
+                        artificial club there).
 
 Three places outside this folder, none in git. `bridge-coach.ini` sits at a fixed place because it says
 where the rest is: `~/Library/Application Support/Bridge Coach` on Mac, `%APPDATA%\Bridge Coach` on Windows

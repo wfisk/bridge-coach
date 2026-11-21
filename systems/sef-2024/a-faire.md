@@ -531,3 +531,10 @@ Essayés et retirés :
   sans savoir si l'ouvreur a 18–19 : des chelems perdus).
 Pas encore écrits : les texas du Rubensohl et le 3♠ demande d'arrêt (p. 27), la défense après un contre du Stayman ou
 du texas (p. 28).
+
+## Points de longueur à partir de la 5e carte (2026-11-21, essayé, en attente de l'accord de l'utilisateur)
+Le livre (p. 8–29, « On ajoutera 1 point pour la cinquième carte et chacune des suivantes ») et le SIF comptent les
+points L dès la 5e carte ; le moteur (encheres/main.py, Main.hl) les compte dès la 6e. Essai : HL = H + (longueur − 4)
+par couleur, HLD inchangé. SEF 2024 : +74 et +318 IMP (2 976 et 3 117 séquences changées, 15 %) ; SEF simplifié :
++255 et +585. Les 161 exemples du SEF restent justes ; deux du SEF simplifié (2♣ – 2♦ – saut ou 4M) changeraient de
+palier, à réécrire. Pas encore gardé : il change 15 % des enchères des robots ; l'utilisateur décide.

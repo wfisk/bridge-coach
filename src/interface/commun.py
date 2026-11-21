@@ -1513,7 +1513,8 @@ POUR_CLAUDE = [("systems/sef-2024/systeme.md", "systeme.md"), ("systems/sef-2024
                ("systems/conventions/blackwood-3041.md", "blackwood-3041.md"), ("systems/conventions/stayman.md", "stayman.md"),
                ("systems/conventions/texas.md", "texas.md"), ("systems/conventions/drury.md", "drury.md"),
                ("systems/sef-2024/entames.md", "entames.md"),
-               ("systems/sef-2024/entames.yaml", "entames.yaml"), ("systems/technique/jeu-de-la-carte.md", "jeu-de-la-carte.md")]
+               ("systems/sef-2024/entames.yaml", "entames.yaml"), ("systems/technique/jeu-de-la-carte.md", "jeu-de-la-carte.md"),
+               ("systems/sef-2024/regles.yaml", "regles.yaml"), ("docs/bridge-analysis/lecons-expert.md", "lecons-expert.md")]
 
 CONSIGNE = """Tu es l'expert de Bridge Coach, un programme qui analyse les séances de bridge d'un club français.
 Écris l'analyse experte de la séance du fichier joint, {nom}.ai.json, et rends-la dans un seul fichier
@@ -1526,8 +1527,11 @@ Le fichier joint rassemble tout :
 - « exemple_analyse » : une analyse experte complète d'une autre séance, le style et le niveau de détail attendus ;
 - « documents » : systeme.md et les conventions (blackwood-3041.md, stayman.md, texas.md, drury.md), le système
   SEF 2024 joué ; entames.md et entames.yaml, les règles d'entame et de défense ; jeu-de-la-carte.md, la technique
-  du déclarant ;
+  du déclarant ; regles.yaml, les règles exactes des robots (chaque section est une séquence d'enchères, par exemple
+  « 1K - 2T ») ; lecons-expert.md, les erreurs déjà relevées dans les analyses passées ;
 - « consigne » : ce texte.
+
+Avant de commencer, lis lecons-expert.md : ne refais aucune de ces erreurs.
 
 Les règles, à suivre strictement :
 1. Les enchères recommandées (« enc ») se choisissent à la table : chaque enchère d'après la main du joueur et les
@@ -1539,7 +1543,8 @@ Les règles, à suivre strictement :
    l'atout avant de nommer des contrôles (par exemple 1♥ – 2♦ – 2SA – 3♥, forcing, puis 4♣ / 4♦) ; une couleur
    nommée deux fois montre une longueur, jamais « fit et contrôle ». Quand tu gardes la séquence du coach
    (« analyse_standard »), vérifie-la enchère par enchère et réécris celle qu'un partenaire comprendrait mal.
-2. Le système est celui de systeme.md. Une ligne marquée « (à confirmer) » ne s'emploie qu'en disant que le
+2. Le système est celui de systeme.md. Chaque enchère recommandée doit avoir le sens qu'elle a dans ce système :
+   cherche la séquence dans regles.yaml, et prends ce sens, pas une habitude d'un autre système. Une ligne marquée « (à confirmer) » ne s'emploie qu'en disant que le
    traitement est incertain.
 3. L'entame et la défense (« entame », « defense ») viennent de la main de l'entameur et des enchères seulement,
    d'après entames.yaml et entames.md : jamais d'une simulation au double mort.

@@ -71,7 +71,8 @@ dossier, consigne = app.preparer_pour_claude(sc)
 assert os.listdir(dossier) == ["seance-du-2026-10-23.ai.json"]           # un seul fichier à donner à Claude
 tout = json.load(open(os.path.join(dossier, "seance-du-2026-10-23.ai.json")))
 assert tout["consigne"] == consigne and "seance-du-2026-10-23-expert.json" in consigne and "Décision serrée" in consigne
-assert "systeme.md" in tout["documents"] and tout["analyse_standard"]["donnes"] == {"1": {"enc": []}}
+assert "systeme.md" in tout["documents"] and "regles.yaml" in tout["documents"] and "lecons-expert.md" in tout["documents"]
+assert "lecons-expert.md" in consigne and tout["analyse_standard"]["donnes"] == {"1": {"enc": []}}
 texte = json.dumps(tout, ensure_ascii=False)                                        # ni noms, ni club, ni fichier d'origine
 assert "Anne" not in texte and "Durand" not in texte and "Lilas" not in texte and "6000010" not in texte
 assert tout["seance"]["joueurs"] == {"1": [{"initiales": "AM"}, {"initiales": "BD"}]} and "analyses" not in tout["seance"]

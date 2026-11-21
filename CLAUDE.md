@@ -92,7 +92,9 @@ Outside the folder, never in git: `bridge-coach.ini` (Mac `~/Library/Application
 
 ## Writing an expert analysis
 
-Read `docs/bridge-analysis/PROJECT-INSTRUCTIONS.md` and `INSTRUCTIONS.md` first; the PDF is in French, SEF and IMP, with
+Read `docs/bridge-analysis/PROJECT-INSTRUCTIONS.md`, `INSTRUCTIONS.md` and `lecons-expert.md` (the pitfalls already
+caught) first; **each time the user catches a mistake in an expert analysis, add one line to `lecons-expert.md`**
+(« Préparer pour l'expert » sends it, with regles.yaml, to Claude on the web). The PDF is in French, SEF and IMP, with
 fixed layout rules; `~/Documents/bridge-coach-files/documents/exemple_analyse_2026-10-23.json` is the style reference.
 Use the session's system in `systems/` (`systeme.md`, its conventions, `entames.md`, its `ffb/` documents); never rely on
 a line marked **(à confirmer)** without saying the treatment is uncertain.

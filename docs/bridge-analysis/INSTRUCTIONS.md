@@ -78,3 +78,25 @@ working directory, keep the .bws in its own folder, and run Python with `-I`.
   longest suit first (e.g. 1♦ – 2♣ – … – 2♠).
 - The Bridgemate sometimes misses bids: always read the alerts.
 - Double-dummy assumes all cards visible: a gap is not always a mistake (lead, two-way guess).
+
+## Working method inside Bridge Coach (added 2026-11-20)
+Today the app prepares everything: `pour-claude/<session>/seance-du-AAAA-MM-JJ.ai.json` holds the session, the
+coach's analysis (`analyse_standard`), a sample expert analysis and the system documents; its `consigne` gives the
+JSON format. The expert works in Claude Code, where it can check itself. Use that:
+- **Work in a fresh session**, one deal at a time, and reread each deal before moving on. Speed is the main cause
+  of mistakes: 25 deals written in one pass at the end of a long session produced the errors listed below.
+- **Every recommended call must mean what the hand holds in OUR system.** For each call that differs from the
+  coach's, look up the sequence in `systems/sef-2024/regles.yaml` (the robots' rules, section keys are sequences)
+  and in `systeme.md`, and use that meaning, not general bridge habits (2-over-1, Acol…). Prefer the simplest
+  natural route a club partner reads at once.
+- **Count tricks suit by suit**, writing who holds each honour, before any plan or comment.
+- **Leads:** compute the rule's lead with `src/jeu.py` `entame_regle(main, den, partenaire=…, adverses=…,
+  palier=…, declarant=…, mort=…)`. If the rule gives a lead the expert disagrees with, keep the expert's card and
+  say in `defense` what the rule gives and why it is not followed.
+- **Before handing over:** import on a COPY of the session's .bc.json with `interface.commun.importer_expert(copy,
+  file)` (it checks the hands, the auction grid and that the lead comes from the right hand). Then reread the
+  whole file once as a reviewer, looking only for system errors and miscounts.
+
+## Lessons from past expert analyses
+They are in `lecons-expert.md` beside this file: read it before every analysis, and add one line there for each
+mistake the user catches.

@@ -88,7 +88,10 @@ tools in src/outils/.
                         <working folder>/pour-claude/<name>/seance-du-AAAA-MM-JJ.ai.json: "consigne" (CONSIGNE, the rules for
                         the expert analysis, in French), "seance" (seance_pour_claude: no analyses, no source, no title, players
                         by initials only: full names, club and original file name never leave the computer), "analyse_standard",
-                        "exemple_analyse", "documents" (the system files); Claude returns seance-du-…-expert.json; importer_expert
+                        "exemple_analyse", "documents" (the system files; since 2026-11-21 also regles.yaml, so the web expert
+                        reads each call's meaning in our system, and docs/bridge-analysis/lecons-expert.md, the pitfalls the
+                        user caught, which the consigne says to read first: the user saw expert analyses vary, and the web
+                        expert had neither); Claude returns seance-du-…-expert.json; importer_expert
                         checks it (four-column grids; each lead from the declarer's left, a card of that hand: rapport.entame_valide)
                         and merges it deal by deal into the .bc.json (the file before goes to versions/); "Aller aux rapports"
                         switches to the Rapports tab), then each deal's analysis laid out like its PDF page (page_analyse, 2026-11-17, the user: « should look more like the report »: titre_donne, diagramme_html with the lead legend beside South and the lead marks of build_pdf.marques_entame, Résultats à la table open with your rank line and the recommended row (tableau_resultats, shared with Donnes), Enchères aux tables open, identical auctions as one grid « Tables 1, 2, 3, 4 » (encheres_groupe_html), the recommended auction beside its notes, Plan de jeu and Entame et défense on the PDF's pale band (BANDE_HTML), side by side when only the coach speaks, one under the other with coach left and expert right when the expert comments (avec_avis_html, colonne_avis_html: title line with the cap or ✦, short paragraphs from build_pdf.paragraphes, first line indented), comment, cartes vues), the Expert's when it exists (toggle

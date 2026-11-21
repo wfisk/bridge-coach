@@ -25,11 +25,13 @@ with tempfile.TemporaryDirectory() as d:
     assert sef.choisir("1SA", Main("AV975 R82 V4 863")).enchere == "2♥"            # le SEF : texas
     assert s.choisir("1C", Main("R82 D75 RV73 X52"), position=2).enchere == sef.choisir("1C", Main("R82 D75 RV73 X52"), position=2).enchere
 
-# le système de la donne, sans changer celui du programme ; bridgez (encore vide) enchérit comme le SEF
+# le système de la donne, sans changer celui du programme ; bridgez (sans quelques conventions) enchérit comme le SEF
+# sur une donne où ces conventions ne servent pas
+assert noms and regles.charger(os.path.join(RACINE, "systems", "bridgez", "regles.yaml")).sans >= {"Roudi", "Spoutnik"}
 D = banc_encheres.donne(11, 5)
 a = E.encherir(D)
 b = E.encherir(dict(D, systeme="bridgez"))
-assert a["encheres"] == b["encheres"] and E.systeme_actif() == "sef-2024"
+assert a["encheres"] == b["encheres"] and E.systeme_actif() == "sef-2024", (a["encheres"], b["encheres"])
 E.choisir_systeme("bridgez")
 assert E.systeme_actif() == "bridgez" and os.environ["BRIDGE_COACH_SYSTEME"] == "bridgez"
 E.choisir_systeme("sef-2024")

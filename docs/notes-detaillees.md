@@ -780,6 +780,17 @@ tools in src/outils/.
                         (sef2024.reponse_concurrence), Blackwood (a robot's 4SA ask becomes 6 of the trump suit directly).
                         Names given that day (70 calls; SEF bench unchanged, 0 sequences on 2 × 20 000 deals). The leftover
                         « (1SA) contre » sections (answers to the dropped « mineure-majeure » double) were removed then.
+                        bridgez's first list (2026-11-21, proposed by Claude, the user agreed; the user's beginners' summary
+                        keeps Stayman, Texas, Blackwood): sans Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing.
+                        The bench (bridgez against SEF, the aim is no absurd auctions, not to beat SEF) showed that without
+                        Spoutnik nothing replaced the double: responder passed 19 H over 1♦ (2♠). The user chose natural bids
+                        over keeping Spoutnik: bridgez rewrites « 1M (1x) », « 1M (2x) | 1M (3x) », « 1N (1x) », « 1N (2x) |
+                        1N (3x) » (penalty double 10+ H with 5 of their suit, 4 at the 2-level; a 4-card major at the 1-level
+                        6+ HL, at the 2-level 12+ HL; a new suit at the 2-level 12+ HL as in the summary, at the 3-level 13+ H;
+                        the cue-bid 13+ H with nothing natural) and « 1x (1x) contre » (opener leaves the double), all marked
+                        « à confirmer ». −517 / −638 IMP against SEF on 2 × 20 000 deals (Spoutnik kept: −761 / −812; nothing in
+                        its place: −1055 / −1138). Log in systems/bridgez/README.md. A derived system with no « definitions: »
+                        reads its base's (regles.charger), so its sections can say « majeure libre ».
 
 Three places outside this folder, none in git. `bridge-coach.ini` sits at a fixed place because it says
 where the rest is: `~/Library/Application Support/Bridge Coach` on Mac, `%APPDATA%\Bridge Coach` on Windows

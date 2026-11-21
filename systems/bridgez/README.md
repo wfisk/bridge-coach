@@ -21,3 +21,22 @@ Rien n'est encore écrit : il faut le texte du livre, page par page, pour ne rie
 6. Les entames et la signalisation.
 
 Chaque différence écrite ici cite sa page (`source: BRIDGEZ p. N`).
+
+## Banc (2026-11-21) : bridgez contre le SEF, 2 × 20 000 donnes
+Le but n'est pas de battre le SEF mais de voir où les robots enchérissent mal quand une convention manque.
+- `sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]` : −1055 / −1138 IMP, 7,7 % des séquences
+  changent. Le défaut : sans Spoutnik, rien ne remplace le contre après une intervention ; le répondant sans enchère
+  naturelle passe, même avec 19 H (1♦ (2♠) passe) ou 6 piques et 10 H (1♦ (2♣) passe) : 74 donnes sur 20 000.
+- La même liste en gardant Spoutnik : −761 / −812 IMP. Le reste (Drury : 3♠ direct ; bicolores : la couleur
+  nommée seule ; Roudi ; Landy : passe sur 1SA avec 5-4 en majeures) est naturel et sans absurdité vue.
+- Le résumé débutant de l'utilisateur (2026-11-21) diffère aussi du SEF des robots : 1M – 4M = 13-16 HLD avec 3+
+  cartes (les robots disent 3♥) ; 1M – 2SA = 11-12 H et 1M – 3SA = 13-15 H réguliers (les robots disent 2♣) ;
+  soutien d'une mineure avec 5 cartes ; nouvelle couleur au palier 2 : 12+ HL. Rien sur les interventions.
+- **Choix de l'utilisateur (2026-11-21) : des enchères naturelles à la place du Spoutnik.** bridgez réécrit les
+  réponses après une intervention (« 1M (1x) », « 1M (2x) | 1M (3x) », « 1N (1x) », « 1N (2x) | 1N (3x) ») et la
+  redemande de l'ouvreur sur le contre (« 1x (1x) contre ») : contre punitif (10+ H, 5 cartes dans leur couleur, 4 sur
+  une intervention au palier de 2), majeure 4e au palier 1 dès 6 HL, au palier 2 dès 12 HL, couleur 5e au palier 2
+  dès 12 HL, au palier 3 dès 13 H, cue-bid 13+ H sans enchère naturelle. Tout est « à confirmer » (pas dans le résumé).
+  Banc : −517 / −638 IMP (mieux que le Spoutnik gardé, −761 / −812). Le répondant ne passe plus avec 10+ H que sur
+  26 donnes au lieu de 74 : des mains de 10-11 H avec une majeure 4e au palier 2, ou une longue couleur au palier 3.
+- Reste à faire d'après le résumé : 1M – 4M = 13-16 HLD ; 1M – 2SA / 3SA réguliers ; soutien mineur avec 5 cartes.

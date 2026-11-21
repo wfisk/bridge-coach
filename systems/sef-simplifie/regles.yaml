@@ -1,4 +1,7 @@
-# BRIDGEZ (Université du Bridge) : le système qu'apprennent les débutants, aux enchères plus directes.
+# SEF simplifié : le SEF 2024 aux enchères plus directes, sans les conventions difficiles (2026-11-21, l'utilisateur :
+# « SEF simplifié », pas « débutants » ; BRIDGEZ, le livre de l'Université du Bridge, n'est pas un nom que les joueurs
+# connaissent). Références : le résumé de l'utilisateur et le SIF (Système d'Initiation Français, tiré du livre
+# BRIDGEZ ; ffb/, hors git) pour ce que le résumé ne dit pas.
 # Le SEF 2024 avec des conventions coupées (l'utilisateur, 2026-11-19 : pas un second système à entretenir) :
 #   base: sef-2024     tout se joue comme le SEF, sauf ce qui est écrit ici ;
 #   sans: [...]        les conventions coupées, par leur « nom: » dans le regles.yaml du SEF (Stayman, Texas, Roudi,
@@ -6,13 +9,14 @@
 #                      dans le code). Une enchère coupée laisse la place à l'enchère naturelle d'après ; sans Blackwood,
 #                      le robot qui voulait demander les clés dit le chelem directement.
 #   une section écrite ici (une séquence, comme "1SA") remplace celle du SEF : pour les enchères plus directes du livre.
-# « pret: non » : pas encore proposé aux joueurs. La liste viendra des pages du livre (README.md) : ne rien deviner.
-systeme: bridgez
-titre: "BRIDGEZ (Université du Bridge)"
+# « pret: non » : pas encore proposé aux joueurs.
+systeme: sef-simplifie
+titre: "SEF simplifié"
 base: sef-2024
 pret: non
-# Première liste (2026-11-21, proposée par Claude, acceptée par l'utilisateur en attendant les pages du livre) :
-# on garde Stayman, Texas et Blackwood, appris tôt ; on coupe ce qui rend le SEF difficile à suivre pour un débutant.
+# Première liste (2026-11-21, proposée par Claude, acceptée par l'utilisateur) : on garde Stayman, Texas et Blackwood
+# (le résumé) ; on coupe le reste. Le Spoutnik aussi (l'utilisateur : pas pour ce système ; le SIF le garde seulement
+# après 1m (1♠) : −141 / −79 IMP sur 2 × 20 000 donnes sans lui, négligeable).
 sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]
 
 # ------------------------------------------------------------------ après leur intervention, sans Spoutnik
@@ -34,7 +38,10 @@ sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]
   - "*C": { si: "C 5+, non U est C, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, HL 12+ || palier(C) 3, H 13+)", montre: "5+ cœurs", nature: forcing, source: à confirmer }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 1, H 6+ || palier(K) 2, HL 12+ || palier(K) 3, H 13+)", montre: "5+ carreaux", nature: forcing, source: à confirmer }
   - "*T": { si: "T 5+, non U est T, non Y est T, (palier(T) 1, H 6+ || palier(T) 2, HL 12+ || palier(T) 3, H 13+)", montre: "5+ trèfles", nature: forcing, source: à confirmer }
-  - "*P": { si: "P 4, non U est P, non Y est P, (palier(P) 1, HL 6+ || palier(P) 2, HL 12+)", montre: "4 piques", nature: forcing, source: à confirmer }
+  - "*P": { si: "P 4, non U est P, non Y est P, palier(P) 1, HL 6+", montre: "4 piques (SIF : comme sans intervention)", nature: forcing, source: à confirmer }
+  - 1SA: { si: "reg, HL 8-10, arret Y", montre: "8–10 HL, régulier, arrêt dans leur couleur (SIF)", nature: limite }
+  - 2SA: { si: "reg, HL 11-12, arret Y", montre: "11–12 HL, régulier, arrêt : invitation (SIF)", nature: invite }
+  - 3SA: { si: "reg, HL 13+, arret Y", montre: "13+ HL, régulier, arrêt : manche (SIF : 13–14)", nature: conclusion }
   - 1SA: { si: "H 8-10, arret Y", montre: "8–10 H, arrêt dans leur couleur", nature: limite }
   - 2SA: { si: "H 11-12, arret Y", montre: "11–12 H, arrêt : invitation", nature: invite }
   - 3SA: { si: "H 13+, arret Y", montre: "13+ H, arrêt : manche", nature: conclusion }
@@ -59,7 +66,6 @@ sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]
   - "*C": { si: "C 5+, non U est C, non Y est C, (palier(C) 2, HL 12+ || palier(C) 3, H 13+)", montre: "5+ cœurs", nature: forcing, source: à confirmer }
   - "*K": { si: "K 5+, non U est K, non Y est K, (palier(K) 2, HL 12+ || palier(K) 3, H 13+)", montre: "5+ carreaux", nature: forcing, source: à confirmer }
   - "*T": { si: "T 5+, non U est T, non Y est T, (palier(T) 2, HL 12+ || palier(T) 3, H 13+)", montre: "5+ trèfles", nature: forcing, source: à confirmer }
-  - "*P": { si: "P 4, non U est P, non Y est P, palier(P) 2, HL 12+", montre: "4 piques", nature: forcing, source: à confirmer }
   - 2SA: { si: "H 11-12, arret Y", montre: "11–12 H, arrêt : invitation", nature: invite }
   - 3SA: { si: "H 13+, arret Y", montre: "13+ H, arrêt : manche", nature: conclusion }
   - "*Y": { si: "H 13+, palier(Y) 3-", montre: "cue-bid : 13+ H sans enchère naturelle, forcing de manche", nature: cue, atout: U, source: à confirmer }
@@ -76,8 +82,8 @@ sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]
   # les majeures d'abord, le soutien mineur ensuite (comme le SEF après son Spoutnik)
   - "*P": { si: "P 5+, non Y est P, (palier(P) 1, H 6+ || palier(P) 2, HL 12+ || palier(P) 3, H 13+)", montre: "5+ piques", nature: forcing, source: à confirmer }
   - "*C": { si: "C 5+, non Y est C, (palier(C) 1, H 6+ || palier(C) 2, HL 12+ || palier(C) 3, H 13+)", montre: "5+ cœurs", nature: forcing, source: à confirmer }
-  - "*C": { si: "C 4, non Y est C, (palier(C) 1, HL 6+ || palier(C) 2, HL 12+)", montre: "4 cœurs", nature: forcing, source: à confirmer }
-  - "*P": { si: "P 4, non Y est P, (palier(P) 1, HL 6+ || palier(P) 2, HL 12+)", montre: "4 piques", nature: forcing, source: à confirmer }
+  - "*C": { si: "C 4, non Y est C, palier(C) 1, HL 6+", montre: "4 cœurs (SIF : comme sans intervention)", nature: forcing, source: à confirmer }
+  - "*P": { si: "P 4, non Y est P, palier(P) 1, HL 6+", montre: "4 piques (SIF : comme sans intervention)", nature: forcing, source: à confirmer }
   - "*U+1": { si: "U 4+, HLD 11+, palier(U) 2-", montre: "fit, 11+ points : invitation", nature: invite }
   - "*U": { si: "U 4+, HLD 6-10, palier(U) 3-", montre: "soutien, 6–10 points", nature: limite }
   - "*U": { si: "U 4+, HLD 11+, palier(U) 3", montre: "soutien, 11+ points (le saut est trop haut)", nature: invite }
@@ -90,8 +96,8 @@ sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]
   - "*Y": { si: "H 12+, palier(Y) 3-", montre: "cue-bid : 12+ H sans enchère naturelle, forcing de manche", nature: cue, atout: U }
   - passe: { montre: "rien d'adapté après l'intervention" }
   - exemples:
-      - { main: "R8 AV75 RV73 X52", apres: 1T (1P), attendu: 2C }       # sans Spoutnik : 4 cœurs, 12 H : au palier 2
-      - { main: "R8 AV75 V97 X532", apres: 1T (1P), attendu: 2T }       # 9 H, 4 cœurs : trop peu pour le palier 2, soutien trèfle
+      - { main: "R8 AV75 RV73 X52", apres: 1T (1C), attendu: 2SA }      # 12 H régulier, arrêt cœur
+      - { main: "R8 AV75 RV73 X52", apres: 1T (1P), attendu: 2SA }      # pas de Spoutnik : 12 H, arrêt pique
       - { main: "R8 AV75 RV73 X52", apres: 1T (1K), attendu: 1C }       # 4 cœurs au palier 1
       - { main: "85 AD2 RD2 D8632", apres: 1T (1P), attendu: 2P }       # 13 H, pas d'arrêt : cue-bid
       - { main: "X832 D754 5 AX74", apres: 1T (1K), attendu: 1C }       # 6 H, 4 cœurs au palier 1
@@ -103,8 +109,8 @@ sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]
   - contre: { si: "H 10+, (Y 5+ || Y 4+, palier(Y) 3+)", montre: "contre punitif : 10+ H, 5+ cartes dans leur couleur (4 sur une intervention au palier de 2)", nature: punitif, source: à confirmer }
   - "*P": { si: "P 5+, non Y est P, (palier(P) 2, HL 12+ || palier(P) 3, H 13+)", montre: "5+ piques", nature: forcing, source: à confirmer }
   - "*C": { si: "C 5+, non Y est C, (palier(C) 2, HL 12+ || palier(C) 3, H 13+)", montre: "5+ cœurs", nature: forcing, source: à confirmer }
-  - "*C": { si: "C 4, non Y est C, (palier(C) 2, HL 12+ || palier(C) 3, H 13+)", montre: "4 cœurs", nature: forcing, source: à confirmer }
-  - "*P": { si: "P 4, non Y est P, (palier(P) 2, HL 12+ || palier(P) 3, H 13+)", montre: "4 piques", nature: forcing, source: à confirmer }
+  - "*C": { si: "C 4, non Y est C, palier(C) 3, H 13+", montre: "4 cœurs", nature: forcing, source: à confirmer }
+  - "*P": { si: "P 4, non Y est P, palier(P) 3, H 13+", montre: "4 piques", nature: forcing, source: à confirmer }
   - 3SA: { si: "U 4+, H 13+, arret Y", montre: "fit mineur, 13+ H, arrêt : manche", nature: conclusion }
   - "*Y": { si: "U 4+, H 12+, non arret Y, palier(Y) 3-, non majeure libre", montre: "cue-bid : fit mineur, 12+ H, forcing de manche, sans arrêt", nature: cue, atout: U }
   - "*U+1": { si: "U 4+, HLD 11+, palier(U) 2-", montre: "fit, 11+ points : invitation", nature: invite }
@@ -126,3 +132,99 @@ sans: [Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur forcing]
 "1x (1x) contre | 1x (2x) contre":
   - "*U": { si: "U 6+, Y 1-, palier(U) 3-", montre: "6+ cartes, court dans leur couleur : ne laisse pas le contre", source: à confirmer }
   - passe: { montre: "laisse le contre punitif du partenaire" }
+
+# ------------------------------------------------------------------ le résumé débutant (2026-11-21) : les réponses
+# Copiées du SEF avec ce qui change d'après le résumé débutant de l'utilisateur : 1M – 4M = 3+ atouts et 13–16 HLD (le
+# fit différé reste pour 17+) ; 1M – 2SA / 3SA = 11–12 / 13–15 H réguliers sans fit ; le soutien mineur promet cinq
+# cartes, 1m – 4m = 13–16 HLD irrégulier. Le reste est celui du SEF.
+"1M | 1M (contre)":
+  - passe: { si: "U 3+, HLD(U) 5-", montre: "moins de 6 points" }
+  - surcontre: { si: "H 10+, non (P 5+, non U est P), non (U 4+, HLD(U) 11-15)", montre: "surcontre : 10+ H (SEF 2024 p. 13 et 21)", nature: forcing, apres: 1C (contre) | 1P (contre) }
+  - 4U:  { si: "U 5+, H 5-10, (T 1- || K 1- || C 1- || P 1-)", montre: "fermeture : 5+ atouts, moins de 11 H, un singleton ou une chicane" }
+  # Drury fitté (SEF 2024 p. 20) : main passée (siège 1 ou 2), l'ouverture en 3e ou 4e ; 2♣ artificiel : trois atouts
+  # et 11+ HLD, ou quatre atouts et 11+ HLD sans singleton ni chicane (conventions/drury.md). Une main passée n'a pas
+  # 13 H : jamais le fit différé (forcing de manche). Quatre atouts et une courte : le soutien limite à 3 (le SEF réserve
+  # le Splinter aux cinq atouts après Passe).
+  - 2T:  { si: "S 1-2, HLD(U) 11+, (U 3 || U 4+, TKCP !1-)", montre: "Drury : main passée, 3 atouts (ou 4 sans courte), 11+ points", nature: drury, nom: Drury, source: SEF 2024, apres: 1C | 1P, alerte: oui }
+  - 3U:  { si: "S 1-2, U 4+, HLD(U) 11+", montre: "main passée : 4+ atouts, une courte, 11+ points", nature: limite, source: à confirmer }
+  - 2U:  { si: "U 3+, HLD 6-10", montre: "soutien simple, 6–10 points, 3+ cartes" }
+  - 3U:  { si: "U 3+, HLD 11-12, (U 4+ || non P 5+)", montre: "soutien limite, 11–12 points ; avec trois atouts et cinq piques, 1♠ d'abord", source: à confirmer }
+  - 4U:  { si: "S 3-4, U 3+, HLD 13-16", montre: "fit et 13–16 points : manche (le résumé débutant)", nature: conclusion, source: à confirmer }
+  - 2C:  { si: "S 3-4, U 3+, HLD 17+, C 5+, C > K, C > T", montre: "17+ points, fit différé", apres: 1P }
+  - 2K:  { si: "S 3-4, U 3+, HLD 17+, K 4+, K > T", montre: "17+ points, fit différé" }
+  - 2T:  { si: "S 3-4, U 3+, HLD 17+, T 4+", montre: "17+ points, fit différé" }
+  - 2K:  { si: "S 3-4, U 3+, HLD 17+, K > T", montre: "17+ points, fit différé" }
+  - 2T:  { si: "S 3-4, U 3+, HLD 17+", montre: "17+ points, fit différé" }
+  - passe: { si: "H 5-", montre: "moins de 6 H" }
+  - 1P:  { si: "H 6+, P 4+", montre: "6+ H, 4+ piques" }
+  - 1SA: { si: "H 6-10", montre: "6–10 H, sans fit" }
+  - 2SA: { si: "reg, H 11-12, U 2-", montre: "11–12 H, régulier, sans fit : invitation (le résumé débutant)", nature: invite, source: à confirmer }
+  - 3SA: { si: "reg, H 13-15, U 2-", montre: "13–15 H, régulier, sans fit : manche (le résumé débutant)", nature: conclusion, source: à confirmer }
+  - 2C:  { si: "H 11+, C 5+, C > K, C > T", montre: "11+ H, 5+ cœurs, forcing", apres: 1P }
+  - 2K:  { si: "H 11+, K 4+, K > T", montre: "11+ H, 4+ carreaux, forcing" }
+  - 2T:  { si: "H 11+, T 4+", montre: "11+ H, 4+ trèfles, forcing" }
+  - 2K:  { si: "H 11+, K > T", montre: "11+ H, forcing" }
+  - 2T:  { si: "H 11+", montre: "11+ H, forcing" }
+  - exemples:
+      - { main: "R82 D75 RV73 X52", apres: 1C, attendu: 2U }     # 9 H, 3 cœurs
+      - { main: "AV82 75 RV73 X52", apres: 1C, attendu: 1P }
+      - { main: "AV82 75 RV73 X52", apres: 1P, attendu: 2U }     # 4 piques, 9 H + 1 (doubleton)
+      - { main: "V82 R7 RV73 DV52", apres: 1P, attendu: 3U }
+      - { main: "RX9832 X9 A632 9", apres: 1P, attendu: 4U }     # 6 atouts, singleton : manche
+      - { main: "754 D5 ARV63 V94", apres: 1P, position: 2, attendu: 2T }   # main passée, 3 atouts, HLD 12 : Drury
+      - { main: "754 X5 ARV63 V94", apres: 1P, position: 2, attendu: 2U }   # HLD 10 : le SEF 2024 veut 11 pour Drury
+      - { main: "754 X5 ARV63 V94", apres: 1P, attendu: 2U }                # la même, pas passée : soutien simple
+      - { main: "AD95 R852 RV4 63", apres: 1C, attendu: 4U }     # 4 atouts, 15 HLD : manche directe
+      - { main: "D4 RV9 AD84 R963", apres: 1P, attendu: 3SA }    # 13 H régulier sans fit
+      - { main: "D4 RV9 A984 R963", apres: 1P, attendu: 2SA }    # 11 H régulier sans fit
+      - { main: "AD95 R852 AR4 A3", apres: 1C, attendu: 2K }     # 21 HLD : fit différé
+
+"1T | 1T (contre)":
+  - passe: { si: "H 0-5", montre: "moins de 6 H" }
+  - surcontre: { si: "H 10+, non (P 5+, non U est P), non (U 4+, HLD(U) 11-15)", montre: "surcontre : 10+ H (SEF 2024 p. 13 et 21)", nature: forcing, apres: 1T (contre) }
+  - 1K:  { si: "H 12+, M 4+, K 5+, K > M", montre: "12+ H, forcing de manche : la plus longue d'abord" }
+  - 1P:  { si: "H 6+, P 5+, P > C", montre: "6+ H, 5+ piques" }
+  - 1C:  { si: "H 6+, C 4+", montre: "6+ H, 4+ cœurs" }
+  - 1P:  { si: "H 6+, P 4+", montre: "6+ H, 4+ piques" }
+  - 1K:  { si: "H 6+, K 4+, (H 6-10 || irreg)", montre: "6+ H, 4+ carreaux" }
+  - 2T:  { si: "H 6-10, T 5+, irreg", montre: "6–10 H, 5+ trèfles" }
+  - 1SA: { si: "H 6-10", montre: "6–10 H, sans majeure 4e" }
+  - 2SA: { si: "reg, H 11-12", montre: "11–12 H, régulier, sans majeure 4e" }
+  - 3SA: { si: "reg, H 13-15", montre: "13–15 H, régulier, sans majeure 4e" }
+  - 3T:  { si: "H 11-12, T 5+", montre: "11–12 H, 5+ trèfles, invitation", source: SA }
+  - 4T:  { si: "T 5+, HLD 13-16, irreg", montre: "13–16 points, 5+ trèfles, irrégulier (le résumé débutant)", source: à confirmer }
+  - 1K:  { si: "H 13+", montre: "13+ H, forcing (carreaux parfois 3 cartes)", source: SA }
+  - exemples:
+      - { main: "X82 D75 RV7 DV53", attendu: 1SA }
+      - { main: "X8 D7 V73 RDV853", attendu: 2T }
+      - { main: "V8 AX98 A4 RDV52", apres: 1T, attendu: 1C }
+      - { main: "V8 AX98 A4 RDV52", apres: 1T (contre), attendu: surcontre }   # 14 H après leur contre d'appel     # 12+ H : la majeure, pas 2T (soutien faible)
+      - { main: "D32 DV3 AR AR865", apres: 1T, attendu: 1K }     # 19 H sans majeure : forcing
+
+"1K | 1K (contre)":
+  - passe: { si: "H 0-5", montre: "moins de 6 H" }
+  - surcontre: { si: "H 10+, non (P 5+, non U est P), non (U 4+, HLD(U) 11-15)", montre: "surcontre : 10+ H (SEF 2024 p. 13 et 21)", nature: forcing, apres: 1K (contre) }
+  - 2T:  { si: "H 12+, M 4+, T 5+, T > M", montre: "12+ H, forcing de manche : la plus longue d'abord" }
+  - 1P:  { si: "H 6+, P 5+, P > C", montre: "6+ H, 5+ piques" }
+  - 1C:  { si: "H 6+, C 4+", montre: "6+ H, 4+ cœurs" }
+  - 1P:  { si: "H 6+, P 4+", montre: "6+ H, 4+ piques" }
+  - 2K:  { si: "H 6-10, K 5+", montre: "6–10 H, 5+ carreaux (le résumé débutant : cinq cartes)", source: à confirmer }
+  - 1SA: { si: "H 6-10", montre: "6–10 H, sans majeure 4e" }
+  - 2SA: { si: "reg, H 11-12", montre: "11–12 H, régulier, sans majeure 4e" }
+  - 3SA: { si: "reg, H 13-15", montre: "13–15 H, régulier, sans majeure 4e" }
+  - 2T:  { si: "H 11+, T 4+", montre: "11+ H, 4+ trèfles, forcing" }
+  - 3K:  { si: "H 11-12, K 5+", montre: "11–12 H, 5+ carreaux, invitation", source: SA }
+  - 4K:  { si: "K 5+, HLD 13-16, irreg", montre: "13–16 points, 5+ carreaux, irrégulier (le résumé débutant)", source: à confirmer }
+  - 2T:  { si: "H 13+", montre: "13+ H, forcing (trèfles parfois 3 cartes)", source: SA }
+  - exemples:
+      - { main: "VX73 AD32 AV742 -", apres: 1K, attendu: 1C }    # 12+ H : la majeure, pas 2K (soutien faible)
+      - { main: "AV8 AX3 ADX84 DV", apres: 1K, attendu: 2T }     # 18 H sans majeure : forcing
+      - { main: "V82 D75 RV73 DV5", apres: 1K, attendu: 1SA }                 # donne 2 du 23/10 (O)
+      - { main: "V8 75 RV732 D952", attendu: 2K }
+      - { main: "V8 752 RV73 D952", attendu: 1SA }               # 4 carreaux seulement : pas de soutien
+      - { main: "86 75 ARV732 AD9", apres: 1K, attendu: 4K }    # 6 carreaux, irrégulier, 14 H
+      - { main: "RV82 D7 RV73 X52", attendu: 1P }
+
+"1T - 4T | 1K - 4K":
+  - 5U:  { si: "HL 16+", montre: "16+ : la manche à 5 (30 points ensemble)", nature: conclusion, source: à confirmer }
+  - passe: { montre: "minimum : on reste à 4" }

@@ -789,8 +789,14 @@ tools in src/outils/.
                         6+ HL, at the 2-level 12+ HL; a new suit at the 2-level 12+ HL as in the summary, at the 3-level 13+ H;
                         the cue-bid 13+ H with nothing natural) and « 1x (1x) contre » (opener leaves the double), all marked
                         « à confirmer ». −517 / −638 IMP against SEF on 2 × 20 000 deals (Spoutnik kept: −761 / −812; nothing in
-                        its place: −1055 / −1138). Log in systems/bridgez/README.md. A derived system with no « definitions: »
+                        its place: −1055 / −1138). Log in the system's README.md. A derived system with no « definitions: »
                         reads its base's (regles.charger), so its sections can say « majeure libre ».
+                        Renamed systems/sef-simplifie/, title « SEF simplifié » (2026-11-21, the user: not « débutants », and
+                        players don't know « BRIDGEZ »). The user's summary written in (1M – 4M 13–16 HLD, 1M – 2SA / 3SA
+                        balanced, 5-card minor raises, 1m – 4m); after an overcall, the SIF (Système d'Initiation Français,
+                        usf.bridge.free.fr, the online BRIDGEZ system; copy in its ffb/, ignored) where the summary is silent:
+                        balanced NT with a stopper, 5-card major at the 2-level, all doubles penalty; its one Spoutnik
+                        (1m (1♠)) left out at the user's wish. Open points between summary and SIF: systems/sef-simplifie/README.md.
 
 Three places outside this folder, none in git. `bridge-coach.ini` sits at a fixed place because it says
 where the rest is: `~/Library/Application Support/Bridge Coach` on Mac, `%APPDATA%\Bridge Coach` on Windows

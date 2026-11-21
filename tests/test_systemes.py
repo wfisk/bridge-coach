@@ -9,7 +9,7 @@ from encheres.main import Main
 from outils import banc_encheres
 
 noms = {n: (t, b, p) for n, t, b, p in regles.systemes()}
-assert noms["sef-2024"] == ("SEF 2024", "", True) and noms["bridgez"][1:] == ("sef-2024", False)
+assert noms["sef-2024"] == ("SEF 2024", "", True) and noms["sef-simplifie"][1:] == ("sef-2024", False)
 
 # un système d'essai bâti sur le SEF : sa section « 1SA » remplace celle du SEF, le reste est hérité
 with tempfile.TemporaryDirectory() as d:
@@ -25,15 +25,15 @@ with tempfile.TemporaryDirectory() as d:
     assert sef.choisir("1SA", Main("AV975 R82 V4 863")).enchere == "2♥"            # le SEF : texas
     assert s.choisir("1C", Main("R82 D75 RV73 X52"), position=2).enchere == sef.choisir("1C", Main("R82 D75 RV73 X52"), position=2).enchere
 
-# le système de la donne, sans changer celui du programme ; bridgez (sans quelques conventions) enchérit comme le SEF
+# le système de la donne, sans changer celui du programme ; sef-simplifie (sans quelques conventions) enchérit comme le SEF
 # sur une donne où ces conventions ne servent pas
-assert noms and regles.charger(os.path.join(RACINE, "systems", "bridgez", "regles.yaml")).sans >= {"Roudi", "Spoutnik"}
+assert noms and regles.charger(os.path.join(RACINE, "systems", "sef-simplifie", "regles.yaml")).sans >= {"Roudi", "Spoutnik"}
 D = banc_encheres.donne(11, 5)
 a = E.encherir(D)
-b = E.encherir(dict(D, systeme="bridgez"))
+b = E.encherir(dict(D, systeme="sef-simplifie"))
 assert a["encheres"] == b["encheres"] and E.systeme_actif() == "sef-2024", (a["encheres"], b["encheres"])
-E.choisir_systeme("bridgez")
-assert E.systeme_actif() == "bridgez" and os.environ["BRIDGE_COACH_SYSTEME"] == "bridgez"
+E.choisir_systeme("sef-simplifie")
+assert E.systeme_actif() == "sef-simplifie" and os.environ["BRIDGE_COACH_SYSTEME"] == "sef-simplifie"
 E.choisir_systeme("sef-2024")
 print("ok")
 

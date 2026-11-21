@@ -28,7 +28,7 @@ The code comes from earlier sessions: build on it rather than rewriting it.
     requirements.in / .txt         pinned libraries; requirements.txt generated with uv, hash-locked
     help/                          the app's French help (index.html, images/), nouveautes.html (members' changelog)
     systems/                       bidding systems: sef-2024/ (regles.yaml = the robots' rules, systeme.md, entames.yaml,
-                                   a-faire.md = bench log), conventions/*.md, bridgez/ (hidden skeleton), technique/;
+                                   a-faire.md = bench log), conventions/*.md, sef-simplifie/ (hidden), technique/;
                                    */ffb/ (official documents, transcriptions) ignored by git
     docs/                          notes-detaillees.md (the detailed notes), bridge-analysis/ (old instructions)
     tests/                         one script per module, plain asserts
@@ -52,8 +52,8 @@ The code comes from earlier sessions: build on it rather than rewriting it.
 Bidding systems: a regles.yaml may say `base: sef-2024` and write only its differences, `sans: [Roudi, …]` switches
 conventions off by their `nom:` (70 calls named: Stayman, Texas, Roudi, Drury, Spoutnik, Bicolores, Landy, 4e couleur
 forcing; Blackwood and Spoutnik also in the code, encheres.convention_active), `pret: non` hides it. The robots' system:
-donne["systeme"] or encheres.choisir_systeme. systems/bridgez/ (the beginners' system) is an empty skeleton until the
-book's pages arrive.
+donne["systeme"] or encheres.choisir_systeme. systems/sef-simplifie/ (« SEF simplifié », hidden; BRIDGEZ until 2026-11-21):
+SEF without the hard conventions, natural bids after an overcall, the user's summary; its ffb/ holds the SIF pages.
 
 Interface code: a function that belongs to the page reads and calls everything through `F` (`F.jeu`, `F.vue_jouer()`);
 a new one goes in its subject's module and in that module's `NOMS`. The other modules stay flat on purpose: members'

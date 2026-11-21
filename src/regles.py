@@ -483,7 +483,7 @@ def charger(chemin):
         raise ErreurRegles(f"{os.path.basename(chemin)}, {ou} : {getattr(ex, 'problem', None) or ex}") from None
     cle_defs = next((k for k in doc if sans_accents(str(k)) == "definitions"), None)
     defs_txt = doc.get(cle_defs) or {} if cle_defs else {}
-    if not defs_txt and doc.get("base"):                  # un système bâti sur un autre (bridgez) : les définitions de la
+    if not defs_txt and doc.get("base"):                  # un système bâti sur un autre (sef-simplifie) : les définitions de la
         fb = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(chemin))), str(doc["base"]), "regles.yaml")
         db = YAML().load("\n".join(re.sub(r"^\t+", lambda m: "  " * len(m[0]), l)
                                    for l in open(fb, encoding="utf-8").read().split("\n")))

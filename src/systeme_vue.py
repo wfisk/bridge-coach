@@ -48,8 +48,36 @@ NATURE = {"conclusion": "pour jouer", "invite": "invitation", "limite": "limite"
 
 # ---------------------------------------------------------------- lire le fichier
 def lire(systeme=SYSTEME):
-    """{"definitions": {nom: condition}, "sections": [(intertitre, [(clé, [règle…], [exemple…])])]} dans l'ordre du
-    fichier. Une règle : {"enchere", "si", "montre", "nature", "nom", "alerte", "source", "note"}."""
+    """{"definitions": {nom: condition}, "sections": [(intertitre, [(clé, [règle…], [exemple…])])], "nom", "titre",
+    "base", "sans"} dans l'ordre du fichier. Une règle : {"enchere", "si", "montre", "nature", "nom", "alerte",
+    "source", "note"}. Un système bâti sur un autre (« base: », le SEF simplifié) se lit comme le moteur le joue
+    (2026-11-21) : les sections de la base, sans les règles des conventions coupées (« sans: »), chacune remplacée à
+    sa place par celle du système qui a la même séquence ; ses sections nouvelles ensuite, sous leurs intertitres."""
+    s = _lire_fichier(systeme)
+    if not s["base"]: return s
+    b = lire(s["base"])
+    sans = {x.lower() for x in s["sans"]}
+    propres = {cle: (cle, r, e) for _, l in s["sections"] for cle, r, e in l}
+    parties = {p.strip(): cle for cle in propres for p in cle.split("|")}
+    sections, places = [], set()
+    for t, l in b["sections"]:
+        nl = []
+        for cle, r, e in l:
+            mien = next((parties[p.strip()] for p in cle.split("|") if p.strip() in parties), None)
+            if mien:
+                if mien not in places: nl.append(propres[mien]); places.add(mien)
+                continue
+            r2 = [x for x in r if str(x.get("nom") or "").strip().lower() not in sans]
+            if r2: nl.append((cle, r2, e if len(r2) == len(r) else []))   # ses exemples ne valent plus (comme regles.py)
+        if nl: sections.append((t, nl))
+    for t, l in s["sections"]:
+        reste = [x for x in l if x[0] not in places]
+        if reste: sections.append((t, reste))
+    return dict(s, definitions={**b["definitions"], **s["definitions"]}, sections=sections)
+
+
+def _lire_fichier(systeme):
+    """Le fichier regles.yaml d'un système, seul (sans sa base)."""
     f = os.path.join(SYSTEMES, systeme, "regles.yaml")
     texte = open(f, encoding="utf-8").read().replace("\t", "    ")
     y = YAML(typ="safe").load(texte)
@@ -62,7 +90,7 @@ def lire(systeme=SYSTEME):
         if m and not ligne.startswith(" "): titres[m[2]] = courant
     sections = []
     for cle, liste in y.items():
-        if cle in ("systeme", "definitions") or not isinstance(liste, list): continue
+        if cle in ("systeme", "definitions", "sans") or not isinstance(liste, list): continue
         regles, exemples = [], []
         for x in liste:
             if not isinstance(x, dict) or len(x) != 1: continue
@@ -75,7 +103,9 @@ def lire(systeme=SYSTEME):
         t = titres.get(cle, "Autres")
         if not sections or sections[-1][0] != t: sections.append((t, []))
         sections[-1][1].append((str(cle), regles, exemples))
-    return {"definitions": y.get("definitions") or {}, "sections": sections}
+    return {"definitions": y.get("definitions") or {}, "sections": sections, "nom": systeme,
+            "titre": str(y.get("titre") or systeme), "base": str(y.get("base") or ""),
+            "sans": [str(x) for x in (y.get("sans") or [])]}
 
 
 def famille_de(titre):
@@ -480,10 +510,10 @@ def pour_membres(t):
     return re.sub(r"`([^`]+)`", r"\1", t)
 
 
-def lire_doc(nom):
+def lire_doc(nom, systeme=SYSTEME, base=""):
     """Un document du système (systeme.md, entames.md, conventions/stayman.md…), sans les liens relatifs ni les notes
-    de développement (pour_membres)."""
-    for f in (os.path.join(SYSTEMES, SYSTEME, nom), os.path.join(SYSTEMES, nom)):
+    de développement (pour_membres) ; celui du système choisi, sinon celui de sa base (le SEF 2024)."""
+    for f in (os.path.join(SYSTEMES, systeme, nom), os.path.join(SYSTEMES, base or SYSTEME, nom), os.path.join(SYSTEMES, nom)):
         if os.path.exists(f):
             t = pour_membres(open(f, encoding="utf-8").read())
             return rouge(re.sub(r"\[([^\]]+)\]\([^)]+\.md\)", r"\1", t))   # ♥ ♦ en rouge, même dans le markdown
@@ -514,6 +544,12 @@ def regles_convention(cle, s=None):
     return ("<div class='syst'><h3>Comme les robots la jouent</h3><p class='note' style='font-style:normal;font-size:15px;"
             "margin:0 0 var(--sp-3)'>Chaque séquence où la convention intervient, avec les mains d'exemple que le "
             "programme vérifie à chaque lancement.</p>" + "".join(blocs) + "</div>")
+
+
+def conventions(s=None):
+    """Les pages de conventions de ce système : celles qu'il ne coupe pas (« sans: »)."""
+    sans = {x.lower() for x in (s or {}).get("sans", ())}
+    return [c for c in CONVENTIONS if NOM_REGLES.get(c[0], c[1]).lower() not in sans]
 
 
 def compter(s=None):

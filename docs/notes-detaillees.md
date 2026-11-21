@@ -807,6 +807,13 @@ tools in src/outils/.
                         (2SA 22–23, 3SA 24–25; a suit 22–23 passable, a jump 24–25 game-forcing, 4M 26–27), and 2♦ is a weak
                         two in diamonds. +447 / +439 IMP on 2 × 20 000 deals. Sequences after 2♣ – 2♦ – 2M use UM (U is the
                         artificial club there).
+                        The Système tab shows the chosen system (2026-11-21): systeme_vue.lire reads a derived system as the
+                        engine plays it (the base's sections minus the « sans » conventions' rules, each replaced in place by
+                        the derived file's section with the same sequence, its new sections after under their « # ---- »
+                        titles, which pick the family); systeme_vue.conventions drops switched-off convention pages;
+                        lire_doc(nom, systeme, base) takes the system's own systeme.md (sef-simplifie has one for members),
+                        else its base's. commun.vue_systeme(nom) refills SYSTEME_DATA / PAGES / ANCRES / GROUPES in place
+                        (the modules imported them), at import from etat (systeme_choisi) and on a change, then reloads.
 
 Three places outside this folder, none in git. `bridge-coach.ini` sits at a fixed place because it says
 where the rest is: `~/Library/Application Support/Bridge Coach` on Mac, `%APPDATA%\Bridge Coach` on Windows

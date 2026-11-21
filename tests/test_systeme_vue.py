@@ -32,4 +32,20 @@ for k, _, _ in fams:
     for a in re.findall(r"data-vers='([^']+)'", v.page_famille(k, s)): assert a in ancres, a
 assert "♠" in v.main_html("A765 AX43 A982 3") and "10" in v.main_html("A765 AX43 A982 3")
 assert v.lire_doc("systeme.md").startswith("# SEF 2024")
+# un système bâti sur le SEF (le SEF simplifié) : la base sans ses conventions coupées, ses propres sections à leur place
+ss = v.lire("sef-simplifie")
+assert ss["titre"] == "SEF simplifié" and ss["base"] == "sef-2024" and "Roudi" in ss["sans"]
+assert not any(str(r.get("nom")) == "Roudi" for _, l in ss["sections"] for _, rr, _ in l for r in rr)
+assert [c[0] for c in v.conventions(ss)] == ["stayman", "texas", "blackwood"] and len(v.conventions(s)) == len(v.CONVENTIONS)
+ouv = next(r for _, l in ss["sections"] for c, r, _ in l if c == "ouverture")
+assert any(x["enchere"] == "2K" and "faible" in x["montre"] for x in ouv)                 # son 2♦ faible, à la place du SEF
+cles = [c for _, l in ss["sections"] for c, _, _ in l]
+assert len(cles) == len(set(cles)) and "2T - 2K - 3C | 2T - 2K - 3P" in cles             # chaque séquence une fois
+fams_s = v.familles(ss)
+assert sum(len(seqs) for _, _, secs in fams_s for _, seqs in secs) == v.compter(ss)[0]
+for _, seqs in ss["sections"]:
+    for cle, regles, _ in seqs:
+        for r in regles: assert "<code>" not in v.condition(r["si"], ss["definitions"]), (cle, r["si"])
+assert v.lire_doc("systeme.md", "sef-simplifie", "sef-2024").startswith("# SEF simplifié")
+assert v.lire_doc("entames.md", "sef-simplifie", "sef-2024") == v.lire_doc("entames.md")   # les entames de sa base
 print("ok")

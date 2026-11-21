@@ -22,22 +22,19 @@ def panneau():
             if cle == "sy-vue":
                 F.choix_systeme_robots()
                 n_seq, n_enc, n_ex = systeme_vue.compter(SYSTEME_DATA)
-                import encheres
-                debut_ = ("Les robots de Bridge Coach jouent le <b>SEF 2024</b>" if encheres.systeme_actif() == "sef-2024"
-                          else "Le <b>SEF 2024</b> complet (la base du système des robots)")
-                ui.html(f"<div class='syst'><p>{debut_}, tel qu'il est écrit "
+                ui.html(f"<div class='syst'><p>Les robots de Bridge Coach jouent le <b>{html_.escape(SYSTEME_DATA['titre'])}</b>, tel qu'il est écrit "
                         f"dans son fichier de règles : <b>{n_seq}</b> séquences, <b>{n_enc}</b> enchères décrites, "
                         f"<b>{n_ex}</b> mains d'exemple vérifiées à chaque lancement. Les pages à gauche les montrent "
                         "famille par famille, en lecture seule. Ce qui n'y est pas décrit, les robots le jouent avec "
                         "leurs règles générales.</p><p>Votre fiche de conventions dit ce que <b>vous</b> jouez avec "
                         "votre partenaire ; elle ne change pas les robots. « Écarts fiche / robots » liste où les deux "
                         "diffèrent.</p></div>", sanitize=False)
-                ui.markdown(systeme_vue.lire_doc("systeme.md")).classes("syst aide")
+                ui.markdown(systeme_vue.lire_doc("systeme.md", SYSTEME_DATA["nom"], SYSTEME_DATA["base"])).classes("syst aide")
             elif cle == "sy-entames":
-                ui.markdown(systeme_vue.lire_doc("entames.md")).classes("syst aide")
+                ui.markdown(systeme_vue.lire_doc("entames.md", SYSTEME_DATA["nom"], SYSTEME_DATA["base"])).classes("syst aide")
             elif cle.startswith("sy-conv-"):
                 doc = next((d for k_, _, d in systeme_vue.CONVENTIONS if "sy-conv-" + k_ == cle), "")
-                ui.markdown(systeme_vue.lire_doc(doc)).classes("syst aide")
+                ui.markdown(systeme_vue.lire_doc(doc, SYSTEME_DATA["nom"], SYSTEME_DATA["base"])).classes("syst aide")
                 ui.html(systeme_vue.regles_convention(cle[len("sy-conv-"):], SYSTEME_DATA), sanitize=False)
             else:
                 ui.html(systeme_vue.page_famille(cle[3:], SYSTEME_DATA), sanitize=False)
@@ -92,12 +89,6 @@ def choix_systeme_robots():
         ui.label("Les robots jouent :").classes("text-lg font-bold")
         ui.radio(prets, value=actuel if actuel in prets else "sef-2024",
                  on_change=lambda e: F.changer_systeme_robots(e.value)).props("inline").classes("text-base")
-    if actuel != "sef-2024" and actuel in prets:
-        sy = encheres.systeme(actuel)
-        coupees = ", ".join(sorted(getattr(sy, "sans", ()) or (), key=str.lower))
-        ui.label(f"Le {prets[actuel]} : le SEF 2024 sans {coupees}, avec des enchères naturelles après une intervention "
-                 "(le contre y est punitif). Les pages à gauche décrivent le SEF 2024 complet.") \
-            .classes("text-base text-gray-700 max-w-3xl")
 
 
 def changer_systeme_robots(nom):
@@ -105,8 +96,8 @@ def changer_systeme_robots(nom):
     import threading, encheres
     encheres.choisir_systeme(nom); ecrire_etat(systeme_robots=nom)
     threading.Thread(target=encheres.systeme, daemon=True).start()    # ses règles lues d'avance (2 à 3 secondes)
-    ui.notify(f"Les robots jouent maintenant le {dict((n, t) for n, t, _b, _p in __import__('regles').systemes()).get(nom, nom)}.")
-    F.page_systeme.refresh()
+    vue_systeme(nom)                                                   # l'onglet montre ce système
+    ui.navigate.reload()                                               # la barre de gauche : ses pages à lui
 
 
 NOMS = ("choix_systeme_robots", "changer_systeme_robots")

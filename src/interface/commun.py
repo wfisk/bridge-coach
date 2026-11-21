@@ -14,11 +14,29 @@ TITRE = "Bridge Coach"
 PORT = int(os.environ.get("BRIDGE_COACH_PORT") or 8123)    # un autre port : une seconde instance d'essai
 CORBEILLE_SYSTEME = "Corbeille de Windows" if sys.platform == "win32" else "Corbeille du Mac"   # où va la corbeille vidée
 DEV = maj.est_depot_git()
-SYSTEME_DATA = systeme_vue.lire()                          # le système des robots (regles.yaml), lu une fois : lecture seule
-SYSTEME_PAGES = ([("sy-vue", "Vue d'ensemble")] + [("sy-" + k, t) for k, t, _ in systeme_vue.familles(SYSTEME_DATA)]
-                 + [("sy-entames", "Entames et signaux")] + [("sy-conv-" + k, t) for k, t, _ in systeme_vue.CONVENTIONS]
-                 + [("systeme", "Votre fiche de conventions"), ("ecarts", "Écarts fiche / robots")])
-SYSTEME_ANCRES = {systeme_vue.ancre(c): c for _, l in SYSTEME_DATA["sections"] for c, _, _ in l}
+# le système des robots (regles.yaml) tel que l'onglet Système le montre, en lecture seule : celui choisi en haut de sa
+# Vue d'ensemble (etat « systeme_robots », 2026-11-21 : le SEF simplifié se montre lui-même, pas le SEF complet).
+# Des objets modifiés sur place (vue_systeme) : les modules qui les ont importés voient le changement.
+SYSTEME_DATA, SYSTEME_PAGES, SYSTEME_ANCRES = {}, [], {}
+SYSTEME_GROUPES = {"systeme": "Votre partenariat"}
+
+
+def vue_systeme(nom="sef-2024"):
+    """Lit le système « nom » pour l'onglet Système (le SEF 2024 s'il ne se lit pas)."""
+    try:
+        s = systeme_vue.lire(nom)
+    except Exception:
+        s = systeme_vue.lire()
+    SYSTEME_DATA.clear(); SYSTEME_DATA.update(s)
+    convs = systeme_vue.conventions(s)
+    SYSTEME_PAGES[:] = ([("sy-vue", "Vue d'ensemble")] + [("sy-" + k, t) for k, t, _ in systeme_vue.familles(s)]
+                        + [("sy-entames", "Entames et signaux")] + [("sy-conv-" + k, t) for k, t, _ in convs]
+                        + [("systeme", "Votre fiche de conventions"), ("ecarts", "Écarts fiche / robots")])
+    SYSTEME_ANCRES.clear(); SYSTEME_ANCRES.update({systeme_vue.ancre(c): c for _, l in s["sections"] for c, _, _ in l})
+    SYSTEME_GROUPES.clear()
+    SYSTEME_GROUPES.update({"sy-vue": f"Les robots · {s['titre']}", "systeme": "Votre partenariat"})
+    if convs: SYSTEME_GROUPES["sy-conv-" + convs[0][0]] = "Conventions"
+
 JS_SYSTEME = """<script>
 // Système : « La suite : 1SA - 2T → » mène à cette séquence (l'événement systeme_vers, côté Python : aller_sequence)
 document.addEventListener('click', function (e) {
@@ -26,8 +44,6 @@ document.addEventListener('click', function (e) {
   if (s) emitEvent('systeme_vers', s.getAttribute('data-vers'));
 });
 </script>"""
-SYSTEME_GROUPES = {"sy-vue": "Les robots · SEF 2024", "sy-conv-" + systeme_vue.CONVENTIONS[0][0]: "Conventions",
-                   "systeme": "Votre partenariat"}                                  # un dépôt Git : le développement (Réglages, Outils de développement)
 LARGEUR_BARRE = 220                                        # la barre de gauche (Donnes, Jouer, Analyse) : « Donne 24 » et la barre de défilement
 PART_ANALYSE = .85                                         # la part de la barre pour l'analyse, le reste pour les PDF
 NB_PDF = 2                                                 # l'analyse, la comparaison
@@ -1953,3 +1969,16 @@ def encheres_html(d, x):
 
 
 F = types.SimpleNamespace()   # les noms de la page (état, fonctions), partagés par les modules de l'interface
+
+
+def systeme_choisi():
+    """Le système des robots gardé dans etat.json (« systeme_robots »), s'il est prêt ; sinon le SEF 2024."""
+    try:
+        from regles import systemes
+        nom = lire_etat().get("systeme_robots")
+        return nom if nom and any(n == nom and p for n, _t, _b, p in systemes()) else "sef-2024"
+    except Exception:
+        return "sef-2024"
+
+
+vue_systeme(systeme_choisi())                               # l'onglet Système montre le système choisi

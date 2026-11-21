@@ -1,7 +1,8 @@
 # SEF simplifié : le SEF 2024 aux enchères plus directes, sans les conventions difficiles (2026-11-21, l'utilisateur :
 # « SEF simplifié », pas « débutants » ; BRIDGEZ, le livre de l'Université du Bridge, n'est pas un nom que les joueurs
 # connaissent). Références : le résumé de l'utilisateur et le SIF (Système d'Initiation Français, tiré du livre
-# BRIDGEZ ; ffb/, hors git) pour ce que le résumé ne dit pas.
+# BRIDGEZ, 2003 ; ffb/, hors git) pour ce que le résumé ne dit pas. Le SIF est ancien : là où il diffère du SEF 2024,
+# c'est le SEF 2024 qui compte (l'utilisateur, 2026-11-21 : « keep it up to date »).
 # Le SEF 2024 avec des conventions coupées (l'utilisateur, 2026-11-19 : pas un second système à entretenir) :
 #   base: sef-2024     tout se joue comme le SEF, sauf ce qui est écrit ici ;
 #   sans: [...]        les conventions coupées, par leur « nom: » dans le regles.yaml du SEF (Stayman, Texas, Roudi,

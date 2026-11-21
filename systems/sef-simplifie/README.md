@@ -53,6 +53,8 @@ Le but n'est pas de battre le SEF mais de voir où les robots enchérissent mal 
   dès 6 HL ; au palier 2, 12 HL et cinq cartes en majeure) ; tous les contres sont punitifs. Le SIF garde un seul
   Spoutnik (1m (1♠) contre = 4 cœurs 8+ HL, ou 5 cœurs 8–11) : l'utilisateur ne le veut pas ; sans lui −141 / −79 IMP.
   Face au SEF complet : −501 / −435 IMP avec ce Spoutnik ; le répondant ne passe plus avec 10+ H que sur 13 donnes.
-- **Écarts entre le résumé et le SIF, à trancher :** 1M – 4M (résumé 13–16, SIF 13–14 ; au-delà, nouvelle couleur) ;
-  1m – 4m (dans le résumé, pas dans le SIF) ; Blackwood (résumé : clés 3041, SIF : as) ; le 2♦ d'ouverture (SEF : fort
-  forcing de manche ; SIF : 21–22 naturel) ; les interventions (SIF : 1SA 16–18, bicolore 2SA sur une majeure).
+- **Écarts entre le résumé et le SIF, tranchés (2026-11-21, l'utilisateur : « keep it up to date », le SIF est ancien) :**
+  le SEF 2024 et le résumé passent avant le SIF. 1M – 4M = 13–16 HLD (le résumé) ; 1m – 4m gardé (le résumé) ;
+  Blackwood aux clés 3041 (le SEF) ; le 2♦ d'ouverture et les deux faibles du SEF 2024 ; les interventions du SEF 2024
+  sans les bicolores ni Landy. Le SIF ne sert plus que là où ni le résumé ni le SEF simplifié ne disent rien (les
+  réponses après une intervention, aujourd'hui).

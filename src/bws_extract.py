@@ -278,18 +278,19 @@ def construire(T):
     for src, dst in ((T["HandRecord"], HR), (T["HandEvaluation"], HE)):
         for r in src: dst[(r["Section"], r["Board"])] = r; dst.setdefault(r["Board"], r)
     RES = {}
-    for r in T["ReceivedData"]:
-        if not r.get("Erased"): RES.setdefault(r["Board"], {})[(r["Section"], r["Table"])] = r
+    for r in T["ReceivedData"]:          # clé : section, table ET tour (2026-11-21) : un mouvement peut faire rejouer une
+        if not r.get("Erased"):           # donne à la même table à un autre tour ; sans le tour, le second résultat
+            RES.setdefault(r["Board"], {})[(r["Section"], r["Table"], r.get("Round"))] = r   # effaçait le premier
     BIDS = {}
     for r in sorted(T["BiddingData"], key=lambda r: r["ID"]):
         if r.get("Erased"): continue
-        BIDS.setdefault((r["Board"], r["Section"], r["Table"]), {})[r["Counter"]] = (r["Direction"], r["Bid"])
+        BIDS.setdefault((r["Board"], r["Section"], r["Table"], r.get("Round")), {})[r["Counter"]] = (r["Direction"], r["Bid"])
     alertes, donnes = [], []
     paires = {}
     for b in sorted(RES):
         v, dl = vul(b), donneur(b)
         dl_en = {"O": "W"}.get(dl, dl)
-        sec0 = min(s for s, _ in RES[b])
+        sec0 = min(k[0] for k in RES[b])
         hr = HR.get((sec0, b)) or HR.get(b)
         mains = {k: main_fr(hr, s) for k, s in (("N", "North"), ("E", "East"), ("S", "South"), ("O", "West"))} if hr else None
         hcp = {k: sum(HCP.get(c, 0) for c in m.replace(" ", "")) for k, m in mains.items()} if mains else None
@@ -308,19 +309,21 @@ def construire(T):
             datum = round(sum(scores.values()) / len(scores) / 10) * 10
             imps = {k: imp(scores[k] - datum) for k in tabs}
         tables = []
+        deux_fois = {(s_, t_) for s_, t_, _ in tabs if sum(1 for x in tabs if x[:2] == (s_, t_)) > 1}
         for k in tabs:
-            sec, t = k; lab = etiq(sec, t)
+            sec, t, rnd = k; lab = etiq(sec, t)
+            if (sec, t) in deux_fois: lab = f"{lab} (tour {rnd})"   # la même table deux fois : le tour les distingue
             r = RES[b][k]; pc = parse_contract(r["Contract"])
-            seq = [BIDS[(b, sec, t)][c] for c in sorted(BIDS.get((b, sec, t), {}))]
+            seq = [BIDS[(b, sec, t, rnd)][c] for c in sorted(BIDS.get((b, sec, t, rnd), {}))]
             decl = r["NS/EW"]
             if not seq: ok, msg = True, "enchères non enregistrées"       # pas une erreur : rien à corriger
             else: ok, msg = valider(seq, dl_en, r["Contract"], decl) if pc else (True, "passe générale")
             if not ok: alertes.append(f"Donne {b}, table {lab} : séquence d'enchères à vérifier ({msg}).")
             made = tricks_made(r)
             ddv = he[SEAT[decl] + SN[pc[1]]] if (he and pc) else None
-            ns, ew = pairs(sec, t, r.get("Round"), b)
+            ns, ew = pairs(sec, t, rnd, b)
             autres = [scores[o] for o in tabs if o != k]
-            tables.append(dict(table=lab, paire_ns=ns, paire_eo=ew, nom_ns=nom(ns), nom_eo=nom(ew),
+            tables.append(dict(table=lab, tour=rnd, paire_ns=ns, paire_eo=ew, nom_ns=nom(ns), nom_eo=nom(ew),
                                contrat=contrat_fr(r["Contract"]),
                                declarant=EN2FR.get(decl, decl), resultat=r["Result"].strip(),
                                entame=carte_fr(r.get("LeadCard")), levees=made, dm=ddv,
@@ -342,7 +345,7 @@ def construire(T):
         l = p.pop("pct"); p["pct"] = round(sum(l) / len(l), 1) if l else None
     s = T["Session"][0] if T["Session"] else {}
     date = s.get("Date").strftime("%d/%m/%Y") if s.get("Date") else ""
-    ntables = len({(sec, t) for b in RES for sec, t in RES[b]})
+    ntables = len({k[:2] for b in RES for k in RES[b]})
     session = dict(date=date, tables=ntables, sections=[lettres.get(x) or str(x) for x in sections],
                    mitchell=any(mitchell.values()))
     rondes = []                         # le mouvement entier : à chaque tour, qui joue où, avec quelles donnes ; le parcours

@@ -864,6 +864,12 @@ def avec_avis(texte):
     return el + [Spacer(1, 4)]
 
 
+def _ordre_table(t):
+    """L'ordre des tables : section (A, B…), numéro, puis le tour (« 2 (tour 3) », une table qui rejoue la donne)."""
+    m = re.match(r"([A-Z]*)(\d*)\D*(\d*)", str(t))
+    return (m[1], int(m[2] or 0), int(m[3] or 0))
+
+
 def annexe(d, expliquer=True, pieces=False):
     """Double mort et par, puis le tableau des tables. pieces=True : les morceaux pour la mise en page à deux colonnes
     (apres_coup) : {"dd": la grille, "par": la ligne du par, "tc": le tableau étroit des tables ou None}."""
@@ -907,7 +913,7 @@ def annexe(d, expliquer=True, pieces=False):
         if t["levees"] is None: continue
         cle = (t["contrat"], t["declarant"], t["levees"], t["dm"], t["ecart_par_imp"])
         lignes.setdefault(cle, []).append(t)
-    for (contrat, decl, lev, dm, ecp), ts in sorted(lignes.items(), key=lambda x: (str(x[1][0]["table"]).rstrip("0123456789"), int(str(x[1][0]["table"]).lstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZ") or 0))):
+    for (contrat, decl, lev, dm, ecp), ts in sorted(lignes.items(), key=lambda x: _ordre_table(x[1][0]["table"])):
         ec = "=" if lev == dm else f"{lev - dm:+d}"
         nom = _tables(ts).replace("Tables ", "").replace("Table ", "")
         tr.append([P(nom), P(suits(f"{contrat} {SEAT[decl]}")), P(str(lev)),

@@ -894,6 +894,12 @@ Results are linked to pairs through the round of each score. With more than two
 tables: IMP against the datum plus a match-point % per result, results sorted by
 score, identical table auctions grouped, and the automatic comment summarises the
 field instead of one line per table. Unrecorded auctions are not alerts.
+Results and auctions are keyed by section, table **and round** (2026-11-21): the 20/11 training (3 tables, 6 pairs,
+Howell-like) sent boards back to the same table in another round; keyed by table only, the second result overwrote
+the first (16 of 60 lost) and the two auctions were merged (false alerts « enchère insuffisante », « aboutit à 4SA »).
+Each table result now carries `tour`; when a board was played twice at one table its label is « 2 (tour 3) »
+(build_pdf._ordre_table sorts section, number, round). tests/test_bws.py. Sessions imported before need a re-import of
+their .bws (the analyses stay; rerun the coach analysis).
 
 ## Players
 
